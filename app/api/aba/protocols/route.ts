@@ -10,10 +10,12 @@ export async function GET(request: NextRequest) {
       const status = searchParams.get('status')
 
       let query = `
-        SELECT lp.*, l.name as learner_name, ep.name as ebp_name
+        SELECT lp.*, l.name as learner_name, ep.name as ebp_name,
+               pg.title as pei_goal_title, pg.domain as pei_goal_domain
         FROM learner_protocols lp
         JOIN learners l ON l.id = lp.learner_id
         JOIN ebp_practices ep ON ep.id = lp.ebp_practice_id
+        LEFT JOIN pei_goals pg ON pg.id = lp.pei_goal_id
         WHERE lp.tenant_id = $1
       `
       const params: any[] = [tenantId]

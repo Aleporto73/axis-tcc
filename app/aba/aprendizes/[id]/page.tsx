@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
 interface Learner { id: string; name: string; birth_date: string; diagnosis: string; cid_code: string; support_level: number }
-interface Protocol { id: string; title: string; domain: string; status: string; ebp_name: string; objective: string; mastery_criteria_pct: number; mastery_criteria_sessions: number; generalization_status: string; regression_count: number; activated_at: string|null; mastered_at: string|null; created_at: string; discontinuation_reason: string|null }
+interface Protocol { id: string; title: string; domain: string; status: string; ebp_name: string; objective: string; mastery_criteria_pct: number; mastery_criteria_sessions: number; generalization_status: string; regression_count: number; activated_at: string|null; mastered_at: string|null; created_at: string; discontinuation_reason: string|null; pei_goal_id: string|null; pei_goal_title: string|null; pei_goal_domain: string|null }
 interface SessionSummary { id: string; scheduled_at: string; ended_at: string|null; status: string; location: string|null }
 interface CSOPoint { session_date: string; cso_aba: number; sas: number; pis: number; bss: number; tcm: number }
 interface EBPPractice { id: number; name: string; description: string }
@@ -49,6 +49,9 @@ export default function LearnerDetailPage() {
   const [showGuardianModal, setShowGuardianModal] = useState(false)
   const [guardianForm, setGuardianForm] = useState({ name: '', email: '', phone: '', relationship: '' })
   const [guardianSaving, setGuardianSaving] = useState(false)
+  const [linkingPeiProtocolId, setLinkingPeiProtocolId] = useState<string|null>(null)
+  const [linkingPeiGoalId, setLinkingPeiGoalId] = useState('')
+  const [linkingPeiSaving, setLinkingPeiSaving] = useState(false)
 
   const fetchGuardians = async () => {
     setGuardianLoading(true)
@@ -83,6 +86,39 @@ export default function LearnerDetailPage() {
     await fetch('/api/aba/guardians?id=' + id, { method: 'DELETE' })
     fetchGuardians()
   }
+
+  const handleLinkPei = async (protocolId: string) => {
+    setLinkingPeiSaving(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/aba/protocols/' + protocolId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pei_goal_id: linkingPeiGoalId || null })
+      })
+      if (!res.ok) throw new Error('Erro ao vincular')
+      setLinkingPeiProtocolId(null)
+      setLinkingPeiGoalId('')
+      fetchData()
+    } catch { setError('Erro ao vincular protocolo ao PEI') }
+    setLinkingPeiSaving(false)
+  }
+
+  const handleUnlinkPei = async (protocolId: string) => {
+    setLinkingPeiSaving(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/aba/protocols/' + protocolId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pei_goal_id: null })
+      })
+      if (!res.ok) throw new Error('Erro ao desvincular')
+      fetchData()
+    } catch { setError('Erro ao desvincular protocolo do PEI') }
+    setLinkingPeiSaving(false)
+  }
+
   const [inviteLoading, setInviteLoading] = useState(false)
 
   const generateInviteLink = async () => {
@@ -134,14 +170,14 @@ export default function LearnerDetailPage() {
         .catch(() => setEbpError(true))
         .finally(() => setEbpLoading(false))
     }
-    if (showCreateProtocol && peiGoals.length === 0) {
+    if ((showCreateProtocol || linkingPeiProtocolId) && peiGoals.length === 0) {
       fetch('/api/aba/pei?learner_id=' + learnerId).then(r => r.json()).then(d => {
         const goals: {id:string;title:string;domain:string}[] = []
         ;(d.plans || []).forEach((p: any) => { (p.goals || []).forEach((g: any) => goals.push({ id: g.id, title: g.title, domain: g.domain })) })
         setPeiGoals(goals)
       }).catch(() => {})
     }
-  }, [showCreateProtocol, ebpPractices.length, ebpLoading, peiGoals.length, learnerId])
+  }, [showCreateProtocol, ebpPractices.length, ebpLoading, peiGoals.length, learnerId, linkingPeiProtocolId])
 
   useEffect(() => {
     if (tab === 'guardians' && guardians.length === 0) { fetchGuardians() }
@@ -228,6 +264,23 @@ export default function LearnerDetailPage() {
                 <span className={'px-2 py-0.5 rounded-full text-[10px] font-medium ' + (protocolStatusColors[p.status] || 'bg-slate-100 text-slate-500')}>{protocolStatusLabels[p.status] || p.status}</span>
               </div>
               <p className="text-xs text-slate-500 mb-3">{p.objective}</p>
+              {p.pei_goal_id && p.pei_goal_title ? (
+                <div className="flex items-center gap-2 mb-2 px-2 py-1.5 rounded-lg bg-indigo-50/60 border border-indigo-100">
+                  <span className="text-[11px] text-indigo-600">Meta PEI: {p.pei_goal_title} ({p.pei_goal_domain})</span>
+                  <button onClick={() => handleUnlinkPei(p.id)} disabled={linkingPeiSaving} className="ml-auto text-[10px] text-slate-400 hover:text-red-500 transition-colors" title="Desvincular">✕</button>
+                </div>
+              ) : linkingPeiProtocolId === p.id ? (
+                <div className="flex items-center gap-2 mb-2">
+                  <select value={linkingPeiGoalId} onChange={e => setLinkingPeiGoalId(e.target.value)} className="flex-1 px-2 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-aba-500 bg-white">
+                    <option value="">Selecione uma meta</option>
+                    {peiGoals.map(g => <option key={g.id} value={g.id}>{g.title} ({g.domain})</option>)}
+                  </select>
+                  <button onClick={() => handleLinkPei(p.id)} disabled={!linkingPeiGoalId || linkingPeiSaving} className="px-2 py-1.5 text-[11px] rounded-lg bg-aba-500 text-white hover:bg-aba-500/90 disabled:opacity-50 transition-colors">{linkingPeiSaving ? '...' : 'Vincular'}</button>
+                  <button onClick={() => { setLinkingPeiProtocolId(null); setLinkingPeiGoalId('') }} className="px-2 py-1.5 text-[11px] rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 transition-colors">Cancelar</button>
+                </div>
+              ) : (
+                <button onClick={() => setLinkingPeiProtocolId(p.id)} className="inline-block mb-2 px-3 py-1 text-[11px] rounded-lg border border-indigo-200 text-indigo-500 hover:bg-indigo-50 transition-colors">🎯 Vincular ao PEI</button>
+              )}
               {p.regression_count > 0 && <p className="text-[11px] text-red-500 mb-2">⚠ {p.regression_count} regressão(ões)</p>}
               {p.status === 'discontinued' && p.discontinuation_reason && <p className="text-[11px] text-slate-400 italic mb-2">Motivo: {p.discontinuation_reason}</p>}
               {p.status === 'generalization' && (
