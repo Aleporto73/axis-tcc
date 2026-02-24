@@ -95,6 +95,8 @@ export default function LearnerDetailPage() {
     setInviteLoading(false)
   }
   const [ebpPractices, setEbpPractices] = useState<EBPPractice[]>([])
+  const [ebpLoading, setEbpLoading] = useState(false)
+  const [ebpError, setEbpError] = useState(false)
   const [creating, setCreating] = useState(false)
   const [formData, setFormData] = useState({ title: '', domain: 'comunicacao', ebp_practice_id: '', objective: '', mastery_criteria_pct: 80, pei_goal_id: '' })
   const [peiGoals, setPeiGoals] = useState<{id:string;title:string;domain:string}[]>([])
@@ -123,10 +125,15 @@ export default function LearnerDetailPage() {
   useEffect(() => { fetchData() }, [fetchData])
 
   useEffect(() => {
-    if (showCreateProtocol && ebpPractices.length === 0) {
-      fetch('/api/aba/ebp-practices').then(r => r.json()).then(d => { if (d.practices) setEbpPractices(d.practices) }).catch(() => {})
+    if (showCreateProtocol && ebpPractices.length === 0 && !ebpLoading) {
+      setEbpLoading(true)
+      setEbpError(false)
+      fetch('/api/aba/ebp-practices')
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json() })
+        .then(d => { if (d.practices) setEbpPractices(d.practices) })
+        .catch(() => setEbpError(true))
+        .finally(() => setEbpLoading(false))
     }
-    if (tab === 'guardians' && guardians.length === 0) { fetchGuardians() }
     if (showCreateProtocol && peiGoals.length === 0) {
       fetch('/api/aba/pei?learner_id=' + learnerId).then(r => r.json()).then(d => {
         const goals: {id:string;title:string;domain:string}[] = []
@@ -134,7 +141,11 @@ export default function LearnerDetailPage() {
         setPeiGoals(goals)
       }).catch(() => {})
     }
-  }, [showCreateProtocol, ebpPractices.length])
+  }, [showCreateProtocol, ebpPractices.length, ebpLoading, peiGoals.length, learnerId])
+
+  useEffect(() => {
+    if (tab === 'guardians' && guardians.length === 0) { fetchGuardians() }
+  }, [tab, guardians.length])
 
   const handleTransition = async (protocolId: string, newStatus: string) => {
     setTransitioning(protocolId)
@@ -418,10 +429,17 @@ export default function LearnerDetailPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Técnica Validada (SBNI/FPG) *</label>
-                  <select value={formData.ebp_practice_id} onChange={e => setFormData({...formData, ebp_practice_id: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-aba-500 bg-white">
-                    <option value="">Selecione uma prática</option>
-                    {ebpPractices.map(p => <option key={p.id} value={p.id}>{p.id}. {p.name}</option>)}
-                  </select>
+                  {ebpError ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-red-500">Erro ao carregar práticas.</p>
+                      <button type="button" onClick={() => { setEbpError(false); setEbpPractices([]) }} className="text-xs text-aba-500 underline hover:text-aba-600">Tentar novamente</button>
+                    </div>
+                  ) : (
+                    <select value={formData.ebp_practice_id} onChange={e => setFormData({...formData, ebp_practice_id: e.target.value})} disabled={ebpLoading} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-aba-500 bg-white disabled:opacity-50">
+                      <option value="">{ebpLoading ? 'Carregando práticas...' : 'Selecione uma prática'}</option>
+                      {ebpPractices.map(p => <option key={p.id} value={p.id}>{p.id}. {p.name}</option>)}
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Objetivo operacional *</label>
