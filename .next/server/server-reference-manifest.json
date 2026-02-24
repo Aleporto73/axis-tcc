@@ -1,0 +1,1483 @@
+{
+  "node": {
+    "00d9be19ba7e8253377796ac687aad983896eb5413": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 38487,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/generalizacao/page": {
+          "moduleId": 32432,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/manutencao/page": {
+          "moduleId": 94727,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/page": {
+          "moduleId": 25168,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/page": {
+          "moduleId": 89840,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/dashboard/page": {
+          "moduleId": 12888,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/onboarding/page": {
+          "moduleId": 64386,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/page": {
+          "moduleId": 17849,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/pei/page": {
+          "moduleId": 64338,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/relatorios/page": {
+          "moduleId": 27697,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/sessoes/[id]/page": {
+          "moduleId": 36533,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/sessoes/page": {
+          "moduleId": 49761,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/admin/logs/page": {
+          "moduleId": 47424,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/admin/page": {
+          "moduleId": 15702,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ativar-lembretes/page": {
+          "moduleId": 34845,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/configuracoes/page": {
+          "moduleId": 6470,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 68719,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/demo/page": {
+          "moduleId": 95730,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/hub/page": {
+          "moduleId": 98306,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/pacientes/[id]/page": {
+          "moduleId": 80581,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/pacientes/page": {
+          "moduleId": 99794,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/page": {
+          "moduleId": 1470,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/portal/[token]/page": {
+          "moduleId": 78688,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/relatorio/[patientId]/page": {
+          "moduleId": 46147,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sessoes/[id]/page": {
+          "moduleId": 41628,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sessoes/page": {
+          "moduleId": 25919,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 34164,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 23196,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sugestoes/page": {
+          "moduleId": 61439,
+          "async": false,
+          "exportedName": "detectKeylessEnvDriftAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        }
+      },
+      "layer": {
+        "app/_not-found/page": "rsc",
+        "app/aba/aprendizes/[id]/generalizacao/page": "rsc",
+        "app/aba/aprendizes/[id]/manutencao/page": "rsc",
+        "app/aba/aprendizes/[id]/page": "rsc",
+        "app/aba/aprendizes/page": "rsc",
+        "app/aba/dashboard/page": "rsc",
+        "app/aba/onboarding/page": "rsc",
+        "app/aba/page": "rsc",
+        "app/aba/pei/page": "rsc",
+        "app/aba/relatorios/page": "rsc",
+        "app/aba/sessoes/[id]/page": "rsc",
+        "app/aba/sessoes/page": "rsc",
+        "app/admin/logs/page": "rsc",
+        "app/admin/page": "rsc",
+        "app/ativar-lembretes/page": "rsc",
+        "app/configuracoes/page": "rsc",
+        "app/dashboard/page": "rsc",
+        "app/demo/page": "rsc",
+        "app/hub/page": "rsc",
+        "app/pacientes/[id]/page": "rsc",
+        "app/pacientes/page": "rsc",
+        "app/page": "rsc",
+        "app/portal/[token]/page": "rsc",
+        "app/relatorio/[patientId]/page": "rsc",
+        "app/sessoes/[id]/page": "rsc",
+        "app/sessoes/page": "rsc",
+        "app/sign-in/[[...sign-in]]/page": "rsc",
+        "app/sign-up/[[...sign-up]]/page": "rsc",
+        "app/sugestoes/page": "rsc"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
+      "exportedName": "detectKeylessEnvDriftAction"
+    },
+    "007d2734995c35da73d4db0b7e7cd660979da8b329": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 38487,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/aprendizes/[id]/generalizacao/page": {
+          "moduleId": 32432,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/aprendizes/[id]/manutencao/page": {
+          "moduleId": 94727,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/aprendizes/[id]/page": {
+          "moduleId": 25168,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/aprendizes/page": {
+          "moduleId": 89840,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/dashboard/page": {
+          "moduleId": 12888,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/onboarding/page": {
+          "moduleId": 64386,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/page": {
+          "moduleId": 17849,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/pei/page": {
+          "moduleId": 64338,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/relatorios/page": {
+          "moduleId": 27697,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/sessoes/[id]/page": {
+          "moduleId": 36533,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/aba/sessoes/page": {
+          "moduleId": 49761,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/admin/logs/page": {
+          "moduleId": 47424,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/admin/page": {
+          "moduleId": 15702,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/ativar-lembretes/page": {
+          "moduleId": 34845,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/configuracoes/page": {
+          "moduleId": 6470,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 68719,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/demo/page": {
+          "moduleId": 95730,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/hub/page": {
+          "moduleId": 98306,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/pacientes/[id]/page": {
+          "moduleId": 80581,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/pacientes/page": {
+          "moduleId": 99794,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/page": {
+          "moduleId": 1470,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/portal/[token]/page": {
+          "moduleId": 78688,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/relatorio/[patientId]/page": {
+          "moduleId": 46147,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/sessoes/[id]/page": {
+          "moduleId": 41628,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/sessoes/page": {
+          "moduleId": 25919,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 34164,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 23196,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        },
+        "app/sugestoes/page": {
+          "moduleId": 61439,
+          "async": false,
+          "exportedName": "invalidateCacheAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js"
+        }
+      },
+      "layer": {
+        "app/_not-found/page": "action-browser",
+        "app/aba/aprendizes/[id]/generalizacao/page": "action-browser",
+        "app/aba/aprendizes/[id]/manutencao/page": "action-browser",
+        "app/aba/aprendizes/[id]/page": "action-browser",
+        "app/aba/aprendizes/page": "action-browser",
+        "app/aba/dashboard/page": "action-browser",
+        "app/aba/onboarding/page": "action-browser",
+        "app/aba/page": "action-browser",
+        "app/aba/pei/page": "action-browser",
+        "app/aba/relatorios/page": "action-browser",
+        "app/aba/sessoes/[id]/page": "action-browser",
+        "app/aba/sessoes/page": "action-browser",
+        "app/admin/logs/page": "action-browser",
+        "app/admin/page": "action-browser",
+        "app/ativar-lembretes/page": "action-browser",
+        "app/configuracoes/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/demo/page": "action-browser",
+        "app/hub/page": "action-browser",
+        "app/pacientes/[id]/page": "action-browser",
+        "app/pacientes/page": "action-browser",
+        "app/page": "action-browser",
+        "app/portal/[token]/page": "action-browser",
+        "app/relatorio/[patientId]/page": "action-browser",
+        "app/sessoes/[id]/page": "action-browser",
+        "app/sessoes/page": "action-browser",
+        "app/sign-in/[[...sign-in]]/page": "action-browser",
+        "app/sign-up/[[...sign-up]]/page": "action-browser",
+        "app/sugestoes/page": "action-browser"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/server-actions.js",
+      "exportedName": "invalidateCacheAction"
+    },
+    "0000f4a8137a1af1907c064ac636d1c39da64d9abf": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 38487,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/generalizacao/page": {
+          "moduleId": 32432,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/manutencao/page": {
+          "moduleId": 94727,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/page": {
+          "moduleId": 25168,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/page": {
+          "moduleId": 89840,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/dashboard/page": {
+          "moduleId": 12888,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/onboarding/page": {
+          "moduleId": 64386,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/page": {
+          "moduleId": 17849,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/pei/page": {
+          "moduleId": 64338,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/relatorios/page": {
+          "moduleId": 27697,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/sessoes/[id]/page": {
+          "moduleId": 36533,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/sessoes/page": {
+          "moduleId": 49761,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/admin/logs/page": {
+          "moduleId": 47424,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/admin/page": {
+          "moduleId": 15702,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ativar-lembretes/page": {
+          "moduleId": 34845,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/configuracoes/page": {
+          "moduleId": 6470,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 68719,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/demo/page": {
+          "moduleId": 95730,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/hub/page": {
+          "moduleId": 98306,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/pacientes/[id]/page": {
+          "moduleId": 80581,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/pacientes/page": {
+          "moduleId": 99794,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/page": {
+          "moduleId": 1470,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/portal/[token]/page": {
+          "moduleId": 78688,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/relatorio/[patientId]/page": {
+          "moduleId": 46147,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sessoes/[id]/page": {
+          "moduleId": 41628,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sessoes/page": {
+          "moduleId": 25919,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 34164,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 23196,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sugestoes/page": {
+          "moduleId": 61439,
+          "async": false,
+          "exportedName": "createOrReadKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        }
+      },
+      "layer": {
+        "app/_not-found/page": "rsc",
+        "app/aba/aprendizes/[id]/generalizacao/page": "rsc",
+        "app/aba/aprendizes/[id]/manutencao/page": "rsc",
+        "app/aba/aprendizes/[id]/page": "rsc",
+        "app/aba/aprendizes/page": "rsc",
+        "app/aba/dashboard/page": "rsc",
+        "app/aba/onboarding/page": "rsc",
+        "app/aba/page": "rsc",
+        "app/aba/pei/page": "rsc",
+        "app/aba/relatorios/page": "rsc",
+        "app/aba/sessoes/[id]/page": "rsc",
+        "app/aba/sessoes/page": "rsc",
+        "app/admin/logs/page": "rsc",
+        "app/admin/page": "rsc",
+        "app/ativar-lembretes/page": "rsc",
+        "app/configuracoes/page": "rsc",
+        "app/dashboard/page": "rsc",
+        "app/demo/page": "rsc",
+        "app/hub/page": "rsc",
+        "app/pacientes/[id]/page": "rsc",
+        "app/pacientes/page": "rsc",
+        "app/page": "rsc",
+        "app/portal/[token]/page": "rsc",
+        "app/relatorio/[patientId]/page": "rsc",
+        "app/sessoes/[id]/page": "rsc",
+        "app/sessoes/page": "rsc",
+        "app/sign-in/[[...sign-in]]/page": "rsc",
+        "app/sign-up/[[...sign-up]]/page": "rsc",
+        "app/sugestoes/page": "rsc"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
+      "exportedName": "createOrReadKeylessAction"
+    },
+    "00af44a157e7f96d604bb7ceb3ec12d34bccdd80c9": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 38487,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/aprendizes/[id]/generalizacao/page": {
+          "moduleId": 32432,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/aprendizes/[id]/manutencao/page": {
+          "moduleId": 94727,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/aprendizes/[id]/page": {
+          "moduleId": 25168,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/aprendizes/page": {
+          "moduleId": 89840,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/dashboard/page": {
+          "moduleId": 12888,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/onboarding/page": {
+          "moduleId": 64386,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/page": {
+          "moduleId": 17849,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/pei/page": {
+          "moduleId": 64338,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/relatorios/page": {
+          "moduleId": 27697,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/sessoes/[id]/page": {
+          "moduleId": 36533,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/sessoes/page": {
+          "moduleId": 49761,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/admin/logs/page": {
+          "moduleId": 47424,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/admin/page": {
+          "moduleId": 15702,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/ativar-lembretes/page": {
+          "moduleId": 34845,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/configuracoes/page": {
+          "moduleId": 6470,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 68719,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/demo/page": {
+          "moduleId": 95730,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/hub/page": {
+          "moduleId": 98306,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/pacientes/[id]/page": {
+          "moduleId": 80581,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/pacientes/page": {
+          "moduleId": 99794,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/page": {
+          "moduleId": 1470,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/portal/[token]/page": {
+          "moduleId": 78688,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/relatorio/[patientId]/page": {
+          "moduleId": 46147,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sessoes/[id]/page": {
+          "moduleId": 41628,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sessoes/page": {
+          "moduleId": 25919,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 34164,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 23196,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sugestoes/page": {
+          "moduleId": 61439,
+          "async": false,
+          "exportedName": "collectKeylessMetadata",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        }
+      },
+      "layer": {
+        "app/_not-found/page": "rsc",
+        "app/aba/aprendizes/[id]/generalizacao/page": "rsc",
+        "app/aba/aprendizes/[id]/manutencao/page": "rsc",
+        "app/aba/aprendizes/[id]/page": "rsc",
+        "app/aba/aprendizes/page": "rsc",
+        "app/aba/dashboard/page": "rsc",
+        "app/aba/onboarding/page": "rsc",
+        "app/aba/page": "rsc",
+        "app/aba/pei/page": "rsc",
+        "app/aba/relatorios/page": "rsc",
+        "app/aba/sessoes/[id]/page": "rsc",
+        "app/aba/sessoes/page": "rsc",
+        "app/admin/logs/page": "rsc",
+        "app/admin/page": "rsc",
+        "app/ativar-lembretes/page": "rsc",
+        "app/configuracoes/page": "rsc",
+        "app/dashboard/page": "rsc",
+        "app/demo/page": "rsc",
+        "app/hub/page": "rsc",
+        "app/pacientes/[id]/page": "rsc",
+        "app/pacientes/page": "rsc",
+        "app/page": "rsc",
+        "app/portal/[token]/page": "rsc",
+        "app/relatorio/[patientId]/page": "rsc",
+        "app/sessoes/[id]/page": "rsc",
+        "app/sessoes/page": "rsc",
+        "app/sign-in/[[...sign-in]]/page": "rsc",
+        "app/sign-up/[[...sign-up]]/page": "rsc",
+        "app/sugestoes/page": "rsc"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js",
+      "exportedName": "collectKeylessMetadata"
+    },
+    "40ef3177577c464c1b3b4f656cf626534a80b90725": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 38487,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/aprendizes/[id]/generalizacao/page": {
+          "moduleId": 32432,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/aprendizes/[id]/manutencao/page": {
+          "moduleId": 94727,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/aprendizes/[id]/page": {
+          "moduleId": 25168,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/aprendizes/page": {
+          "moduleId": 89840,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/dashboard/page": {
+          "moduleId": 12888,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/onboarding/page": {
+          "moduleId": 64386,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/page": {
+          "moduleId": 17849,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/pei/page": {
+          "moduleId": 64338,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/relatorios/page": {
+          "moduleId": 27697,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/sessoes/[id]/page": {
+          "moduleId": 36533,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/aba/sessoes/page": {
+          "moduleId": 49761,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/admin/logs/page": {
+          "moduleId": 47424,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/admin/page": {
+          "moduleId": 15702,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/ativar-lembretes/page": {
+          "moduleId": 34845,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/configuracoes/page": {
+          "moduleId": 6470,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 68719,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/demo/page": {
+          "moduleId": 95730,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/hub/page": {
+          "moduleId": 98306,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/pacientes/[id]/page": {
+          "moduleId": 80581,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/pacientes/page": {
+          "moduleId": 99794,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/page": {
+          "moduleId": 1470,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/portal/[token]/page": {
+          "moduleId": 78688,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/relatorio/[patientId]/page": {
+          "moduleId": 46147,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sessoes/[id]/page": {
+          "moduleId": 41628,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sessoes/page": {
+          "moduleId": 25919,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 34164,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 23196,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        },
+        "app/sugestoes/page": {
+          "moduleId": 61439,
+          "async": false,
+          "exportedName": "formatMetadataHeaders",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js"
+        }
+      },
+      "layer": {
+        "app/_not-found/page": "rsc",
+        "app/aba/aprendizes/[id]/generalizacao/page": "rsc",
+        "app/aba/aprendizes/[id]/manutencao/page": "rsc",
+        "app/aba/aprendizes/[id]/page": "rsc",
+        "app/aba/aprendizes/page": "rsc",
+        "app/aba/dashboard/page": "rsc",
+        "app/aba/onboarding/page": "rsc",
+        "app/aba/page": "rsc",
+        "app/aba/pei/page": "rsc",
+        "app/aba/relatorios/page": "rsc",
+        "app/aba/sessoes/[id]/page": "rsc",
+        "app/aba/sessoes/page": "rsc",
+        "app/admin/logs/page": "rsc",
+        "app/admin/page": "rsc",
+        "app/ativar-lembretes/page": "rsc",
+        "app/configuracoes/page": "rsc",
+        "app/dashboard/page": "rsc",
+        "app/demo/page": "rsc",
+        "app/hub/page": "rsc",
+        "app/pacientes/[id]/page": "rsc",
+        "app/pacientes/page": "rsc",
+        "app/page": "rsc",
+        "app/portal/[token]/page": "rsc",
+        "app/relatorio/[patientId]/page": "rsc",
+        "app/sessoes/[id]/page": "rsc",
+        "app/sessoes/page": "rsc",
+        "app/sign-in/[[...sign-in]]/page": "rsc",
+        "app/sign-up/[[...sign-up]]/page": "rsc",
+        "app/sugestoes/page": "rsc"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/server/keyless-custom-headers.js",
+      "exportedName": "formatMetadataHeaders"
+    },
+    "00fa45460e7f02d3807f260cd721705d738aae6c3a": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 38487,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/generalizacao/page": {
+          "moduleId": 32432,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/manutencao/page": {
+          "moduleId": 94727,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/page": {
+          "moduleId": 25168,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/page": {
+          "moduleId": 89840,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/dashboard/page": {
+          "moduleId": 12888,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/onboarding/page": {
+          "moduleId": 64386,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/page": {
+          "moduleId": 17849,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/pei/page": {
+          "moduleId": 64338,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/relatorios/page": {
+          "moduleId": 27697,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/sessoes/[id]/page": {
+          "moduleId": 36533,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/sessoes/page": {
+          "moduleId": 49761,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/admin/logs/page": {
+          "moduleId": 47424,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/admin/page": {
+          "moduleId": 15702,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ativar-lembretes/page": {
+          "moduleId": 34845,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/configuracoes/page": {
+          "moduleId": 6470,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 68719,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/demo/page": {
+          "moduleId": 95730,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/hub/page": {
+          "moduleId": 98306,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/pacientes/[id]/page": {
+          "moduleId": 80581,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/pacientes/page": {
+          "moduleId": 99794,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/page": {
+          "moduleId": 1470,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/portal/[token]/page": {
+          "moduleId": 78688,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/relatorio/[patientId]/page": {
+          "moduleId": 46147,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sessoes/[id]/page": {
+          "moduleId": 41628,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sessoes/page": {
+          "moduleId": 25919,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 34164,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 23196,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sugestoes/page": {
+          "moduleId": 61439,
+          "async": false,
+          "exportedName": "deleteKeylessAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        }
+      },
+      "layer": {
+        "app/_not-found/page": "action-browser",
+        "app/aba/aprendizes/[id]/generalizacao/page": "action-browser",
+        "app/aba/aprendizes/[id]/manutencao/page": "action-browser",
+        "app/aba/aprendizes/[id]/page": "action-browser",
+        "app/aba/aprendizes/page": "action-browser",
+        "app/aba/dashboard/page": "action-browser",
+        "app/aba/onboarding/page": "action-browser",
+        "app/aba/page": "action-browser",
+        "app/aba/pei/page": "action-browser",
+        "app/aba/relatorios/page": "action-browser",
+        "app/aba/sessoes/[id]/page": "action-browser",
+        "app/aba/sessoes/page": "action-browser",
+        "app/admin/logs/page": "action-browser",
+        "app/admin/page": "action-browser",
+        "app/ativar-lembretes/page": "action-browser",
+        "app/configuracoes/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/demo/page": "action-browser",
+        "app/hub/page": "action-browser",
+        "app/pacientes/[id]/page": "action-browser",
+        "app/pacientes/page": "action-browser",
+        "app/page": "action-browser",
+        "app/portal/[token]/page": "action-browser",
+        "app/relatorio/[patientId]/page": "action-browser",
+        "app/sessoes/[id]/page": "action-browser",
+        "app/sessoes/page": "action-browser",
+        "app/sign-in/[[...sign-in]]/page": "action-browser",
+        "app/sign-up/[[...sign-up]]/page": "action-browser",
+        "app/sugestoes/page": "action-browser"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
+      "exportedName": "deleteKeylessAction"
+    },
+    "405f1629bcb2bdfbe24b6ce44d974ed05887ea764b": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 38487,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/generalizacao/page": {
+          "moduleId": 32432,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/manutencao/page": {
+          "moduleId": 94727,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/[id]/page": {
+          "moduleId": 25168,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/aprendizes/page": {
+          "moduleId": 89840,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/dashboard/page": {
+          "moduleId": 12888,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/onboarding/page": {
+          "moduleId": 64386,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/page": {
+          "moduleId": 17849,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/pei/page": {
+          "moduleId": 64338,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/relatorios/page": {
+          "moduleId": 27697,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/sessoes/[id]/page": {
+          "moduleId": 36533,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/aba/sessoes/page": {
+          "moduleId": 49761,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/admin/logs/page": {
+          "moduleId": 47424,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/admin/page": {
+          "moduleId": 15702,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/ativar-lembretes/page": {
+          "moduleId": 34845,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/configuracoes/page": {
+          "moduleId": 6470,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/dashboard/page": {
+          "moduleId": 68719,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/demo/page": {
+          "moduleId": 95730,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/hub/page": {
+          "moduleId": 98306,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/pacientes/[id]/page": {
+          "moduleId": 80581,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/pacientes/page": {
+          "moduleId": 99794,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/page": {
+          "moduleId": 1470,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/portal/[token]/page": {
+          "moduleId": 78688,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/relatorio/[patientId]/page": {
+          "moduleId": 46147,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sessoes/[id]/page": {
+          "moduleId": 41628,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sessoes/page": {
+          "moduleId": 25919,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-in/[[...sign-in]]/page": {
+          "moduleId": 34164,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sign-up/[[...sign-up]]/page": {
+          "moduleId": 23196,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        },
+        "app/sugestoes/page": {
+          "moduleId": 61439,
+          "async": false,
+          "exportedName": "syncKeylessConfigAction",
+          "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js"
+        }
+      },
+      "layer": {
+        "app/_not-found/page": "action-browser",
+        "app/aba/aprendizes/[id]/generalizacao/page": "action-browser",
+        "app/aba/aprendizes/[id]/manutencao/page": "action-browser",
+        "app/aba/aprendizes/[id]/page": "action-browser",
+        "app/aba/aprendizes/page": "action-browser",
+        "app/aba/dashboard/page": "action-browser",
+        "app/aba/onboarding/page": "action-browser",
+        "app/aba/page": "action-browser",
+        "app/aba/pei/page": "action-browser",
+        "app/aba/relatorios/page": "action-browser",
+        "app/aba/sessoes/[id]/page": "action-browser",
+        "app/aba/sessoes/page": "action-browser",
+        "app/admin/logs/page": "action-browser",
+        "app/admin/page": "action-browser",
+        "app/ativar-lembretes/page": "action-browser",
+        "app/configuracoes/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/demo/page": "action-browser",
+        "app/hub/page": "action-browser",
+        "app/pacientes/[id]/page": "action-browser",
+        "app/pacientes/page": "action-browser",
+        "app/page": "action-browser",
+        "app/portal/[token]/page": "action-browser",
+        "app/relatorio/[patientId]/page": "action-browser",
+        "app/sessoes/[id]/page": "action-browser",
+        "app/sessoes/page": "action-browser",
+        "app/sign-in/[[...sign-in]]/page": "action-browser",
+        "app/sign-up/[[...sign-up]]/page": "action-browser",
+        "app/sugestoes/page": "action-browser"
+      },
+      "filename": "node_modules/@clerk/nextjs/dist/esm/app-router/keyless-actions.js",
+      "exportedName": "syncKeylessConfigAction"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "nSAG5uuRHgSLRQA0iyJictXid5xZXbc+dO9jsdTUHvw="
+}

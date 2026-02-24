@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" font-family="system-ui, sans-serif">
+  <defs>
+    <filter id="s" x="-2%" y="-2%" width="104%" height="104%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.08"/></filter>
+  </defs>
+  <rect width="900" height="620" fill="#fafafa" rx="12"/>
+  <text x="450" y="36" text-anchor="middle" font-size="18" font-weight="600" fill="#1e293b">Arquitetura AXIS ABA — Motor CSO-ABA v2.6.1</text>
+  <text x="450" y="54" text-anchor="middle" font-size="11" fill="#94a3b8">PostgreSQL 16 · Next.js 16 · Clerk Auth · VPS Ubuntu</text>
+
+  <!-- Frontend -->
+  <rect x="30" y="80" width="840" height="90" rx="10" fill="#fff7ed" stroke="#C46A2F" stroke-width="1.5" filter="url(#s)"/>
+  <text x="50" y="102" font-size="13" font-weight="600" fill="#C46A2F">FRONTEND (Next.js App Router)</text>
+  <rect x="50" y="112" width="110" height="40" rx="6" fill="white" stroke="#C46A2F" stroke-width="1"/>
+  <text x="105" y="136" text-anchor="middle" font-size="10" fill="#1e293b">Aprendizes</text>
+  <rect x="175" y="112" width="110" height="40" rx="6" fill="white" stroke="#C46A2F" stroke-width="1"/>
+  <text x="230" y="136" text-anchor="middle" font-size="10" fill="#1e293b">Sessões + DTT</text>
+  <rect x="300" y="112" width="110" height="40" rx="6" fill="white" stroke="#C46A2F" stroke-width="1"/>
+  <text x="355" y="136" text-anchor="middle" font-size="10" fill="#1e293b">Relatórios PDF</text>
+  <rect x="425" y="112" width="110" height="40" rx="6" fill="white" stroke="#C46A2F" stroke-width="1"/>
+  <text x="480" y="136" text-anchor="middle" font-size="10" fill="#1e293b">Dashboard CSO</text>
+  <rect x="550" y="112" width="110" height="40" rx="6" fill="white" stroke="#C46A2F" stroke-width="1"/>
+  <text x="605" y="136" text-anchor="middle" font-size="10" fill="#1e293b">Generalização 3×2</text>
+  <rect x="675" y="112" width="110" height="40" rx="6" fill="white" stroke="#C46A2F" stroke-width="1"/>
+  <text x="730" y="136" text-anchor="middle" font-size="10" fill="#1e293b">Manutenção</text>
+
+  <!-- API -->
+  <rect x="30" y="190" width="840" height="70" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#s)"/>
+  <text x="50" y="212" font-size="13" font-weight="600" fill="#3b82f6">API ROUTES (/api/aba/*)</text>
+  <text x="50" y="240" font-size="10" fill="#64748b">learners · protocols · sessions · trials · behaviors · reports · dashboard · generalization · maintenance · ebp-practices · clinical-state</text>
+
+  <!-- Auth -->
+  <rect x="30" y="278" width="200" height="60" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5" filter="url(#s)"/>
+  <text x="130" y="300" text-anchor="middle" font-size="13" font-weight="600" fill="#22c55e">AUTH (Clerk)</text>
+  <text x="130" y="322" text-anchor="middle" font-size="10" fill="#64748b">JWT · Middleware · RLS</text>
+
+  <!-- withTenant -->
+  <rect x="250" y="278" width="200" height="60" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5" filter="url(#s)"/>
+  <text x="350" y="300" text-anchor="middle" font-size="13" font-weight="600" fill="#ca8a04">withTenant()</text>
+  <text x="350" y="322" text-anchor="middle" font-size="10" fill="#64748b">set_config · BEGIN · COMMIT</text>
+
+  <!-- Motor CSO -->
+  <rect x="470" y="278" width="400" height="60" rx="10" fill="#fdf2f8" stroke="#ec4899" stroke-width="1.5" filter="url(#s)"/>
+  <text x="670" y="300" text-anchor="middle" font-size="13" font-weight="600" fill="#db2777">MOTOR CSO-ABA v2.6.1</text>
+  <text x="670" y="322" text-anchor="middle" font-size="10" fill="#64748b">CSO = 0.25×SAS + 0.25×PIS + 0.25×BSS + 0.25×TCM (pesos imutáveis)</text>
+
+  <!-- Banco -->
+  <rect x="30" y="358" width="840" height="160" rx="10" fill="#f8fafc" stroke="#475569" stroke-width="1.5" filter="url(#s)"/>
+  <text x="50" y="382" font-size="13" font-weight="600" fill="#1e293b">PostgreSQL 16 (Docker) — RLS em TODAS as tabelas</text>
+
+  <rect x="50" y="395" width="150" height="50" rx="6" fill="white" stroke="#94a3b8" stroke-width="1"/>
+  <text x="125" y="414" text-anchor="middle" font-size="10" font-weight="600" fill="#C46A2F">learners</text>
+  <text x="125" y="432" text-anchor="middle" font-size="9" fill="#94a3b8">learner_protocols</text>
+
+  <rect x="215" y="395" width="150" height="50" rx="6" fill="white" stroke="#94a3b8" stroke-width="1"/>
+  <text x="290" y="414" text-anchor="middle" font-size="10" font-weight="600" fill="#C46A2F">sessions_aba</text>
+  <text x="290" y="432" text-anchor="middle" font-size="9" fill="#94a3b8">session_targets · behaviors</text>
+
+  <rect x="380" y="395" width="150" height="50" rx="6" fill="white" stroke="#94a3b8" stroke-width="1"/>
+  <text x="455" y="414" text-anchor="middle" font-size="10" font-weight="600" fill="#ec4899">session_snapshots</text>
+  <text x="455" y="432" text-anchor="middle" font-size="9" fill="#94a3b8">clinical_states_aba</text>
+
+  <rect x="545" y="395" width="150" height="50" rx="6" fill="white" stroke="#94a3b8" stroke-width="1"/>
+  <text x="620" y="414" text-anchor="middle" font-size="10" font-weight="600" fill="#C46A2F">report_snapshots</text>
+  <text x="620" y="432" text-anchor="middle" font-size="9" fill="#94a3b8">convenio_reports</text>
+
+  <rect x="710" y="395" width="150" height="50" rx="6" fill="white" stroke="#94a3b8" stroke-width="1"/>
+  <text x="785" y="414" text-anchor="middle" font-size="10" font-weight="600" fill="#C46A2F">gen_probes</text>
+  <text x="785" y="432" text-anchor="middle" font-size="9" fill="#94a3b8">maintenance_probes</text>
+
+  <!-- Triggers -->
+  <text x="50" y="472" font-size="10" font-weight="600" fill="#475569">Triggers (16):</text>
+  <text x="50" y="490" font-size="9" fill="#64748b">trg_validate_protocol_transition · trg_immutable_session_snapshots · trg_immutable_clinical_states · trg_validate_snapshot_cso</text>
+  <text x="50" y="505" font-size="9" fill="#64748b">close_session_aba() → compute_full_cso() → calculate_cso_aba() → cso_aba_band() — Snapshot imutável + Audit log</text>
+
+  <!-- Bible -->
+  <rect x="30" y="535" width="840" height="70" rx="10" fill="#faf5ff" stroke="#a855f7" stroke-width="1.5" filter="url(#s)"/>
+  <text x="50" y="558" font-size="13" font-weight="600" fill="#7c3aed">BIBLE v2.6.1 — Baseline Congelado</text>
+  <text x="50" y="576" font-size="10" fill="#64748b">28 Práticas FPG/SBNI 2025 · 8 estados do protocolo · Generalização 3×2 · Manutenção 2-6-12 · Regressão tipificada</text>
+  <text x="50" y="592" font-size="10" fill="#64748b">Engine Lock · LGPD (Operador vs Controlador) · Append-only · Hash SHA256 · IA não decide — IA calcula, humano decide</text>
+</svg>

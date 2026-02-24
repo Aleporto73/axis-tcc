@@ -1,0 +1,3 @@
+module.exports=[45437,a=>{"use strict";var b=a.i(87924),c=a.i(31583);function d(){return(0,b.jsx)("div",{style:{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#F8FAFC"},children:(0,b.jsx)(c.SignIn,{appearance:{elements:{formButtonPrimary:{backgroundColor:"#2563EB","&:hover":{backgroundColor:"#1d4ed8"}}}},fallbackRedirectUrl:"/dashboard",signUpUrl:"/sign-up"})})}a.s(["default",()=>d])}];
+
+//# sourceMappingURL=app_sign-in_%5B%5B___sign-in%5D%5D_page_tsx_e6b3d3fd._.js.map

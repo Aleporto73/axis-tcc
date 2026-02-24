@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media print {
+  .sidebar, nav, [class*="Sidebar"] {
+    display: none !important;
+  }
+}
+
+/* Ferrari transitions - polimento premium */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Evita flash de transição no carregamento */
+.preload * {
+  transition: none !important;
+}
+
+/* ===========================================
+   AXIS TCC - Onboarding Animations
+   =========================================== */
+
+/* Modal fade + scale in */
+@keyframes onboarding-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Tooltip slide in */
+@keyframes onboarding-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Checklist slide in from right */
+@keyframes onboarding-checklist-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* Pulse ring around highlighted element */
+@keyframes onboarding-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.2), inset 0 0 20px rgba(37, 99, 235, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(37, 99, 235, 0.35), inset 0 0 30px rgba(37, 99, 235, 0.08);
+  }
+}
+
+/* Hide checklist on mobile */
+@media (max-width: 768px) {
+  .onboarding-checklist {
+    display: none !important;
+  }
+}

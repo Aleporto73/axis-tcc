@@ -1,0 +1,154 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
+
+interface Learner { id: string; name: string; birth_date: string; diagnosis: string; cid_code: string; support_level: number }
+interface Protocol { id: string; title: string; domain: string; status: string; ebp_name: string; objective: string; mastery_criteria_pct: number; mastery_criteria_sessions: number; generalization_status: string; regression_count: number; activated_at: string|null; mastered_at: string|null; created_at: string }
+interface SessionSummary { id: string; scheduled_at: string; ended_at: string|null; status: string; location: string|null }
+interface CSOPoint { session_date: string; cso_aba: number; sas: number; pis: number; bss: number; tcm: number }
+
+const protocolStatusLabels: Record<string,string> = { draft:'Rascunho', active:'Ativo', mastered:'Dominado', generalization:'Generalização', maintained:'Mantido', archived:'Arquivado', suspended:'Suspenso', discontinued:'Descontinuado' }
+const protocolStatusColors: Record<string,string> = { draft:'bg-slate-100 text-slate-500', active:'bg-blue-50 text-blue-600', mastered:'bg-green-50 text-green-600', generalization:'bg-purple-50 text-purple-600', maintained:'bg-emerald-50 text-emerald-600', archived:'bg-slate-50 text-slate-400', suspended:'bg-amber-50 text-amber-600', discontinued:'bg-red-50 text-red-500' }
+const sessionStatusColors: Record<string,string> = { scheduled:'bg-blue-50 text-blue-600', in_progress:'bg-aba-500/10 text-aba-500', completed:'bg-green-50 text-green-600', cancelled:'bg-slate-100 text-slate-400' }
+const sessionStatusLabels: Record<string,string> = { scheduled:'Agendada', in_progress:'Em andamento', completed:'Concluída', cancelled:'Cancelada' }
+const validTransitions: Record<string,string[]> = { draft:['active','discontinued'], active:['mastered','suspended','discontinued'], mastered:['generalization','suspended'], generalization:['maintained','active'], maintained:['archived','active'], suspended:['active','discontinued'] }
+
+function age(b: string): string { return `${Math.floor((Date.now()-new Date(b).getTime())/(365.25*24*60*60*1000))}a` }
+
+export default function LearnerDetailPage() {
+  const params = useParams()
+  const learnerId = params.id as string
+  const [learner, setLearner] = useState<Learner|null>(null)
+  const [protocols, setProtocols] = useState<Protocol[]>([])
+  const [sessions, setSessions] = useState<SessionSummary[]>([])
+  const [csoHistory, setCsoHistory] = useState<CSOPoint[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string|null>(null)
+  const [tab, setTab] = useState<'protocols'|'sessions'|'cso'>('protocols')
+  const [transitioning, setTransitioning] = useState<string|null>(null)
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [lRes, pRes, sRes] = await Promise.all([
+        fetch(`/api/aba/learners?id=${learnerId}`), fetch(`/api/aba/protocols?learner_id=${learnerId}`), fetch(`/api/aba/sessions?learner_id=${learnerId}`)
+      ])
+      const lData = await lRes.json(); const pData = await pRes.json(); const sData = await sRes.json()
+      setLearner(lData.learners?.find((l:any) => l.id === learnerId) || lData.learner || null)
+      setProtocols(pData.protocols || []); setSessions(sData.sessions || [])
+      try { const cRes = await fetch(`/api/aba/learners/${learnerId}/cso-history`); if (cRes.ok) { const cData = await cRes.json(); setCsoHistory(cData.history || []) } } catch {}
+      setLoading(false)
+    } catch { setError('Falha ao carregar'); setLoading(false) }
+  }, [learnerId])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const handleTransition = async (protocolId: string, newStatus: string) => {
+    setTransitioning(protocolId); setError(null)
+    try {
+      const res = await fetch(`/api/aba/protocols/${protocolId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
+      if (!res.ok) { const err = await res.json(); setError(err.error || 'Erro') }
+      await fetchData()
+    } catch { setError('Falha de conexão') }
+    setTransitioning(null)
+  }
+
+  if (loading) return <div className="flex items-center justify-center min-h-[50vh]"><div className="animate-pulse text-slate-400 text-sm">Carregando...</div></div>
+  if (!learner) return <div className="flex items-center justify-center min-h-[50vh]"><p className="text-slate-400 text-sm">Aprendiz não encontrado</p></div>
+
+  const activeP = protocols.filter(p => p.status === 'active').length
+  const masteredP = protocols.filter(p => ['mastered','generalization','maintained','archived'].includes(p.status)).length
+  const completedS = sessions.filter(s => s.status === 'completed').length
+  const lastCSO = csoHistory.length > 0 ? csoHistory[csoHistory.length - 1] : null
+
+  return (
+    <div className="px-4 md:px-8 lg:px-12 xl:px-16 pt-5 md:pt-6">
+      <Link href="/aba/aprendizes" className="text-xs text-slate-400 hover:text-aba-500 transition-colors">&larr; Voltar para aprendizes</Link>
+      <div className="mt-4 mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-aba-500/10 flex items-center justify-center"><span className="text-xl font-medium text-aba-500">{learner.name.charAt(0)}</span></div>
+          <div>
+            <h1 className="text-xl font-normal text-slate-800 tracking-tight">{learner.name}</h1>
+            <p className="text-xs text-slate-400 mt-0.5">{age(learner.birth_date)} · {learner.cid_code || 'Sem CID'} · Nível {learner.support_level}{learner.diagnosis && ` · ${learner.diagnosis}`}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-4 mt-6">
+          <div className="p-3 rounded-xl bg-blue-50/50 text-center"><p className="text-lg font-medium text-blue-600">{activeP}</p><p className="text-[11px] text-slate-400">Protocolos ativos</p></div>
+          <div className="p-3 rounded-xl bg-green-50/50 text-center"><p className="text-lg font-medium text-green-600">{masteredP}</p><p className="text-[11px] text-slate-400">Dominados</p></div>
+          <div className="p-3 rounded-xl bg-aba-500/5 text-center"><p className="text-lg font-medium text-aba-500">{completedS}</p><p className="text-[11px] text-slate-400">Sessões</p></div>
+          <div className="p-3 rounded-xl bg-slate-50 text-center"><p className="text-lg font-medium text-slate-700">{lastCSO ? lastCSO.cso_aba : '—'}</p><p className="text-[11px] text-slate-400">CSO atual</p></div>
+        </div>
+      </div>
+      {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
+      <div className="flex gap-1 mb-6 border-b border-slate-200">
+        {([['protocols',`Protocolos (${protocols.length})`],['sessions',`Sessões (${sessions.length})`],['cso','Evolução CSO']] as const).map(([k,l]) => (
+          <button key={k} onClick={() => setTab(k as any)} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab===k ? 'border-aba-500 text-aba-500' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>{l}</button>
+        ))}
+      </div>
+
+      {tab === 'protocols' && (
+        <div className="space-y-3">
+          {protocols.length === 0 ? <p className="text-xs text-slate-400 text-center py-12">Nenhum protocolo. Crie um durante a execução de uma sessão.</p> : protocols.map(p => (
+            <div key={p.id} className="p-4 rounded-xl border border-slate-200">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h3 className="text-sm font-medium text-slate-800">{p.title}</h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{p.domain} · {p.ebp_name} · Critério: {p.mastery_criteria_pct}%</p>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${protocolStatusColors[p.status] || 'bg-slate-100 text-slate-500'}`}>{protocolStatusLabels[p.status] || p.status}</span>
+              </div>
+              <p className="text-xs text-slate-500 mb-3">{p.objective}</p>
+              {p.regression_count > 0 && <p className="text-[11px] text-red-500 mb-2">⚠ {p.regression_count} regressão(ões)</p>}
+              {p.status === 'generalization' && (
+                <Link href={`/aba/aprendizes/${learnerId}/generalizacao?protocol_id=${p.id}`} className="inline-block mb-2 px-3 py-1 text-[11px] rounded-lg border border-purple-300 text-purple-600 hover:bg-purple-50">📊 Matriz 3×2</Link>
+              )}
+              {p.status === 'maintained' && (
+                <Link href={`/aba/aprendizes/${learnerId}/manutencao?protocol_id=${p.id}`} className="inline-block mb-2 px-3 py-1 text-[11px] rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50">🔄 Sondas</Link>
+              )}
+              {validTransitions[p.status] && validTransitions[p.status].length > 0 && (
+                <div className="flex gap-2 pt-2 border-t border-slate-100">
+                  {validTransitions[p.status].map(next => (
+                    <button key={next} onClick={() => handleTransition(p.id, next)} disabled={transitioning===p.id}
+                      className={`px-3 py-1 text-[11px] rounded-lg border transition-colors ${next==='discontinued'||next==='suspended' ? 'border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200' : 'border-aba-500/30 text-aba-500 hover:bg-aba-500/5'}`}>
+                      {transitioning===p.id ? '...' : `→ ${protocolStatusLabels[next]}`}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'sessions' && (
+        <div className="space-y-2">
+          {sessions.length === 0 ? <p className="text-xs text-slate-400 text-center py-12">Nenhuma sessão registrada.</p> : sessions.map(s => (
+            <Link key={s.id} href={`/aba/sessoes/${s.id}`} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-aba-500/30 transition-all cursor-pointer">
+              <div>
+                <p className="text-sm text-slate-800">{new Date(s.scheduled_at).toLocaleDateString('pt-BR')} às {new Date(s.scheduled_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</p>
+                {s.location && <p className="text-[11px] text-slate-400">{s.location}</p>}
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${sessionStatusColors[s.status]||'bg-slate-100 text-slate-500'}`}>{sessionStatusLabels[s.status]||s.status}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {tab === 'cso' && (
+        <div>
+          {csoHistory.length === 0 ? <p className="text-xs text-slate-400 text-center py-12">Sem dados de CSO. Complete sessões para gerar histórico.</p> : (
+            <div className="space-y-3">
+              {csoHistory.map((c, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-200">
+                  <div><p className="text-sm text-slate-800">{new Date(c.session_date).toLocaleDateString('pt-BR')}</p><p className="text-[11px] text-slate-400">SAS {c.sas} · PIS {c.pis} · BSS {c.bss} · TCM {c.tcm}</p></div>
+                  <div className="text-right"><p className="text-lg font-medium text-aba-500">{c.cso_aba}</p><p className="text-[10px] text-slate-400">CSO-ABA</p></div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

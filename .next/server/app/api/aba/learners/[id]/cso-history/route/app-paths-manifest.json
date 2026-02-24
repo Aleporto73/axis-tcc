@@ -1,0 +1,3 @@
+{
+  "/api/aba/learners/[id]/cso-history/route": "app/api/aba/learners/[id]/cso-history/route.js"
+}

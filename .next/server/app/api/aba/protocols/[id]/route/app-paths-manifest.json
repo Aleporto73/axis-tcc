@@ -1,0 +1,3 @@
+{
+  "/api/aba/protocols/[id]/route": "app/api/aba/protocols/[id]/route.js"
+}

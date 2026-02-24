@@ -1,0 +1,10 @@
+var R=require("../../../chunks/[turbopack]_runtime.js")("server/app/api/transcribe/route.js")
+R.c("server/chunks/[root-of-the-server]__51ec6d64._.js")
+R.c("server/chunks/node_modules_openai_fe0c3653._.js")
+R.c("server/chunks/[root-of-the-server]__faed9020._.js")
+R.c("server/chunks/node_modules_6088a8e8._.js")
+R.c("server/chunks/[root-of-the-server]__4a836bd6._.js")
+R.c("server/chunks/node_modules_next_dist_adb5b7da._.js")
+R.c("server/chunks/_next-internal_server_app_api_transcribe_route_actions_4742f5c6.js")
+R.m(36485)
+module.exports=R.m(36485).exports

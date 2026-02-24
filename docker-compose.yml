@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: axis-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: axis
+      POSTGRES_PASSWORD: AxisTcc2026!
+      POSTGRES_DB: axis_tcc
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: axis-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

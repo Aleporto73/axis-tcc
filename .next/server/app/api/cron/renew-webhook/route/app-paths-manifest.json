@@ -1,0 +1,3 @@
+{
+  "/api/cron/renew-webhook/route": "app/api/cron/renew-webhook/route.js"
+}
