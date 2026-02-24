@@ -192,16 +192,16 @@ export default function RelatoriosPage() {
       doc.text((alta.eligible ? 'Elegível' : 'Não elegível') + ' - ' + alta.criteria_met + '/' + alta.criteria_total + ' criterios', 15, y)
       y += 10
     }
-    // Grafico Evolucao CSO-ABA
+    // Grafico Evolucao CSO-ABA com dimensões
     if (csoHistory.length >= 2) {
-      if (y > 180) { doc.addPage(); y = 20 }
+      if (y > 150) { doc.addPage(); y = 20 }
       doc.setFontSize(12)
       doc.setTextColor(0)
       doc.text("Evolução CSO-ABA", 15, y)
       y += 8
       const chartX = 20
       const chartW = w - 40
-      const chartH = 60
+      const chartH = 70
       const chartY = y
       const chartBottom = chartY + chartH
       // Eixos
@@ -222,10 +222,37 @@ export default function RelatoriosPage() {
       doc.setFillColor(255, 251, 235); doc.rect(chartX, chartBottom - (69/100)*chartH, chartW, (20/100)*chartH, 'F')
       doc.setFillColor(236, 253, 245); doc.rect(chartX, chartBottom - (84/100)*chartH, chartW, (15/100)*chartH, 'F')
       doc.setFillColor(219, 245, 219); doc.rect(chartX, chartBottom - chartH, chartW, (16/100)*chartH, 'F')
-      // Pontos e linhas
+
       const stepX = chartW / (csoHistory.length - 1)
+
+      // Dimensões — linhas finas atrás do CSO principal
+      const dimLines: { key: string; label: string; color: [number, number, number] }[] = [
+        { key: 'sas', label: 'SAS', color: [59, 130, 246] },
+        { key: 'pis', label: 'PIS', color: [168, 85, 247] },
+        { key: 'bss', label: 'BSS', color: [34, 197, 94] },
+        { key: 'tcm', label: 'TCM', color: [234, 179, 8] },
+      ]
+      for (const dim of dimLines) {
+        const hasData = csoHistory.some((h: any) => h[dim.key] != null)
+        if (!hasData) continue
+        doc.setDrawColor(...dim.color)
+        doc.setLineWidth(0.5)
+        let prevPx = 0, prevPy = 0, prevValid = false
+        for (let i = 0; i < csoHistory.length; i++) {
+          const val = Number(csoHistory[i][dim.key])
+          if (isNaN(val) || val === 0) { prevValid = false; continue }
+          const px = chartX + i * stepX
+          const py = chartBottom - (val / 100) * chartH
+          if (prevValid) { doc.line(prevPx, prevPy, px, py) }
+          doc.setFillColor(...dim.color)
+          doc.circle(px, py, 0.8, 'F')
+          prevPx = px; prevPy = py; prevValid = true
+        }
+      }
+
+      // CSO principal — linha grossa por cima
       doc.setDrawColor(196, 106, 47)
-      doc.setLineWidth(1)
+      doc.setLineWidth(1.2)
       for (let i = 0; i < csoHistory.length; i++) {
         const px = chartX + i * stepX
         const val = Number(csoHistory[i].cso_aba)
@@ -253,7 +280,22 @@ export default function RelatoriosPage() {
       doc.setTextColor(100)
       const legY = chartBottom + 10
       doc.text('Crítico 0-49 | Atenção 50-69 | Bom 70-84 | Excelente 85-100', w/2, legY, { align: 'center' })
-      y = legY + 8
+
+      // Legenda dimensões
+      const dimLegY = legY + 6
+      let dimLegX = 30
+      // CSO principal
+      doc.setFillColor(196, 106, 47); doc.rect(dimLegX, dimLegY - 2, 8, 2, 'F')
+      doc.setFontSize(6); doc.setTextColor(80)
+      doc.text('CSO-ABA', dimLegX + 10, dimLegY)
+      dimLegX += 30
+      for (const dim of dimLines) {
+        doc.setFillColor(...dim.color); doc.rect(dimLegX, dimLegY - 2, 8, 2, 'F')
+        doc.setTextColor(80)
+        doc.text(dim.label, dimLegX + 10, dimLegY)
+        dimLegX += 22
+      }
+      y = dimLegY + 8
     }
 
     doc.setDrawColor(200)
