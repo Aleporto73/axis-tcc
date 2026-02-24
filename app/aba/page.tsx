@@ -12,6 +12,17 @@ interface DashboardData {
   avg_cso: number | null
   learners_critical: number
   engine_version: string
+  // KPIs avançados
+  mastery_rate: number
+  total_protocols: number
+  avg_days_to_mastery: number
+  total_sessions_completed: number
+  avg_session_duration: number
+  protocols_regression: number
+  cancel_rate_30d: number
+  protocols_gen_maint: number
+  total_regressions: number
+  active_learners: number
 }
 
 interface AlertItem {
@@ -121,6 +132,44 @@ export default function ABADashboardPage() {
             </div>
           )}
         </section>
+
+        {!loading && data && (
+          <section className="mb-6 md:mb-8 pb-5 md:pb-6 border-b border-slate-100">
+            <h2 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">Indicadores Avançados</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="p-3 rounded-xl border border-slate-200 bg-white">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Taxa Mastery</p>
+                <p className={`text-xl font-light ${data.mastery_rate >= 60 ? 'text-emerald-600' : data.mastery_rate >= 30 ? 'text-amber-500' : 'text-slate-600'}`}>{data.mastery_rate}%</p>
+                <p className="text-[10px] text-slate-400">{data.mastered_protocols} de {data.total_protocols} protocolos</p>
+              </div>
+              <div className="p-3 rounded-xl border border-slate-200 bg-white">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Tempo p/ Mastery</p>
+                <p className="text-xl font-light text-slate-700">{data.avg_days_to_mastery > 0 ? data.avg_days_to_mastery + 'd' : '—'}</p>
+                <p className="text-[10px] text-slate-400">média em dias</p>
+              </div>
+              <div className="p-3 rounded-xl border border-slate-200 bg-white">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Sessões Totais</p>
+                <p className="text-xl font-light text-slate-700">{data.total_sessions_completed}</p>
+                <p className="text-[10px] text-slate-400">{data.avg_session_duration > 0 ? '~' + data.avg_session_duration + 'min média' : 'sem dados'}</p>
+              </div>
+              <div className="p-3 rounded-xl border border-slate-200 bg-white">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Gen. + Manut.</p>
+                <p className="text-xl font-light text-purple-600">{data.protocols_gen_maint}</p>
+                <p className="text-[10px] text-slate-400">protocolos em transição</p>
+              </div>
+              <div className={`p-3 rounded-xl border ${data.protocols_regression > 0 ? 'border-red-200 bg-red-50/30' : 'border-slate-200 bg-white'}`}>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Regressões</p>
+                <p className={`text-xl font-light ${data.protocols_regression > 0 ? 'text-red-500' : 'text-slate-400'}`}>{data.protocols_regression}</p>
+                <p className="text-[10px] text-slate-400">{data.total_regressions} total histórico</p>
+              </div>
+              <div className={`p-3 rounded-xl border ${data.cancel_rate_30d > 20 ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-white'}`}>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Cancelamento</p>
+                <p className={`text-xl font-light ${data.cancel_rate_30d > 20 ? 'text-amber-500' : 'text-slate-600'}`}>{data.cancel_rate_30d}%</p>
+                <p className="text-[10px] text-slate-400">últimos 30 dias</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {alerts.length > 0 && (
           <section className="mb-6 md:mb-8">
