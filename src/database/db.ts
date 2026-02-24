@@ -1,14 +1,14 @@
 import { Pool } from 'pg'
 
 const pool = new Pool({
-  host: 'localhost',
-  port: 5432,
-  user: 'axis',
-  password: 'AxisTcc2026!',
-  database: 'axis_tcc',
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  host: process.env.DATABASE_HOST || 'localhost',
+  port: parseInt(process.env.DATABASE_PORT || '5432'),
+  user: process.env.DATABASE_USER || 'axis',
+  password: process.env.DATABASE_PASSWORD,
+  database: process.env.DATABASE_NAME || 'axis_tcc',
+  max: parseInt(process.env.DATABASE_MAX_CONNECTIONS || '10'),
+  idleTimeoutMillis: parseInt(process.env.DATABASE_IDLE_TIMEOUT_MS || '30000'),
+  connectionTimeoutMillis: parseInt(process.env.DATABASE_CONNECTION_TIMEOUT_MS || '5000'),
 })
 
 pool.on('error', (err) => {
