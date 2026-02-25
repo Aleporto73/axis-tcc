@@ -1,15 +1,16 @@
 /**
  * Ciclo de Vida do Protocolo — Bible S3
  *
- * 10 status oficiais com transições rígidas.
+ * 11 status oficiais com transições rígidas.
  * Transições não listadas são PROIBIDAS (S3.2 regra 5).
  *
  * Regras adicionais (S3.2):
- *  1. archived só a partir de maintained
+ *  1. archived só a partir de maintained (ou draft)
  *  2. discontinued exige discontinuation_reason (NOT NULL)
  *  3. suspended max 30 dias — após D+30: alerta automático
  *  4. Toda transição gera registro em axis_audit_logs
  *  5. Transições não listadas são PROIBIDAS
+ *  6. mastered_validated exige generalizationGrid completo (3 alvos × 2 ambientes)
  */
 
 // ─── Status oficiais ──────────────────────────────
@@ -19,6 +20,7 @@ export const PROTOCOL_STATUSES = [
   "active",
   "mastered",
   "generalization",
+  "mastered_validated",
   "maintenance",
   "maintained",
   "regression",
@@ -39,16 +41,17 @@ export const TERMINAL_STATUSES: ReadonlySet<ProtocolStatus> = new Set([
 // ─── Mapa de transições válidas (Bible S3.1) ──────
 
 export const VALID_TRANSITIONS: Record<ProtocolStatus, readonly ProtocolStatus[]> = {
-  draft:          ["active", "archived"],
-  active:         ["mastered", "suspended", "discontinued"],
-  mastered:       ["generalization", "regression"],
-  generalization: ["maintenance", "regression"],
-  maintenance:    ["maintained", "regression"],
-  maintained:     ["archived", "regression"],
-  regression:     ["active"],
-  suspended:      ["active", "discontinued"],
-  discontinued:   [],  // terminal
-  archived:       [],  // terminal
+  draft:              ["active", "archived"],
+  active:             ["mastered", "suspended", "discontinued"],
+  mastered:           ["generalization", "regression"],
+  generalization:     ["mastered_validated", "regression"],
+  mastered_validated: ["maintenance", "regression"],
+  maintenance:        ["maintained", "regression"],
+  maintained:         ["archived", "regression"],
+  regression:         ["active"],
+  suspended:          ["active", "discontinued"],
+  discontinued:       [],  // terminal
+  archived:           [],  // terminal
 } as const;
 
 // ─── Erros tipados ────────────────────────────────
@@ -66,12 +69,25 @@ export class TransitionError extends Error {
 
 // ─── Contexto da transição ─────────────────────────
 
+/** Grid de generalização 3×2 (3 alvos × 2 ambientes) — Bible S3 */
+export interface GeneralizationGrid {
+  /** Total de alvos avaliados (esperado: 3) */
+  targets: number;
+  /** Total de ambientes por alvo (esperado: 2) */
+  environments: number;
+  /** Total de células aprovadas (>= 70%) no grid */
+  passedCells: number;
+}
+
 export interface TransitionContext {
   /** Motivo de descontinuação (obrigatório para discontinued — S3.2 regra 2) */
   discontinuationReason?: string;
 
   /** Data de início da suspensão (para validar regra dos 30 dias — S3.2 regra 3) */
   suspendedAt?: Date;
+
+  /** Grid de generalização (obrigatório para mastered_validated — S3.2 regra 6) */
+  generalizationGrid?: GeneralizationGrid;
 
   /** Data atual (para cálculos de prazo) */
   now?: Date;
@@ -155,6 +171,26 @@ export function validateTransition(
       to,
       `S3.2 regra 2: discontinued exige discontinuation_reason (NOT NULL).`,
     );
+  }
+
+  // 5b. S3.2 regra 6: mastered_validated exige grid 3×2 completo
+  if (to === "mastered_validated") {
+    const grid = ctx.generalizationGrid;
+    if (!grid) {
+      throw new TransitionError(
+        from,
+        to,
+        `S3.2 regra 6: mastered_validated exige generalizationGrid (3 alvos × 2 ambientes).`,
+      );
+    }
+    const requiredCells = 3 * 2; // 3 alvos × 2 ambientes
+    if (grid.targets < 3 || grid.environments < 2 || grid.passedCells < requiredCells) {
+      throw new TransitionError(
+        from,
+        to,
+        `S3.2 regra 6: Grid incompleto (${grid.passedCells}/${requiredCells} células aprovadas, ${grid.targets} alvos, ${grid.environments} ambientes).`,
+      );
+    }
   }
 
   const warnings: string[] = [];

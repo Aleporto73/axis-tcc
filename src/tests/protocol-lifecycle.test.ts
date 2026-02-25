@@ -35,15 +35,15 @@ function daysAgo(n: number): Date {
 // ─── Status oficiais ──────────────────────────────
 
 describe("PROTOCOL_STATUSES — Bible S3.1", () => {
-  it("contém exatamente 10 status", () => {
-    expect(PROTOCOL_STATUSES).toHaveLength(10);
+  it("contém exatamente 11 status", () => {
+    expect(PROTOCOL_STATUSES).toHaveLength(11);
   });
 
   it("contém todos os status da Bible S3.1", () => {
     const expected = [
       "draft", "active", "mastered", "generalization",
-      "maintenance", "maintained", "regression",
-      "suspended", "discontinued", "archived",
+      "mastered_validated", "maintenance", "maintained",
+      "regression", "suspended", "discontinued", "archived",
     ];
     for (const s of expected) {
       expect(PROTOCOL_STATUSES).toContain(s);
@@ -53,8 +53,8 @@ describe("PROTOCOL_STATUSES — Bible S3.1", () => {
   it("não contém status extras", () => {
     const expected = new Set([
       "draft", "active", "mastered", "generalization",
-      "maintenance", "maintained", "regression",
-      "suspended", "discontinued", "archived",
+      "mastered_validated", "maintenance", "maintained",
+      "regression", "suspended", "discontinued", "archived",
     ]);
     for (const s of PROTOCOL_STATUSES) {
       expect(expected.has(s)).toBe(true);
@@ -93,7 +93,8 @@ describe("status terminais — Bible S3.1", () => {
   it("nenhum outro status é terminal", () => {
     const nonTerminal: ProtocolStatus[] = [
       "draft", "active", "mastered", "generalization",
-      "maintenance", "maintained", "regression", "suspended",
+      "mastered_validated", "maintenance", "maintained",
+      "regression", "suspended",
     ];
     for (const s of nonTerminal) {
       expect(isTerminal(s)).toBe(false);
@@ -122,8 +123,12 @@ describe("transições válidas — Bible S3.1", () => {
     expect(VALID_TRANSITIONS.mastered).toEqual(["generalization", "regression"]);
   });
 
-  it("generalization → maintenance, regression", () => {
-    expect(VALID_TRANSITIONS.generalization).toEqual(["maintenance", "regression"]);
+  it("generalization → mastered_validated, regression", () => {
+    expect(VALID_TRANSITIONS.generalization).toEqual(["mastered_validated", "regression"]);
+  });
+
+  it("mastered_validated → maintenance, regression", () => {
+    expect(VALID_TRANSITIONS.mastered_validated).toEqual(["maintenance", "regression"]);
   });
 
   it("maintenance → maintained, regression", () => {
@@ -188,10 +193,10 @@ describe("transições proibidas — S3.2 regra 5", () => {
   );
 
   it(`existem ${allProhibited.length} transições proibidas no total`, () => {
-    // 10 status × 10 status = 100 pares
-    // Total permitidas: 2+3+2+2+2+2+1+2+0+0 = 16
-    // Proibidas = 100 - 16 = 84
-    expect(allProhibited).toHaveLength(84);
+    // 11 status × 11 status = 121 pares
+    // Total permitidas: 2+3+2+2+2+2+2+1+2+0+0 = 18
+    // Proibidas = 121 - 18 = 103
+    expect(allProhibited).toHaveLength(103);
   });
 
   // Testes explícitos para transições comuns que NÃO devem ser permitidas
@@ -207,6 +212,9 @@ describe("transições proibidas — S3.2 regra 5", () => {
     ["mastered", "discontinued", "mastered não pode descontinuar diretamente"],
     ["generalization", "archived", "generalization não pode ir direto para archived"],
     ["generalization", "mastered", "generalization não volta para mastered"],
+    ["generalization", "maintenance", "generalization precisa de mastered_validated antes"],
+    ["mastered_validated", "archived", "mastered_validated não pode ir direto para archived"],
+    ["mastered_validated", "generalization", "mastered_validated não volta para generalization"],
     ["maintenance", "active", "maintenance não volta para active (usa regression)"],
     ["maintenance", "archived", "maintenance não pode ir direto para archived"],
     ["maintained", "active", "maintained não volta para active (usa regression)"],
@@ -251,8 +259,15 @@ describe("validateTransition — regras de negócio S3.2", () => {
     expect(result.success).toBe(true);
   });
 
-  it("generalization → maintenance: sucesso", () => {
-    const result = validateTransition("generalization", "maintenance");
+  it("generalization → mastered_validated: sucesso (com grid completo)", () => {
+    const result = validateTransition("generalization", "mastered_validated", {
+      generalizationGrid: { targets: 3, environments: 2, passedCells: 6 },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("mastered_validated → maintenance: sucesso", () => {
+    const result = validateTransition("mastered_validated", "maintenance");
     expect(result.success).toBe(true);
   });
 
@@ -276,13 +291,15 @@ describe("validateTransition — regras de negócio S3.2", () => {
   it("caminho feliz completo: draft → ... → archived", () => {
     const path: ProtocolStatus[] = [
       "draft", "active", "mastered", "generalization",
-      "maintenance", "maintained", "archived",
+      "mastered_validated", "maintenance", "maintained", "archived",
     ];
     for (let i = 0; i < path.length - 1; i++) {
       const from = path[i];
       const to = path[i + 1];
       const ctx = to === "discontinued"
         ? { discontinuationReason: "motivo" }
+        : to === "mastered_validated"
+        ? { generalizationGrid: { targets: 3, environments: 2, passedCells: 6 } }
         : {};
       const result = validateTransition(from, to, ctx);
       expect(result.success).toBe(true);
@@ -331,7 +348,7 @@ describe("validateTransition — regras de negócio S3.2", () => {
 
     it("qualquer outro → archived: proibido pelo mapa de transições", () => {
       const nonAllowed: ProtocolStatus[] = [
-        "active", "mastered", "generalization",
+        "active", "mastered", "generalization", "mastered_validated",
         "maintenance", "regression", "suspended",
       ];
       for (const from of nonAllowed) {
@@ -435,6 +452,54 @@ describe("validateTransition — regras de negócio S3.2", () => {
     });
   });
 
+  // ─── S3.2 regra 6: mastered_validated exige grid 3×2 ──
+
+  describe("S3.2 regra 6 — mastered_validated exige grid 3×2", () => {
+    it("generalization → mastered_validated SEM grid: lança TransitionError", () => {
+      expect(() => validateTransition("generalization", "mastered_validated")).toThrow(
+        TransitionError,
+      );
+    });
+
+    it("generalization → mastered_validated com grid incompleto (4/6): lança TransitionError", () => {
+      expect(() =>
+        validateTransition("generalization", "mastered_validated", {
+          generalizationGrid: { targets: 3, environments: 2, passedCells: 4 },
+        }),
+      ).toThrow(TransitionError);
+    });
+
+    it("generalization → mastered_validated com alvos insuficientes: lança TransitionError", () => {
+      expect(() =>
+        validateTransition("generalization", "mastered_validated", {
+          generalizationGrid: { targets: 2, environments: 2, passedCells: 4 },
+        }),
+      ).toThrow(TransitionError);
+    });
+
+    it("generalization → mastered_validated com ambientes insuficientes: lança TransitionError", () => {
+      expect(() =>
+        validateTransition("generalization", "mastered_validated", {
+          generalizationGrid: { targets: 3, environments: 1, passedCells: 3 },
+        }),
+      ).toThrow(TransitionError);
+    });
+
+    it("generalization → mastered_validated com grid completo (6/6): sucesso", () => {
+      const result = validateTransition("generalization", "mastered_validated", {
+        generalizationGrid: { targets: 3, environments: 2, passedCells: 6 },
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("generalization → mastered_validated com grid excedente (4 alvos × 3 ambientes): sucesso", () => {
+      const result = validateTransition("generalization", "mastered_validated", {
+        generalizationGrid: { targets: 4, environments: 3, passedCells: 12 },
+      });
+      expect(result.success).toBe(true);
+    });
+  });
+
   // ─── Regressão ─────────────────────────────────
 
   describe("regressão — Bible S3.1 + S6", () => {
@@ -454,6 +519,10 @@ describe("validateTransition — regras de negócio S3.2", () => {
       expect(validateTransition("maintained", "regression").success).toBe(true);
     });
 
+    it("mastered_validated → regression: permitido", () => {
+      expect(validateTransition("mastered_validated", "regression").success).toBe(true);
+    });
+
     it("regression só volta para active", () => {
       const targets = getAvailableTransitions("regression");
       expect(targets).toEqual(["active"]);
@@ -461,8 +530,9 @@ describe("validateTransition — regras de negócio S3.2", () => {
 
     it("regression → qualquer outro que não active: proibido", () => {
       const proibidos: ProtocolStatus[] = [
-        "draft", "mastered", "generalization", "maintenance",
-        "maintained", "regression", "suspended", "discontinued", "archived",
+        "draft", "mastered", "generalization", "mastered_validated",
+        "maintenance", "maintained", "regression", "suspended",
+        "discontinued", "archived",
       ];
       for (const to of proibidos) {
         expect(isTransitionAllowed("regression", to)).toBe(false);
@@ -530,15 +600,15 @@ describe("integridade do mapa VALID_TRANSITIONS", () => {
     }
   });
 
-  it("total de transições válidas = 16", () => {
+  it("total de transições válidas = 18", () => {
     let total = 0;
     for (const from of PROTOCOL_STATUSES) {
       total += VALID_TRANSITIONS[from].length;
     }
     // draft(2) + active(3) + mastered(2) + generalization(2)
-    // + maintenance(2) + maintained(2) + regression(1) + suspended(2)
-    // + discontinued(0) + archived(0) = 16
-    expect(total).toBe(16);
+    // + mastered_validated(2) + maintenance(2) + maintained(2)
+    // + regression(1) + suspended(2) + discontinued(0) + archived(0) = 18
+    expect(total).toBe(18);
   });
 
   it("não há transições duplicadas em nenhum status", () => {
