@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { requireAdminOrSupervisor, learnerFilter, canAccessLearner, handleRouteError } from '@/src/database/with-role'
 
-// GET — Listar protocolos de um aprendiz
+// =====================================================
+// AXIS ABA - API: Protocolos (Multi-Terapeuta)
+// GET: filtrado por role. POST: admin/supervisor apenas.
+// Conforme Bible v2.6.1 — Ciclo de Vida do Protocolo (8 status)
+// =====================================================
+
+// GET — Listar protocolos (filtrado por role)
 export async function GET(request: NextRequest) {
   try {
-    const result = await withTenant(async ({ client, tenantId }) => {
+    const result = await withTenant(async (ctx) => {
       const { searchParams } = new URL(request.url)
       const learnerId = searchParams.get('learner_id')
       const status = searchParams.get('status')
+
+      // Filtro por role: terapeuta só vê protocolos de seus aprendizes
+      const filter = learnerFilter(ctx, 2)
 
       let query = `
         SELECT lp.*, l.name as learner_name, ep.name as ebp_name,
@@ -17,8 +27,9 @@ export async function GET(request: NextRequest) {
         JOIN ebp_practices ep ON ep.id = lp.ebp_practice_id
         LEFT JOIN pei_goals pg ON pg.id = lp.pei_goal_id
         WHERE lp.tenant_id = $1
+        ${filter.clause ? filter.clause.replace('AND id IN', 'AND lp.learner_id IN') : ''}
       `
-      const params: any[] = [tenantId]
+      const params: any[] = [ctx.tenantId, ...filter.params]
 
       if (learnerId) {
         params.push(learnerId)
@@ -32,20 +43,17 @@ export async function GET(request: NextRequest) {
 
       query += ` ORDER BY lp.created_at DESC`
 
-      return await client.query(query, params)
+      return await ctx.client.query(query, params)
     })
 
     return NextResponse.json({ protocols: result.rows })
-  } catch (error: any) {
-    console.error('Erro ao listar protocolos:', error)
-    if (error.message === 'Não autenticado') {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  } catch (error) {
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
-// POST — Criar protocolo para um aprendiz
+// POST — Criar protocolo para um aprendiz (admin/supervisor)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -62,11 +70,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await withTenant(async ({ client, tenantId, userId }) => {
+    const result = await withTenant(async (ctx) => {
+      // Apenas admin/supervisor podem criar protocolos
+      requireAdminOrSupervisor(ctx)
+
       // Validar learner pertence ao tenant
-      const learnerCheck = await client.query(
+      const learnerCheck = await ctx.client.query(
         'SELECT id FROM learners WHERE id = $1 AND tenant_id = $2 AND is_active = true',
-        [learner_id, tenantId]
+        [learner_id, ctx.tenantId]
       )
 
       if (learnerCheck.rows.length === 0) {
@@ -74,7 +85,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Validar EBP existe
-      const ebpCheck = await client.query(
+      const ebpCheck = await ctx.client.query(
         'SELECT id FROM ebp_practices WHERE id = $1',
         [ebp_practice_id]
       )
@@ -84,13 +95,13 @@ export async function POST(request: NextRequest) {
       }
 
       // Buscar engine version atual
-      const engineResult = await client.query(
+      const engineResult = await ctx.client.query(
         "SELECT version FROM engine_versions WHERE is_current = true"
       )
 
       const engineVersion = engineResult.rows[0]?.version || '2.6.1'
 
-      return await client.query(
+      return await ctx.client.query(
         `INSERT INTO learner_protocols (
           tenant_id, learner_id, title, ebp_practice_id, domain, objective,
           mastery_criteria_pct, mastery_criteria_sessions, mastery_criteria_trials,
@@ -99,23 +110,22 @@ export async function POST(request: NextRequest) {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *`,
         [
-          tenantId, learner_id, title, ebp_practice_id, domain, objective,
+          ctx.tenantId, learner_id, title, ebp_practice_id, domain, objective,
           mastery_criteria_pct || 80, mastery_criteria_sessions || 3, mastery_criteria_trials || 10,
           measurement_type || null, protocol_library_id || null, pei_goal_id || null,
-          engineVersion, userId
+          engineVersion, ctx.userId
         ]
       )
     })
 
     return NextResponse.json({ protocol: result.rows[0] }, { status: 201 })
-  } catch (error: any) {
-    console.error('Erro ao criar protocolo:', error)
-    if (error.message === 'Não autenticado') {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'Aprendiz não encontrado' || error.message === 'Prática EBP não encontrada') {
+        return NextResponse.json({ error: error.message }, { status: 404 })
+      }
     }
-    if (error.message === 'Aprendiz não encontrado' || error.message === 'Prática EBP não encontrada') {
-      return NextResponse.json({ error: error.message }, { status: 404 })
-    }
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

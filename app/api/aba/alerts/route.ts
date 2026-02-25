@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { learnerFilter, handleRouteError } from '@/src/database/with-role'
+
+// =====================================================
+// AXIS ABA - API: Alertas (Multi-Terapeuta)
+// admin/supervisor: todos alertas. terapeuta: só seus aprendizes.
+// =====================================================
 
 export async function GET() {
   try {
-    const result = await withTenant(async ({ client, tenantId }) => {
-      const res = await client.query(`
-        SELECT 
+    const result = await withTenant(async (ctx) => {
+      const filter = learnerFilter(ctx, 2)
+
+      const res = await ctx.client.query(`
+        SELECT
           lp.learner_id,
           l.name as learner_name,
           lp.title as protocol_title,
@@ -15,8 +23,9 @@ export async function GET() {
         JOIN learners l ON l.id = lp.learner_id
         WHERE lp.tenant_id = $1
         AND lp.regression_count > 0
+        ${filter.clause ? filter.clause.replace('AND id IN', 'AND lp.learner_id IN') : ''}
         ORDER BY lp.regression_count DESC
-      `, [tenantId])
+      `, [ctx.tenantId, ...filter.params])
       return res.rows
     })
 
@@ -29,8 +38,9 @@ export async function GET() {
     }))
 
     return NextResponse.json({ alerts })
-  } catch (error: any) {
-    if (error.message === 'Não autenticado') return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  } catch (error) {
+    const { message, status } = handleRouteError(error)
+    if (status === 401) return NextResponse.json({ error: message }, { status })
     return NextResponse.json({ alerts: [] })
   }
 }
