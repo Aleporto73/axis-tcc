@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
 import { ensureValidToken, getAttendeeResponse, calcDurationMinutes } from '@/src/google/calendar-helpers'
+import { rateLimit } from '@/src/middleware/rate-limit'
 
 // =====================================================
 // AXIS ABA — Google Calendar Webhook Receiver
@@ -190,6 +191,10 @@ async function syncCalendarForProfile(tenantId: string, profileId: string, clerk
 
 // POST /api/aba/google/webhook — Recebe notificações do Google
 export async function POST(request: NextRequest) {
+  // Rate limit: 100 req/min por IP (rota pública — chamada pelo Google)
+  const blocked = await rateLimit(request, { limit: 100, windowMs: 60_000, prefix: 'rl:gcal-webhook' })
+  if (blocked) return blocked
+
   try {
     const channelId = request.headers.get('x-goog-channel-id')
     const resourceState = request.headers.get('x-goog-resource-state')

@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { randomBytes } from 'crypto'
+import { rateLimit } from '@/src/middleware/rate-limit'
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 100 req/min por IP
+  const blocked = await rateLimit(req, { limit: 100, windowMs: 60_000, prefix: 'rl:portal-invite' })
+  if (blocked) return blocked
+
   try {
     const { learner_id, guardian_name, guardian_email } = await req.json()
     if (!learner_id || !guardian_name) return NextResponse.json({ error: 'learner_id e guardian_name obrigatórios' }, { status: 400 })

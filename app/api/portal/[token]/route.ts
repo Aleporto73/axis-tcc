@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
+import { rateLimit } from '@/src/middleware/rate-limit'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+  // Rate limit: 100 req/min por IP (rota pública)
+  const blocked = await rateLimit(req, { limit: 100, windowMs: 60_000, prefix: 'rl:portal' })
+  if (blocked) return blocked
+
   const client = await pool.connect()
   try {
     const { token } = await params

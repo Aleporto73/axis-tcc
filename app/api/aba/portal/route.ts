@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { rateLimit } from '@/src/middleware/rate-limit'
 
 // GET — Listar acessos do portal família
 export async function GET(request: NextRequest) {
+  // Rate limit: 100 req/min por IP
+  const blocked = await rateLimit(request, { limit: 100, windowMs: 60_000, prefix: 'rl:portal-mgmt' })
+  if (blocked) return blocked
+
   try {
     const result = await withTenant(async ({ client, tenantId }) => {
       const { searchParams } = new URL(request.url)
