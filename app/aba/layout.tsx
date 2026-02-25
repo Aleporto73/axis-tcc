@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import pool from '@/src/database/db'
 import SidebarABA from '../components/SidebarABA'
 import { RoleProvider } from '../components/RoleProvider'
+import ErrorBoundary from '../components/ErrorBoundary'
 
 // =====================================================
 // AXIS ABA - Layout com Role Provider (Multi-Terapeuta)
@@ -77,7 +78,9 @@ export default async function ABALayout({ children }: { children: React.ReactNod
       <div className="min-h-screen bg-white">
         <SidebarABA />
         <main className="md:ml-20 min-h-screen pb-20 md:pb-8">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </RoleProvider>
