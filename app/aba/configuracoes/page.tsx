@@ -25,14 +25,16 @@ import {
 export default function ConfiguracoesABAPage() {
   const { profile: roleProfile, role, isAdmin, isTerapeuta, loading: roleLoading } = useRole()
 
-  // Google Calendar
+  // Google Calendar — Bible S19
   const [googleStatus, setGoogleStatus] = useState<any>(null)
+  const [googleLoading, setGoogleLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<any>(null)
   const [activatingWebhook, setActivatingWebhook] = useState(false)
   const [webhookResult, setWebhookResult] = useState<any>(null)
   const [disconnecting, setDisconnecting] = useState(false)
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false)
+  const [googleCallbackMsg, setGoogleCallbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Perfil pessoal
   const [profileForm, setProfileForm] = useState({ name: '', crp: '' })
@@ -56,6 +58,33 @@ export default function ConfiguracoesABAPage() {
   const [deletionError, setDeletionError] = useState<string | null>(null)
 
   // ============================================
+  // Detectar callback do Google OAuth (?google=success/error)
+  // Conforme Bible S19: callback redireciona para /aba/configuracoes
+  // ============================================
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const googleParam = params.get('google')
+    if (googleParam) {
+      if (googleParam === 'success') {
+        setGoogleCallbackMsg({ type: 'success', text: 'Google Calendar conectado com sucesso!' })
+      } else {
+        const messages: Record<string, string> = {
+          error: 'Erro ao conectar Google Calendar. Tente novamente.',
+          token_error: 'Erro ao obter autorização do Google. Tente novamente.',
+          tenant_error: 'Perfil não encontrado. Verifique se sua conta está ativa.',
+          missing_params: 'Parâmetros de autorização incompletos. Tente novamente.',
+        }
+        setGoogleCallbackMsg({ type: 'error', text: messages[googleParam] || 'Erro desconhecido na conexão.' })
+      }
+      // Limpar query param da URL sem reload
+      window.history.replaceState({}, '', window.location.pathname)
+      // Auto-clear msg após 8s
+      setTimeout(() => setGoogleCallbackMsg(null), 8000)
+    }
+  }, [])
+
+  // ============================================
   // Fetch inicial
   // ============================================
   useEffect(() => {
@@ -68,6 +97,7 @@ export default function ConfiguracoesABAPage() {
   // Google Calendar (cada terapeuta conecta o seu)
   // ============================================
   const fetchGoogleStatus = async () => {
+    setGoogleLoading(true)
     try {
       const res = await fetch('/api/aba/google/status')
       if (res.ok) {
@@ -77,6 +107,7 @@ export default function ConfiguracoesABAPage() {
     } catch (err) {
       console.error('Erro ao buscar status Google:', err)
     }
+    setGoogleLoading(false)
   }
 
   const handleSync = async () => {
@@ -346,7 +377,8 @@ export default function ConfiguracoesABAPage() {
         {/* ============================================ */}
         {/* SEÇÃO: Google Calendar (todos os roles) */}
         {/* Conforme Bible S19 + docs/GOOGLE_CALENDAR_INTEGRATION.md */}
-        {/* Cada terapeuta conecta seu próprio Gmail */}
+        {/* Multi-terapeuta: cada profissional conecta seu Gmail */}
+        {/* Tokens salvos por profile_id em calendar_connections */}
         {/* ============================================ */}
         <section className="bg-white rounded-xl border border-slate-200 p-6">
           <div className="flex items-center gap-4 mb-5">
@@ -355,28 +387,82 @@ export default function ConfiguracoesABAPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-800">Google Calendar</h2>
-              <p className="text-sm text-slate-500">Sincronize sua agenda pessoal com o AXIS ABA</p>
+              <p className="text-sm text-slate-500">
+                Sincronize sua agenda pessoal — cada profissional conecta seu próprio Gmail
+              </p>
             </div>
           </div>
 
-          {googleStatus?.connected ? (
+          {/* Mensagem de callback OAuth */}
+          {googleCallbackMsg && (
+            <div className={`mb-4 p-3 rounded-lg text-sm ${
+              googleCallbackMsg.type === 'success'
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}>
+              {googleCallbackMsg.text}
+            </div>
+          )}
+
+          {googleLoading ? (
+            <div className="space-y-3">
+              <div className="h-5 bg-slate-100 rounded w-32 animate-pulse" />
+              <div className="h-4 bg-slate-50 rounded w-48 animate-pulse" />
+              <div className="h-10 bg-slate-50 rounded w-40 animate-pulse" />
+            </div>
+          ) : googleStatus?.connected ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-emerald-600">
-                <Check className="w-5 h-5" />
-                <span className="font-medium text-sm">Conectado</span>
-              </div>
-              <div className="text-sm text-slate-500 space-y-0.5">
-                <p>Calendário: {googleStatus.calendar_id}</p>
-                {googleStatus.last_sync_at && (
-                  <p>Última sincronização: {new Date(googleStatus.last_sync_at).toLocaleString('pt-BR')}</p>
+              {/* Status de conexão */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-emerald-600">
+                  <Check className="w-5 h-5" />
+                  <span className="font-medium text-sm">Conectado</span>
+                </div>
+                {googleStatus.token_expired && (
+                  <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[11px] font-medium">
+                    Token expirado — será renovado automaticamente
+                  </span>
                 )}
-                {googleStatus.webhook_active && (
-                  <p className="text-emerald-600 font-medium">
-                    Sync automático ativo até {new Date(googleStatus.webhook_expiration).toLocaleDateString('pt-BR')}
+              </div>
+
+              {/* Detalhes */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Calendário</p>
+                  <p className="text-sm text-slate-700 mt-0.5">{googleStatus.calendar_id || 'primary'}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Última sincronização</p>
+                  <p className="text-sm text-slate-700 mt-0.5">
+                    {googleStatus.last_sync_at
+                      ? new Date(googleStatus.last_sync_at).toLocaleString('pt-BR', {
+                          day: '2-digit', month: '2-digit', year: '2-digit',
+                          hour: '2-digit', minute: '2-digit'
+                        })
+                      : 'Nunca sincronizado'}
                   </p>
-                )}
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Sync automático</p>
+                  {googleStatus.webhook_active ? (
+                    <p className="text-sm text-emerald-600 font-medium mt-0.5">
+                      Ativo até {new Date(googleStatus.webhook_expiration).toLocaleDateString('pt-BR')}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-slate-500 mt-0.5">Inativo</p>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-3 flex-wrap">
+
+              {/* Conectado desde */}
+              {googleStatus.connected_at && (
+                <p className="text-xs text-slate-400">
+                  Conectado desde {new Date(googleStatus.connected_at).toLocaleDateString('pt-BR')}
+                </p>
+              )}
+
+              {/* Ações */}
+              <div className="flex gap-3 flex-wrap pt-1">
                 <button
                   onClick={handleSync}
                   disabled={syncing}
@@ -403,39 +489,50 @@ export default function ConfiguracoesABAPage() {
                   Desconectar
                 </button>
               </div>
+
+              {/* Feedback de sync manual */}
               {syncResult && (
                 <div className={`p-3 rounded-lg text-sm ${syncResult.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
                   {syncResult.error
                     ? syncResult.error
-                    : `Sincronização concluída: ${syncResult.imported} importados, ${syncResult.updated} atualizados, ${syncResult.skipped} ignorados`
+                    : `Sincronização concluída: ${syncResult.imported} importado(s), ${syncResult.updated} atualizado(s), ${syncResult.skipped} ignorado(s)`
                   }
                 </div>
               )}
+
+              {/* Feedback de webhook */}
               {webhookResult && (
                 <div className={`p-3 rounded-lg text-sm ${webhookResult.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
                   {webhookResult.error
                     ? webhookResult.error
-                    : 'Sync automático ativado! Eventos do Google Calendar serão importados em tempo real.'
+                    : 'Sync automático ativado! Eventos do Google serão importados em tempo real.'
                   }
                 </div>
               )}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center gap-2 text-slate-400">
                 <X className="w-5 h-5" />
                 <span className="text-sm">Não conectado</span>
               </div>
-              <a
-                href="/api/aba/google"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Calendar className="w-4 h-4" />
-                Conectar Google Calendar
-              </a>
+              <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-lg">
+                <p className="text-sm text-slate-700 mb-3">
+                  Conecte seu Google Calendar para sincronizar sessões de forma bidirecional.
+                  Eventos criados no Google aparecem no AXIS ABA, e sessões agendadas aqui
+                  são enviadas para sua agenda com link do Google Meet.
+                </p>
+                <a
+                  href="/api/aba/google"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Conectar Google Calendar
+                </a>
+              </div>
               <p className="text-xs text-slate-400">
-                Conecte seu Google Calendar para sincronizar sessões automaticamente.
-                Cada profissional conecta sua própria conta.
+                Cada profissional da clínica conecta sua própria conta Google.
+                Tokens OAuth são armazenados de forma segura por perfil.
               </p>
             </div>
           )}
