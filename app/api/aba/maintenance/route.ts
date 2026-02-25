@@ -57,15 +57,42 @@ export async function POST(request: NextRequest) {
         const mastery_pct = proto.rows[0]?.mastery_criteria_pct || 80
         const passed = score_pct >= mastery_pct
         const probeResult = passed ? 'passed' : 'failed'
-        await client.query(`UPDATE maintenance_probes SET status='completed', result=$1, trials_total=$2, trials_correct=$3, score_pct=$4, prompt_level=$5, notes=$6, evaluated_by=$7, evaluated_at=NOW() WHERE id=$8 AND tenant_id=$9`, [probeResult, trials_total, trials_correct||0, score_pct, prompt_level||'independent', notes||null, userId||'system', probe_id, tenantId])
-        await client.query(`INSERT INTO axis_audit_logs (tenant_id,user_id,actor,action,entity_type,metadata,created_at) VALUES ($1,$2,'system','MAINTENANCE_PROBE_EVALUATED','maintenance_probes',jsonb_build_object('probe_id',$3,'protocol_id',$4,'result',$5,'score_pct',$6),NOW())`, [tenantId, userId||'system', probe_id, probe.rows[0].protocol_id, probeResult, score_pct])
+
+        await client.query(
+          `UPDATE maintenance_probes SET status='completed', result=$1, trials_total=$2, trials_correct=$3, score_pct=$4, prompt_level=$5, notes=$6, evaluated_by=$7, evaluated_at=NOW() WHERE id=$8 AND tenant_id=$9`,
+          [probeResult, trials_total, trials_correct||0, score_pct, prompt_level||'independent', notes||null, userId||'system', probe_id, tenantId])
+
+        await client.query(
+          `INSERT INTO axis_audit_logs (tenant_id,user_id,actor,action,entity_type,metadata,created_at)
+           VALUES ($1,$2,'system','MAINTENANCE_PROBE_EVALUATED','maintenance_probes',
+           jsonb_build_object('probe_id',$3,'protocol_id',$4,'result',$5,'score_pct',$6),NOW())`,
+          [tenantId, userId||'system', probe_id, probe.rows[0].protocol_id, probeResult, score_pct])
+
+        // ─── Bible S3: Regressão automática se score < 70% ───
+        // Limiar fixo de 70% (independente do mastery_criteria_pct do protocolo).
+        // Transição respeita o lifecycle: status → "regression" (não direto para "active").
+        const REGRESSION_THRESHOLD = 70
         let regression = false
-        if (!passed) {
-          await client.query(`UPDATE learner_protocols SET status='active', activated_at=NOW(), updated_at=NOW(), regression_count=COALESCE(regression_count,0)+1 WHERE id=$1 AND tenant_id=$2`, [probe.rows[0].protocol_id, tenantId])
-          await client.query(`INSERT INTO axis_audit_logs (tenant_id,user_id,actor,action,entity_type,metadata,created_at) VALUES ($1,$2,'system','REGRESSION_DETECTED_AUTO','learner_protocols',jsonb_build_object('protocol_id',$3,'learner_id',$4,'tenant_id',$1,'probe_id',$5,'score_pct',$6),NOW())`, [tenantId, userId||'system', probe.rows[0].protocol_id, probe.rows[0].learner_id, probe_id, score_pct])
+        if (score_pct < REGRESSION_THRESHOLD) {
+          await client.query(
+            `UPDATE learner_protocols SET status='regression', updated_at=NOW(), regression_count=COALESCE(regression_count,0)+1 WHERE id=$1 AND tenant_id=$2`,
+            [probe.rows[0].protocol_id, tenantId])
+
+          await client.query(
+            `INSERT INTO axis_audit_logs (tenant_id,user_id,actor,action,entity_type,metadata,created_at)
+             VALUES ($1,$2,'system','REGRESSION_DETECTED_AUTO','learner_protocols',
+             jsonb_build_object('protocol_id',$3,'learner_id',$4,'probe_id',$5,'score_pct',$6,'threshold',70),NOW())`,
+            [tenantId, userId||'system', probe.rows[0].protocol_id, probe.rows[0].learner_id, probe_id, score_pct])
+
+          // Cancelar sondas pendentes restantes — protocolo saiu de manutenção
+          await client.query(
+            `UPDATE maintenance_probes SET status='cancelled', notes=COALESCE(notes,'')||' [Cancelada: regressão detectada]' WHERE protocol_id=$1 AND tenant_id=$2 AND status='pending'`,
+            [probe.rows[0].protocol_id, tenantId])
+
           regression = true
         }
-        return { probe_id, result: probeResult, score_pct, passed, regression }
+
+        return { probe_id, result: probeResult, score_pct, passed, regression, regression_threshold: REGRESSION_THRESHOLD }
       })
       return NextResponse.json(result)
     }
