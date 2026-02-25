@@ -176,10 +176,28 @@ export default function ConfiguracoesABAPage() {
   const handleExport = async () => {
     setExporting(true)
     try {
-      // TODO: implementar endpoint /api/aba/export
-      alert('Funcionalidade de exportação LGPD será disponibilizada em breve.')
+      const res = await fetch('/api/aba/lgpd/export')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erro desconhecido' }))
+        alert(`Erro ao exportar: ${err.error || 'Falha na requisição'}`)
+        return
+      }
+      // Trigger download do JSON
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      // Extrair filename do Content-Disposition ou usar padrão
+      const disposition = res.headers.get('Content-Disposition')
+      const match = disposition?.match(/filename="?([^"]+)"?/)
+      a.download = match?.[1] || `axis_aba_export_${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
     } catch {
-      console.error('Erro ao exportar')
+      console.error('Erro ao exportar dados LGPD')
+      alert('Erro de conexão ao exportar dados. Tente novamente.')
     }
     setExporting(false)
   }
