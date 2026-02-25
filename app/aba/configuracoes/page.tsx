@@ -51,6 +51,9 @@ export default function ConfiguracoesABAPage() {
   // Dados
   const [exporting, setExporting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletionStatus, setDeletionStatus] = useState<any>(null)
+  const [deletionLoading, setDeletionLoading] = useState(false)
+  const [deletionError, setDeletionError] = useState<string | null>(null)
 
   // ============================================
   // Fetch inicial
@@ -58,14 +61,15 @@ export default function ConfiguracoesABAPage() {
   useEffect(() => {
     fetchGoogleStatus()
     fetchProfile()
-  }, [])
+    if (isAdmin) fetchDeletionStatus()
+  }, [isAdmin])
 
   // ============================================
   // Google Calendar (cada terapeuta conecta o seu)
   // ============================================
   const fetchGoogleStatus = async () => {
     try {
-      const res = await fetch('/api/google/status')
+      const res = await fetch('/api/aba/google/status')
       if (res.ok) {
         const data = await res.json()
         setGoogleStatus(data)
@@ -79,7 +83,7 @@ export default function ConfiguracoesABAPage() {
     setSyncing(true)
     setSyncResult(null)
     try {
-      const res = await fetch('/api/google/sync', { method: 'POST' })
+      const res = await fetch('/api/aba/google/sync', { method: 'POST' })
       const data = await res.json()
       setSyncResult(data)
       fetchGoogleStatus()
@@ -93,7 +97,7 @@ export default function ConfiguracoesABAPage() {
     setActivatingWebhook(true)
     setWebhookResult(null)
     try {
-      const res = await fetch('/api/google/watch', { method: 'POST' })
+      const res = await fetch('/api/aba/google/watch', { method: 'POST' })
       const data = await res.json()
       setWebhookResult(data)
       fetchGoogleStatus()
@@ -106,7 +110,7 @@ export default function ConfiguracoesABAPage() {
   const handleDisconnect = async () => {
     setDisconnecting(true)
     try {
-      const res = await fetch('/api/google/disconnect', { method: 'POST' })
+      const res = await fetch('/api/aba/google/disconnect', { method: 'POST' })
       if (res.ok) {
         setGoogleStatus({ connected: false })
         setShowDisconnectConfirm(false)
@@ -168,6 +172,59 @@ export default function ConfiguracoesABAPage() {
     const updated = { ...profileForm, [field]: value }
     setProfileForm(updated)
     debouncedSave(updated)
+  }
+
+  // ============================================
+  // Exclusão LGPD — Bible S13.2
+  // "Após cancelamento: 90 dias retenção, depois anonimização irreversível"
+  // ============================================
+  const fetchDeletionStatus = async () => {
+    try {
+      const res = await fetch('/api/aba/lgpd/delete')
+      if (res.ok) {
+        const data = await res.json()
+        setDeletionStatus(data)
+      }
+    } catch {
+      console.error('Erro ao buscar status de exclusão')
+    }
+  }
+
+  const handleRequestDeletion = async () => {
+    setDeletionLoading(true)
+    setDeletionError(null)
+    try {
+      const res = await fetch('/api/aba/lgpd/delete', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        setDeletionError(data.error || 'Erro ao solicitar exclusão')
+        return
+      }
+      setDeletionStatus(data)
+      setShowDeleteConfirm(false)
+    } catch {
+      setDeletionError('Erro de conexão. Tente novamente.')
+    } finally {
+      setDeletionLoading(false)
+    }
+  }
+
+  const handleCancelDeletion = async () => {
+    setDeletionLoading(true)
+    setDeletionError(null)
+    try {
+      const res = await fetch('/api/aba/lgpd/delete', { method: 'PATCH' })
+      const data = await res.json()
+      if (!res.ok) {
+        setDeletionError(data.error || 'Erro ao cancelar exclusão')
+        return
+      }
+      setDeletionStatus(data)
+    } catch {
+      setDeletionError('Erro de conexão. Tente novamente.')
+    } finally {
+      setDeletionLoading(false)
+    }
   }
 
   // ============================================
@@ -370,7 +427,7 @@ export default function ConfiguracoesABAPage() {
                 <span className="text-sm">Não conectado</span>
               </div>
               <a
-                href="/api/google"
+                href="/api/aba/google"
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Calendar className="w-4 h-4" />
@@ -619,19 +676,60 @@ export default function ConfiguracoesABAPage() {
                 <FileText className="w-4 h-4" />
                 {exporting ? 'Exportando...' : 'Exportar Dados (LGPD)'}
               </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                >
-                  Excluir Conta
-                </button>
+              {isAdmin && deletionStatus?.status !== 'anonymized' && (
+                deletionStatus?.status === 'scheduled' ? (
+                  <button
+                    onClick={handleCancelDeletion}
+                    disabled={deletionLoading}
+                    className="flex items-center gap-2 px-4 py-2 text-sm border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors disabled:opacity-50"
+                  >
+                    {deletionLoading ? 'Processando...' : 'Cancelar Exclusão'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    Excluir Conta
+                  </button>
+                )
               )}
             </div>
             <p className="text-xs text-slate-400 mt-3">
               A exportação inclui todos os dados clínicos, protocolos, sessões e relatórios
               em formato estruturado, conforme Art. 18 da LGPD.
             </p>
+
+            {/* Status da exclusão agendada */}
+            {deletionStatus?.status === 'scheduled' && (
+              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm font-medium text-amber-800">
+                  Exclusão agendada — {deletionStatus.days_remaining} dia(s) restantes
+                </p>
+                <p className="text-xs text-amber-600 mt-1">
+                  Anonimização irreversível programada para{' '}
+                  {new Date(deletionStatus.anonymization_date).toLocaleDateString('pt-BR')}.
+                  Exporte seus dados antes dessa data.
+                </p>
+              </div>
+            )}
+
+            {deletionStatus?.status === 'anonymized' && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm font-medium text-red-800">
+                  Conta anonimizada irreversivelmente
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  em {new Date(deletionStatus.anonymized_at).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+            )}
+
+            {deletionError && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700">{deletionError}</p>
+              </div>
+            )}
           </section>
         )}
       </div>
@@ -690,30 +788,36 @@ export default function ConfiguracoesABAPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 mx-4" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-red-700 mb-2">Excluir conta permanentemente?</h3>
             <div className="text-sm text-slate-600 space-y-2 mb-6">
-              <p>Esta ação iniciará o processo de exclusão da conta:</p>
+              <p>Esta ação iniciará o processo de exclusão da conta conforme LGPD (Art. 18):</p>
               <p className="text-xs text-slate-500">
-                1. Período de retenção de 90 dias (dados ainda acessíveis)
+                1. Período de retenção de 90 dias (dados ainda acessíveis para exportação)
                 <br />
-                2. Exportação disponível durante os 90 dias
+                2. Terapeutas serão desativados imediatamente
                 <br />
-                3. Após 90 dias: anonimização irreversível
+                3. Portal família será desconectado
+                <br />
+                4. Após 90 dias: anonimização irreversível dos dados pessoais
+              </p>
+              <p className="text-xs text-amber-600 font-medium mt-2">
+                Você poderá cancelar a exclusão durante os 90 dias de retenção.
               </p>
             </div>
+            {deletionError && (
+              <p className="text-sm text-red-600 mb-3">{deletionError}</p>
+            )}
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => { setShowDeleteConfirm(false); setDeletionError(null) }}
                 className="px-4 py-2 text-sm border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  alert('Funcionalidade de exclusão será disponibilizada em breve.')
-                  setShowDeleteConfirm(false)
-                }}
-                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
+                onClick={handleRequestDeletion}
+                disabled={deletionLoading}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                Solicitar Exclusão
+                {deletionLoading ? 'Processando...' : 'Solicitar Exclusão'}
               </button>
             </div>
           </div>
