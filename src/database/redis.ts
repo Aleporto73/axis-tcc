@@ -143,8 +143,6 @@ export const cache = {
    *     return await db.query(...)
    *   })
    */
-  async wrap<T>(key: string, ttl: number, fn: () => Promise<T>): Promise<T>
-  async wrap<T>(key: string, fn: () => Promise<T>): Promise<T>
   async wrap<T>(
     key: string,
     ttlOrFn: number | (() => Promise<T>),
@@ -153,11 +151,15 @@ export const cache = {
     const ttl = typeof ttlOrFn === 'number' ? ttlOrFn : DEFAULT_TTL
     const fn = typeof ttlOrFn === 'function' ? ttlOrFn : maybeFn!
 
-    const cached = await this.get<T>(key)
-    if (cached !== null) return cached
+    try {
+      const raw = await redis.get(key)
+      if (raw !== null) return JSON.parse(raw) as T
+    } catch { /* miss */ }
 
     const fresh = await fn()
-    await this.set(key, fresh, ttl)
+    try {
+      await redis.set(key, JSON.stringify(fresh), 'EX', ttl)
+    } catch { /* best-effort */ }
     return fresh
   },
 
