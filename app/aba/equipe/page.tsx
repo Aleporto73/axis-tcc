@@ -226,27 +226,27 @@ export default function EquipePage() {
   const inactiveMembers = team.filter(m => !m.is_active)
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-800">Equipe</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-800">Equipe</h1>
           <p className="text-sm text-slate-500 mt-1">
             Gerencie membros e atribua terapeutas aos aprendizes
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <button
             onClick={() => setShowAssign(true)}
-            className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
           >
-            Atribuir Terapeuta
+            Atribuir
           </button>
           <button
             onClick={() => setShowInvite(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-aba-500 rounded-lg hover:bg-aba-600 transition-colors"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm font-medium text-white bg-aba-500 rounded-lg hover:bg-aba-600 transition-colors"
           >
-            Convidar Membro
+            Convidar
           </button>
         </div>
       </div>
@@ -267,31 +267,32 @@ export default function EquipePage() {
         </div>
         <div className="divide-y divide-slate-50">
           {activeMembers.map((member) => (
-            <div key={member.id} className="px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-medium text-slate-600">
+            <div key={member.id} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-medium text-slate-600 shrink-0">
                   {member.name.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-slate-800">{member.name}</span>
-                    <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${roleColors[member.role]}`}>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-slate-800 truncate">{member.name}</span>
+                    <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border shrink-0 ${roleColors[member.role]}`}>
                       {roleLabels[member.role]}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
+                  <div className="text-xs text-slate-400 mt-0.5 truncate">
                     {member.email}
                     {member.crp && ` · CRP ${member.crp_uf}/${member.crp}`}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="text-right text-xs text-slate-400">
-                  <div>{member.learner_count} aprendizes</div>
-                  <div>{member.session_count} sessões</div>
+              <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6 ml-[3.25rem] sm:ml-0">
+                <div className="flex gap-3 text-xs text-slate-400 sm:text-right">
+                  <span>{member.learner_count} aprend.</span>
+                  <span className="text-slate-200">·</span>
+                  <span>{member.session_count} sessões</span>
                 </div>
                 {member.role !== 'admin' && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <select
                       value={member.role}
                       onChange={(e) => handleRoleChange(member.id, e.target.value)}
@@ -330,20 +331,20 @@ export default function EquipePage() {
         </div>
         <div className="divide-y divide-slate-50">
           {assignments.map((a) => (
-            <div key={a.id} className="px-6 py-3 flex items-center justify-between">
-              <div className="text-sm">
+            <div key={a.id} className="px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
+              <div className="text-sm min-w-0">
                 <span className="font-medium text-slate-700">{a.therapist_name}</span>
-                <span className="text-slate-400 mx-2">→</span>
+                <span className="text-slate-400 mx-1 sm:mx-2">→</span>
                 <span className="text-slate-600">{a.learner_name}</span>
                 {a.is_primary && (
-                  <span className="ml-2 text-[10px] font-semibold text-aba-500 bg-aba-500/10 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-1 sm:ml-2 text-[10px] font-semibold text-aba-500 bg-aba-500/10 px-1.5 py-0.5 rounded-full">
                     Principal
                   </span>
                 )}
               </div>
               <button
                 onClick={() => handleRemoveAssignment(a.id)}
-                className="text-xs text-red-400 hover:text-red-600"
+                className="text-xs text-red-400 hover:text-red-600 shrink-0"
               >
                 Remover
               </button>

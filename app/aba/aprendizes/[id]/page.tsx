@@ -236,7 +236,7 @@ export default function LearnerDetailPage() {
             <p className="text-xs text-slate-400 mt-0.5">{age(learner.birth_date)} · {learner.cid_code || 'Sem CID'} · Nível {learner.support_level}{learner.diagnosis && (' · ' + learner.diagnosis)}</p>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-4 mt-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
           <div className="p-3 rounded-xl bg-blue-50/50 text-center"><p className="text-lg font-medium text-blue-600">{activeP}</p><p className="text-[11px] text-slate-400">Protocolos ativos</p></div>
           <div className="p-3 rounded-xl bg-green-50/50 text-center"><p className="text-lg font-medium text-green-600">{masteredP}</p><p className="text-[11px] text-slate-400">Dominados</p></div>
           <div className="p-3 rounded-xl bg-aba-500/5 text-center"><p className="text-lg font-medium text-aba-500">{completedS}</p><p className="text-[11px] text-slate-400">Sessões</p></div>
@@ -244,9 +244,9 @@ export default function LearnerDetailPage() {
         </div>
       </div>
       {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
-      <div className="flex gap-1 mb-6 border-b border-slate-200">
+      <div className="flex gap-1 mb-6 border-b border-slate-200 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
         {([['protocols','Protocolos (' + protocols.length + ')'],['sessions','Sessões (' + sessions.length + ')'],['cso','Evolução CSO'],['guardians','Responsáveis']] as const).map(([k,l]) => (
-          <button key={k} onClick={() => setTab(k as any)} className={'px-4 py-2 text-sm font-medium border-b-2 transition-colors ' + (tab===k ? 'border-aba-500 text-aba-500' : 'border-transparent text-slate-400 hover:text-slate-600')}>{l}</button>
+          <button key={k} onClick={() => setTab(k as any)} className={'px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ' + (tab===k ? 'border-aba-500 text-aba-500' : 'border-transparent text-slate-400 hover:text-slate-600')}>{l}</button>
         ))}
       </div>
 
@@ -256,12 +256,14 @@ export default function LearnerDetailPage() {
         <button onClick={() => setShowCreateProtocol(true)} className="w-full p-3 rounded-xl border-2 border-dashed border-aba-500/30 text-aba-500 text-sm font-medium hover:bg-aba-500/5 transition-colors">+ Novo Protocolo</button>
           {protocols.length === 0 ? <div className="text-center py-12"><div className="w-12 h-12 rounded-full bg-aba-500/10 flex items-center justify-center mx-auto mb-3"><svg className="w-6 h-6 text-aba-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg></div><p className="text-sm text-slate-500 mb-1">Nenhum protocolo cadastrado</p><p className="text-xs text-slate-400">Clique em "+ Novo Protocolo" para começar</p></div> : protocols.map(p => (
             <div key={p.id} className="p-4 rounded-xl border border-slate-200">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800">{p.title}</h3>
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 sm:gap-2 mb-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-medium text-slate-800">{p.title}</h3>
+                    <span className={'px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ' + (protocolStatusColors[p.status] || 'bg-slate-100 text-slate-500')}>{protocolStatusLabels[p.status] || p.status}</span>
+                  </div>
                   <p className="text-[11px] text-slate-400 mt-0.5">{p.domain} · {p.ebp_name} · Critério: {p.mastery_criteria_pct}%</p>
                 </div>
-                <span className={'px-2 py-0.5 rounded-full text-[10px] font-medium ' + (protocolStatusColors[p.status] || 'bg-slate-100 text-slate-500')}>{protocolStatusLabels[p.status] || p.status}</span>
               </div>
               <p className="text-xs text-slate-500 mb-3">{p.objective}</p>
               {p.pei_goal_id && p.pei_goal_title ? (
@@ -290,7 +292,7 @@ export default function LearnerDetailPage() {
                 <Link href={'/aba/aprendizes/' + learnerId + '/manutencao?protocol_id=' + p.id} className="inline-block mb-2 px-3 py-1 text-[11px] rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50">🔄 Sondas</Link>
               )}
               {validTransitions[p.status] && validTransitions[p.status].length > 0 && (
-                <div className="flex gap-2 pt-2 border-t border-slate-100">
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
                   {validTransitions[p.status].map(next => (
                     <button key={next} onClick={() => handleTransition(p.id, next)} disabled={transitioning===p.id}
                       className={'px-3 py-1 text-[11px] rounded-lg border transition-colors ' + (next==='discontinued'||next==='suspended' ? 'border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200' : 'border-aba-500/30 text-aba-500 hover:bg-aba-500/5')}>
@@ -307,7 +309,7 @@ export default function LearnerDetailPage() {
       {tab === 'sessions' && (
         <div className="space-y-2">
           {sessions.length === 0 ? <div className="text-center py-12"><div className="w-12 h-12 rounded-full bg-aba-500/10 flex items-center justify-center mx-auto mb-3"><svg className="w-6 h-6 text-aba-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><p className="text-sm text-slate-500 mb-1">Nenhuma sessão registrada</p><p className="text-xs text-slate-400">Sessões aparecem após serem criadas em Sessões</p></div> : sessions.map(s => (
-            <Link key={s.id} href={'/aba/sessoes/' + s.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-aba-500/30 transition-all cursor-pointer">
+            <Link key={s.id} href={'/aba/sessoes/' + s.id} className="flex items-center justify-between gap-2 p-3 rounded-xl border border-slate-200 hover:border-aba-500/30 transition-all cursor-pointer">
               <div>
                 <p className="text-sm text-slate-800">{new Date(s.scheduled_at).toLocaleDateString('pt-BR')} às {new Date(s.scheduled_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</p>
                 {s.location && <p className="text-[11px] text-slate-400">{s.location}</p>}
@@ -324,7 +326,8 @@ export default function LearnerDetailPage() {
             <div className="space-y-4">
               <div className="p-4 rounded-xl border border-slate-200">
                 <h3 className="text-xs font-medium text-slate-600 mb-3">Evolução CSO-ABA</h3>
-                <div className="relative" style={{height: '180px'}}>
+                <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div className="relative" style={{height: '180px', minWidth: Math.max(csoHistory.length * 80, 200) + 'px'}}>
                   <svg viewBox={'0 0 ' + Math.max(csoHistory.length * 80, 200) + ' 180'} className="w-full h-full">
                     {[0, 25, 50, 75, 100].map(v => (
                       <g key={v}>
@@ -351,11 +354,12 @@ export default function LearnerDetailPage() {
                     ))}
                   </svg>
                 </div>
+                </div>
               </div>
               <div className="space-y-2">
                 {csoHistory.map((c, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-200">
-                    <div><p className="text-sm text-slate-800">{new Date(c.session_date).toLocaleDateString('pt-BR')}</p><p className="text-[11px] text-slate-400">SAS {c.sas} · PIS {c.pis} · BSS {c.bss} · TCM {c.tcm}</p></div>
+                    <div className="min-w-0"><p className="text-sm text-slate-800">{new Date(c.session_date).toLocaleDateString('pt-BR')}</p><p className="text-[11px] text-slate-400 truncate">SAS {c.sas} · PIS {c.pis} · BSS {c.bss} · TCM {c.tcm}</p></div>
                     <div className="text-right"><p className="text-lg font-medium text-aba-500">{c.cso_aba}</p><p className="text-[10px] text-slate-400">CSO-ABA</p></div>
                   </div>
                 ))}
@@ -397,18 +401,18 @@ export default function LearnerDetailPage() {
           ) : (
             <div className="space-y-3">
               {guardians.map(g => (
-                <div key={g.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white">
-                  <div className="flex items-center gap-3">
+                <div key={g.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-slate-200 bg-white">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-aba-500/10 flex items-center justify-center flex-shrink-0">
                       <span className="text-sm font-medium text-aba-500">{g.name.charAt(0)}</span>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">{g.name}{g.relationship ? <span className="text-xs text-slate-400 ml-1">({g.relationship})</span> : null}</p>
-                      {g.email && <p className="text-xs text-slate-400">{g.email}</p>}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-700 truncate">{g.name}{g.relationship ? <span className="text-xs text-slate-400 ml-1">({g.relationship})</span> : null}</p>
+                      {g.email && <p className="text-xs text-slate-400 truncate">{g.email}</p>}
                       {g.phone && <p className="text-xs text-slate-400">{g.phone}</p>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                     <button onClick={generateInviteLink} disabled={inviteLoading} className="text-xs text-aba-500 hover:text-aba-600 px-2 py-1 rounded border border-aba-500/20 hover:bg-aba-500/5 transition-colors">
                       {inviteLoading ? '...' : 'Portal'}
                     </button>

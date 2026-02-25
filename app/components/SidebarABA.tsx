@@ -169,33 +169,40 @@ export default function SidebarABA() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 z-40 px-2 py-2">
+      {/* Mobile Bottom Nav — com labels e acesso a config */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-100 z-40 px-1 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
         <div className="flex justify-around items-center">
-          {navItems.filter(item => item.href !== '/aba/equipe').slice(0, 5).map((item) => (
+          {navItems.filter(item => item.href !== '/aba/equipe').slice(0, 4).map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`relative p-3 rounded-xl transition-colors ${
+              className={`relative flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[3.5rem] ${
                 isActive(item.href)
                   ? 'text-aba-500'
                   : 'text-slate-400'
               }`}
             >
               {isActive(item.href) && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-5 h-[3px] bg-aba-500 rounded-b-full" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 w-5 h-[3px] bg-aba-500 rounded-b-full" />
               )}
               {item.icon}
+              <span className="text-[9px] font-medium leading-none truncate">{item.label}</span>
             </Link>
           ))}
-          <UserButton
-            afterSignOutUrl="/"
-            appearance={{
-              elements: {
-                avatarBox: "w-8 h-8"
-              }
-            }}
-          />
+          <Link
+            href="/aba/configuracoes"
+            className={`relative flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[3.5rem] ${
+              isActive('/aba/configuracoes')
+                ? 'text-aba-500'
+                : 'text-slate-400'
+            }`}
+          >
+            {isActive('/aba/configuracoes') && (
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 w-5 h-[3px] bg-aba-500 rounded-b-full" />
+            )}
+            {icons.config}
+            <span className="text-[9px] font-medium leading-none">Config</span>
+          </Link>
         </div>
       </nav>
     </>

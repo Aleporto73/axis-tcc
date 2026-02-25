@@ -20,7 +20,7 @@ function MiniChart({ data, width=600, height=180 }: { data: CSOPoint[]; width?: 
   const zones = [{y2:40,c:'#fef2f2'},{y2:55,c:'#fffbeb'},{y2:70,c:'#eff6ff'},{y2:85,c:'#f0fdf4'},{y2:100,c:'#ecfdf5'}]
   let prev = 0
   return (
-    <svg width={width} height={height}>
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
       {zones.map((z,i) => { const top=pad.t+cH-(z.y2/100)*cH; const h=((z.y2-prev)/100)*cH; prev=z.y2; return <rect key={i} x={pad.l} y={top} width={cW} height={h} fill={z.c} /> })}
       {[0,25,50,75,100].map(v => { const y=pad.t+cH-(v/100)*cH; return <g key={v}><line x1={pad.l} y1={y} x2={pad.l+cW} y2={y} stroke="#e2e8f0" strokeWidth={0.5}/><text x={pad.l-5} y={y+3} textAnchor="end" fontSize={9} fill="#94a3b8">{v}</text></g> })}
       <path d={area} fill="#e07a2f" opacity={0.15}/>
@@ -79,12 +79,12 @@ export default function DashboardABAPage() {
         </nav>
       </div>
       <div className="px-4 md:px-8 lg:px-12 xl:px-16">
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
           <div>
             <h1 className="text-lg font-normal text-slate-400">Dashboard Clinico</h1>
             <p className="text-xs text-slate-300">Progresso terapeutico</p>
           </div>
-          {learners.length>1 && <select value={sel} onChange={e=>setSel(e.target.value)} className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">{learners.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select>}
+          {learners.length>1 && <select value={sel} onChange={e=>setSel(e.target.value)} className="w-full sm:w-auto px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">{learners.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select>}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="md:col-span-2 p-5 rounded-2xl border border-slate-200 bg-white">

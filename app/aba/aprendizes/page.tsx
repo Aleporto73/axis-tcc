@@ -146,14 +146,14 @@ export default function AprendizesPage() {
         ) : (
           <div className="space-y-2">
             {learners.map((l) => (
-              <Link key={l.id} href={`/aba/aprendizes/${l.id}`} className="flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-aba-500/30 hover:shadow-sm transition-all cursor-pointer">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-aba-500/10 flex items-center justify-center">
+              <Link key={l.id} href={`/aba/aprendizes/${l.id}`} className="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-slate-200 hover:border-aba-500/30 hover:shadow-sm transition-all cursor-pointer gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-aba-500/10 flex items-center justify-center shrink-0">
                     <span className="text-sm font-medium text-aba-500">{l.name.charAt(0).toUpperCase()}</span>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-800">{l.name}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-medium text-slate-800 truncate">{l.name}</h3>
+                    <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs text-slate-400">{calcAge(l.birth_date)}</span>
                       {l.cid_code && (
                         <>
@@ -161,15 +161,19 @@ export default function AprendizesPage() {
                           <span className="text-xs text-slate-400">{l.cid_code}</span>
                         </>
                       )}
-                      <span className="text-slate-300">·</span>
-                      <span className="text-xs text-slate-400">{supportLabels[l.support_level]}</span>
+                      <span className="text-slate-300 hidden sm:inline">·</span>
+                      <span className="text-xs text-slate-400 hidden sm:inline">{supportLabels[l.support_level]}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-slate-400">
+                <div className="hidden sm:flex items-center gap-4 text-xs text-slate-400 shrink-0">
                   <span>{l.active_protocols} {l.active_protocols === 1 ? 'protocolo' : 'protocolos'}</span>
                   <span className="text-slate-300">·</span>
                   <span>{l.total_sessions} {l.total_sessions === 1 ? 'sessão' : 'sessões'}</span>
+                </div>
+                <div className="sm:hidden text-right shrink-0">
+                  <p className="text-xs font-medium text-aba-500">{l.active_protocols}p</p>
+                  <p className="text-[10px] text-slate-400">{l.total_sessions}s</p>
                 </div>
               </Link>
             ))}

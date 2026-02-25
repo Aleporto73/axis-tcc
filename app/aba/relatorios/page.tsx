@@ -338,16 +338,18 @@ export default function RelatoriosPage() {
                 {learners.map(l => (<option key={l.id} value={l.id}>{l.name}</option>))}
               </select>
             </div>
-            <div className="flex gap-3 items-end">
-              <div className="flex-1">
-                <label className="block text-xs text-slate-500 mb-1">Início do período</label>
-                <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" />
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+              <div className="flex gap-3 flex-1">
+                <div className="flex-1">
+                  <label className="block text-xs text-slate-500 mb-1">Início do período</label>
+                  <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-slate-500 mb-1">Fim do período</label>
+                  <input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" />
+                </div>
               </div>
-              <div className="flex-1">
-                <label className="block text-xs text-slate-500 mb-1">Fim do período</label>
-                <input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" />
-              </div>
-              <button onClick={generateReport} disabled={!selectedId || loading} className="px-5 py-2 bg-aba-500 text-white text-sm font-medium rounded-lg hover:bg-aba-600 transition-colors disabled:opacity-50 whitespace-nowrap">
+              <button onClick={generateReport} disabled={!selectedId || loading} className="w-full sm:w-auto px-5 py-2 bg-aba-500 text-white text-sm font-medium rounded-lg hover:bg-aba-600 transition-colors disabled:opacity-50 whitespace-nowrap">
                 {loading ? 'Gerando...' : 'Gerar'}
               </button>
             </div>
@@ -392,7 +394,7 @@ export default function RelatoriosPage() {
                   {conv.dimensions_current && (conv.dimensions_current.sas || conv.dimensions_current.pis || conv.dimensions_current.bss || conv.dimensions_current.tcm) && (
                     <div className="pt-3 border-t border-slate-100">
                       <h3 className="text-xs font-medium text-slate-600 mb-2">Dimensões atuais</h3>
-                      <div className="grid grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {['sas', 'pis', 'bss', 'tcm'].map(dim => (
                           <div key={dim} className="text-center">
                             <p className="text-sm font-medium text-slate-700">{conv.dimensions_current[dim] ?? '—'}</p>
@@ -408,12 +410,12 @@ export default function RelatoriosPage() {
                       <h3 className="text-xs font-medium text-slate-600 mb-2">Protocolos ({conv.protocols.length})</h3>
                       <div className="space-y-2">
                         {conv.protocols.map((p: any, i: number) => (
-                          <div key={i} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
-                            <div>
-                              <p className="text-xs font-medium text-slate-700">{p.title}</p>
-                              <p className="text-[10px] text-slate-400">{p.domain} · {p.ebp_practice_pt || p.ebp_practice}</p>
+                          <div key={i} className="flex items-center justify-between gap-2 p-2 bg-slate-50 rounded-lg">
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-slate-700 truncate">{p.title}</p>
+                              <p className="text-[10px] text-slate-400 truncate">{p.domain} · {p.ebp_practice_pt || p.ebp_practice}</p>
                             </div>
-                            <span className={'text-[10px] px-2 py-0.5 rounded-full ' + (p.status === 'active' ? 'bg-green-50 text-green-600' : p.status === 'mastered' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500')}>
+                            <span className={'text-[10px] px-2 py-0.5 rounded-full shrink-0 ' + (p.status === 'active' ? 'bg-green-50 text-green-600' : p.status === 'mastered' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500')}>
                               {protocolStatusLabels[p.status] || p.status}
                             </span>
                           </div>
@@ -450,9 +452,9 @@ export default function RelatoriosPage() {
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 pt-2">
-                <button onClick={downloadPDF} className="px-5 py-2 text-sm font-medium rounded-lg border border-aba-500 text-aba-500 hover:bg-aba-500/5 transition-colors">Download PDF</button>
-                <button onClick={saveSnapshot} disabled={saving || saved} className={'px-5 py-2 text-sm font-medium rounded-lg transition-colors ' + (saved ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-aba-500 text-white hover:bg-aba-600 disabled:opacity-50')}>
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+                <button onClick={downloadPDF} className="w-full sm:w-auto px-5 py-2 text-sm font-medium rounded-lg border border-aba-500 text-aba-500 hover:bg-aba-500/5 transition-colors">Download PDF</button>
+                <button onClick={saveSnapshot} disabled={saving || saved} className={'w-full sm:w-auto px-5 py-2 text-sm font-medium rounded-lg transition-colors ' + (saved ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-aba-500 text-white hover:bg-aba-600 disabled:opacity-50')}>
                   {saved ? '✓ Versão registrada' : saving ? 'Registrando...' : 'Registrar Versão Oficial'}
                 </button>
               </div>
