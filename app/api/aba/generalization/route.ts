@@ -41,15 +41,36 @@ export async function POST(request: NextRequest) {
          FROM generalization_probes WHERE protocol_id = $1 AND tenant_id = $2
          ORDER BY variation_number, context_number, created_at DESC`, [protocol_id, tenantId])
       const cells = allCells.rows
-      const allSix = cells.length === 6
-      const allPass = cells.every((c: any) => c.score_pct >= mastery_pct)
+      const filledCells = cells.length
+      const passingCells = cells.filter((c: any) => c.score_pct >= mastery_pct).length
+      const gridComplete = filledCells === 6 && passingCells === 6
+
+      // Bible S3 — Score de generalização:
+      //   Grid 3×2 completo (6/6 aprovadas) = 100%
+      //   Grid incompleto = 75%
+      const generalization_score = gridComplete ? 100 : 75
+
+      // Bible S3.2 regra 6 — Auto-transição para mastered_validated
+      // Só ocorre quando grid 3×2 está 100% completo e aprovado
       let autoTransitioned = false
-      if (allSix && allPass) {
-        await client.query(`UPDATE learner_protocols SET status = 'maintained', maintained_at = NOW(), updated_at = NOW() WHERE id = $1 AND tenant_id = $2`, [protocol_id, tenantId])
-        await client.query(`INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at) VALUES ($1,$2,'system','GENERALIZATION_COMPLETE_AUTO','learner_protocols',jsonb_build_object('protocol_id',$3,'cells_passed',6,'criteria_pct',$4),NOW())`, [tenantId, userId||'system', protocol_id, mastery_pct])
+      if (gridComplete) {
+        await client.query(
+          `UPDATE learner_protocols SET status = 'mastered_validated', mastered_validated_at = NOW(), updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+          [protocol_id, tenantId])
+        await client.query(
+          `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
+           VALUES ($1,$2,'system','GENERALIZATION_GRID_COMPLETE','learner_protocols',
+           jsonb_build_object('protocol_id',$3,'cells_passed',6,'criteria_pct',$4,'generalization_score',100),NOW())`,
+          [tenantId, userId||'system', protocol_id, mastery_pct])
         autoTransitioned = true
       }
-      return { probe: insert.rows[0], matrix: { total_cells: 6, filled_cells: cells.length, passing_cells: cells.filter((c:any)=>c.score_pct>=mastery_pct).length }, auto_transitioned: autoTransitioned }
+
+      return {
+        probe: insert.rows[0],
+        matrix: { total_cells: 6, filled_cells: filledCells, passing_cells: passingCells },
+        generalization_score,
+        auto_transitioned: autoTransitioned,
+      }
     })
     return NextResponse.json(result, { status: 201 })
   } catch (error: any) {
