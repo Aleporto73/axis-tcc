@@ -1,8 +1,196 @@
 'use client'
 
-import { SignInButton, SignedIn, SignedOut } from '@clerk/nextjs'
+import { SignedIn, SignedOut } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import Link from 'next/link'
+import {
+  Lock,
+  FileText,
+  Shield,
+  Building,
+  ClipboardList,
+  Zap,
+  PenLine,
+  BarChart3,
+  FileCheck,
+  Check,
+  UserRound,
+  Eye,
+  Landmark,
+  ChevronRight,
+  Users,
+  MessageCircle,
+} from 'lucide-react'
+
+/* ───────────────────────── mini-data ───────────────────────── */
+
+const aprendizes = [
+  { nome: 'Lucas, 6 anos', de: 72, para: 86, badge: 'Excelente', cor: 'emerald' },
+  { nome: 'Marina, 8 anos', de: 65, para: 64, badge: 'Atenção', cor: 'amber' },
+  { nome: 'Pedro, 5 anos', de: 58, para: 82, badge: 'Bom', cor: 'sky' },
+]
+
+const etapas = [
+  { n: 1, label: 'Cadastre o aprendiz', icon: ClipboardList },
+  { n: 2, label: 'Ative o protocolo', icon: Zap },
+  { n: 3, label: 'Registre a sessão', icon: PenLine },
+  { n: 4, label: 'Sistema calcula evolução', icon: BarChart3 },
+  { n: 5, label: 'Relatório pronto', icon: FileCheck },
+]
+
+const defesas = [
+  'Evolução baseada em dados reais',
+  'Justificativa técnica de carga horária',
+  'Estrutura compatível com ANS',
+  'Fundamentação SBNI 2025',
+  'Histórico preservado e rastreável',
+]
+
+const perfis = [
+  {
+    titulo: 'Terapeuta ABA',
+    texto: 'Registro organizado, menos papelada. Foco no que importa: o atendimento.',
+    icon: UserRound,
+  },
+  {
+    titulo: 'Supervisor Clínico',
+    texto: 'Visão longitudinal de cada caso. Detecta regressão antes que vire crise.',
+    icon: Eye,
+  },
+  {
+    titulo: 'Clínica / Instituição',
+    texto: 'Padronização, governança e proteção documental em toda a operação.',
+    icon: Landmark,
+  },
+]
+
+const seguranca = [
+  { label: 'Registros imutáveis', icon: Lock },
+  { label: 'Histórico completo', icon: FileText },
+  { label: 'LGPD aplicada', icon: Shield },
+  { label: 'Padrão institucional', icon: Building },
+]
+
+/* ───────────────────────── helpers ──────────────────────────── */
+
+function MiniSparkline({ de, para, cor }: { de: number; para: number; cor: string }) {
+  const mid = Math.round((de + para) / 2 + (Math.random() * 6 - 3))
+  const points = [de, mid, para]
+  const max = Math.max(...points)
+  const min = Math.min(...points)
+  const range = max - min || 1
+  const h = 32
+  const w = 64
+  const coords = points
+    .map((v, i) => `${(i / (points.length - 1)) * w},${h - ((v - min) / range) * h}`)
+    .join(' ')
+
+  const strokeColor =
+    cor === 'emerald' ? '#10b981' : cor === 'amber' ? '#f59e0b' : '#0ea5e9'
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-16 h-8" fill="none">
+      <polyline points={coords} stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function Badge({ label, cor }: { label: string; cor: string }) {
+  const cls =
+    cor === 'emerald'
+      ? 'bg-emerald-50 text-emerald-700'
+      : cor === 'amber'
+        ? 'bg-amber-50 text-amber-700'
+        : 'bg-sky-50 text-sky-700'
+  return <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
+}
+
+/* ───────────────── Relatório miniatura ──────────────────────── */
+
+function RelatorioMiniatura() {
+  const pontos = [74, 76, 78, 80, 82, 84, 86]
+  const h = 48
+  const w = 140
+  const max = 90
+  const min = 70
+  const range = max - min
+  const coords = pontos
+    .map((v, i) => `${(i / (pontos.length - 1)) * w},${h - ((v - min) / range) * h}`)
+    .join(' ')
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-5 w-full max-w-sm transform rotate-1 hover:rotate-0 transition-transform duration-300">
+      {/* Header */}
+      <div className="border-b border-slate-100 pb-3 mb-3">
+        <p className="text-[10px] font-bold text-orange-500 tracking-wide uppercase">
+          AXIS ABA — Relatório de Evolução Clínica
+        </p>
+      </div>
+
+      {/* Paciente */}
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-xs font-semibold text-slate-800">Laura Oliveira</p>
+          <p className="text-[10px] text-slate-400">6a 7m</p>
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-bold text-slate-900">86.1</p>
+          <Badge label="Excelente" cor="emerald" />
+        </div>
+      </div>
+
+      {/* Gráfico */}
+      <div className="bg-slate-50 rounded-lg p-2 mb-3">
+        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-12" fill="none">
+          <polyline
+            points={coords}
+            stroke="#f97316"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx={w} cy={h - ((86 - min) / range) * h} r="3" fill="#f97316" />
+        </svg>
+        <div className="flex justify-between text-[9px] text-slate-400 mt-1 px-1">
+          <span>Set</span>
+          <span>Out</span>
+          <span>Nov</span>
+          <span>Dez</span>
+          <span>Jan</span>
+          <span>Fev</span>
+          <span>Mar</span>
+        </div>
+      </div>
+
+      {/* Tabela dimensões */}
+      <table className="w-full text-[10px]">
+        <thead>
+          <tr className="text-slate-400 border-b border-slate-100">
+            <th className="text-left py-1 font-medium">Dimensão</th>
+            <th className="text-right py-1 font-medium">Anterior</th>
+            <th className="text-right py-1 font-medium">Atual</th>
+          </tr>
+        </thead>
+        <tbody className="text-slate-600">
+          <tr><td className="py-0.5">SAS</td><td className="text-right">78.2</td><td className="text-right font-semibold text-slate-800">88.4</td></tr>
+          <tr><td className="py-0.5">PIS</td><td className="text-right">71.0</td><td className="text-right font-semibold text-slate-800">84.6</td></tr>
+          <tr><td className="py-0.5">BSS</td><td className="text-right">69.5</td><td className="text-right font-semibold text-slate-800">83.1</td></tr>
+          <tr><td className="py-0.5">TCM</td><td className="text-right">77.8</td><td className="text-right font-semibold text-slate-800">88.2</td></tr>
+        </tbody>
+      </table>
+
+      {/* Rodapé */}
+      <div className="mt-3 pt-2 border-t border-slate-100">
+        <p className="text-[8px] text-slate-300 font-mono">
+          Motor CSO-ABA v2.6.1 · SHA256: e3d8c...
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════ LANDING PAGE ═══════════════════════ */
 
 export default function Home() {
   return (
@@ -10,127 +198,375 @@ export default function Home() {
       <SignedIn>
         <RedirectToHub />
       </SignedIn>
-      
+
       <SignedOut>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-neutral-50 flex flex-col">
-          <header className="border-b border-neutral-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-            <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl" aria-hidden="true">⚕️</span>
+        <div className="min-h-screen bg-white text-slate-800">
+          {/* ─── HEADER ─── */}
+          <header className="border-b border-slate-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+            <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">A</span>
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold text-blue-600">
-                    AXI Clínico
-                  </h1>
-                  <p className="text-xs text-neutral-500 uppercase tracking-wider">
-                    Padrão Ouro em Prática Clínica Digital
-                  </p>
-                </div>
+                <span className="text-lg font-bold text-slate-900">AXIS ABA</span>
               </div>
-              
-              <SignInButton mode="modal">
-                <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 text-base font-medium shadow-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-600 focus-visible:ring-offset-4 min-h-[48px]">
-                  Entrar no Sistema
-                </button>
-              </SignInButton>
+              <nav className="hidden md:flex items-center gap-6 text-sm text-slate-500">
+                <Link href="#como-funciona" className="hover:text-slate-800 transition-colors">Como funciona</Link>
+                <Link href="#planos" className="hover:text-slate-800 transition-colors">Planos</Link>
+                <Link href="/sign-up" className="px-4 py-2 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
+                  Começar grátis
+                </Link>
+              </nav>
             </div>
           </header>
 
-          <main className="flex-1 flex items-center">
-            <div className="max-w-7xl mx-auto px-6 py-20">
-              <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-sm font-medium mb-6">
-                  <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
-                  Sistema Validado Clinicamente
-                </div>
-
-                <h1 className="text-5xl text-neutral-900 font-bold mb-6 leading-tight">
-                  Ecossistema Inteligente para{' '}
-                  <span className="text-blue-600">
-                    Prática Clínica Digital
-                  </span>
-                </h1>
-
-                <p className="text-xl text-neutral-600 mb-8 leading-relaxed font-normal">
-                  AXI Clínico é a plataforma modular que organiza sua prática com{' '}
-                  <strong className="text-neutral-900 font-semibold">
-                    governança clínica, rastreabilidade científica e IA ética
-                  </strong>.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-                  <div className="flex items-start gap-3 bg-white p-4 rounded-lg shadow-sm border border-neutral-100">
-                    <span className="text-2xl" aria-hidden="true">🧠</span>
-                    <div>
-                      <h3 className="text-base font-semibold text-neutral-900 mb-1">
-                        AXIS TCC
-                      </h3>
-                      <p className="text-sm text-neutral-600">
-                        Terapia Cognitivo-Comportamental
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 bg-white p-4 rounded-lg shadow-sm border border-neutral-100">
-                    <span className="text-2xl" aria-hidden="true">🧩</span>
-                    <div>
-                      <h3 className="text-base font-semibold text-neutral-900 mb-1">
-                        AXIS ABA
-                      </h3>
-                      <p className="text-sm text-neutral-600">
-                        Análise do Comportamento Aplicada
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 bg-white p-4 rounded-lg shadow-sm border border-neutral-100">
-                    <span className="text-2xl" aria-hidden="true">✓</span>
-                    <div>
-                      <h3 className="text-base font-semibold text-neutral-900 mb-1">
-                        IA Clínica Ética
-                      </h3>
-                      <p className="text-sm text-neutral-600">
-                        A IA calcula, o humano decide
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 bg-white p-4 rounded-lg shadow-sm border border-neutral-100">
-                    <span className="text-2xl" aria-hidden="true">🔒</span>
-                    <div>
-                      <h3 className="text-base font-semibold text-neutral-900 mb-1">
-                        Multi-Tenant Seguro
-                      </h3>
-                      <p className="text-sm text-neutral-600">
-                        Isolamento total de dados clínicos
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <SignInButton mode="modal">
-                  <button className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 text-lg font-medium shadow-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-600 focus-visible:ring-offset-4">
-                    Acessar Sistema →
-                  </button>
-                </SignInButton>
-
-                <p className="text-sm text-neutral-500 italic mt-6">
-                  Medical Device Class I Software • Validação Clínica Ativa
-                </p>
+          {/* ─── HERO ─── */}
+          <section className="bg-white py-20 md:py-28">
+            <div className="max-w-4xl mx-auto px-6 text-center">
+              <h1 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">
+                Sua clínica ABA com estrutura para crescer e documentação que defende.
+              </h1>
+              <p className="mt-6 text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
+                Registros organizados, evolução mensurável e relatórios que convênios não podem ignorar. Pensado para a realidade brasileira.
+              </p>
+              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link
+                  href="/demo"
+                  className="px-8 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors text-base"
+                >
+                  Ver demonstração
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="px-8 py-3 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors text-base"
+                >
+                  Começar com 1 aprendiz
+                </Link>
               </div>
             </div>
-          </main>
+          </section>
 
-          <footer className="border-t border-neutral-200 bg-white">
-            <div className="max-w-7xl mx-auto px-6 py-6">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-neutral-600">
-                  © 2026 AXI Clínico. Plataforma Clínica Profissional.
-                </p>
-                <p className="text-xs text-neutral-500 uppercase tracking-wider">
-                  Enterprise Healthcare Grade
-                </p>
+          {/* ─── BLOCO 1 — A DOR ─── */}
+          <section className="bg-slate-50 py-16 md:py-20">
+            <div className="max-w-3xl mx-auto px-6 text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
+                Você domina a clínica. Mas a documentação ainda te vulnerabiliza.
+              </h2>
+              <p className="mt-6 text-base md:text-lg text-slate-500 leading-relaxed">
+                Convênio questiona carga horária. Relatórios levam horas. Evolução fica em planilhas. Supervisão sem visão clara. Não é falta de competência — é falta de estrutura.
+              </p>
+            </div>
+          </section>
+
+          {/* ─── BLOCO 2 — O QUE É ─── */}
+          <section className="bg-white py-16 md:py-20">
+            <div className="max-w-3xl mx-auto px-6 text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
+                Organização que libera você para fazer o que importa: atender.
+              </h2>
+              <p className="mt-6 text-base md:text-lg text-slate-500 leading-relaxed">
+                Você registra a sessão. O sistema organiza os dados. O relatório já nasce pronto. Sem improviso. Sem retrabalho.
+              </p>
+            </div>
+          </section>
+
+          {/* ─── BLOCO 3 — VEJA NA PRÁTICA ─── */}
+          <section className="bg-slate-50 py-16 md:py-20">
+            <div className="max-w-6xl mx-auto px-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center mb-12">
+                Veja na prática
+              </h2>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+                {/* Cards de aprendizes */}
+                <div className="space-y-4">
+                  {aprendizes.map((a) => (
+                    <div
+                      key={a.nome}
+                      className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{a.nome}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          CSO {a.de} → {a.para}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <MiniSparkline de={a.de} para={a.para} cor={a.cor} />
+                        <Badge label={a.badge} cor={a.cor} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Relatório miniatura */}
+                <div className="flex justify-center">
+                  <RelatorioMiniatura />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ─── BLOCO 4 — COMO FUNCIONA ─── */}
+          <section id="como-funciona" className="bg-white py-16 md:py-20">
+            <div className="max-w-5xl mx-auto px-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center mb-12">
+                Como funciona
+              </h2>
+
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+                {etapas.map((e) => {
+                  const Icon = e.icon
+                  return (
+                    <div key={e.n} className="flex flex-col items-center text-center">
+                      <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center mb-3 relative">
+                        <Icon className="w-6 h-6 text-orange-500" />
+                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center">
+                          {e.n}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-slate-700">{e.label}</p>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Seta visual entre passos (desktop) */}
+              <div className="hidden md:flex justify-center mt-6">
+                <div className="flex items-center gap-2 text-slate-300">
+                  {[1, 2, 3, 4].map((i) => (
+                    <ChevronRight key={i} className="w-4 h-4" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ─── BLOCO 5 — RELATÓRIOS QUE DEFENDEM ─── */}
+          <section className="bg-slate-50 py-16 md:py-20">
+            <div className="max-w-3xl mx-auto px-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center mb-10">
+                Documentação que convênio respeita.
+              </h2>
+
+              <div className="space-y-4">
+                {defesas.map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    </div>
+                    <p className="text-base text-slate-600">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ─── BLOCO 6 — COMUNICAÇÃO COM FAMÍLIAS ─── */}
+          <section className="bg-white py-16 md:py-20">
+            <div className="max-w-3xl mx-auto px-6 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-6">
+                <MessageCircle className="w-6 h-6 text-orange-500" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
+                Pais informados. Dados clínicos protegidos.
+              </h2>
+              <p className="mt-6 text-base md:text-lg text-slate-500 leading-relaxed">
+                O sistema gera o resumo. Você revisa e aprova. A família recebe o progresso, não dados brutos. Tudo com consentimento registrado.
+              </p>
+            </div>
+          </section>
+
+          {/* ─── BLOCO 7 — PARA QUEM É ─── */}
+          <section className="bg-slate-50 py-16 md:py-20">
+            <div className="max-w-5xl mx-auto px-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center mb-12">
+                Para quem é
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {perfis.map((p) => {
+                  const Icon = p.icon
+                  return (
+                    <div
+                      key={p.titulo}
+                      className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
+                        <Icon className="w-6 h-6 text-orange-500" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-2">{p.titulo}</h3>
+                      <p className="text-sm text-slate-500 leading-relaxed">{p.texto}</p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* ─── BLOCO 8 — PLANOS ─── */}
+          <section id="planos" className="bg-white py-16 md:py-20">
+            <div className="max-w-5xl mx-auto px-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center mb-12">
+                Planos
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Essencial */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 flex flex-col">
+                  <p className="text-sm font-medium text-slate-400 uppercase tracking-wide">Para começar</p>
+                  <h3 className="mt-2 text-xl font-semibold text-slate-900">Acesso Essencial</h3>
+                  <div className="mt-6">
+                    <span className="text-4xl font-bold text-slate-900">Gratuito</span>
+                  </div>
+                  <ul className="mt-8 space-y-3 flex-1">
+                    {['1 aprendiz', 'Acesso completo', 'Sem prazo', 'Sem cartão'].map((item) => (
+                      <li key={item} className="flex items-center gap-2 text-sm text-slate-600">
+                        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/sign-up"
+                    className="mt-8 block w-full text-center py-2.5 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors"
+                  >
+                    Começar agora
+                  </Link>
+                </div>
+
+                {/* AXIS Clínica 100 — Fundadores */}
+                <div className="relative bg-white rounded-2xl border-2 border-orange-400 shadow-md p-8 flex flex-col">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                    Recomendado
+                  </span>
+                  <p className="text-sm font-medium text-orange-500 uppercase tracking-wide">Programa Fundadores</p>
+                  <h3 className="mt-2 text-xl font-semibold text-slate-900">AXIS Clínica 100</h3>
+                  <div className="mt-6">
+                    <span className="text-lg text-slate-400 line-through mr-2">R$297</span>
+                    <br />
+                    <span className="text-4xl font-bold text-slate-900">R$147</span>
+                    <span className="text-base text-slate-500">/mês</span>
+                  </div>
+                  <ul className="mt-8 space-y-3 flex-1">
+                    {[
+                      'Até 100 aprendizes',
+                      'Multi-terapeuta',
+                      'Relatórios para convênio',
+                      'Motor CSO-ABA completo',
+                      'Suporte prioritário',
+                    ].map((item) => (
+                      <li key={item} className="flex items-center gap-2 text-sm text-slate-600">
+                        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <a
+                    href="https://pay.hotmart.com/H104663812P?off=u2t04kz5"
+                    target="_blank"
+                    className="mt-8 block w-full text-center py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
+                  >
+                    Quero ser Fundador
+                  </a>
+                </div>
+
+                {/* AXIS Clínica 250 */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 flex flex-col">
+                  <p className="text-sm font-medium text-slate-400 uppercase tracking-wide">Para clínicas maiores</p>
+                  <h3 className="mt-2 text-xl font-semibold text-slate-900">AXIS Clínica 250</h3>
+                  <div className="mt-6">
+                    <span className="text-4xl font-bold text-slate-900">R$497</span>
+                    <span className="text-base text-slate-500">/mês</span>
+                  </div>
+                  <ul className="mt-8 space-y-3 flex-1">
+                    {[
+                      'Até 250 aprendizes',
+                      'Tudo do plano anterior',
+                      'Múltiplas unidades',
+                      'Relatórios consolidados',
+                      'Onboarding dedicado',
+                    ].map((item) => (
+                      <li key={item} className="flex items-center gap-2 text-sm text-slate-600">
+                        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <a
+                    href="https://pay.hotmart.com/H104663812P?off=gona25or"
+                    target="_blank"
+                    className="mt-8 block w-full text-center py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors"
+                  >
+                    Assinar agora
+                  </a>
+                </div>
+              </div>
+
+              <p className="mt-8 text-center text-sm text-slate-400">
+                Clínicas com até 50 aprendizes podem começar com AbaSimples.
+              </p>
+            </div>
+          </section>
+
+          {/* ─── BLOCO 9 — SEGURANÇA ─── */}
+          <section className="bg-slate-50 py-16 md:py-20">
+            <div className="max-w-4xl mx-auto px-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center mb-12">
+                Segurança e conformidade
+              </h2>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {seguranca.map((s) => {
+                  const Icon = s.icon
+                  return (
+                    <div key={s.label} className="flex flex-col items-center text-center">
+                      <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center mb-3">
+                        <Icon className="w-6 h-6 text-slate-700" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-600">{s.label}</p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* ─── CTA FINAL ─── */}
+          <section className="bg-white py-20 md:py-28">
+            <div className="max-w-3xl mx-auto px-6 text-center">
+              <h2 className="text-2xl md:text-4xl font-bold text-slate-900">
+                Estruture sua clínica hoje.
+              </h2>
+              <p className="mt-4 text-base md:text-lg text-slate-500">
+                Organize sua prática. Defenda sua carga horária. Cresça com segurança.
+              </p>
+              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link
+                  href="/demo"
+                  className="px-8 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors text-base"
+                >
+                  Ver demonstração
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="px-8 py-3 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors text-base"
+                >
+                  Começar com 1 aprendiz
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* ─── FOOTER ─── */}
+          <footer className="border-t border-slate-100 bg-white py-8">
+            <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <p className="text-sm text-slate-400">
+                © 2026 AXIS ABA. Plataforma clínica profissional.
+              </p>
+              <div className="flex items-center gap-6 text-sm text-slate-400">
+                <Link href="/aba/precos" className="hover:text-slate-600 transition-colors">Preços</Link>
+                <Link href="/sign-up" className="hover:text-slate-600 transition-colors">Criar conta</Link>
               </div>
             </div>
           </footer>
@@ -142,7 +578,7 @@ export default function Home() {
 
 function RedirectToHub() {
   const router = useRouter()
-  
+
   useEffect(() => {
     router.replace('/hub')
   }, [router])
@@ -150,10 +586,8 @@ function RedirectToHub() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" aria-label="Carregando"></div>
-        <p className="text-base text-neutral-600">
-          Carregando módulos...
-        </p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4" aria-label="Carregando"></div>
+        <p className="text-base text-slate-500">Carregando...</p>
       </div>
     </div>
   )
