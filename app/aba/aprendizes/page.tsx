@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useRole } from '@/app/components/RoleProvider'
+import UpgradeModal from '@/app/components/UpgradeModal'
 
 interface Learner {
   id: string
@@ -35,9 +37,11 @@ const supportLabels: Record<number, string> = {
 }
 
 export default function AprendizesPage() {
+  const { profile } = useRole()
   const [learners, setLearners] = useState<Learner[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showUpgrade, setShowUpgrade] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -120,7 +124,14 @@ export default function AprendizesPage() {
             </p>
           </div>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              const isFree = !profile?.tenant_plan || profile.tenant_plan === 'free'
+              if (isFree && learners.length >= 1) {
+                setShowUpgrade(true)
+              } else {
+                setShowModal(true)
+              }
+            }}
             className="px-4 py-2 bg-aba-500 text-white text-sm font-medium rounded-lg hover:bg-aba-600 transition-colors"
           >
             + Novo Aprendiz
@@ -180,6 +191,8 @@ export default function AprendizesPage() {
           </div>
         )}
       </div>
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
 
       {showModal && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
