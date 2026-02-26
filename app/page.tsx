@@ -4,6 +4,7 @@ import { SignedIn, SignedOut } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Lock,
   FileText,
@@ -22,6 +23,10 @@ import {
   Users,
   MessageCircle,
 } from 'lucide-react'
+
+/* ─── brand color ─── */
+const brand = '#c46a50'
+const brandLight = '#f5ebe7'
 
 /* ───────────────────────── mini-data ───────────────────────── */
 
@@ -123,7 +128,7 @@ function RelatorioMiniatura() {
     <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-5 w-full max-w-sm transform rotate-1 hover:rotate-0 transition-transform duration-300">
       {/* Header */}
       <div className="border-b border-slate-100 pb-3 mb-3">
-        <p className="text-[10px] font-bold text-orange-500 tracking-wide uppercase">
+        <p className="text-[10px] font-bold tracking-wide uppercase" style={{ color: brand }}>
           AXIS ABA — Relatório de Evolução Clínica
         </p>
       </div>
@@ -145,12 +150,12 @@ function RelatorioMiniatura() {
         <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-12" fill="none">
           <polyline
             points={coords}
-            stroke="#f97316"
+            stroke={brand}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <circle cx={w} cy={h - ((86 - min) / range) * h} r="3" fill="#f97316" />
+          <circle cx={w} cy={h - ((86 - min) / range) * h} r="3" fill={brand} />
         </svg>
         <div className="flex justify-between text-[9px] text-slate-400 mt-1 px-1">
           <span>Set</span>
@@ -204,16 +209,13 @@ export default function Home() {
           {/* ─── HEADER ─── */}
           <header className="border-b border-slate-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
             <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">A</span>
-                </div>
-                <span className="text-lg font-bold text-slate-900">AXIS ABA</span>
-              </div>
+              <Link href="/" className="flex items-center gap-2">
+                <Image src="/axaba2.png" alt="AXIS ABA" width={120} height={36} className="h-9 w-auto" priority />
+              </Link>
               <nav className="hidden md:flex items-center gap-6 text-sm text-slate-500">
                 <Link href="#como-funciona" className="hover:text-slate-800 transition-colors">Como funciona</Link>
                 <Link href="#planos" className="hover:text-slate-800 transition-colors">Planos</Link>
-                <Link href="/sign-up" className="px-4 py-2 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors">
+                <Link href="/sign-up" className="px-4 py-2 rounded-lg text-white font-medium transition-colors" style={{ backgroundColor: brand }}>
                   Começar grátis
                 </Link>
               </nav>
@@ -224,7 +226,7 @@ export default function Home() {
           <section className="bg-white py-20 md:py-28">
             <div className="max-w-4xl mx-auto px-6 text-center">
               <h1 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">
-                Sua clínica ABA com estrutura para crescer e documentação que defende.
+                Estrutura clínica real. Documentação que sustenta sua carga horária.
               </h1>
               <p className="mt-6 text-lg md:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
                 Registros organizados, evolução mensurável e relatórios que convênios não podem ignorar. Pensado para a realidade brasileira.
@@ -232,7 +234,8 @@ export default function Home() {
               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   href="/demo"
-                  className="px-8 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors text-base"
+                  className="px-8 py-3 rounded-lg text-white font-medium transition-colors text-base"
+                  style={{ backgroundColor: brand }}
                 >
                   Ver demonstração
                 </Link>
@@ -300,8 +303,11 @@ export default function Home() {
                 </div>
 
                 {/* Relatório miniatura */}
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-4">
                   <RelatorioMiniatura />
+                  <p className="text-xs text-slate-400 max-w-sm text-center leading-relaxed">
+                    Documento gerado automaticamente a partir de dados de sessão. Registros imutáveis. Histórico auditável.
+                  </p>
                 </div>
               </div>
             </div>
@@ -319,9 +325,9 @@ export default function Home() {
                   const Icon = e.icon
                   return (
                     <div key={e.n} className="flex flex-col items-center text-center">
-                      <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center mb-3 relative">
-                        <Icon className="w-6 h-6 text-orange-500" />
-                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 relative" style={{ backgroundColor: brandLight }}>
+                        <Icon className="w-6 h-6" style={{ color: brand }} />
+                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center" style={{ backgroundColor: brand }}>
                           {e.n}
                         </span>
                       </div>
@@ -365,8 +371,8 @@ export default function Home() {
           {/* ─── BLOCO 6 — COMUNICAÇÃO COM FAMÍLIAS ─── */}
           <section className="bg-white py-16 md:py-20">
             <div className="max-w-3xl mx-auto px-6 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-6">
-                <MessageCircle className="w-6 h-6 text-orange-500" />
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: brandLight }}>
+                <MessageCircle className="w-6 h-6" style={{ color: brand }} />
               </div>
               <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
                 Pais informados. Dados clínicos protegidos.
@@ -392,8 +398,8 @@ export default function Home() {
                       key={p.titulo}
                       className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center"
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
-                        <Icon className="w-6 h-6 text-orange-500" />
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: brandLight }}>
+                        <Icon className="w-6 h-6" style={{ color: brand }} />
                       </div>
                       <h3 className="text-lg font-semibold text-slate-900 mb-2">{p.titulo}</h3>
                       <p className="text-sm text-slate-500 leading-relaxed">{p.texto}</p>
@@ -417,7 +423,7 @@ export default function Home() {
                   <p className="text-sm font-medium text-slate-400 uppercase tracking-wide">Para começar</p>
                   <h3 className="mt-2 text-xl font-semibold text-slate-900">Acesso Essencial</h3>
                   <div className="mt-6">
-                    <span className="text-4xl font-bold text-slate-900">Gratuito</span>
+                    <span className="text-lg font-medium text-slate-500">Uso inicial</span>
                   </div>
                   <ul className="mt-8 space-y-3 flex-1">
                     {['1 aprendiz', 'Acesso completo', 'Sem prazo', 'Sem cartão'].map((item) => (
@@ -436,11 +442,11 @@ export default function Home() {
                 </div>
 
                 {/* AXIS Clínica 100 — Fundadores */}
-                <div className="relative bg-white rounded-2xl border-2 border-orange-400 shadow-md p-8 flex flex-col">
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                <div className="relative bg-white rounded-2xl border-2 shadow-md p-8 flex flex-col" style={{ borderColor: brand }}>
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-white text-xs font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: brand }}>
                     Recomendado
                   </span>
-                  <p className="text-sm font-medium text-orange-500 uppercase tracking-wide">Programa Fundadores</p>
+                  <p className="text-sm font-medium uppercase tracking-wide" style={{ color: brand }}>Programa Fundadores</p>
                   <h3 className="mt-2 text-xl font-semibold text-slate-900">AXIS Clínica 100</h3>
                   <div className="mt-6">
                     <span className="text-lg text-slate-400 line-through mr-2">R$297</span>
@@ -448,6 +454,9 @@ export default function Home() {
                     <span className="text-4xl font-bold text-slate-900">R$147</span>
                     <span className="text-base text-slate-500">/mês</span>
                   </div>
+                  <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+                    Preço de lançamento para os primeiros 100 clientes. Garantido enquanto mantiver a assinatura.
+                  </p>
                   <ul className="mt-8 space-y-3 flex-1">
                     {[
                       'Até 100 aprendizes',
@@ -465,7 +474,8 @@ export default function Home() {
                   <a
                     href="https://pay.hotmart.com/H104663812P?off=u2t04kz5"
                     target="_blank"
-                    className="mt-8 block w-full text-center py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
+                    className="mt-8 block w-full text-center py-2.5 rounded-lg text-white text-sm font-medium transition-colors"
+                    style={{ backgroundColor: brand }}
                   >
                     Quero ser Fundador
                   </a>
@@ -504,7 +514,8 @@ export default function Home() {
               </div>
 
               <p className="mt-8 text-center text-sm text-slate-400">
-                Clínicas com até 50 aprendizes podem começar com AbaSimples.
+                Clínicas com até 50 aprendizes podem começar com{' '}
+                <a href="https://abasimples.com.br" target="_blank" className="underline hover:text-slate-600 transition-colors">AbaSimples</a>.
               </p>
             </div>
           </section>
@@ -541,10 +552,14 @@ export default function Home() {
               <p className="mt-4 text-base md:text-lg text-slate-500">
                 Organize sua prática. Defenda sua carga horária. Cresça com segurança.
               </p>
+              <p className="mt-6 text-sm text-slate-400 italic">
+                Se sua documentação não sustenta sua carga horária, alguém vai questionar.
+              </p>
               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   href="/demo"
-                  className="px-8 py-3 rounded-lg bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors text-base"
+                  className="px-8 py-3 rounded-lg text-white font-medium transition-colors text-base"
+                  style={{ backgroundColor: brand }}
                 >
                   Ver demonstração
                 </Link>
@@ -586,7 +601,7 @@ function RedirectToHub() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4" aria-label="Carregando"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: brand }} aria-label="Carregando"></div>
         <p className="text-base text-slate-500">Carregando...</p>
       </div>
     </div>

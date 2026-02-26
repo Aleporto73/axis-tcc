@@ -59,6 +59,13 @@ export default function SidebarABA() {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
+    ajuda: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+        <circle cx="12" cy="17" r=".5" fill="currentColor" stroke="none" />
+      </svg>
+    ),
   }
 
   // Itens de navegação baseados no role
@@ -144,6 +151,20 @@ export default function SidebarABA() {
               {icons.equipe}
             </Link>
           )}
+          <Link
+            href="/aba/ajuda"
+            title="Ajuda"
+            className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
+              isActive('/aba/ajuda')
+                ? 'text-aba-500 bg-aba-500/10 shadow-sm shadow-aba-500/10'
+                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {isActive('/aba/ajuda') && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 bg-aba-500 rounded-r-full" />
+            )}
+            {icons.ajuda}
+          </Link>
           <Link
             href="/aba/configuracoes"
             title="Configurações ABA"
