@@ -85,12 +85,13 @@ export default function PrecosPage() {
               ))}
             </ul>
 
-            <button
-              type="button"
-              className="mt-8 block w-full text-center py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors cursor-default"
+            <a
+              href="https://pay.hotmart.com/H104663812P?off=u2t04kz5"
+              target="_blank"
+              className="mt-8 block w-full text-center py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
             >
               Quero ser Fundador
-            </button>
+            </a>
           </div>
 
           {/* AXIS Clínica 250 */}
@@ -124,12 +125,13 @@ export default function PrecosPage() {
               ))}
             </ul>
 
-            <button
-              type="button"
-              className="mt-8 block w-full text-center py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors cursor-default"
+            <a
+              href="https://pay.hotmart.com/H104663812P?off=gona25or"
+              target="_blank"
+              className="mt-8 block w-full text-center py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors"
             >
-              Falar com consultor
-            </button>
+              Assinar agora
+            </a>
           </div>
         </div>
 
