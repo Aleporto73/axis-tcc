@@ -83,14 +83,6 @@ export default function SidebarABA() {
     ? allNavItems.filter(item => item.roles.includes('admin'))
     : allNavItems.filter(item => role && item.roles.includes(role))
 
-  // Role badge
-  const roleBadge = role === 'admin' ? 'ADM' : role === 'supervisor' ? 'SUP' : 'TER'
-  const roleBadgeColor = role === 'admin'
-    ? 'bg-amber-500/10 border-amber-500/20 text-amber-600'
-    : role === 'supervisor'
-      ? 'bg-blue-500/10 border-blue-500/20 text-blue-600'
-      : 'bg-aba-500/10 border-aba-500/20 text-aba-500'
-
   return (
     <>
       {/* Sidebar Desktop - Colapsada */}
@@ -101,16 +93,6 @@ export default function SidebarABA() {
             <img src="/favicon_axis.png" alt="AXIS" width={28} height={28} style={{ objectFit: 'contain' }} />
           </div>
         </Link>
-
-        {/* Module + Role Badge */}
-        <div className="mb-2 px-2 py-1 rounded-full bg-aba-500/10 border border-aba-500/20">
-          <span className="text-[10px] font-semibold text-aba-500 tracking-wider">ABA</span>
-        </div>
-        {!loading && role && (
-          <div className={`mb-6 px-2 py-0.5 rounded-full border ${roleBadgeColor}`}>
-            <span className="text-[9px] font-bold tracking-wider">{roleBadge}</span>
-          </div>
-        )}
 
         {/* Nav Icons */}
         <nav className="flex flex-col items-center gap-4 flex-1">
