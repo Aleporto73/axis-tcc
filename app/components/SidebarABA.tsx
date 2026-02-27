@@ -89,8 +89,8 @@ export default function SidebarABA() {
       <aside className="hidden md:flex w-20 bg-white border-r border-slate-100 min-h-screen flex-col items-center py-8 fixed left-0 top-0 z-40">
         {/* Logo + Voltar ao Hub */}
         <Link href="/hub" className="mb-8" title="Voltar ao Hub">
-          <div className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:border-aba-500/40 transition-colors overflow-hidden bg-white">
-            <img src="/favicon_axis.png" alt="AXIS" width={28} height={28} style={{ objectFit: 'contain' }} />
+          <div className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:border-aba-500/40 transition-colors bg-white">
+            <span className="text-sm font-bold text-slate-800 tracking-tight">ABA</span>
           </div>
         </Link>
 
