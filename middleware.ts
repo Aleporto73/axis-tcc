@@ -12,6 +12,8 @@ const isPublicRoute = createRouteMatcher([
   // Google OAuth callback e webhook
   '/api/google/callback',
   '/api/google/webhook',
+  // Páginas de produto (landing pages públicas)
+  '/produto(.*)',
   // Demo público
   '/demo(.*)',
   '/api/demo/(.*)',
