@@ -383,6 +383,65 @@ export default function Home() {
             </div>
           </section>
 
+          {/* ─── BLOCO 6.5 — SUPORTE INTELIGENTE (Ana) ─── */}
+          <section className="bg-slate-50 py-16 md:py-20">
+            <div className="max-w-3xl mx-auto px-6 text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
+                Dúvidas? A Ana resolve na hora.
+              </h2>
+              <p className="mt-4 text-base md:text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto">
+                Nossa assistente virtual conhece cada detalhe do sistema e está disponível 24h dentro da plataforma.
+              </p>
+
+              {/* Card simulando chat da Ana */}
+              <div className="mt-10 max-w-xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm text-left">
+                {/* Header do chat */}
+                <div className="flex items-center gap-3 p-5 pb-0">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: brandLight }}>
+                    <MessageCircle className="w-[18px] h-[18px]" style={{ color: brand }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Não encontrou o que procura?</p>
+                    <p className="text-xs text-slate-400">Pergunte para a Ana — ela está aqui pra ajudar.</p>
+                  </div>
+                </div>
+
+                {/* Mensagens simuladas */}
+                <div className="px-5 pt-4 space-y-3">
+                  {/* Balão do usuário */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed text-white" style={{ backgroundColor: brand }}>
+                      Os pais podem acessar o sistema?
+                    </div>
+                  </div>
+
+                  {/* Balão da Ana */}
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed bg-slate-100 text-slate-700">
+                      <span className="block text-xs font-semibold mb-1" style={{ color: brand }}>Ana</span>
+                      Sim, os pais podem acessar através do Portal Família. O profissional configura o acesso e eles acompanham o progresso do aprendiz.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Input fake */}
+                <div className="p-5 pt-4">
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-400 select-none">
+                      Qual sua dificuldade? Me conta...
+                    </div>
+                    <div className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white opacity-40" style={{ backgroundColor: brand }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-3 text-center">
+                    A Ana é uma assistente virtual. Suas respostas não substituem orientação profissional.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* ─── BLOCO 7 — PARA QUEM É ─── */}
           <section className="bg-slate-50 py-16 md:py-20">
             <div className="max-w-5xl mx-auto px-6">
