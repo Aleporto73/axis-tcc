@@ -422,7 +422,10 @@ export default function ProdutoABAPage() {
               <thead>
                 <tr className="bg-slate-900 text-white">
                   <th className="text-left py-4 px-6 font-semibold w-[34%]">Recurso</th>
-                  <th className="text-center py-4 px-3 font-semibold">1 Aprendiz</th>
+                  <th className="text-center py-4 px-3 font-semibold">
+                    <span className="block">1 Aprendiz</span>
+                    <span className="text-xs font-normal text-slate-400">Free</span>
+                  </th>
                   <th className="text-center py-4 px-3 font-semibold">
                     <span className="block">Clínica 100</span>
                     <span className="text-xs font-normal text-slate-400">Founders</span>
