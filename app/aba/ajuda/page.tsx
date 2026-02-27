@@ -11,10 +11,14 @@ import {
   Users,
   Shield,
   BookOpen,
+  MessageCircle,
+  Send,
+  Bot,
 } from 'lucide-react'
 
 /* ─── brand ─── */
 const brand = '#c46a50'
+const brandLight = '#f5ebe7'
 
 /* ─── types ─── */
 interface HelpItem {
@@ -29,7 +33,7 @@ interface HelpSection {
   items: HelpItem[]
 }
 
-/* ─── data ─── */
+/* ─── data (linguagem simplificada) ─── */
 
 const sections: HelpSection[] = [
   {
@@ -40,7 +44,7 @@ const sections: HelpSection[] = [
       {
         title: 'Como cadastrar um aprendiz',
         content: [
-          'Acesse o menu Aprendizes na sidebar.',
+          'Acesse o menu Aprendizes na barra lateral.',
           'Clique em "Novo Aprendiz" no canto superior direito.',
           'Preencha nome, data de nascimento e responsável.',
           'Salve. O aprendiz já aparece no painel principal.',
@@ -49,16 +53,16 @@ const sections: HelpSection[] = [
       {
         title: 'Como criar um protocolo de intervenção',
         content: [
-          'Abra o perfil do aprendiz e acesse a aba PEI.',
+          'Abra o perfil do aprendiz e acesse a aba PEI (Plano Educacional Individualizado).',
           'Clique em "Novo Protocolo".',
-          'Defina o domínio, os alvos e os critérios de mastery.',
+          'Defina a área de desenvolvimento, os alvos (habilidades a ensinar) e os critérios de domínio.',
           'Salve. O protocolo fica vinculado ao aprendiz e pronto para registro de sessão.',
         ],
       },
       {
         title: 'Como agendar a primeira sessão',
         content: [
-          'Vá ao menu Sessões na sidebar.',
+          'Vá ao menu Sessões na barra lateral.',
           'Clique em "Nova Sessão".',
           'Selecione o aprendiz, a data e o terapeuta responsável.',
           'A sessão aparece na agenda e pode ser iniciada no horário marcado.',
@@ -68,7 +72,7 @@ const sections: HelpSection[] = [
         title: 'Entendendo o painel principal',
         content: [
           'O painel mostra um resumo geral da clínica.',
-          'Indicadores de CSO dos aprendizes ativos.',
+          'Indicadores de situação clínica (CSO) dos aprendizes ativos.',
           'Sessões realizadas na semana.',
           'Alertas de regressão ou protocolos sem sessão recente.',
         ],
@@ -89,87 +93,87 @@ const sections: HelpSection[] = [
         ],
       },
       {
-        title: 'Registrando tentativas (trials DTT)',
+        title: 'Registrando tentativas de ensino',
         content: [
-          'Dentro da sessão ativa, selecione o protocolo e o alvo.',
-          'Registre cada tentativa como acerto, erro ou com prompt.',
+          'Dentro da sessão ativa, selecione o protocolo e o alvo (habilidade).',
+          'Registre cada tentativa como acerto, erro ou com ajuda (prompt).',
           'O sistema calcula a porcentagem de acerto em tempo real.',
         ],
       },
       {
-        title: 'Registrando comportamentos (ABC)',
+        title: 'Registrando comportamentos (antecedente, comportamento, consequência)',
         content: [
           'Use a aba "Comportamento" na sessão ativa.',
-          'Registre: Antecedente, Comportamento e Consequência.',
-          'Cada registro é salvo com timestamp automático.',
+          'Registre o que aconteceu antes (antecedente), o comportamento observado e o que aconteceu depois (consequência).',
+          'Cada registro é salvo com horário automático.',
         ],
       },
       {
-        title: 'Finalizando e gerando snapshot',
+        title: 'Finalizando a sessão e gerando o registro permanente',
         content: [
           'Clique em "Finalizar Sessão" quando terminar.',
-          'O sistema gera um snapshot imutável dos dados registrados.',
-          'O snapshot recebe um hash SHA256 que garante autenticidade.',
+          'O sistema gera um registro permanente da sessão — uma "fotografia" de tudo o que foi registrado naquele atendimento.',
+          'Esse registro recebe um código de autenticidade (garante que o documento não foi alterado depois).',
         ],
       },
       {
-        title: 'O que é snapshot imutável e por que importa',
+        title: 'O que é o registro permanente e por que é importante',
         content: [
-          'Snapshot é uma fotografia dos dados da sessão no momento do fechamento.',
-          'Uma vez gerado, não pode ser alterado nem excluído.',
-          'Garante integridade documental para auditorias e convênios.',
-          'Funciona como prova técnica de que o registro é original.',
+          'É uma cópia fiel dos dados da sessão, criada no momento do fechamento.',
+          'Uma vez gerado, não pode ser alterado nem excluído por ninguém.',
+          'Garante a integridade da documentação para auditorias, convênios e supervisão.',
+          'Funciona como prova de que o registro é original e não foi modificado.',
         ],
       },
     ],
   },
   {
     id: 'motor-cso',
-    title: 'Motor CSO-ABA',
+    title: 'Índice de Situação Clínica (CSO)',
     icon: Brain,
     items: [
       {
-        title: 'O que é o CSO-ABA',
+        title: 'O que é o CSO',
         content: [
-          'CSO-ABA é o Clinical Status Overview para Análise do Comportamento Aplicada.',
-          'Um índice composto que organiza dados de sessão em um número interpretável.',
+          'CSO (Clinical Status Overview) é o índice de situação clínica do sistema.',
+          'Ele organiza os dados das sessões em um número fácil de interpretar.',
           'Vai de 0 a 100. Quanto maior, melhor a situação clínica documentada.',
         ],
       },
       {
-        title: 'As 4 dimensões explicadas (SAS, PIS, BSS, TCM)',
+        title: 'As 4 áreas que compõem o índice',
         content: [
-          'SAS (Skill Acquisition Score): taxa de acerto nos alvos ativos.',
-          'PIS (Protocol Implementation Score): aderência ao protocolo planejado.',
-          'BSS (Behavior Stability Score): estabilidade comportamental entre sessões.',
-          'TCM (Therapeutic Compliance Metric): frequência e regularidade das sessões.',
+          'Aquisição de habilidades (SAS): taxa de acerto nos alvos que estão sendo ensinados.',
+          'Aderência ao protocolo (PIS): quanto o atendimento seguiu o plano definido.',
+          'Estabilidade comportamental (BSS): consistência do comportamento entre as sessões.',
+          'Regularidade do atendimento (TCM): frequência e regularidade das sessões realizadas.',
         ],
       },
       {
-        title: 'Como interpretar as faixas',
+        title: 'Como interpretar as faixas de pontuação',
         content: [
           'Excelente (85–100): evolução consistente, documentação sólida.',
           'Bom (70–84): progresso adequado, acompanhar normalmente.',
-          'Atenção (50–69): possível estagnação, revisar protocolo.',
-          'Crítico (0–49): regressão ou ausência de dados, ação imediata.',
+          'Atenção (50–69): possível estagnação — vale revisar o protocolo.',
+          'Crítico (0–49): regressão ou falta de dados — necessita ação imediata.',
         ],
       },
       {
-        title: 'Por que os pesos são fixos (0.25 cada)',
+        title: 'Por que cada área tem o mesmo peso',
         content: [
-          'Cada dimensão tem peso igual para evitar viés clínico.',
-          'Nenhuma dimensão é mais importante que outra por padrão.',
-          'Isso garante que o índice represente o quadro geral, não uma parte.',
-          'A decisão clínica continua com o profissional — o CSO organiza, não decide.',
+          'Cada uma das 4 áreas vale 25% do índice total.',
+          'Isso evita que uma única área distorça a avaliação geral.',
+          'O índice mostra o quadro completo, não apenas uma parte.',
+          'A decisão clínica continua com o profissional — o CSO organiza os dados, não toma decisões.',
         ],
       },
       {
-        title: 'CSO não é diagnóstico — é organização de dados',
+        title: 'O CSO é uma ferramenta de apoio, não um diagnóstico',
         content: [
           'O CSO não diagnostica nem classifica o aprendiz.',
-          'Ele organiza dados de sessão para facilitar supervisão e documentação.',
+          'Ele organiza os dados de sessão para facilitar a supervisão e a documentação.',
           'Nunca deve ser usado isoladamente para decisões clínicas.',
-          'É uma ferramenta de suporte, não de substituição do julgamento profissional.',
+          'É uma ferramenta de suporte ao profissional, não de substituição do seu julgamento.',
         ],
       },
     ],
@@ -180,45 +184,45 @@ const sections: HelpSection[] = [
     icon: FileText,
     items: [
       {
-        title: 'Como gerar relatório de evolução',
+        title: 'Como gerar um relatório de evolução',
         content: [
-          'Acesse Relatórios na sidebar.',
+          'Acesse Relatórios na barra lateral.',
           'Selecione o aprendiz e o período desejado.',
           'Clique em "Gerar Relatório". O documento é montado automaticamente.',
-          'Inclui CSO, gráficos de evolução e resumo por dimensão.',
+          'Inclui o índice de situação clínica (CSO), gráficos de evolução e resumo por área.',
         ],
       },
       {
         title: 'Relatório para convênio (ANS/SBNI)',
         content: [
           'Use o modelo "Relatório para Convênio" na tela de Relatórios.',
-          'O sistema preenche justificativa de carga horária automaticamente.',
-          'Estrutura compatível com exigências da ANS e fundamentação SBNI 2025.',
+          'O sistema preenche automaticamente a justificativa de carga horária.',
+          'A estrutura é compatível com as exigências da ANS e fundamentação SBNI 2025.',
           'Inclui dados objetivos que sustentam a necessidade do tratamento.',
         ],
       },
       {
-        title: 'Exportar PDF',
+        title: 'Exportar relatório em PDF',
         content: [
           'Após gerar o relatório, clique em "Exportar PDF".',
           'O documento é gerado com layout profissional e cabeçalho da clínica.',
-          'Inclui hash SHA256 no rodapé para verificação de autenticidade.',
+          'Inclui um código de autenticidade no rodapé, para comprovar que o relatório é original.',
         ],
       },
       {
-        title: 'Entendendo o hash SHA256 (autenticidade)',
+        title: 'O que é o código de autenticidade do relatório',
         content: [
-          'Cada relatório recebe um hash SHA256 único no momento da geração.',
-          'É uma impressão digital criptográfica do conteúdo.',
-          'Qualquer alteração no documento invalida o hash.',
-          'Serve como prova de que o relatório não foi adulterado.',
+          'Cada relatório recebe um código único no momento em que é gerado.',
+          'Esse código funciona como uma "impressão digital" do documento.',
+          'Se qualquer parte do relatório for alterada depois, o código deixa de ser válido.',
+          'Serve como garantia de que o relatório não foi adulterado.',
         ],
       },
       {
-        title: 'Justificativa técnica de carga horária',
+        title: 'Justificativa de carga horária no relatório',
         content: [
-          'O relatório inclui seção específica de justificativa.',
-          'Baseada em dados reais: frequência de sessões, evolução mensurada, protocolos ativos.',
+          'O relatório inclui uma seção específica de justificativa.',
+          'É baseada em dados reais: frequência de sessões, evolução medida e protocolos ativos.',
           'Fundamenta a necessidade de cada hora de atendimento com evidência documental.',
         ],
       },
@@ -238,23 +242,23 @@ const sections: HelpSection[] = [
         ],
       },
       {
-        title: 'Consentimento LGPD obrigatório',
+        title: 'Consentimento obrigatório (LGPD)',
         content: [
-          'Antes de compartilhar qualquer dado, o responsável precisa consentir.',
-          'O sistema registra data, hora e IP do consentimento.',
+          'Antes de compartilhar qualquer informação, o responsável precisa dar o consentimento.',
+          'O sistema registra automaticamente a data, hora e origem do consentimento.',
           'Sem consentimento, nenhuma informação é exibida no portal.',
         ],
       },
       {
-        title: 'O que os pais veem (e o que não veem)',
+        title: 'O que os pais conseguem ver (e o que não)',
         content: [
-          'Veem: resumo de evolução, frequência de sessões, marcos alcançados.',
-          'Não veem: dados brutos de sessão, anotações clínicas, registros ABC.',
-          'O conteúdo é um resumo aprovado pelo profissional, não dados técnicos.',
+          'Podem ver: resumo de evolução, frequência de sessões e marcos alcançados.',
+          'Não podem ver: dados detalhados de sessão, anotações clínicas nem registros de comportamento.',
+          'O conteúdo mostrado é um resumo aprovado pelo profissional.',
         ],
       },
       {
-        title: 'Envio de resumo após sessão',
+        title: 'Envio de resumo após cada sessão',
         content: [
           'Após finalizar a sessão, o sistema gera um resumo para a família.',
           'O terapeuta revisa e aprova antes do envio.',
@@ -269,37 +273,37 @@ const sections: HelpSection[] = [
     icon: Shield,
     items: [
       {
-        title: 'Roles: Administrador, Supervisor, Terapeuta',
+        title: 'Tipos de acesso: Administrador, Supervisor, Terapeuta',
         content: [
-          'Administrador: acesso total, gerencia equipe e configurações.',
-          'Supervisor: visualiza todos os aprendizes, gera relatórios, supervisiona.',
-          'Terapeuta: acessa apenas seus aprendizes e sessões atribuídas.',
+          'Administrador: acesso total — gerencia equipe, configurações e dados da clínica.',
+          'Supervisor: visualiza todos os aprendizes, gera relatórios e acompanha a equipe.',
+          'Terapeuta: acessa apenas seus próprios aprendizes e sessões.',
         ],
       },
       {
-        title: 'Como convidar um membro da equipe',
+        title: 'Como convidar alguém para a equipe',
         content: [
-          'Acesse Equipe na sidebar (visível apenas para administradores).',
+          'Acesse Equipe na barra lateral (visível apenas para administradores).',
           'Clique em "Convidar Membro".',
-          'Insira o e-mail e selecione o role.',
+          'Insira o e-mail e selecione o tipo de acesso.',
           'O convidado recebe um link para criar a conta.',
         ],
       },
       {
-        title: 'O que cada role pode ver e fazer',
+        title: 'O que cada tipo de acesso pode ver e fazer',
         content: [
           'Administrador: tudo, incluindo Equipe, Configurações e dados financeiros.',
-          'Supervisor: Painel, Aprendizes (todos), Sessões (todas), PEI, Relatórios.',
-          'Terapeuta: Painel (resumido), Aprendizes (atribuídos), Sessões (suas).',
+          'Supervisor: Painel, todos os Aprendizes, todas as Sessões, PEI e Relatórios.',
+          'Terapeuta: Painel resumido, seus Aprendizes e suas Sessões.',
         ],
       },
       {
-        title: 'Transferir administração',
+        title: 'Transferir a administração para outra pessoa',
         content: [
-          'Apenas o administrador atual pode transferir o role.',
-          'Acesse Equipe, selecione o membro e clique em "Promover a Admin".',
-          'Após a transferência, seu role muda automaticamente para Supervisor.',
-          'Essa ação é registrada no log de auditoria.',
+          'Apenas o administrador atual pode fazer essa transferência.',
+          'Acesse Equipe, selecione o membro e clique em "Promover a Administrador".',
+          'Após a transferência, seu acesso muda automaticamente para Supervisor.',
+          'Essa ação fica registrada no histórico do sistema.',
         ],
       },
     ],
@@ -309,21 +313,21 @@ const sections: HelpSection[] = [
     title: 'Glossário ABA',
     icon: BookOpen,
     items: [
-      { title: 'ABC', content: ['Antecedente, Comportamento e Consequência. Modelo de registro funcional de comportamentos durante sessão.'] },
+      { title: 'Registro ABC', content: ['Antecedente, Comportamento e Consequência. Modelo para registrar o que acontece antes, durante e depois de um comportamento na sessão.'] },
       { title: 'Alvo', content: ['Habilidade específica que está sendo ensinada dentro de um protocolo de intervenção.'] },
-      { title: 'Baseline', content: ['Linha de base. Medição inicial do desempenho do aprendiz antes da intervenção.'] },
-      { title: 'CSO-ABA', content: ['Clinical Status Overview para ABA. Índice composto (0–100) que organiza dados clínicos em 4 dimensões.'] },
-      { title: 'Domínio', content: ['Área ampla de desenvolvimento (ex: comunicação, social, acadêmico, comportamento adaptativo).'] },
-      { title: 'DTT', content: ['Discrete Trial Training. Ensino por tentativas discretas com estrutura: instrução, resposta, consequência.'] },
-      { title: 'Fading', content: ['Redução gradual do nível de ajuda (prompt) fornecida ao aprendiz conforme ele ganha independência.'] },
-      { title: 'Generalização 3x2', content: ['Critério que exige acerto com pelo menos 3 pessoas diferentes em 2 ambientes distintos para considerar habilidade generalizada.'] },
-      { title: 'Manutenção', content: ['Verificação periódica de habilidades já adquiridas para garantir que não houve perda.'] },
-      { title: 'Mastery', content: ['Critério de domínio. O aprendiz atingiu o nível definido de acerto consistente para aquele alvo.'] },
-      { title: 'Prompt', content: ['Ajuda fornecida ao aprendiz para facilitar a resposta correta. Pode ser físico, verbal, gestual ou visual.'] },
-      { title: 'Protocolo', content: ['Plano estruturado de intervenção contendo alvos, critérios de mastery e estratégias de ensino.'] },
-      { title: 'Regressão', content: ['Perda de habilidade previamente adquirida, identificada pela queda nos indicadores entre períodos.'] },
-      { title: 'Sonda', content: ['Tentativa de avaliação sem ajuda (prompt). Mede o desempenho real do aprendiz.'] },
-      { title: 'Tentativa', content: ['Cada oportunidade de resposta oferecida ao aprendiz dentro de uma sessão DTT.'] },
+      { title: 'Linha de base (Baseline)', content: ['Medição inicial do desempenho do aprendiz antes de começar a intervenção.'] },
+      { title: 'CSO (Índice de Situação Clínica)', content: ['Índice de 0 a 100 que organiza os dados clínicos em 4 áreas: aquisição de habilidades, aderência ao protocolo, estabilidade comportamental e regularidade.'] },
+      { title: 'Área de desenvolvimento (Domínio)', content: ['Categoria ampla como comunicação, habilidades sociais, acadêmico ou comportamento adaptativo.'] },
+      { title: 'Ensino por tentativas (DTT)', content: ['Método de ensino estruturado: o terapeuta dá uma instrução, o aprendiz responde e recebe uma consequência.'] },
+      { title: 'Redução de ajuda (Fading)', content: ['Diminuição gradual da ajuda fornecida ao aprendiz, conforme ele ganha independência.'] },
+      { title: 'Generalização 3x2', content: ['Critério que exige acerto com pelo menos 3 pessoas diferentes em 2 ambientes distintos para considerar a habilidade generalizada.'] },
+      { title: 'Manutenção', content: ['Verificação periódica de habilidades já aprendidas para garantir que não houve perda.'] },
+      { title: 'Critério de domínio (Mastery)', content: ['O aprendiz atingiu o nível definido de acertos consistentes para determinado alvo.'] },
+      { title: 'Ajuda (Prompt)', content: ['Suporte dado ao aprendiz para facilitar a resposta correta. Pode ser físico, verbal, gestual ou visual.'] },
+      { title: 'Protocolo', content: ['Plano estruturado de intervenção contendo alvos, critérios de domínio e estratégias de ensino.'] },
+      { title: 'Regressão', content: ['Perda de habilidade previamente aprendida, identificada pela queda nos indicadores entre períodos.'] },
+      { title: 'Sonda', content: ['Tentativa de avaliação sem ajuda. Mede o desempenho real do aprendiz sem nenhum suporte.'] },
+      { title: 'Tentativa', content: ['Cada oportunidade de resposta oferecida ao aprendiz dentro de uma sessão de ensino.'] },
     ],
   },
 ]
@@ -348,7 +352,7 @@ function Highlight({ text, term }: { text: string; term: string }) {
   )
 }
 
-/* ─── accordion item ─── */
+/* ─── accordion item (sem max-height fixo → sem corte de texto) ─── */
 function AccordionItem({
   item,
   isOpen,
@@ -361,12 +365,23 @@ function AccordionItem({
   searchTerm: string
 }) {
   const contentRef = useRef<HTMLDivElement>(null)
-  const [height, setHeight] = useState(0)
+  const [measuredHeight, setMeasuredHeight] = useState(0)
 
   useEffect(() => {
     if (contentRef.current) {
-      setHeight(isOpen ? contentRef.current.scrollHeight : 0)
+      setMeasuredHeight(contentRef.current.scrollHeight)
     }
+  }, [isOpen, item.content])
+
+  // Re-measure on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (contentRef.current && isOpen) {
+        setMeasuredHeight(contentRef.current.scrollHeight)
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [isOpen])
 
   return (
@@ -375,24 +390,33 @@ function AccordionItem({
         onClick={onToggle}
         className="w-full flex items-center justify-between py-3.5 px-4 text-left hover:bg-slate-50/50 transition-colors rounded-lg"
       >
-        <span className="text-sm font-medium text-slate-700">
+        <span className="text-sm font-medium text-slate-700 pr-2">
           <Highlight text={item.title} term={searchTerm} />
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+          className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-300 ${
             isOpen ? 'rotate-180' : ''
           }`}
         />
       </button>
+
+      {/* Container com transição de altura calculada — nunca corta conteúdo */}
       <div
-        className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
-        style={{ maxHeight: height }}
+        style={{
+          maxHeight: isOpen ? `${measuredHeight + 16}px` : '0px',
+          opacity: isOpen ? 1 : 0,
+          overflow: 'hidden',
+          transition: 'max-height 0.35s ease, opacity 0.25s ease',
+        }}
       >
         <div ref={contentRef} className="px-4 pb-4">
           <ul className="space-y-2">
             {item.content.map((line, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-slate-600 leading-relaxed">
-                <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0 mt-2" />
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
+                  style={{ backgroundColor: brand }}
+                />
                 <Highlight text={line} term={searchTerm} />
               </li>
             ))}
@@ -403,7 +427,7 @@ function AccordionItem({
   )
 }
 
-/* ─── section accordion ─── */
+/* ─── section accordion (sem max-height fixo) ─── */
 function SectionAccordion({
   section,
   searchTerm,
@@ -416,17 +440,24 @@ function SectionAccordion({
   const [isOpen, setIsOpen] = useState(false)
   const [openItems, setOpenItems] = useState<Set<number>>(new Set())
   const contentRef = useRef<HTMLDivElement>(null)
-  const [height, setHeight] = useState(0)
+  const [measuredHeight, setMeasuredHeight] = useState(0)
 
   const expanded = forceOpen || isOpen
 
+  // Mede a altura real do conteúdo (recalcula quando items internos mudam)
   useEffect(() => {
     if (contentRef.current) {
-      setHeight(expanded ? contentRef.current.scrollHeight : 0)
+      // Pequeno delay para garantir que o DOM dos items internos já renderizou
+      const timer = setTimeout(() => {
+        if (contentRef.current) {
+          setMeasuredHeight(contentRef.current.scrollHeight)
+        }
+      }, 50)
+      return () => clearTimeout(timer)
     }
-  }, [expanded, openItems])
+  }, [expanded, openItems, section.items])
 
-  // When search forces open, open matching items too
+  // Quando busca força abertura, abre items que correspondem
   useEffect(() => {
     if (forceOpen && searchTerm) {
       const matching = new Set<number>()
@@ -458,11 +489,11 @@ function SectionAccordion({
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
       <button
         onClick={() => setIsOpen((p) => !p)}
-        className="w-full flex items-center gap-4 p-6 text-left"
+        className="w-full flex items-center gap-4 p-5 md:p-6 text-left"
       >
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ backgroundColor: '#f5ebe7' }}
+          style={{ backgroundColor: brandLight }}
         >
           <Icon className="w-5 h-5" style={{ color: brand }} />
         </div>
@@ -475,17 +506,22 @@ function SectionAccordion({
           {section.items.length}
         </span>
         <ChevronDown
-          className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+          className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-300 ${
             expanded ? 'rotate-180' : ''
           }`}
         />
       </button>
 
+      {/* Container da seção — altura calculada dinamicamente */}
       <div
-        className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
-        style={{ maxHeight: height }}
+        style={{
+          maxHeight: expanded ? `${measuredHeight + 32}px` : '0px',
+          opacity: expanded ? 1 : 0,
+          overflow: 'hidden',
+          transition: 'max-height 0.4s ease, opacity 0.3s ease',
+        }}
       >
-        <div ref={contentRef} className="px-6 pb-6">
+        <div ref={contentRef} className="px-5 md:px-6 pb-5 md:pb-6">
           <div className="border-t border-slate-100 pt-2">
             {section.items.map((item, i) => (
               <AccordionItem
@@ -507,6 +543,7 @@ function SectionAccordion({
 
 export default function AjudaPage() {
   const [search, setSearch] = useState('')
+  const [chatMessage, setChatMessage] = useState('')
 
   const filtered = useMemo(() => {
     if (!search.trim()) return sections
@@ -533,19 +570,41 @@ export default function AjudaPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="max-w-4xl mx-auto px-6 py-12 md:py-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 md:py-16">
+
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
             Central de Ajuda
           </h1>
-          <p className="mt-3 text-base text-slate-500">
-            Aprenda a usar o AXIS ABA no seu ritmo. Sem precisar de suporte.
+          <p className="mt-2 text-base text-slate-500">
+            Tire suas dúvidas sobre o AXIS ABA no seu ritmo.
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-lg mx-auto mb-12">
+        {/* ─── Card Ana (assistente virtual) ─── */}
+        <div
+          className="mb-8 rounded-2xl bg-white p-5 md:p-6 flex items-center gap-4 shadow-sm"
+          style={{ border: `1.5px solid ${brand}` }}
+        >
+          <div
+            className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ backgroundColor: brandLight }}
+          >
+            <Bot className="w-6 h-6 md:w-7 md:h-7" style={{ color: brand }} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base md:text-lg font-semibold text-slate-800">
+              Pergunte para Ana, sua assistente virtual
+            </h2>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Tire suas dúvidas sobre o sistema de forma rápida
+            </p>
+          </div>
+        </div>
+
+        {/* ─── Search ─── */}
+        <div className="relative max-w-lg mx-auto mb-10">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
@@ -564,7 +623,7 @@ export default function AjudaPage() {
           )}
         </div>
 
-        {/* Sections */}
+        {/* ─── Sections ─── */}
         {filtered.length > 0 ? (
           <div className="space-y-4">
             {filtered.map((section) => (
@@ -578,7 +637,9 @@ export default function AjudaPage() {
           </div>
         ) : (
           <div className="text-center py-16">
-            <p className="text-slate-400 text-sm">Nenhum resultado encontrado para &quot;{search}&quot;</p>
+            <p className="text-slate-400 text-sm">
+              Nenhum resultado encontrado para &quot;{search}&quot;
+            </p>
             <button
               onClick={() => setSearch('')}
               className="mt-3 text-sm font-medium transition-colors"
@@ -589,22 +650,56 @@ export default function AjudaPage() {
           </div>
         )}
 
-        {/* Footer */}
-        <div className="mt-16 text-center border-t border-slate-200 pt-10">
-          <p className="text-sm text-slate-500">
-            Não encontrou o que procura?
-          </p>
-          <a
-            href="mailto:contato@psiform.com.br"
-            className="mt-2 inline-block text-sm font-medium transition-colors"
-            style={{ color: brand }}
-          >
-            Envie sua dúvida
-          </a>
-          <p className="mt-1 text-xs text-slate-400">
-            Respondemos em até 24 horas úteis.
+        {/* ─── Chat footer (estilo GPT/Claude) ─── */}
+        <div className="mt-14 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 md:p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: brandLight }}
+            >
+              <MessageCircle className="w-4.5 h-4.5" style={{ color: brand, width: 18, height: 18 }} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-700">
+                Não encontrou o que procura?
+              </p>
+              <p className="text-xs text-slate-400">
+                Pergunte para a Ana — ela está aqui pra ajudar.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-end gap-2">
+            <textarea
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  // Integração futura
+                }
+              }}
+              placeholder="Qual sua dificuldade? Me conta o que você não entendeu..."
+              rows={2}
+              className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#c46a50]/30 focus:border-[#c46a50]/50 transition-colors"
+            />
+            <button
+              onClick={() => {
+                // Integração futura
+              }}
+              className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: brand }}
+              aria-label="Enviar mensagem"
+            >
+              <Send className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-400 mt-3 text-center">
+            A Ana é uma assistente virtual. Suas respostas não substituem orientação profissional.
           </p>
         </div>
+
       </div>
     </div>
   )
