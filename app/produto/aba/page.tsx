@@ -293,6 +293,17 @@ export default function ProdutoABAPage() {
               ))}
             </div>
           </div>
+          <div className="mt-8 text-center">
+            <Link
+              href="/demo/relatorios"
+              className="inline-block px-6 py-3 rounded-lg text-white text-sm font-semibold transition-colors"
+              style={{ backgroundColor: coralLight }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coral)}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coralLight)}
+            >
+              Ver relatório completo
+            </Link>
+          </div>
         </div>
       </section>
 
