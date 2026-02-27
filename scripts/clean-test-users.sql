@@ -148,10 +148,6 @@ BEGIN
   RAISE NOTICE 'profiles: % removidos', deleted_count;
 
   -- 2.14 Clinic Onboarding (migração 005)
-  DELETE FROM onboarding_progress WHERE tenant_id != admin_tenant_id;
-  GET DIAGNOSTICS deleted_count = ROW_COUNT;
-  RAISE NOTICE 'onboarding_progress: % removidos', deleted_count;
-
   DELETE FROM compliance_checklist WHERE tenant_id != admin_tenant_id;
   GET DIAGNOSTICS deleted_count = ROW_COUNT;
   RAISE NOTICE 'compliance_checklist: % removidos', deleted_count;
