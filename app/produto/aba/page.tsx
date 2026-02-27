@@ -63,10 +63,10 @@ export default function ProdutoABAPage() {
           <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
             <Link
               href="/sign-up"
-              className="px-7 py-3.5 rounded-lg border-2 text-base font-semibold transition-colors"
-              style={{ backgroundColor: '#f5e6e0', color: coralLight, borderColor: coralLight }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#ebcfc5')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#f5e6e0')}
+              className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
+              style={{ backgroundColor: coralLight }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coral)}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coralLight)}
             >
               Utilizar com 1 aprendiz real
             </Link>
@@ -545,10 +545,10 @@ export default function ProdutoABAPage() {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/sign-up"
-              className="px-7 py-3.5 rounded-lg border-2 text-base font-semibold transition-colors"
-              style={{ backgroundColor: '#f5e6e0', color: coralLight, borderColor: coralLight }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#ebcfc5')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#f5e6e0')}
+              className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
+              style={{ backgroundColor: coralLight }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coral)}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coralLight)}
             >
               Utilizar com 1 aprendiz real
             </Link>
