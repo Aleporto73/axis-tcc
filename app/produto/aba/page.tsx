@@ -13,7 +13,6 @@ import {
   BarChart3,
   FileCheck,
   Check,
-  X,
   MessageCircle,
 } from 'lucide-react'
 
@@ -61,10 +60,10 @@ export default function ProdutoABAPage() {
           <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
             <Link
               href="/sign-up"
-              className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
-              style={{ backgroundColor: coral }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coralHover)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coral)}
+              className="px-7 py-3.5 rounded-lg text-base font-semibold transition-colors"
+              style={{ backgroundColor: '#f5e6e0', color: coralLight }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#ebcfc5')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#f5e6e0')}
             >
               Utilizar com 1 aprendiz real
             </Link>
@@ -148,8 +147,8 @@ export default function ProdutoABAPage() {
                 { n: 5, label: 'Geração documental', Icon: FileCheck },
               ].map((step) => (
                 <div key={step.n} className="flex flex-col items-center text-center relative z-10">
-                  <div className="w-14 h-14 rounded-full bg-slate-900 flex items-center justify-center mb-3">
-                    <step.Icon className="w-5 h-5 text-white" />
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: '#c46a5018' }}>
+                    <step.Icon className="w-5 h-5" style={{ color: coral }} />
                   </div>
                   <span className="text-xs font-bold text-slate-400 mb-1">0{step.n}</span>
                   <span className="text-sm font-medium text-slate-700">{step.label}</span>
@@ -311,47 +310,48 @@ export default function ProdutoABAPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-900 text-white">
-                  <th className="text-left py-4 px-6 font-semibold w-[40%]">Recurso</th>
-                  <th className="text-center py-4 px-4 font-semibold">1 Aprendiz</th>
-                  <th className="text-center py-4 px-4 font-semibold">
+                  <th className="text-left py-4 px-6 font-semibold w-[34%]">Recurso</th>
+                  <th className="text-center py-4 px-3 font-semibold">1 Aprendiz</th>
+                  <th className="text-center py-4 px-3 font-semibold">
                     <span className="block">Clínica 100</span>
                     <span className="text-xs font-normal text-slate-400">Founders</span>
                   </th>
-                  <th className="text-center py-4 px-4 font-semibold">Clínica 250</th>
+                  <th className="text-center py-4 px-3 font-semibold">Clínica 100</th>
+                  <th className="text-center py-4 px-3 font-semibold">Clínica 250</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
                 {[
-                  { label: 'Motor CSO-ABA completo', vals: [true, true, true] },
-                  { label: 'Registro estruturado', vals: [true, true, true] },
-                  { label: 'Relatório institucional', vals: [true, true, true] },
-                  { label: 'Multi-terapeuta', vals: [false, true, true] },
-                  { label: 'Relatórios consolidados', vals: [false, false, true] },
-                  { label: 'Onboarding dedicado', vals: [false, false, true] },
-                ].map((row, i) => (
-                  <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="py-3.5 px-6 text-slate-700 font-medium">{row.label}</td>
-                    {row.vals.map((v, j) => (
-                      <td key={j} className="py-3.5 px-4 text-center">
-                        {v ? (
-                          <Check className="w-5 h-5 mx-auto" style={{ color: coral }} />
-                        ) : (
-                          <X className="w-4 h-4 mx-auto text-slate-300" />
-                        )}
+                  'Motor CSO-ABA completo',
+                  'Registro estruturado',
+                  'Relatório institucional',
+                  'Multi-terapeuta',
+                  'Relatórios consolidados',
+                  'Onboarding dedicado',
+                ].map((label, i) => (
+                  <tr key={label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                    <td className="py-3.5 px-6 text-slate-700 font-medium">{label}</td>
+                    {[0, 1, 2, 3].map((j) => (
+                      <td key={j} className="py-3.5 px-3 text-center">
+                        <Check className="w-5 h-5 mx-auto" style={{ color: coral }} />
                       </td>
                     ))}
                   </tr>
                 ))}
                 <tr className="border-t-2 border-slate-200 bg-white">
                   <td className="py-5 px-6 text-slate-900 font-bold">Investimento</td>
-                  <td className="py-5 px-4 text-center">
+                  <td className="py-5 px-3 text-center">
                     <span className="text-lg font-bold text-slate-900">Sem custo</span>
                   </td>
-                  <td className="py-5 px-4 text-center">
+                  <td className="py-5 px-3 text-center">
                     <span className="text-lg font-bold text-slate-900">R$147</span>
                     <span className="text-sm text-slate-500">/mês</span>
                   </td>
-                  <td className="py-5 px-4 text-center">
+                  <td className="py-5 px-3 text-center">
+                    <span className="text-lg font-bold text-slate-900">R$247</span>
+                    <span className="text-sm text-slate-500">/mês</span>
+                  </td>
+                  <td className="py-5 px-3 text-center">
                     <span className="text-lg font-bold text-slate-900">R$497</span>
                     <span className="text-sm text-slate-500">/mês</span>
                   </td>
@@ -363,9 +363,10 @@ export default function ProdutoABAPage() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-6">
             {[
-              { name: '1 Aprendiz', price: 'Sem custo', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional'], href: '/sign-up', cta: 'Utilizar com 1 aprendiz real', highlight: false },
-              { name: 'Clínica 100 — Founders', price: 'R$147/mês', features: ['Tudo do anterior', 'Multi-terapeuta', 'Relatórios para convênio', 'Suporte prioritário'], href: 'https://pay.hotmart.com/H104663812P?off=u2t04kz5', cta: 'Entrar como Fundador', highlight: true },
-              { name: 'Clínica 250', price: 'R$497/mês', features: ['Tudo do anterior', 'Relatórios consolidados', 'Múltiplas unidades', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=gona25or', cta: 'Solicitar adesão', highlight: false },
+              { name: '1 Aprendiz', price: 'Sem custo', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: '/sign-up', cta: 'Utilizar com 1 aprendiz real', highlight: false },
+              { name: 'Clínica 100 — Founders', price: 'R$147/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=u2t04kz5', cta: 'Entrar como Fundador', highlight: true },
+              { name: 'Clínica 100', price: 'R$247/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=iwqieqxc', cta: 'Assinar agora', highlight: false },
+              { name: 'Clínica 250', price: 'R$497/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=gona25or', cta: 'Solicitar adesão', highlight: false },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: coral } : undefined}>
                 <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
@@ -391,11 +392,11 @@ export default function ProdutoABAPage() {
           </div>
 
           {/* Botões desktop */}
-          <div className="hidden md:grid grid-cols-3 gap-6 mt-6">
+          <div className="hidden md:grid grid-cols-4 gap-4 mt-6">
             <div className="text-center">
               <Link
                 href="/sign-up"
-                className="inline-block px-6 py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+                className="inline-block px-5 py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
               >
                 Utilizar com 1 aprendiz real
               </Link>
@@ -404,7 +405,7 @@ export default function ProdutoABAPage() {
               <a
                 href="https://pay.hotmart.com/H104663812P?off=u2t04kz5"
                 target="_blank"
-                className="inline-block px-6 py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
+                className="inline-block px-5 py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
                 style={{ backgroundColor: coral }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = coralHover)}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = coral)}
@@ -414,9 +415,18 @@ export default function ProdutoABAPage() {
             </div>
             <div className="text-center">
               <a
+                href="https://pay.hotmart.com/H104663812P?off=iwqieqxc"
+                target="_blank"
+                className="inline-block px-5 py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+              >
+                Assinar agora
+              </a>
+            </div>
+            <div className="text-center">
+              <a
                 href="https://pay.hotmart.com/H104663812P?off=gona25or"
                 target="_blank"
-                className="inline-block px-6 py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+                className="inline-block px-5 py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
               >
                 Solicitar adesão
               </a>
@@ -442,10 +452,10 @@ export default function ProdutoABAPage() {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/sign-up"
-              className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
-              style={{ backgroundColor: coral }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coralHover)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coral)}
+              className="px-7 py-3.5 rounded-lg text-base font-semibold transition-colors"
+              style={{ backgroundColor: '#f5e6e0', color: coralLight }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#ebcfc5')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#f5e6e0')}
             >
               Utilizar com 1 aprendiz real
             </Link>
