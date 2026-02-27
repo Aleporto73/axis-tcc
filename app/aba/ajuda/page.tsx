@@ -403,16 +403,16 @@ function AccordionItem({
       {/* Container com transição de altura calculada — nunca corta conteúdo */}
       <div
         style={{
-          maxHeight: isOpen ? `${measuredHeight + 16}px` : '0px',
+          maxHeight: isOpen ? `${measuredHeight + 32}px` : '0px',
           opacity: isOpen ? 1 : 0,
           overflow: 'hidden',
           transition: 'max-height 0.35s ease, opacity 0.25s ease',
         }}
       >
-        <div ref={contentRef} className="px-4 pb-4">
-          <ul className="space-y-2">
+        <div ref={contentRef} className="px-4 pt-1 pb-5">
+          <ul className="space-y-3">
             {item.content.map((line, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-slate-600 leading-relaxed">
+              <li key={i} className="flex items-start gap-2.5 text-sm text-slate-600 leading-relaxed">
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
                   style={{ backgroundColor: brand }}
@@ -447,13 +447,18 @@ function SectionAccordion({
   // Mede a altura real do conteúdo (recalcula quando items internos mudam)
   useEffect(() => {
     if (contentRef.current) {
-      // Pequeno delay para garantir que o DOM dos items internos já renderizou
-      const timer = setTimeout(() => {
+      // Delay duplo: primeiro espera render dos items, depois remede para pegar sub-accordions expandidos
+      const timer1 = setTimeout(() => {
         if (contentRef.current) {
           setMeasuredHeight(contentRef.current.scrollHeight)
         }
-      }, 50)
-      return () => clearTimeout(timer)
+      }, 60)
+      const timer2 = setTimeout(() => {
+        if (contentRef.current) {
+          setMeasuredHeight(contentRef.current.scrollHeight)
+        }
+      }, 400)
+      return () => { clearTimeout(timer1); clearTimeout(timer2) }
     }
   }, [expanded, openItems, section.items])
 
@@ -515,7 +520,7 @@ function SectionAccordion({
       {/* Container da seção — altura calculada dinamicamente */}
       <div
         style={{
-          maxHeight: expanded ? `${measuredHeight + 32}px` : '0px',
+          maxHeight: expanded ? `${measuredHeight + 64}px` : '0px',
           opacity: expanded ? 1 : 0,
           overflow: 'hidden',
           transition: 'max-height 0.4s ease, opacity 0.3s ease',
@@ -532,6 +537,20 @@ function SectionAccordion({
                 searchTerm={searchTerm}
               />
             ))}
+
+            {/* Indicador final da seção */}
+            <div className="pt-3 pb-1 text-right">
+              <a
+                href="#chat-ana"
+                onClick={(e) => {
+                  e.preventDefault()
+                  document.getElementById('chat-ana')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className="text-sm text-slate-400 italic hover:text-slate-500 transition-colors"
+              >
+                Não encontrou? Pergunte para Ana ↓
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -569,7 +588,7 @@ export default function AjudaPage() {
   }, [search])
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50" style={{ scrollBehavior: 'smooth' }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 md:py-16">
 
         {/* Header */}
@@ -651,7 +670,7 @@ export default function AjudaPage() {
         )}
 
         {/* ─── Chat footer (estilo GPT/Claude) ─── */}
-        <div className="mt-14 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 md:p-6">
+        <div id="chat-ana" className="mt-14 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 md:p-6 scroll-mt-8">
           <div className="flex items-center gap-3 mb-4">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
