@@ -255,6 +255,12 @@ export default function ProdutoABAPage() {
       {/* ────────────────── BLOCO 4 — PROVA DOCUMENTAL ────────────────── */}
       <section id="relatorios" className="bg-slate-100 py-20 md:py-24">
         <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 text-center">
+            Veja na prática
+          </h2>
+          <p className="text-lg text-slate-500 text-center mt-4 mb-12">
+            Relatórios gerados automaticamente a partir de dados estruturados.
+          </p>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             {/* Relatório mockup (55%) */}
             <div className="lg:col-span-7">
