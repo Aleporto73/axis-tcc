@@ -62,7 +62,7 @@ export default function ProdutoABAPage() {
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
             <Link
-              href="/sign-up"
+              href="/sign-up?produto=aba"
               className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: coralLight }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = coral)}
@@ -515,7 +515,7 @@ export default function ProdutoABAPage() {
           {/* Botões desktop */}
           <div className="hidden md:flex gap-4 mt-6">
             <Link
-              href="/sign-up"
+              href="/sign-up?produto=aba"
               className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
             >
               Utilizar com 1 aprendiz real
@@ -564,7 +564,7 @@ export default function ProdutoABAPage() {
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/sign-up"
+              href="/sign-up?produto=aba"
               className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: coralLight }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = coral)}
@@ -594,7 +594,7 @@ export default function ProdutoABAPage() {
             </p>
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <Link href="/aba/precos" className="hover:text-slate-200 transition-colors">Preços</Link>
-              <Link href="/sign-up" className="hover:text-slate-200 transition-colors">Criar conta</Link>
+              <Link href="/sign-up?produto=aba" className="hover:text-slate-200 transition-colors">Criar conta</Link>
             </div>
           </div>
           <p className="mt-4 text-xs text-slate-500 text-center md:text-left">

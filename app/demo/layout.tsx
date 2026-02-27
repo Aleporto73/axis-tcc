@@ -11,7 +11,7 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
             <p className="text-[11px] text-white/80">1 aprendiz · Acesso completo · Sem cartão</p>
           </div>
           <Link
-            href="/sign-up"
+            href="/sign-up?produto=aba"
             className="shrink-0 px-5 py-2 bg-white text-sm font-semibold rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
             style={{ color: '#c46a50' }}
           >
