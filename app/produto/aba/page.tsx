@@ -13,6 +13,7 @@ import {
   BarChart3,
   FileCheck,
   Check,
+  X,
   MessageCircle,
 } from 'lucide-react'
 
@@ -322,16 +323,23 @@ export default function ProdutoABAPage() {
               </thead>
               <tbody className="bg-white">
                 {[
-                  'Motor CSO-ABA completo',
-                  'Registro estruturado',
-                  'Relatório institucional',
-                  'Multi-terapeuta',
-                  'Relatórios consolidados',
-                  'Onboarding dedicado',
-                ].map((label, i) => (
-                  <tr key={label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="py-3.5 px-6 text-slate-700 font-medium">{label}</td>
-                    {[0, 1, 2, 3].map((j) => (
+                  { label: 'Motor CSO-ABA completo', free: true },
+                  { label: 'Registro estruturado', free: true },
+                  { label: 'Relatório institucional', free: true },
+                  { label: 'Multi-terapeuta', free: false },
+                  { label: 'Relatórios consolidados', free: false },
+                  { label: 'Onboarding dedicado', free: false },
+                ].map((row, i) => (
+                  <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                    <td className="py-3.5 px-6 text-slate-700 font-medium">{row.label}</td>
+                    <td className="py-3.5 px-3 text-center">
+                      {row.free ? (
+                        <Check className="w-5 h-5 mx-auto" style={{ color: coral }} />
+                      ) : (
+                        <X className="w-4 h-4 mx-auto text-slate-300" />
+                      )}
+                    </td>
+                    {[0, 1, 2].map((j) => (
                       <td key={j} className="py-3.5 px-3 text-center">
                         <Check className="w-5 h-5 mx-auto" style={{ color: coral }} />
                       </td>
@@ -363,7 +371,7 @@ export default function ProdutoABAPage() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-6">
             {[
-              { name: '1 Aprendiz', price: 'Sem custo', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: '/sign-up', cta: 'Utilizar com 1 aprendiz real', highlight: false },
+              { name: '1 Aprendiz', price: 'Sem custo', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional'], href: '/sign-up', cta: 'Utilizar com 1 aprendiz real', highlight: false },
               { name: 'Clínica 100 — Founders', price: 'R$147/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=u2t04kz5', cta: 'Entrar como Fundador', highlight: true },
               { name: 'Clínica 100', price: 'R$247/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=iwqieqxc', cta: 'Assinar agora', highlight: false },
               { name: 'Clínica 250', price: 'R$497/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=gona25or', cta: 'Solicitar adesão', highlight: false },
@@ -392,45 +400,37 @@ export default function ProdutoABAPage() {
           </div>
 
           {/* Botões desktop */}
-          <div className="hidden md:grid grid-cols-4 gap-4 mt-6">
-            <div className="text-center">
-              <Link
-                href="/sign-up"
-                className="inline-block px-5 py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
-              >
-                Utilizar com 1 aprendiz real
-              </Link>
-            </div>
-            <div className="text-center">
-              <a
-                href="https://pay.hotmart.com/H104663812P?off=u2t04kz5"
-                target="_blank"
-                className="inline-block px-5 py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
-                style={{ backgroundColor: coral }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = coralHover)}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = coral)}
-              >
-                Entrar como Fundador
-              </a>
-            </div>
-            <div className="text-center">
-              <a
-                href="https://pay.hotmart.com/H104663812P?off=iwqieqxc"
-                target="_blank"
-                className="inline-block px-5 py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
-              >
-                Assinar agora
-              </a>
-            </div>
-            <div className="text-center">
-              <a
-                href="https://pay.hotmart.com/H104663812P?off=gona25or"
-                target="_blank"
-                className="inline-block px-5 py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
-              >
-                Solicitar adesão
-              </a>
-            </div>
+          <div className="hidden md:flex gap-4 mt-6">
+            <Link
+              href="/sign-up"
+              className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+            >
+              Utilizar com 1 aprendiz real
+            </Link>
+            <a
+              href="https://pay.hotmart.com/H104663812P?off=u2t04kz5"
+              target="_blank"
+              className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
+              style={{ backgroundColor: coral }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coralHover)}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coral)}
+            >
+              Entrar como Fundador
+            </a>
+            <a
+              href="https://pay.hotmart.com/H104663812P?off=iwqieqxc"
+              target="_blank"
+              className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+            >
+              Assinar agora
+            </a>
+            <a
+              href="https://pay.hotmart.com/H104663812P?off=gona25or"
+              target="_blank"
+              className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+            >
+              Solicitar adesão
+            </a>
           </div>
 
           <p className="mt-8 text-center text-sm text-slate-500">
