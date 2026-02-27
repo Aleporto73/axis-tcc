@@ -560,9 +560,54 @@ function SectionAccordion({
 
 /* ═══════════════════════ PAGE ═══════════════════════ */
 
+/* ─── types for chat ─── */
+interface ChatMessage {
+  role: 'user' | 'ana'
+  content: string
+}
+
 export default function AjudaPage() {
   const [search, setSearch] = useState('')
-  const [chatMessage, setChatMessage] = useState('')
+  const [chatInput, setChatInput] = useState('')
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll para última mensagem
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isLoading])
+
+  const handleSend = useCallback(async () => {
+    const text = chatInput.trim()
+    if (!text || isLoading) return
+
+    setChatInput('')
+    setMessages((prev) => [...prev, { role: 'user', content: text }])
+    setIsLoading(true)
+
+    try {
+      const res = await fetch('/api/aba/chat-ana', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Erro na resposta')
+      }
+
+      const data = await res.json()
+      setMessages((prev) => [...prev, { role: 'ana', content: data.reply }])
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'ana', content: 'Desculpe, tive um problema ao processar sua pergunta. Tente novamente em alguns segundos.' },
+      ])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [chatInput, isLoading])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return sections
@@ -669,14 +714,15 @@ export default function AjudaPage() {
           </div>
         )}
 
-        {/* ─── Chat footer (estilo GPT/Claude) ─── */}
-        <div id="chat-ana" className="mt-14 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 md:p-6 scroll-mt-8">
-          <div className="flex items-center gap-3 mb-4">
+        {/* ─── Chat da Ana (integrado) ─── */}
+        <div id="chat-ana" className="mt-14 bg-white rounded-2xl border border-slate-200 shadow-sm scroll-mt-8 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center gap-3 p-5 md:p-6 pb-0 md:pb-0">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ backgroundColor: brandLight }}
             >
-              <MessageCircle className="w-4.5 h-4.5" style={{ color: brand, width: 18, height: 18 }} />
+              <MessageCircle style={{ color: brand, width: 18, height: 18 }} />
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-700">
@@ -688,35 +734,84 @@ export default function AjudaPage() {
             </div>
           </div>
 
-          <div className="flex items-end gap-2">
-            <textarea
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  // Integração futura
-                }
-              }}
-              placeholder="Qual sua dificuldade? Me conta o que você não entendeu..."
-              rows={2}
-              className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#c46a50]/30 focus:border-[#c46a50]/50 transition-colors"
-            />
-            <button
-              onClick={() => {
-                // Integração futura
-              }}
-              className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white transition-colors hover:opacity-90"
-              style={{ backgroundColor: brand }}
-              aria-label="Enviar mensagem"
-            >
-              <Send className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
-            </button>
-          </div>
+          {/* Histórico de mensagens */}
+          {messages.length > 0 && (
+            <div className="px-5 md:px-6 pt-4 max-h-96 overflow-y-auto space-y-3">
+              {messages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-[#c46a50] text-white rounded-br-md'
+                        : 'bg-slate-100 text-slate-700 rounded-bl-md'
+                    }`}
+                  >
+                    {msg.role === 'ana' && (
+                      <span className="block text-xs font-semibold mb-1" style={{ color: brand }}>
+                        Ana
+                      </span>
+                    )}
+                    <span className="whitespace-pre-wrap">{msg.content}</span>
+                  </div>
+                </div>
+              ))}
 
-          <p className="text-xs text-slate-400 mt-3 text-center">
-            A Ana é uma assistente virtual. Suas respostas não substituem orientação profissional.
-          </p>
+              {/* Indicador de loading */}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5">
+                    <span className="block text-xs font-semibold mb-1" style={{ color: brand }}>
+                      Ana
+                    </span>
+                    <span className="flex items-center gap-1 text-sm text-slate-400">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="ml-2">Ana está digitando...</span>
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+
+          {/* Input */}
+          <div className="p-5 md:p-6 pt-4 md:pt-4">
+            <div className="flex items-end gap-2">
+              <textarea
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSend()
+                  }
+                }}
+                placeholder="Qual sua dificuldade? Me conta o que você não entendeu..."
+                rows={2}
+                disabled={isLoading}
+                className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#c46a50]/30 focus:border-[#c46a50]/50 transition-colors disabled:opacity-50"
+              />
+              <button
+                onClick={handleSend}
+                disabled={isLoading || !chatInput.trim()}
+                className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white transition-colors hover:opacity-90 disabled:opacity-40"
+                style={{ backgroundColor: brand }}
+                aria-label="Enviar mensagem"
+              >
+                <Send style={{ width: 18, height: 18 }} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400 mt-3 text-center">
+              A Ana é uma assistente virtual. Suas respostas não substituem orientação profissional.
+            </p>
+          </div>
         </div>
 
       </div>
