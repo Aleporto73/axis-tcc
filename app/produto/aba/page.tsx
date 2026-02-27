@@ -1,8 +1,5 @@
 'use client'
 
-import { SignedIn, SignedOut } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -199,13 +196,7 @@ function RelatorioMiniatura() {
 
 export default function ProdutoABAPage() {
   return (
-    <>
-      <SignedIn>
-        <RedirectToABA />
-      </SignedIn>
-
-      <SignedOut>
-        <div className="min-h-screen bg-white text-slate-800">
+    <div className="min-h-screen bg-white text-slate-800">
           {/* ─── HEADER ─── */}
           <header className="border-b border-slate-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
             <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -644,25 +635,6 @@ export default function ProdutoABAPage() {
               </div>
             </div>
           </footer>
-        </div>
-      </SignedOut>
-    </>
-  )
-}
-
-function RedirectToABA() {
-  const router = useRouter()
-
-  useEffect(() => {
-    router.replace('/aba')
-  }, [router])
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: brand }} aria-label="Carregando"></div>
-        <p className="text-base text-slate-500">Carregando...</p>
-      </div>
     </div>
   )
 }
