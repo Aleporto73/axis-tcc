@@ -15,6 +15,9 @@ import {
   Check,
   X,
   MessageCircle,
+  Layers,
+  Calendar,
+  ChevronRight,
 } from 'lucide-react'
 
 /* ─── palette ─── */
@@ -159,6 +162,88 @@ export default function ProdutoABAPage() {
           </div>
           <p className="mt-12 text-center text-base text-slate-500 italic max-w-xl mx-auto">
             O julgamento clínico permanece humano. A estrutura permanece sistêmica.
+          </p>
+        </div>
+      </section>
+
+      {/* ────────────────── BLOCO 3.5 — CICLO ABA COMPLETO ────────────────── */}
+      <section className="bg-slate-100 py-20">
+        <div className="max-w-5xl mx-auto px-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">
+            Ciclo ABA completo incorporado
+          </h2>
+          <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-3xl mb-12">
+            O AXIS não registra apenas sessões. Ele estrutura o ciclo clínico completo.
+          </p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+            {/* Coluna esquerda — Máquina de Estados */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-6">
+                Transição validada de protocolo
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2 mb-6">
+                {[
+                  { label: 'Draft', bg: '#e2e8f0', text: '#475569' },
+                  { label: 'Active', bg: '#cbd5e1', text: '#334155' },
+                  { label: 'Mastered', bg: '#f5e6e0', text: coralLight },
+                  { label: 'Generalized', bg: coralLight, text: '#ffffff' },
+                  { label: 'Maintained', bg: coral, text: '#ffffff' },
+                ].map((badge, i, arr) => (
+                  <span key={badge.label} className="flex items-center gap-2">
+                    <span
+                      className="inline-block px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap"
+                      style={{ backgroundColor: badge.bg, color: badge.text }}
+                    >
+                      {badge.label}
+                    </span>
+                    {i < arr.length - 1 && (
+                      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                    )}
+                  </span>
+                ))}
+              </div>
+
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Cada protocolo passa por estados validados. Sem pular etapas. Sem perder histórico.
+              </p>
+            </div>
+
+            {/* Coluna direita — Generalização e Manutenção */}
+            <div className="space-y-4">
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#c46a5018' }}>
+                    <Layers className="w-5 h-5" style={{ color: coralLight }} />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-semibold text-slate-900 mb-1">Generalização 3×2</h4>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      3 variações de estímulo + 2 variações de contexto. Estrutura que garante generalização real, não apenas registro.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#c46a5018' }}>
+                    <Calendar className="w-5 h-5" style={{ color: coralLight }} />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-semibold text-slate-900 mb-1">Manutenção 2-6-12</h4>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      Sondas programadas em 2, 6 e 12 semanas. O sistema alerta quando é hora de verificar retenção.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="mt-10 text-sm text-slate-500 italic text-center">
+            Sem planilhas paralelas. Sem cálculos manuais. Sem esquecer de sondar.
           </p>
         </div>
       </section>
