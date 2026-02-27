@@ -49,10 +49,6 @@ BEGIN
   GET DIAGNOSTICS deleted_count = ROW_COUNT;
   RAISE NOTICE 'axis_audit_logs: % removidos', deleted_count;
 
-  DELETE FROM audit_logs WHERE tenant_id != admin_tenant_id;
-  GET DIAGNOSTICS deleted_count = ROW_COUNT;
-  RAISE NOTICE 'audit_logs: % removidos', deleted_count;
-
   DELETE FROM assist_audit_log WHERE tenant_id != admin_tenant_id;
   GET DIAGNOSTICS deleted_count = ROW_COUNT;
   RAISE NOTICE 'assist_audit_log: % removidos', deleted_count;
