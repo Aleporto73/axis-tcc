@@ -55,7 +55,6 @@ export async function GET(request: NextRequest) {
       headers: { Authorization: 'Bearer ' + access_token },
     })
     const userInfo = await userInfoResponse.json()
-    console.log('[GOOGLE_CALLBACK] Usuário Google:', userInfo.email)
 
     const tenantResult = await pool.query(
       'SELECT id FROM tenants WHERE clerk_user_id = $1',
@@ -83,8 +82,6 @@ export async function GET(request: NextRequest) {
         updated_at = NOW()`,
       [tenantId, state, access_token, refresh_token, tokenExpiry, scope]
     )
-
-    console.log('[GOOGLE_CALLBACK] Conexão salva para tenant:', tenantId)
 
     await pool.query(
       `INSERT INTO axis_audit_logs (tenant_id, user_id, action, metadata)

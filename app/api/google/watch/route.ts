@@ -96,7 +96,6 @@ export async function POST(request: NextRequest) {
     }
 
     const watchData = await watchResponse.json()
-    console.log('[WATCH] Registrado:', watchData)
 
     await pool.query(
       `UPDATE calendar_connections 

@@ -175,16 +175,12 @@ async function syncCalendarForTenant(tenantId: string, userId: string) {
       [tenantId, userId, eventsData.nextSyncToken]
     )
   }
-
-  console.log('[WEBHOOK] Sync concluido:', { tenantId, imported, updated })
 }
 
 export async function POST(request: NextRequest) {
   try {
     const channelId = request.headers.get('x-goog-channel-id')
     const resourceState = request.headers.get('x-goog-resource-state')
-    
-    console.log('[WEBHOOK] Recebido:', { channelId, resourceState })
 
     if (resourceState === 'sync') {
       return NextResponse.json({ status: 'sync acknowledged' })
@@ -200,7 +196,6 @@ export async function POST(request: NextRequest) {
     )
 
     if (connResult.rows.length === 0) {
-      console.log('[WEBHOOK] Canal nao encontrado:', channelId)
       return NextResponse.json({ status: 'channel not found' })
     }
 

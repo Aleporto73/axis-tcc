@@ -91,7 +91,6 @@ async function createGoogleCalendarEvent(
     }
 
     const createdEvent = await response.json()
-    console.log('[GOOGLE_CREATE] Evento criado:', createdEvent.id)
 
     return {
       eventId: createdEvent.id,
@@ -185,9 +184,6 @@ export async function POST(request: NextRequest) {
         scheduled_at: new Date(scheduled_at),
         patient_name: patientName
       })
-      if (!remindersScheduled) {
-        console.log('[SESSION] Paciente', patient_id, 'nao autorizou push - sem lembretes')
-      }
     }
 
     return NextResponse.json({

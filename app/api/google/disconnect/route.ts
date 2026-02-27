@@ -76,10 +76,8 @@ export async function POST(request: NextRequest) {
               resourceId: conn.webhook_resource_id,
             }),
           })
-          console.log('[DISCONNECT] Webhook parado')
         }
       } catch (e) {
-        console.log('[DISCONNECT] Erro ao parar webhook (ignorado):', e)
       }
     }
 
@@ -88,9 +86,7 @@ export async function POST(request: NextRequest) {
       await fetch('https://oauth2.googleapis.com/revoke?token=' + conn.access_token, {
         method: 'POST',
       })
-      console.log('[DISCONNECT] Token revogado')
     } catch (e) {
-      console.log('[DISCONNECT] Erro ao revogar token (ignorado):', e)
     }
 
     // Deletar sync state
@@ -111,8 +107,6 @@ export async function POST(request: NextRequest) {
        VALUES ($1, $2, 'GOOGLE_CALENDAR_DISCONNECTED', $3)`,
       [tenantId, userId, JSON.stringify({ disconnected_at: new Date().toISOString() })]
     )
-
-    console.log('[DISCONNECT] Google Calendar desconectado para tenant:', tenantId)
 
     return NextResponse.json({ success: true, message: 'Google Calendar desconectado' })
   } catch (error) {

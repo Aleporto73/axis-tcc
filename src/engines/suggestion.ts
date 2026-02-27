@@ -6,19 +6,14 @@ import { ClinicalState, Suggestion, SuggestionType } from '../types';
  * REGRA: Apenas 1 sugestao por ciclo (prioridade)
  */
 export async function generateSuggestions(cso: ClinicalState): Promise<Suggestion | null> {
-  console.log('[SUGGESTION] Analisando CSO para gerar sugestoes...');
-
   const candidateSuggestions = await evaluateRules(cso);
 
   if (candidateSuggestions.length === 0) {
-    console.log('[SUGGESTION] Nenhuma sugestao gerada (paciente estavel)');
     return null;
   }
 
   candidateSuggestions.sort((a, b) => b.priority - a.priority);
   const topSuggestion = candidateSuggestions[0];
-
-  console.log('[SUGGESTION] Sugestao selecionada:', topSuggestion.type, '(prioridade:', topSuggestion.priority + ')');
 
   const insertQuery = `
     INSERT INTO suggestions (

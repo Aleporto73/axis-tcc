@@ -81,7 +81,6 @@ export async function GET(request: NextRequest) {
               }),
             })
           } catch (e) {
-            console.log('[RENEW] Erro ao parar canal antigo:', e)
           }
         }
 
@@ -122,8 +121,6 @@ export async function GET(request: NextRequest) {
         failed++
       }
     }
-
-    console.log('[RENEW-WEBHOOK] Renovados:', renewed, 'Falhas:', failed)
 
     return NextResponse.json({ success: true, renewed, failed })
   } catch (error) {

@@ -116,7 +116,6 @@ ${text}`
           text
         ]
       )
-      console.log('[TCC] Analise salva no banco para sessao:', session_id)
     }
 
     if (transcript_id) {

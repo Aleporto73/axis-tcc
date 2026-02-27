@@ -69,7 +69,6 @@ export default function PushNotificationSetup() {
               device_info: navigator.userAgent
             })
           })
-          console.log('[PUSH] Token registrado com sucesso')
         }
       }
 

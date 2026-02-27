@@ -13,7 +13,6 @@ async function getFirebaseAdmin() {
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
 
   if (!privateKey || !clientEmail || privateKey.includes('SUA_CHAVE_AQUI')) {
-    console.log('[PUSH] Firebase Admin nao configurado')
     return null
   }
 

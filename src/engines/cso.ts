@@ -60,8 +60,6 @@ async function isEventAlreadyProcessed(eventHash: string): Promise<boolean> {
  * REGRA: SEMPRE INSERT, NUNCA UPDATE (append-only)
  */
 export async function processEvent(event: Event): Promise<ClinicalState | null> {
-  console.log('[CSO] Processando evento:', event.event_type);
-
   // Validação com Zod
   const validation = validateEvent(event);
   if (!validation.success) {
@@ -74,7 +72,6 @@ export async function processEvent(event: Event): Promise<ClinicalState | null> 
   const alreadyProcessed = await isEventAlreadyProcessed(eventHash);
   
   if (alreadyProcessed) {
-    console.log('[CSO] Evento já processado (hash duplicado), ignorando:', eventHash.substring(0, 16));
     return null;
   }
 
@@ -91,7 +88,6 @@ export async function processEvent(event: Event): Promise<ClinicalState | null> 
   const newCSO = calculateNewCSO(lastCSO, event);
 
   if (newCSO.system_confidence && newCSO.system_confidence < 0.6) {
-    console.log('[CSO] GATE DE SILENCIO: Confianca muito baixa, nao gerando CSO');
     return null;
   }
 
@@ -125,7 +121,6 @@ export async function processEvent(event: Event): Promise<ClinicalState | null> 
     eventHash
   ]);
 
-  console.log('[CSO] Novo CSO criado:', insertResult.rows[0].id, '| Versão:', CSO_ENGINE_VERSION);
   return insertResult.rows[0];
 }
 

@@ -54,8 +54,6 @@ async function splitAudio(inputPath: string, sessionId: string): Promise<string[
   }
 
   const numChunks = Math.ceil(duration / CHUNK_DURATION)
-  console.log('[TRANSCRIBE] Dividindo audio de ' + Math.round(duration) + 's em ' + numChunks + ' partes')
-
   for (let i = 0; i < numChunks; i++) {
     const startTime = i * CHUNK_DURATION
     const chunkPath = path.join(TEMP_DIR, sessionId + '_chunk_' + i + '.mp3')
@@ -65,7 +63,6 @@ async function splitAudio(inputPath: string, sessionId: string): Promise<string[
         'ffmpeg -y -i "' + inputPath + '" -ss ' + startTime + ' -t ' + CHUNK_DURATION + ' -acodec libmp3lame -ar 16000 -ac 1 -b:a 64k "' + chunkPath + '" 2>/dev/null'
       )
       chunks.push(chunkPath)
-      console.log('[TRANSCRIBE] Parte ' + (i + 1) + '/' + numChunks + ' criada')
     } catch (error) {
       console.error('[TRANSCRIBE] Erro ao criar parte ' + i + ':', error)
     }
@@ -78,8 +75,6 @@ async function transcribeChunk(filePath: string, chunkIndex: number): Promise<st
   try {
     const fileBuffer = await readFile(filePath)
     const file = new File([fileBuffer], 'parte_' + chunkIndex + '.mp3', { type: 'audio/mpeg' })
-
-    console.log('[TRANSCRIBE] Transcrevendo parte ' + (chunkIndex + 1) + '...')
 
     const transcription = await openai.audio.transcriptions.create({
       file: file,
@@ -143,12 +138,9 @@ export async function POST(request: NextRequest) {
     }
 
     const fileSize = audioFile.size
-    console.log('[TRANSCRIBE] Arquivo recebido: ' + audioFile.name + ', tamanho: ' + (fileSize / 1024 / 1024).toFixed(2) + 'MB')
 
     // Audio pequeno - transcreve direto sem streaming
     if (fileSize <= MAX_DIRECT_SIZE) {
-      console.log('[TRANSCRIBE] Audio pequeno, transcrevendo direto...')
-
       const transcription = await openai.audio.transcriptions.create({
         file: audioFile,
         model: 'whisper-1',
@@ -167,14 +159,10 @@ export async function POST(request: NextRequest) {
         [tenantId, patientId, sessionId, fullTranscription]
       )
 
-      console.log('[TRANSCRIBE] Salvo no banco com ID: ' + result.rows[0].id)
-
       return new Response(JSON.stringify({ success: true, transcript: result.rows[0] }), { status: 200, headers: { 'Content-Type': 'application/json' } })
     }
 
     // Audio grande - divide em partes e envia progresso via streaming
-    console.log('[TRANSCRIBE] Audio grande, dividindo em partes com progresso...')
-
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder()
@@ -227,7 +215,6 @@ export async function POST(request: NextRequest) {
           }
 
           const fullTranscription = transcriptions.join(' ')
-          console.log('[TRANSCRIBE] Transcricao completa: ' + fullTranscription.length + ' caracteres')
 
           if (!fullTranscription || fullTranscription.trim().length === 0) {
             sendProgress({ type: 'error', message: 'Transcricao vazia - verifique o audio' })
@@ -241,8 +228,6 @@ export async function POST(request: NextRequest) {
             'INSERT INTO transcripts (tenant_id, patient_id, session_id, session_date, text, processed) VALUES ($1, $2, $3, CURRENT_DATE, $4, false) RETURNING id, text, created_at',
             [tenantId, patientId, sessionId, fullTranscription]
           )
-
-          console.log('[TRANSCRIBE] Salvo no banco com ID: ' + result.rows[0].id)
 
           sendProgress({
             type: 'done',

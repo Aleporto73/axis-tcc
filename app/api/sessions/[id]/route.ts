@@ -74,7 +74,6 @@ export async function DELETE(
       'DELETE FROM sessions WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     )
-    console.log('[SESSION] Sessao', id, 'deletada com lembretes cancelados')
     return NextResponse.json({ success: true, message: 'Sessao cancelada' })
   } catch (error) {
     console.error('Erro ao deletar sessao:', error)

@@ -128,7 +128,6 @@ export async function POST(
         related_entity_id: id,
         created_at: new Date()
       })
-      console.log('[PIPELINE] CSO processado:', csoResult ? 'OK' : 'SILENCIO')
     } catch (err) {
       console.error('[PIPELINE] Erro no CSO Engine:', err)
     }
@@ -138,7 +137,6 @@ export async function POST(
     if (csoResult) {
       try {
         suggestionResult = await generateSuggestions(csoResult)
-        console.log('[PIPELINE] Sugestao gerada:', suggestionResult ? 'OK' : 'NENHUMA')
       } catch (err) {
         console.error('[PIPELINE] Erro no Suggestion Engine:', err)
       }

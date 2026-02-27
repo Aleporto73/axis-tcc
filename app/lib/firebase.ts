@@ -33,7 +33,6 @@ export async function requestNotificationPermission(userId: string, tenantId: st
         })
       })
 
-      console.log('Push habilitado!')
       return token
     }
   } catch (error) {
