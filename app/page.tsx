@@ -210,7 +210,7 @@ export default function Home() {
           <header className="border-b border-slate-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
             <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2">
-                <Image src="/axaba2.png" alt="AXIS ABA" width={120} height={36} className="h-9 w-auto" priority />
+                <Image src="/axisaba.png" alt="AXIS ABA" width={140} height={40} className="h-9 w-auto" priority />
               </Link>
               <nav className="hidden md:flex items-center gap-6 text-sm text-slate-500">
                 <Link href="#como-funciona" className="hover:text-slate-800 transition-colors">Como funciona</Link>
@@ -515,7 +515,7 @@ export default function Home() {
 
               <p className="mt-8 text-center text-sm text-slate-400">
                 Clínicas com até 50 aprendizes podem começar com{' '}
-                <a href="https://abasimples.com.br" target="_blank" className="underline hover:text-slate-600 transition-colors">AbaSimples</a>.
+                <a href="https://abasimples.com.br" target="_blank" className="underline hover:text-slate-800">AbaSimples</a>.
               </p>
             </div>
           </section>
