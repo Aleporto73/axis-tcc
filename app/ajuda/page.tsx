@@ -96,10 +96,10 @@ const sections: HelpSection[] = [
       {
         title: 'Como usar a gravação de áudio',
         content: [
-          'Dentro da sessão, clique no botão de microfone.',
-          'A gravação começa imediatamente — uma bolinha vermelha indica que está gravando.',
-          'Quando terminar, clique novamente para parar.',
-          'O sistema transcreve o áudio automaticamente. Você economiza cerca de 20 minutos por sessão.',
+          'Você tem duas opções: gravar direto pelo navegador (botão de microfone na sessão) ou gravar no celular e subir o arquivo depois.',
+          'Para gravar pelo navegador: clique no microfone, uma bolinha vermelha indica que está gravando. Clique de novo para parar.',
+          'Para subir um áudio gravado no celular: na página do paciente, use o botão de upload. Aceita MP3, WAV e M4A, de até 25MB.',
+          'Nos dois casos, o sistema transcreve tudo automaticamente. Você economiza cerca de 20 minutos por sessão.',
         ],
       },
       {
@@ -139,7 +139,7 @@ const sections: HelpSection[] = [
         title: 'O que é o índice de evolução (CSO)',
         content: [
           'CSO é o índice que mostra como o paciente está progredindo ao longo do tempo.',
-          'Ele vai de 0 a 100 — quanto maior, melhor a evolução documentada.',
+          'Internamente, ele vai de 0 a 1 — mas na tela você vê as faixas: Excelente, Bom, Atenção ou Crítico.',
           'O sistema calcula tudo automaticamente com base no que você registra nas sessões.',
           'Você não precisa fazer nenhuma conta — só acompanhar.',
         ],
@@ -148,20 +148,20 @@ const sections: HelpSection[] = [
         title: 'Como o sistema calcula o progresso',
         content: [
           'O sistema acompanha 4 coisas sobre cada paciente:',
-          'Engajamento — o quanto o paciente está participando das sessões.',
-          'Emoções — a intensidade emocional que ele está sentindo.',
-          'Tarefas — se ele está fazendo as atividades que você passou.',
-          'Flexibilidade — se ele está conseguindo mudar padrões de pensamento.',
+          'Ativação (activation_level) — o quanto o paciente está engajado e participando das sessões.',
+          'Carga emocional (emotional_load) — a intensidade emocional que ele está sentindo.',
+          'Adesão às tarefas (task_adherence) — se ele está fazendo as atividades que você passou.',
+          'Rigidez cognitiva (cognitive_rigidity) — se ele está conseguindo mudar padrões de pensamento ou ainda está preso em esquivas.',
           'Cada uma dessas áreas vale 25% do índice total.',
         ],
       },
       {
         title: 'O que significam os indicadores',
         content: [
-          'Excelente (85–100): evolução consistente, o paciente está respondendo bem.',
-          'Bom (70–84): progresso adequado, continue acompanhando normalmente.',
-          'Atenção (50–69): possível estagnação — vale conversar com o paciente sobre o que pode estar travando.',
-          'Crítico (0–49): pouco progresso ou falta de dados — vale revisar a abordagem.',
+          'Excelente (0.85–1.00): evolução consistente, o paciente está respondendo bem.',
+          'Bom (0.70–0.84): progresso adequado, continue acompanhando normalmente.',
+          'Atenção (0.50–0.69): possível estagnação — vale conversar com o paciente sobre o que pode estar travando.',
+          'Crítico (0.00–0.49): pouco progresso ou falta de dados — vale revisar a abordagem.',
         ],
       },
       {
@@ -193,9 +193,9 @@ const sections: HelpSection[] = [
         title: 'Como funcionam as sugestões',
         content: [
           'Com base nos dados que você registra, o sistema pode identificar padrões e oferecer sugestões.',
-          'Por exemplo: "o paciente não está completando as tarefas" ou "a frequência emocional diminuiu".',
+          'O sistema gera no máximo 1 sugestão por ciclo — ele avalia vários candidatos e mostra só o mais relevante.',
+          'Existem 11 tipos de sugestão, como: verificar adesão às tarefas, pausar exposição, regulação emocional, celebrar progresso, entre outros.',
           'As sugestões aparecem como cards na tela de Sugestões e no painel do paciente.',
-          'Pense nelas como um "assistente silencioso" que organiza as informações pra você.',
         ],
       },
       {
@@ -211,8 +211,8 @@ const sections: HelpSection[] = [
       {
         title: 'Por que às vezes o sistema não sugere nada',
         content: [
-          'Isso acontece quando o sistema não tem certeza suficiente para sugerir algo.',
-          'É uma proteção — preferimos ficar em silêncio do que sugerir algo que não faça sentido.',
+          'Isso acontece quando nenhuma das regras internas é acionada pelos dados atuais do paciente.',
+          'O sistema simplesmente não gera sugestão se não tem algo relevante para dizer — é o comportamento normal.',
           'Conforme você registra mais sessões, as sugestões aparecem com mais frequência.',
           'Também pode acontecer se o paciente é novo e ainda não tem dados suficientes.',
         ],
@@ -246,8 +246,8 @@ const sections: HelpSection[] = [
         title: 'Como exportar em PDF',
         content: [
           'Após gerar o relatório, clique em "Exportar PDF".',
-          'O documento é gerado com layout profissional e seus dados de identificação.',
-          'Inclui um código de autenticidade no rodapé que comprova que o relatório é original.',
+          'O navegador abre a tela de impressão — escolha "Salvar como PDF" como destino.',
+          'O documento inclui layout profissional, seus dados de identificação e um código de autenticidade no rodapé.',
           'Pronto para enviar por e-mail ou imprimir.',
         ],
       },
@@ -279,19 +279,19 @@ const sections: HelpSection[] = [
       {
         title: 'Como gravar a sessão',
         content: [
-          'Dentro da sessão ativa, clique no botão de microfone.',
-          'A gravação começa imediatamente. Uma bolinha vermelha indica que está gravando.',
-          'Você pode pausar e retomar quantas vezes precisar.',
-          'Quando finalizar a sessão, a gravação é salva automaticamente.',
+          'Opção 1 — Pelo navegador: dentro da sessão, clique no botão de microfone. A gravação começa imediatamente (formato WebM).',
+          'Opção 2 — Pelo celular: grave a sessão com qualquer app de gravação do celular. Depois, suba o arquivo no sistema.',
+          'Para subir o arquivo: na página do paciente, clique no botão de upload. Aceita MP3, WAV e M4A, de até 25MB.',
+          'Não precisa estar logado durante a sessão presencial — grave no celular e suba depois, no seu tempo.',
         ],
       },
       {
         title: 'Como funciona a transcrição automática',
         content: [
-          'Assim que a gravação é salva, o sistema converte o áudio em texto.',
-          'A transcrição geralmente fica pronta em alguns minutos.',
-          'Você pode revisar e editar o texto se alguma palavra não ficou correta.',
-          'A transcrição fica vinculada à sessão e aparece no histórico do paciente.',
+          'O sistema usa o Whisper (tecnologia da OpenAI) para converter áudio em texto, em português.',
+          'Áudios curtos (até 5MB) são transcritos direto. Áudios maiores são divididos em pedaços de 5 minutos e processados automaticamente.',
+          'Sessões longas de até 60 minutos ou mais funcionam sem problema — você acompanha o progresso na tela.',
+          'Você pode revisar e editar o texto depois. A transcrição fica vinculada à sessão e aparece no histórico do paciente.',
         ],
       },
       {
@@ -322,12 +322,12 @@ const sections: HelpSection[] = [
       { title: 'Sessão', content: ['Encontro entre o terapeuta e o paciente, registrado no sistema com data, duração, anotações e gravação (quando houver).'] },
       { title: 'Paciente', content: ['A pessoa que está em atendimento terapêutico. No AXIS TCC, cada paciente tem um perfil com histórico completo.'] },
       { title: 'Tarefa entre sessões', content: ['Atividade que o terapeuta pede para o paciente fazer em casa entre um atendimento e outro. O sistema acompanha se foi feita.'] },
-      { title: 'Transcrição', content: ['Conversão automática do áudio da sessão em texto. Permite revisar o que foi dito sem precisar ouvir a gravação inteira.'] },
+      { title: 'Transcrição', content: ['Conversão automática do áudio da sessão em texto usando Whisper (OpenAI). Aceita áudios de até 25MB (MP3, WAV, M4A). Permite revisar o que foi dito sem ouvir a gravação inteira.'] },
       { title: 'Evolução', content: ['Acompanhamento do progresso do paciente ao longo do tempo, medido pelo índice de evolução (CSO) e pelos registros de sessão.'] },
-      { title: 'Indicador', content: ['Cada uma das 4 áreas que compõem o índice de evolução: engajamento, emoções, tarefas e flexibilidade cognitiva.'] },
-      { title: 'Sugestão', content: ['Observação gerada automaticamente pelo sistema com base nos dados registrados. O terapeuta decide se aceita, edita ou ignora.'] },
-      { title: 'Relatório', content: ['Documento gerado pelo sistema com o resumo da evolução do paciente. Pode ser exportado em PDF para convênios ou arquivo pessoal.'] },
-      { title: 'CSO (índice de evolução)', content: ['Índice de 0 a 100 que resume o progresso do paciente em 4 áreas: engajamento, emoções, tarefas e flexibilidade. Calculado automaticamente.'] },
+      { title: 'Indicador', content: ['Cada uma das 4 áreas que compõem o índice de evolução: ativação (engajamento), carga emocional, adesão às tarefas e rigidez cognitiva.'] },
+      { title: 'Sugestão', content: ['Observação gerada automaticamente pelo sistema com base nos dados registrados. O sistema gera no máximo 1 por ciclo. O terapeuta decide se aceita, edita ou ignora.'] },
+      { title: 'Relatório', content: ['Documento gerado pelo sistema com o resumo da evolução do paciente. Exportado em PDF via impressão do navegador. Inclui código de autenticidade SHA256.'] },
+      { title: 'CSO (índice de evolução)', content: ['Índice de 0 a 1 (normalizado) que resume o progresso do paciente em 4 áreas: ativação, carga emocional, adesão às tarefas e rigidez cognitiva. Calculado automaticamente.'] },
       { title: 'Histórico', content: ['Registro completo e permanente de todas as sessões, anotações, transcrições e relatórios do paciente. Nunca é apagado.'] },
     ],
   },
