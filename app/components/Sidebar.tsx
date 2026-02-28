@@ -47,10 +47,10 @@ export default function Sidebar() {
     <>
       {/* Sidebar Desktop - Colapsada */}
       <aside className="hidden md:flex w-20 bg-white border-r border-slate-100 min-h-screen flex-col items-center py-8 fixed left-0 top-0 z-40">
-        {/* Logo */}
-        <Link href="/dashboard" className="mb-12">
-          <div className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:border-[#FC608F]/40 transition-colors overflow-hidden bg-white">
-            <img src="/favicon_axis.png" alt="AXIS" width={28} height={28} style={{ objectFit: 'contain' }} />
+        {/* Logo + Voltar ao Hub */}
+        <Link href="/hub" className="mb-12" title="Voltar ao Hub">
+          <div className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:border-[#1a1f4e]/40 transition-colors bg-white">
+            <span className="text-sm font-bold tracking-tight" style={{ color: '#1a1f4e' }}>TCC</span>
           </div>
         </Link>
 
