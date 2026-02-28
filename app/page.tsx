@@ -51,7 +51,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
-              src="/axis.png"
+              src="/axis.png?v=2"
               alt="AXIS - Infraestrutura clínica para profissionais de saúde mental"
               width={110}
               height={36}
@@ -145,6 +145,13 @@ export default function HomePage() {
                 <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-[#1a1f4e]/5 text-[#1a1f4e] mb-6">
                   Para psicólogos
                 </span>
+                <Image
+                  src="/axistcc.png"
+                  alt="AXIS TCC — Sistema para Terapia Cognitivo-Comportamental"
+                  width={150}
+                  height={44}
+                  className="h-10 w-auto mb-6"
+                />
                 <h3 className="text-2xl font-semibold mb-4 text-[#1a1f4e]">
                   Terapia Cognitivo-Comportamental
                 </h3>
@@ -186,6 +193,13 @@ export default function HomePage() {
                 <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-[#c4785a]/8 text-[#c4785a] mb-6">
                   Para clínicas
                 </span>
+                <Image
+                  src="/axisaba.png"
+                  alt="AXIS ABA — Sistema para Análise do Comportamento Aplicada"
+                  width={150}
+                  height={44}
+                  className="h-10 w-auto mb-6"
+                />
                 <h3 className="text-2xl font-semibold mb-4 text-[#1a1f4e]">
                   Análise do Comportamento Aplicada
                 </h3>
