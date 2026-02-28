@@ -201,7 +201,7 @@ export default function ProdutoTCCPage() {
                   { label: 'Nível de ativação', desc: 'Engajamento terapêutico e participação ativa nas sessões.', Icon: Activity },
                   { label: 'Carga emocional', desc: 'Intensidade emocional percebida a partir de eventos clínicos.', Icon: AlertTriangle },
                   { label: 'Adesão a tarefas', desc: 'Completude e consistência nas tarefas entre sessões.', Icon: ClipboardCheck },
-                  { label: 'Tendência de flexibilidade', desc: 'Direção da mudança: confrontações vs. esquivas ao longo do tempo.', Icon: TrendingUp },
+                  { label: 'Rigidez cognitiva', desc: 'Proporção entre confrontações e esquivas ao longo do tempo. Quanto menor, mais flexível.', Icon: TrendingUp },
                 ].map((dim) => (
                   <div key={dim.label} className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: azul + '10' }}>
@@ -224,13 +224,13 @@ export default function ProdutoTCCPage() {
                 </p>
                 <div className="space-y-3">
                   {[
-                    'Confrontação observada',
-                    'Esquiva observada',
-                    'Ajuste terapêutico',
-                    'Recuperação observada',
-                    'Tarefa concluida / não concluida',
-                    'Check de humor (mood rating)',
-                    'Fim de sessão com micro-eventos',
+                    'Confrontação observada (CONFRONTATION_OBSERVED)',
+                    'Esquiva observada (AVOIDANCE_OBSERVED)',
+                    'Ajuste terapêutico (ADJUSTMENT_OBSERVED)',
+                    'Recuperação observada (RECOVERY_OBSERVED)',
+                    'Início / fim de sessão (SESSION_START / SESSION_END)',
+                    'Tarefa concluída / não concluída (TASK_COMPLETED / TASK_INCOMPLETE)',
+                    'Check de humor (MOOD_CHECK · escala 0-10)',
                   ].map((signal) => (
                     <div key={signal} className="flex items-center gap-3">
                       <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: lilas }} />
@@ -265,7 +265,7 @@ export default function ProdutoTCCPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { title: 'Transcrição por áudio', desc: 'Grave a sessão e o sistema transcreve com Whisper. Economia de 20 min por sessão.', Icon: Mic },
+              { title: 'Transcrição por áudio', desc: 'Grave pelo navegador ou suba o áudio do celular (MP3, WAV, M4A · até 25MB). Whisper transcreve sessões de 60+ min. Economia de 20 min por sessão.', Icon: Mic },
               { title: 'Análise TCC automática', desc: 'Identificação de pensamentos automáticos, distorções cognitivas e emoções a partir da transcrição.', Icon: Brain },
               { title: 'Tarefas entre sessões', desc: 'Atribuição e acompanhamento de tarefas com impacto direto no CSO.', Icon: ListChecks },
               { title: 'Check de humor', desc: 'Escala de humor (0-10) com impacto direto na carga emocional do CSO.', Icon: Activity },
@@ -349,10 +349,11 @@ export default function ProdutoTCCPage() {
             Nossa assistente virtual conhece cada detalhe do sistema e está disponível 24h dentro da plataforma.
           </p>
 
-          {/* Chat mockup */}
-          <div className="mt-10 max-w-xl mx-auto bg-white rounded-xl border border-slate-300 shadow-sm text-left">
+          {/* Chat mockup — conversa real */}
+          <div className="mt-10 max-w-xl mx-auto rounded-2xl border border-slate-200 shadow-sm text-left" style={{ backgroundColor: '#f5f5f8' }}>
+            {/* Header */}
             <div className="flex items-center gap-3 p-5 pb-0">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: azul + '12' }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: azul + '12' }}>
                 <MessageCircle className="w-[18px] h-[18px]" style={{ color: azul }} />
               </div>
               <div>
@@ -361,26 +362,30 @@ export default function ProdutoTCCPage() {
               </div>
             </div>
 
+            {/* Mensagens */}
             <div className="px-5 pt-4 space-y-3">
+              {/* Usuário */}
               <div className="flex justify-end">
                 <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed text-white" style={{ backgroundColor: azul }}>
-                  Como funciona a conceitualização cognitiva?
+                  Olá, posso gravar a sessão presencial no meu celular sem estar logada no sistema?
                 </div>
               </div>
+              {/* Ana */}
               <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed bg-slate-100 text-slate-700">
+                <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed bg-white text-slate-700 border border-slate-200">
                   <span className="block text-xs font-semibold mb-1" style={{ color: azul }}>Ana</span>
-                  A conceitualização é construída ao longo das sessões. O sistema organiza crenças centrais, intermediárias e pensamentos automáticos em uma estrutura visual que você atualiza conforme a terapia avança.
+                  Oi! Sim, você pode gravar a sessão presencial no seu celular sem estar logada no sistema. É só usar qualquer aplicativo de gravação que você preferir. Depois, quando terminar a sessão, você pode fazer o upload do áudio no sistema. O AXIS TCC aceita arquivos em MP3, WAV e M4A, de até 25MB. Se precisar de ajuda com o upload, é só me avisar!
                 </div>
               </div>
             </div>
 
+            {/* Input + Disclaimer */}
             <div className="p-5 pt-4">
               <div className="flex items-end gap-2">
-                <div className="flex-1 rounded-lg border border-slate-200 px-4 py-3 text-sm text-slate-400 select-none">
-                  Qual sua dificuldade? Me conta...
+                <div className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-400 select-none">
+                  Qual sua dificuldade? Me conta o que você não entendeu...
                 </div>
-                <div className="shrink-0 w-11 h-11 rounded-lg flex items-center justify-center text-white opacity-40" style={{ backgroundColor: azul }}>
+                <div className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white opacity-40" style={{ backgroundColor: azul }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
                 </div>
               </div>
@@ -693,7 +698,7 @@ function RelatórioTCCMockup() {
             { dim: 'Ativação', prev: '0.50', curr: '0.68' },
             { dim: 'Carga emocional', prev: '0.72', curr: '0.45' },
             { dim: 'Adesão tarefas', prev: '0.40', curr: '0.78' },
-            { dim: 'Flex. cognitiva', prev: 'flat', curr: 'up' },
+            { dim: 'Rigidez cognitiva', prev: '0.65', curr: '0.38' },
           ].map((row) => (
             <tr key={row.dim} className="border-b border-slate-100 last:border-b-0">
               <td className="py-1.5 font-medium">{row.dim}</td>
