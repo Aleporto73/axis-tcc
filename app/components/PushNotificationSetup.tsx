@@ -11,13 +11,16 @@ export default function PushNotificationSetup() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    // Só mostra para usuários logados (não na landing/produto/demo)
+    if (!userId) return
+
     if (typeof window === 'undefined') return
     if (!('Notification' in window)) {
       setPermission('unsupported')
       return
     }
     setPermission(Notification.permission)
-    
+
     // Mostrar banner apenas se ainda não decidiu
     if (Notification.permission === 'default') {
       const dismissed = localStorage.getItem('push_banner_dismissed')
@@ -25,7 +28,7 @@ export default function PushNotificationSetup() {
         setTimeout(() => setShowBanner(true), 3000)
       }
     }
-  }, [])
+  }, [userId])
 
   const requestPermission = async () => {
     if (!('Notification' in window)) return
