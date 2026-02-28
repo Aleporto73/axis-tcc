@@ -531,7 +531,7 @@ export default function ProdutoTCCPage() {
           <div className="md:hidden space-y-6">
             {[
               { name: '1 Paciente', price: 'Sem custo', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição por áudio', 'Relatório institucional'], href: '/sign-up?produto=tcc', cta: 'Começar com 1 paciente', highlight: false },
-              { name: 'Profissional', price: 'R$59/mês', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição por áudio', 'Relatório institucional', 'Google Calendar sync', 'Pacientes ilimitados'], href: '/sign-up?produto=tcc', cta: 'Assinar Profissional', highlight: true },
+              { name: 'Profissional', price: 'R$59/mês', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição por áudio', 'Relatório institucional', 'Google Calendar sync', 'Pacientes ilimitados'], href: 'https://pay.hotmart.com/J104687347A?off=sn8ebdqc', cta: 'Assinar Profissional', highlight: true },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: azul } : undefined}>
                 <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
@@ -546,6 +546,7 @@ export default function ProdutoTCCPage() {
                 </ul>
                 <a
                   href={plan.href}
+                  {...(plan.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   className="mt-6 block w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors"
                   style={plan.highlight ? { backgroundColor: azul, color: 'white' } : { border: '1px solid #0F172A', color: '#0F172A' }}
                 >
@@ -563,15 +564,17 @@ export default function ProdutoTCCPage() {
             >
               Começar com 1 paciente
             </Link>
-            <Link
-              href="/sign-up?produto=tcc"
+            <a
+              href="https://pay.hotmart.com/J104687347A?off=sn8ebdqc"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: azul }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = azulHover)}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = azul)}
             >
               Assinar Profissional
-            </Link>
+            </a>
           </div>
         </div>
       </section>
