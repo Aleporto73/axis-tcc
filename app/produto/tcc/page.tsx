@@ -66,25 +66,19 @@ export default function ProdutoTCCPage() {
           <p className="mt-6 text-lg md:text-xl max-w-2xl leading-relaxed" style={{ color: lilasLight }}>
             Registro estruturado de sessões, conceitualização cognitiva, monitoramento evolutivo e documentação com padrão institucional.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
+          <div className="mt-10">
             <Link
               href="/sign-up?produto=tcc"
-              className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
+              className="inline-flex px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: lilas }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = lilasLight)}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = lilas)}
             >
               Começar com 1 paciente real
             </Link>
-            <Link
-              href="/demo"
-              className="px-7 py-3.5 rounded-lg border border-white/30 text-white/90 text-base font-medium hover:bg-white/10 transition-colors"
-            >
-              Explorar o sistema por dentro
-            </Link>
           </div>
           <p className="mt-4 text-sm" style={{ color: lilas }}>
-            Sistema completo · Sem custo · Sem cartão
+            Sem cartão. Sem prazo.
           </p>
         </div>
       </section>
@@ -327,13 +321,13 @@ export default function ProdutoTCCPage() {
           </div>
           <div className="mt-8 text-center">
             <Link
-              href="/demo"
+              href="/sign-up?produto=tcc"
               className="inline-block px-6 py-3 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: azul }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = azulHover)}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = azul)}
             >
-              Ver relatório completo
+              Gerar seu primeiro relatório
             </Link>
           </div>
         </div>
@@ -591,25 +585,19 @@ export default function ProdutoTCCPage() {
           <p className="mt-4 text-base md:text-lg" style={{ color: lilasLight }}>
             Avalie o padrão documental na prática. Sem custo. Sem cartão.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-10">
             <Link
               href="/sign-up?produto=tcc"
-              className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
+              className="inline-flex px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: lilas }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = lilasLight)}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = lilas)}
             >
               Começar com 1 paciente real
             </Link>
-            <Link
-              href="/demo"
-              className="px-7 py-3.5 rounded-lg border border-white/30 text-white/90 text-base font-medium hover:bg-white/10 transition-colors"
-            >
-              Explorar o sistema por dentro
-            </Link>
           </div>
           <p className="mt-4 text-sm" style={{ color: lilas }}>
-            Sistema completo · Sem custo · Sem cartão
+            Sem cartão. Sem prazo.
           </p>
         </div>
       </section>
