@@ -84,7 +84,7 @@ export default function HomePage() {
         </div>
       </header>
       {/* Hero Section */}
-      <section className="pt-32 pb-24 px-6 relative">
+      <section className="pt-24 pb-16 px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-100/60 to-transparent pointer-events-none" />
         <div className="max-w-5xl mx-auto text-center relative">
           <div className={`transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -121,18 +121,12 @@ export default function HomePage() {
               Documentação estruturada • Rastreamento longitudinal • Integridade preservada
             </div>
           </div>
-          <div className={`transition-all duration-1000 delay-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="mt-16 flex flex-col items-center gap-2 text-slate-400">
-              <span className="text-xs tracking-widest uppercase">Conheça os produtos</span>
-              <div className="w-px h-12 bg-gradient-to-b from-slate-300 to-transparent animate-pulse" />
-            </div>
-          </div>
         </div>
       </section>
       {/* Products Section */}
-      <section id="produtos" className="py-24 px-6">
+      <section id="produtos" className="py-16 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-light mb-4">
               Dois sistemas. <span className="font-semibold">Uma filosofia.</span>
             </h2>
@@ -144,17 +138,13 @@ export default function HomePage() {
             {/* AXIS TCC Card */}
             <Link
               href="/produto/tcc"
-              className="group relative bg-white rounded-2xl p-8 md:p-10 border border-slate-200 hover:border-[#9a9ab8] transition-all duration-500 hover:shadow-2xl hover:shadow-[#1a1f4e]/10 overflow-hidden"
+              className="group relative bg-white rounded-2xl p-10 md:p-12 border border-slate-200/80 shadow-md shadow-slate-200/50 hover:border-[#9a9ab8] hover:shadow-2xl hover:shadow-[#1a1f4e]/12 hover:scale-[1.02] transition-all duration-500 overflow-hidden"
             >
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a1f4e] to-[#9a9ab8] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
               <div className="flex flex-col h-full">
-                <Image
-                  src="/axistcc.png"
-                  alt="AXIS TCC"
-                  width={150}
-                  height={44}
-                  className="h-10 w-auto mb-8"
-                />
+                <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-[#1a1f4e]/5 text-[#1a1f4e] mb-6">
+                  Para psicólogos
+                </span>
                 <h3 className="text-2xl font-semibold mb-4 text-[#1a1f4e]">
                   Terapia Cognitivo-Comportamental
                 </h3>
@@ -176,8 +166,7 @@ export default function HomePage() {
                     Relatórios institucionais com histórico preservado
                   </li>
                 </ul>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Para psicólogos</span>
+                <div className="flex items-center justify-end">
                   <span className="inline-flex items-center gap-2 text-[#1a1f4e] font-medium group-hover:gap-3 transition-all">
                     Conhecer
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -190,17 +179,13 @@ export default function HomePage() {
             {/* AXIS ABA Card */}
             <Link
               href="/produto/aba"
-              className="group relative bg-white rounded-2xl p-8 md:p-10 border border-slate-200 hover:border-[#c4785a] transition-all duration-500 hover:shadow-2xl hover:shadow-[#c4785a]/10 overflow-hidden"
+              className="group relative bg-white rounded-2xl p-10 md:p-12 border border-slate-200/80 shadow-md shadow-slate-200/50 hover:border-[#c4785a] hover:shadow-2xl hover:shadow-[#c4785a]/12 hover:scale-[1.02] transition-all duration-500 overflow-hidden"
             >
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a1f4e] to-[#c4785a] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
               <div className="flex flex-col h-full">
-                <Image
-                  src="/axisaba.png"
-                  alt="AXIS ABA"
-                  width={150}
-                  height={44}
-                  className="h-10 w-auto mb-8"
-                />
+                <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-[#c4785a]/8 text-[#c4785a] mb-6">
+                  Para clínicas
+                </span>
                 <h3 className="text-2xl font-semibold mb-4 text-[#1a1f4e]">
                   Análise do Comportamento Aplicada
                 </h3>
@@ -222,8 +207,7 @@ export default function HomePage() {
                     Snapshot imutável com engine lock
                   </li>
                 </ul>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">Para clínicas ABA</span>
+                <div className="flex items-center justify-end">
                   <span className="inline-flex items-center gap-2 text-[#1a1f4e] font-medium group-hover:gap-3 transition-all">
                     Conhecer
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -237,7 +221,7 @@ export default function HomePage() {
         </div>
       </section>
       {/* Architecture & Governance */}
-      <section id="governanca" className="py-24 px-6 bg-slate-50 border-t border-slate-200">
+      <section id="governanca" className="py-16 px-6 bg-slate-50 border-t border-slate-200">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-light mb-6">
             Arquitetura e <span className="font-semibold">Governança Clínica</span>
@@ -280,9 +264,9 @@ export default function HomePage() {
         </div>
       </section>
       {/* Scientific & Normative Base */}
-      <section id="base" className="py-24 px-6 bg-white border-t border-slate-200">
+      <section id="base" className="py-16 px-6 bg-white border-t border-slate-200">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-light mb-6">
               Base científica e <span className="font-semibold">normativa</span>
             </h2>
@@ -320,7 +304,7 @@ export default function HomePage() {
         </div>
       </section>
       {/* Philosophy Section */}
-      <section className="py-24 px-6 bg-[#1a1f4e] text-white relative overflow-hidden">
+      <section className="py-16 px-6 bg-[#1a1f4e] text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div
             className="absolute inset-0"
@@ -377,7 +361,7 @@ export default function HomePage() {
         </div>
       </section>
       {/* CTA Section */}
-      <section className="py-24 px-6">
+      <section className="py-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-light mb-6">
             Avalie a estrutura na prática
@@ -390,13 +374,13 @@ export default function HomePage() {
               href="/produto/tcc"
               className="px-8 py-4 bg-[#1a1f4e] text-white font-medium rounded-xl hover:bg-[#2a2f5e] transition-all duration-300 shadow-lg shadow-[#1a1f4e]/20"
             >
-              AXIS TCC
+              Experimentar TCC
             </Link>
             <Link
               href="/produto/aba"
               className="px-8 py-4 bg-white text-[#1a1f4e] font-medium rounded-xl border-2 border-[#1a1f4e] hover:bg-[#1a1f4e] hover:text-white transition-all duration-300"
             >
-              AXIS ABA
+              Experimentar ABA
             </Link>
           </div>
         </div>
