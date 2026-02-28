@@ -55,7 +55,7 @@ export default function Home() {
                     Sistema para Terapia Cognitivo-Comportamental
                   </p>
                   <Link
-                    href="#"
+                    href="/produto/tcc"
                     className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-slate-400 group-hover:text-pink-500 transition-colors"
                   >
                     Conhecer
