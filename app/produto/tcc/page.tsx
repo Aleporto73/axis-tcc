@@ -32,15 +32,51 @@ const lilasLight = '#b5b5cf'
 
 /* ═══════════════════════ PAGE ═══════════════════════ */
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'AXIS TCC',
+  applicationCategory: 'HealthApplication',
+  operatingSystem: 'Web',
+  description: 'Sistema de apoio clínico para Terapia Cognitivo-Comportamental. Registro estruturado de sessões, conceitualização cognitiva e relatórios para convênio.',
+  url: 'https://axisclinico.com/produto/tcc',
+  offers: [
+    {
+      '@type': 'Offer',
+      name: '1 Paciente',
+      price: '0',
+      priceCurrency: 'BRL',
+      description: 'Motor CSO-TCC completo, registro estruturado, transcrição por áudio e relatório institucional para 1 paciente.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Profissional',
+      price: '59',
+      priceCurrency: 'BRL',
+      billingIncrement: 'P1M',
+      description: 'Pacientes ilimitados, Google Calendar sync e todos os recursos do plano gratuito.',
+    },
+  ],
+  publisher: {
+    '@type': 'Organization',
+    name: 'Psiform Tecnologia',
+    url: 'https://axisclinico.com',
+  },
+}
+
 export default function ProdutoTCCPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ────────────────── HEADER ────────────────── */}
       <header className="bg-white border-b border-slate-300 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <Link href="/">
-            <Image src="/axistcc.png" alt="AXIS TCC" width={140} height={36} className="h-9 w-auto" priority />
+            <Image src="/axistcc.png" alt="AXIS TCC — Sistema de apoio clínico para Terapia Cognitivo-Comportamental" width={140} height={36} className="h-9 w-auto" priority />
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
             <a href="#sistema" className="hover:text-slate-900 transition-colors">Sistema</a>
@@ -61,7 +97,7 @@ export default function ProdutoTCCPage() {
       <section className="py-24 md:py-32" style={{ backgroundColor: azul }}>
         <div className="max-w-5xl mx-auto px-6">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight text-white max-w-3xl">
-            Estrutura clínica para quem faz TCC de verdade.
+            Sistema TCC com estrutura clínica para quem faz terapia de verdade.
           </h1>
           <p className="mt-6 text-lg md:text-xl max-w-2xl leading-relaxed" style={{ color: lilasLight }}>
             Registro estruturado de sessões, conceitualização cognitiva, monitoramento evolutivo e documentação com padrão institucional.

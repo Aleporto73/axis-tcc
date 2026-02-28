@@ -26,15 +26,67 @@ const coralLight = '#c46a50'
 
 /* ═══════════════════════ PAGE ═══════════════════════ */
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'AXIS ABA',
+  applicationCategory: 'HealthApplication',
+  operatingSystem: 'Web',
+  description: 'Sistema de gestão clínica para Análise do Comportamento Aplicada. Protocolos ABA, cálculo evolutivo CSO-ABA, generalização 3×2 e relatórios institucionais.',
+  url: 'https://axisclinico.com/produto/aba',
+  offers: [
+    {
+      '@type': 'Offer',
+      name: '1 Aprendiz',
+      price: '0',
+      priceCurrency: 'BRL',
+      description: 'Motor CSO-ABA completo, registro estruturado e relatório institucional para 1 aprendiz.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Clínica 100 — Founders',
+      price: '147',
+      priceCurrency: 'BRL',
+      billingIncrement: 'P1M',
+      description: 'Até 100 aprendizes, multi-terapeuta, relatórios consolidados e onboarding dedicado.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Clínica 100',
+      price: '247',
+      priceCurrency: 'BRL',
+      billingIncrement: 'P1M',
+      description: 'Até 100 aprendizes com todos os recursos profissionais.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Clínica 250',
+      price: '497',
+      priceCurrency: 'BRL',
+      billingIncrement: 'P1M',
+      description: 'Até 250 aprendizes com todos os recursos profissionais.',
+    },
+  ],
+  publisher: {
+    '@type': 'Organization',
+    name: 'Psiform Tecnologia',
+    url: 'https://axisclinico.com',
+  },
+}
+
 export default function ProdutoABAPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ────────────────── HEADER ────────────────── */}
       <header className="bg-white border-b border-slate-300 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <Link href="/">
-            <Image src="/axisaba.png" alt="AXIS ABA" width={140} height={32} className="h-8 w-auto" priority />
+            <Image src="/axisaba.png" alt="AXIS ABA — Sistema de gestão clínica para Análise do Comportamento Aplicada" width={140} height={32} className="h-8 w-auto" priority />
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
             <a href="#sistema" className="hover:text-slate-900 transition-colors">Sistema</a>
@@ -55,7 +107,7 @@ export default function ProdutoABAPage() {
       <section className="bg-slate-900 py-24 md:py-32">
         <div className="max-w-5xl mx-auto px-6">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight text-white max-w-3xl">
-            Infraestrutura clínica para operação real. Documentação estruturada para defesa técnica.
+            Sistema ABA para clínicas. Documentação estruturada para defesa técnica.
           </h1>
           <p className="mt-6 text-lg md:text-xl text-slate-300 max-w-2xl leading-relaxed">
             Sistema estruturado para organização terapêutica, cálculo evolutivo automatizado e emissão de relatórios com padrão institucional brasileiro.
