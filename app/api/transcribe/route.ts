@@ -1,23 +1,14 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import OpenAI from 'openai'
-import pkg from 'pg'
+import pool from '@/src/database/db'
 import { writeFile, unlink, mkdir, readFile } from 'fs/promises'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { existsSync } from 'fs'
 import path from 'path'
 
-const { Pool } = pkg
 const execAsync = promisify(exec)
-
-const pool = new Pool({
-  host: 'localhost',
-  port: 5432,
-  database: 'axis_tcc',
-  user: 'axis',
-  password: 'AxisTcc2026!',
-})
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

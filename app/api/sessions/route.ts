@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import pkg from 'pg'
-const { Pool } = pkg
-
-const pool = new Pool({
-  host: 'localhost',
-  port: 5432,
-  database: 'axis_tcc',
-  user: 'axis',
-  password: 'AxisTcc2026!',
-})
+import pool from '@/src/database/db'
 
 export async function GET(request: NextRequest) {
   try {
