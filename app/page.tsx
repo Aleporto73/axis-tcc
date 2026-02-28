@@ -47,66 +47,83 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa]/90 backdrop-blur-md border-b border-slate-200/50">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa]/90 backdrop-blur-md border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/axis.png"
-              alt="AXIS - Plataforma clínica para profissionais de saúde mental"
-              width={100}
-              height={32}
+              alt="AXIS - Infraestrutura clínica para profissionais de saúde mental"
+              width={110}
+              height={36}
               className="h-8 w-auto"
+              priority
             />
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <Link href="#produtos" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
               Produtos
             </Link>
-            <Link href="#sobre" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
-              Sobre
+            <Link href="#governanca" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
+              Governança
+            </Link>
+            <Link href="#base" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
+              Base científica
             </Link>
             <Link href="#contato" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
               Contato
             </Link>
           </nav>
-          <Link
-            href="/sign-in"
-            className="px-5 py-2.5 bg-[#1a1f4e] text-white text-sm font-medium rounded-lg hover:bg-[#2a2f5e] transition-all duration-300 shadow-lg shadow-[#1a1f4e]/20"
-          >
-            Entrar
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/sign-in"
+              className="px-5 py-2.5 bg-[#1a1f4e] text-white text-sm font-medium rounded-lg hover:bg-[#2a2f5e] transition-all duration-300 shadow-lg shadow-[#1a1f4e]/20"
+            >
+              Entrar
+            </Link>
+          </div>
         </div>
       </header>
       {/* Hero Section */}
       <section className="pt-32 pb-24 px-6 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-100/50 to-transparent pointer-events-none" />
-
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-100/60 to-transparent pointer-events-none" />
         <div className="max-w-5xl mx-auto text-center relative">
-          <div
-            className={`transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-          >
+          <div className={`transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <span className="inline-block px-4 py-2 bg-[#1a1f4e]/5 text-[#1a1f4e] text-sm font-medium rounded-full mb-8">
               Psiform Tecnologia
             </span>
-
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.1] mb-8">
-              Estrutura clínica para
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.08] mb-8">
+              Infraestrutura clínica
               <br />
               <span className="font-semibold bg-gradient-to-r from-[#1a1f4e] to-[#4a4f7e] bg-clip-text text-transparent">
-                profissionais de saúde mental
+                para práticas estruturadas
               </span>
             </h1>
-
-            <p className="text-xl md:text-2xl text-slate-600 font-light max-w-3xl mx-auto leading-relaxed mb-12">
-              Organização, governança e documentação estruturada para sua prática.
-              O julgamento clínico permanece humano. A estrutura permanece sistêmica.
+            <p className="text-xl md:text-2xl text-slate-600 font-light max-w-3xl mx-auto leading-relaxed mb-10">
+              Sistemas especializados para documentação, cálculo evolutivo e governança
+              em Terapia Cognitivo-Comportamental e Análise do Comportamento Aplicada.
+              O julgamento clínico permanece humano.
             </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="#produtos"
+                className="px-8 py-4 bg-[#1a1f4e] text-white font-medium rounded-xl hover:bg-[#2a2f5e] transition-all duration-300 shadow-lg shadow-[#1a1f4e]/20"
+              >
+                Conhecer sistemas
+              </Link>
+              <Link
+                href="#governanca"
+                className="px-8 py-4 bg-white text-[#1a1f4e] font-medium rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-300"
+              >
+                Ver governança
+              </Link>
+            </div>
+            <div className="mt-10 text-xs text-slate-500 tracking-wide">
+              Documentação estruturada • Rastreamento longitudinal • Integridade preservada
+            </div>
           </div>
-          <div
-            className={`transition-all duration-1000 delay-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}
-          >
-            <div className="flex flex-col items-center gap-2 text-slate-400">
-              <span className="text-xs tracking-widest uppercase">Conheça nossos produtos</span>
+          <div className={`transition-all duration-1000 delay-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="mt-16 flex flex-col items-center gap-2 text-slate-400">
+              <span className="text-xs tracking-widest uppercase">Conheça os produtos</span>
               <div className="w-px h-12 bg-gradient-to-b from-slate-300 to-transparent animate-pulse" />
             </div>
           </div>
@@ -120,7 +137,7 @@ export default function HomePage() {
               Dois sistemas. <span className="font-semibold">Uma filosofia.</span>
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Cada especialidade exige estrutura própria. Desenvolvemos soluções específicas para TCC e ABA.
+              Cada especialidade exige estrutura própria. AXIS entrega documentação e governança com padrão institucional.
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
@@ -130,36 +147,33 @@ export default function HomePage() {
               className="group relative bg-white rounded-2xl p-8 md:p-10 border border-slate-200 hover:border-[#9a9ab8] transition-all duration-500 hover:shadow-2xl hover:shadow-[#1a1f4e]/10 overflow-hidden"
             >
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a1f4e] to-[#9a9ab8] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
-
               <div className="flex flex-col h-full">
                 <Image
                   src="/axistcc.png"
-                  alt="AXIS TCC - Sistema para Terapia Cognitivo-Comportamental"
-                  width={140}
-                  height={40}
+                  alt="AXIS TCC"
+                  width={150}
+                  height={44}
                   className="h-10 w-auto mb-8"
                 />
-
                 <h3 className="text-2xl font-semibold mb-4 text-[#1a1f4e]">
                   Terapia Cognitivo-Comportamental
                 </h3>
-
-                <p className="text-slate-600 mb-8 flex-grow">
-                  Registro estruturado de sessões, conceitualização cognitiva,
-                  monitoramento evolutivo via Motor CSO-TCC e documentação com padrão institucional.
+                <p className="text-slate-600 mb-8 flex-grow leading-relaxed">
+                  Sistema estruturado para organização documental em TCC, com separação formal entre
+                  cálculo automatizado e registro profissional, e acompanhamento longitudinal com padrão institucional.
                 </p>
                 <ul className="space-y-3 mb-8 text-sm text-slate-600">
                   <li className="flex items-center gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#9a9ab8]" />
-                    Transcrição de sessões por áudio (Whisper)
+                    Transcrição integrada ao fluxo clínico
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#9a9ab8]" />
-                    Análise TCC automática
+                    Indicadores evolutivos descritivos (não diagnósticos)
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#9a9ab8]" />
-                    Relatórios institucionais auditáveis
+                    Relatórios institucionais com histórico preservado
                   </li>
                 </ul>
                 <div className="flex items-center justify-between">
@@ -179,28 +193,25 @@ export default function HomePage() {
               className="group relative bg-white rounded-2xl p-8 md:p-10 border border-slate-200 hover:border-[#c4785a] transition-all duration-500 hover:shadow-2xl hover:shadow-[#c4785a]/10 overflow-hidden"
             >
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a1f4e] to-[#c4785a] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
-
               <div className="flex flex-col h-full">
                 <Image
                   src="/axisaba.png"
-                  alt="AXIS ABA - Sistema para Análise do Comportamento Aplicada"
-                  width={140}
-                  height={40}
+                  alt="AXIS ABA"
+                  width={150}
+                  height={44}
                   className="h-10 w-auto mb-8"
                 />
-
                 <h3 className="text-2xl font-semibold mb-4 text-[#1a1f4e]">
                   Análise do Comportamento Aplicada
                 </h3>
-
-                <p className="text-slate-600 mb-8 flex-grow">
-                  Gestão de protocolos, registro de trials estruturado,
-                  Motor CSO-ABA multidimensional e documentação para defesa técnica.
+                <p className="text-slate-600 mb-8 flex-grow leading-relaxed">
+                  Governança clínica para ABA com motor multidimensional, ciclo protocolar validado e documentação
+                  compatível com auditoria e convênios brasileiros.
                 </p>
                 <ul className="space-y-3 mb-8 text-sm text-slate-600">
                   <li className="flex items-center gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#c4785a]" />
-                    Ciclo completo: Aquisição → Generalização → Manutenção
+                    Ciclo protocolar completo e versionado
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#c4785a]" />
@@ -208,7 +219,7 @@ export default function HomePage() {
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#c4785a]" />
-                    Portal Família integrado
+                    Snapshot imutável com engine lock
                   </li>
                 </ul>
                 <div className="flex items-center justify-between">
@@ -225,29 +236,114 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      {/* Architecture & Governance */}
+      <section id="governanca" className="py-24 px-6 bg-slate-50 border-t border-slate-200">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-light mb-6">
+            Arquitetura e <span className="font-semibold">Governança Clínica</span>
+          </h2>
+          <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed mb-14">
+            AXIS foi desenhado para estabilidade documental, rastreabilidade e separação formal entre
+            dado estruturado e registro profissional.
+          </p>
+          <div className="grid md:grid-cols-2 gap-10 text-left">
+            <div className="bg-white rounded-2xl border border-slate-200 p-8">
+              <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">Versionamento metodológico</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Cada cálculo é vinculado a uma versão formal do motor. Dados históricos não são reprocessados retroativamente.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-8">
+              <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">Snapshot imutável</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Sessões finalizadas tornam-se registros append-only. O passado clínico não pode ser sobrescrito.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-8">
+              <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">Trilha de auditoria</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Ações relevantes possuem rastreabilidade e trilha de alterações. Estrutura desenhada para governança organizacional.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-8">
+              <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">LGPD aplicada</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Separação formal entre Operador e Controlador, retenção definida e consentimento explícito versionado.
+              </p>
+            </div>
+          </div>
+          <div className="mt-14 text-center">
+            <p className="text-sm text-slate-500">
+              O sistema organiza e calcula indicadores. Não interpreta, não diagnostica, não decide.
+            </p>
+          </div>
+        </div>
+      </section>
+      {/* Scientific & Normative Base */}
+      <section id="base" className="py-24 px-6 bg-white border-t border-slate-200">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-light mb-6">
+              Base científica e <span className="font-semibold">normativa</span>
+            </h2>
+            <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
+              A arquitetura dos sistemas AXIS é fundamentada em práticas baseadas em evidência e estruturada para
+              compatibilidade com diretrizes nacionais e internacionais.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-10">
+            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-8">
+              <h3 className="text-lg font-semibold mb-4 text-[#1a1f4e]">Fundamentação científica</h3>
+              <ul className="space-y-3 text-sm text-slate-700 leading-relaxed">
+                <li>• FPG/UNC — Práticas Baseadas em Evidência (ABA)</li>
+                <li>• Diretrizes SBNI — Brasil</li>
+                <li>• BACB Ethics Code (2020)</li>
+                <li>• RBT Ethics Code 2.0</li>
+              </ul>
+            </div>
+            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-8">
+              <h3 className="text-lg font-semibold mb-4 text-[#1a1f4e]">Compatibilidade regulatória</h3>
+              <ul className="space-y-3 text-sm text-slate-700 leading-relaxed">
+                <li>• LGPD aplicada com separação Operador / Controlador</li>
+                <li>• Estrutura documental compatível com auditoria</li>
+                <li>• Versionamento metodológico formal (engine lock)</li>
+                <li>• Histórico preservado e rastreabilidade</li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-16 text-center border-t border-slate-200 pt-12">
+            <p className="text-base text-slate-600 max-w-3xl mx-auto leading-relaxed">
+              AXIS não substitui formação, supervisão ou julgamento clínico. Ele estrutura documentação e organiza dados
+              para suportar práticas responsáveis e rastreáveis.
+            </p>
+          </div>
+        </div>
+      </section>
       {/* Philosophy Section */}
-      <section id="sobre" className="py-24 px-6 bg-[#1a1f4e] text-white relative overflow-hidden">
+      <section className="py-24 px-6 bg-[#1a1f4e] text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-            backgroundSize: '40px 40px'
-          }} />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+              backgroundSize: '40px 40px',
+            }}
+          />
         </div>
         <div className="max-w-4xl mx-auto text-center relative">
-          <h2 className="text-3xl md:text-4xl font-light mb-12">
-            Nossa <span className="font-semibold">filosofia</span>
+          <h2 className="text-3xl md:text-4xl font-light mb-10">
+            Filosofia <span className="font-semibold">AXIS</span>
           </h2>
-
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <div className="grid md:grid-cols-3 gap-8 mb-14">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/10 flex items-center justify-center">
                 <svg className="w-8 h-8 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-3">Integridade documental</h3>
+              <h3 className="text-lg font-semibold mb-3">Estabilidade documental</h3>
               <p className="text-white/70 text-sm leading-relaxed">
-                Registros imutáveis com SHA256. Histórico clínico preservado. Auditoria garantida.
+                Registros preservados, rastreáveis e consistentes ao longo do tempo.
               </p>
             </div>
             <div className="text-center">
@@ -256,9 +352,9 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-3">LGPD aplicada</h3>
+              <h3 className="text-lg font-semibold mb-3">Privacidade aplicada</h3>
               <p className="text-white/70 text-sm leading-relaxed">
-                Consentimento explícito, portabilidade de dados e direito ao esquecimento.
+                Governança de dados, controle de acesso e princípios compatíveis com LGPD.
               </p>
             </div>
             <div className="text-center">
@@ -275,9 +371,7 @@ export default function HomePage() {
           </div>
           <div className="border-t border-white/10 pt-12">
             <p className="text-xl md:text-2xl font-light leading-relaxed text-white/90 max-w-3xl mx-auto">
-              &ldquo;Não fazemos diagnóstico. Não prescrevemos intervenções.
-              Não substituímos o julgamento clínico.
-              <span className="font-semibold text-white"> Estruturamos o que você já faz.&rdquo;</span>
+              Sistemas clínicos devem ser estáveis. Dados devem ser rastreáveis. Decisões continuam sendo humanas.
             </p>
           </div>
         </div>
@@ -286,26 +380,23 @@ export default function HomePage() {
       <section className="py-24 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-light mb-6">
-            Comece com <span className="font-semibold">1 paciente real</span>
+            Avalie a estrutura na prática
           </h2>
           <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto">
-            Avalie o padrão documental na prática. Sem custo. Sem cartão. Sem prazo.
+            Utilize o sistema com um caso real e analise o padrão documental antes de qualquer decisão.
           </p>
-
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/produto/tcc"
-              className="px-8 py-4 bg-[#1a1f4e] text-white font-medium rounded-xl hover:bg-[#2a2f5e] transition-all duration-300 shadow-lg shadow-[#1a1f4e]/20 flex items-center gap-3"
+              className="px-8 py-4 bg-[#1a1f4e] text-white font-medium rounded-xl hover:bg-[#2a2f5e] transition-all duration-300 shadow-lg shadow-[#1a1f4e]/20"
             >
-              <Image src="/axistcc.png" alt="TCC" width={80} height={24} className="h-5 w-auto brightness-0 invert" />
-              <span>Experimentar TCC</span>
+              AXIS TCC
             </Link>
             <Link
               href="/produto/aba"
-              className="px-8 py-4 bg-white text-[#1a1f4e] font-medium rounded-xl border-2 border-[#1a1f4e] hover:bg-[#1a1f4e] hover:text-white transition-all duration-300 flex items-center gap-3"
+              className="px-8 py-4 bg-white text-[#1a1f4e] font-medium rounded-xl border-2 border-[#1a1f4e] hover:bg-[#1a1f4e] hover:text-white transition-all duration-300"
             >
-              <Image src="/axisaba.png" alt="ABA" width={80} height={24} className="h-5 w-auto" />
-              <span>Experimentar ABA</span>
+              AXIS ABA
             </Link>
           </div>
         </div>
@@ -313,10 +404,8 @@ export default function HomePage() {
       {/* Contact Section */}
       <section id="contato" className="py-16 px-6 bg-slate-50 border-t border-slate-200">
         <div className="max-w-4xl mx-auto text-center">
-          <h3 className="text-lg font-semibold mb-4 text-[#1a1f4e]">Psiform Tecnologia</h3>
-          <p className="text-slate-600 mb-6">
-            Desenvolvimento de soluções para saúde mental
-          </p>
+          <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">Psiform Tecnologia</h3>
+          <p className="text-slate-600 mb-6">Desenvolvimento de soluções para saúde mental</p>
           <div className="flex items-center justify-center gap-6 text-sm text-slate-500">
             <a href="mailto:contato@psiform.com.br" className="hover:text-[#1a1f4e] transition-colors">
               contato@psiform.com.br
@@ -327,19 +416,9 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="py-8 px-6 bg-[#1a1f4e] text-white/60">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Image
-              src="/axis.png"
-              alt="AXIS"
-              width={80}
-              height={24}
-              className="h-6 w-auto brightness-0 invert opacity-60"
-            />
-            <span className="text-sm">© 2026 AXIS. Psiform Tecnologia.</span>
-          </div>
+          <span className="text-sm">© 2026 AXIS. Psiform Tecnologia.</span>
           <p className="text-xs text-center md:text-right max-w-md">
-            Este sistema é uma ferramenta de apoio e organização.
-            Não substitui o julgamento clínico do profissional.
+            Este sistema é uma ferramenta de apoio e organização. Não substitui o julgamento clínico do profissional.
           </p>
         </div>
       </footer>
