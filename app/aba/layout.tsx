@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import pool from '@/src/database/db'
 import SidebarABA from '../components/SidebarABA'
 import { RoleProvider } from '../components/RoleProvider'
@@ -71,6 +72,26 @@ export default async function ABALayout({ children }: { children: React.ReactNod
   if (!hasLicense) {
     await logAccessDenied(tenantId, userId, 'no_active_license')
     redirect('/hub')
+  }
+
+  // ─── Verificar onboarding ───
+  // Se o onboarding não foi concluído, redirecionar para o wizard
+  // (exceto se já estiver na rota /aba/onboarding para evitar loop)
+  const headersList = await headers()
+  const pathname = headersList.get('x-pathname') || ''
+  const isOnboardingRoute = pathname.startsWith('/aba/onboarding')
+
+  if (!isOnboardingRoute) {
+    const onboardingResult = await pool.query(
+      'SELECT onboarding_completed_at FROM tenants WHERE id = $1',
+      [tenantId]
+    )
+
+    const onboardingCompleted = onboardingResult.rows[0]?.onboarding_completed_at != null
+
+    if (!onboardingCompleted) {
+      redirect('/aba/onboarding')
+    }
   }
 
   return (
