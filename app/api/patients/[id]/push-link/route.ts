@@ -46,7 +46,7 @@ export async function POST(
     }
 
     // Gerar link público
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://axistcc.com'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
     const pushLink = `${baseUrl}/ativar-lembretes?token=${authToken}`
 
     return NextResponse.json({

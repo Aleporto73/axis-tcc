@@ -19,7 +19,7 @@ async function registerWebhook() {
   
   const { id, access_token } = conn.rows[0]
   const channelId = 'axis-' + Date.now()
-  const webhookUrl = 'https://axistcc.com/api/google/webhook'
+  const webhookUrl = 'https://axisclinico.com/api/google/webhook'
   
   console.log('Registrando webhook...')
   console.log('Channel ID:', channelId)

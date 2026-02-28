@@ -43,7 +43,7 @@ O AXIS TCC possui integração bidirecional completa com o Google Calendar, perm
 1. Em "Credenciais", crie um "ID do cliente OAuth 2.0"
 2. Tipo: Aplicativo Web
 3. URLs de redirecionamento autorizados:
-   - `https://axistcc.com/api/google/callback`
+   - `https://axisclinico.com/api/google/callback`
 4. Copie o Client ID e Client Secret
 
 ### 3. Variáveis de Ambiente
@@ -209,7 +209,7 @@ O webhook do Google expira em 7 dias. O cron `/api/cron/renew-webhook` renova au
 
 Adicione ao cron do servidor (rodar diariamente):
 ```bash
-curl -X GET "https://axistcc.com/api/cron/renew-webhook" \
+curl -X GET "https://axisclinico.com/api/cron/renew-webhook" \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
 

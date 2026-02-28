@@ -20,7 +20,7 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
 const GOOGLE_REDIRECT_URI_ABA = process.env.GOOGLE_REDIRECT_URI_ABA
   || process.env.GOOGLE_REDIRECT_URI!.replace('/api/google/callback', '/api/aba/google/callback')
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://axistcc.com'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
 
 export async function GET(request: NextRequest) {
   try {

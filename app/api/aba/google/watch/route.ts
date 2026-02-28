@@ -14,7 +14,7 @@ import { randomUUID } from 'crypto'
 // =====================================================
 
 const WEBHOOK_URL = process.env.GOOGLE_WEBHOOK_URL_ABA
-  || (process.env.NEXT_PUBLIC_APP_URL || 'https://axistcc.com') + '/api/aba/google/webhook'
+  || (process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com') + '/api/aba/google/webhook'
 
 export async function POST() {
   try {
