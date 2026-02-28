@@ -5,9 +5,58 @@ import type { Metadata } from 'next'
 import PushNotificationSetup from './components/PushNotificationSetup'
 import { Onboarding } from './components/Onboarding'
 
+const title = 'AXIS Clínico — Sistema para Psicólogos e Clínicas ABA | Psiform'
+const description =
+  'Plataforma clínica para psicólogos TCC e clínicas ABA. Registro estruturado de sessões, relatórios para convênio e monitoramento evolutivo. Comece grátis.'
+
 export const metadata: Metadata = {
-  title: 'AXIS TCC - Sistema de Apoio Clínico',
-  description: 'Sistema inteligente de apoio à prática clínica TCC',
+  title: {
+    default: title,
+    template: '%s | AXIS Clínico',
+  },
+  description,
+  keywords: [
+    'sistema clínico psicologia',
+    'software para psicólogo',
+    'sistema TCC',
+    'sistema ABA',
+    'relatório para convênio',
+    'documentação clínica',
+    'prontuário eletrônico psicologia',
+    'gestão clínica saúde mental',
+    'AXIS Clínico',
+    'Psiform',
+  ],
+  metadataBase: new URL('https://axisclinico.com'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title,
+    description,
+    url: 'https://axisclinico.com',
+    siteName: 'AXIS Clínico',
+    locale: 'pt_BR',
+    type: 'website',
+    images: [
+      {
+        url: '/axis.png',
+        width: 1200,
+        height: 630,
+        alt: 'AXIS — Plataforma clínica para profissionais de saúde mental',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+    images: ['/axis.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({
