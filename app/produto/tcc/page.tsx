@@ -473,24 +473,22 @@ export default function ProdutoTCCPage() {
 
       {/* ────────────────── BLOCO 11 — PLANOS (TABELA) ────────────────── */}
       <section id="planos" className="bg-white py-16 md:py-20">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-3xl mx-auto px-6">
 
           {/* Desktop table */}
           <div className="hidden md:block overflow-hidden rounded-xl border border-slate-300">
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ backgroundColor: azul }}>
-                  <th className="text-left py-4 px-6 font-semibold w-[34%] text-white">Recurso</th>
-                  <th className="text-center py-4 px-3 font-semibold text-white">
+                  <th className="text-left py-4 px-6 font-semibold w-[50%] text-white">Recurso</th>
+                  <th className="text-center py-4 px-6 font-semibold text-white">
                     <span className="block">1 Paciente</span>
                     <span className="text-xs font-normal" style={{ color: lilas }}>Free</span>
                   </th>
-                  <th className="text-center py-4 px-3 font-semibold text-white">
-                    <span className="block">Clinica 50</span>
-                    <span className="text-xs font-normal" style={{ color: lilas }}>Founders</span>
+                  <th className="text-center py-4 px-6 font-semibold text-white">
+                    <span className="block">Profissional</span>
+                    <span className="text-xs font-normal" style={{ color: lilas }}>R$59/mes</span>
                   </th>
-                  <th className="text-center py-4 px-3 font-semibold text-white">Clinica 50</th>
-                  <th className="text-center py-4 px-3 font-semibold text-white">Clinica 150</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
@@ -500,40 +498,29 @@ export default function ProdutoTCCPage() {
                   { label: 'Transcricao por audio', free: true },
                   { label: 'Relatorio institucional', free: true },
                   { label: 'Google Calendar sync', free: false },
-                  { label: 'Multi-terapeuta', free: false },
-                  { label: 'Onboarding dedicado', free: false },
+                  { label: 'Pacientes ilimitados', free: false },
                 ].map((row, i) => (
                   <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                     <td className="py-3.5 px-6 text-slate-700 font-medium">{row.label}</td>
-                    <td className="py-3.5 px-3 text-center">
+                    <td className="py-3.5 px-6 text-center">
                       {row.free ? (
                         <Check className="w-5 h-5 mx-auto" style={{ color: azul }} />
                       ) : (
                         <X className="w-4 h-4 mx-auto text-slate-300" />
                       )}
                     </td>
-                    {[0, 1, 2].map((j) => (
-                      <td key={j} className="py-3.5 px-3 text-center">
-                        <Check className="w-5 h-5 mx-auto" style={{ color: azul }} />
-                      </td>
-                    ))}
+                    <td className="py-3.5 px-6 text-center">
+                      <Check className="w-5 h-5 mx-auto" style={{ color: azul }} />
+                    </td>
                   </tr>
                 ))}
                 <tr className="border-t-2 border-slate-200 bg-white">
                   <td className="py-5 px-6 text-slate-900 font-bold">Investimento</td>
-                  <td className="py-5 px-3 text-center">
+                  <td className="py-5 px-6 text-center">
                     <span className="text-lg font-bold text-slate-900">Sem custo</span>
                   </td>
-                  <td className="py-5 px-3 text-center">
-                    <span className="text-lg font-bold text-slate-900">R$97</span>
-                    <span className="text-sm text-slate-500">/mes</span>
-                  </td>
-                  <td className="py-5 px-3 text-center">
-                    <span className="text-lg font-bold text-slate-900">R$197</span>
-                    <span className="text-sm text-slate-500">/mes</span>
-                  </td>
-                  <td className="py-5 px-3 text-center">
-                    <span className="text-lg font-bold text-slate-900">R$397</span>
+                  <td className="py-5 px-6 text-center">
+                    <span className="text-lg font-bold text-slate-900">R$59</span>
                     <span className="text-sm text-slate-500">/mes</span>
                   </td>
                 </tr>
@@ -545,9 +532,7 @@ export default function ProdutoTCCPage() {
           <div className="md:hidden space-y-6">
             {[
               { name: '1 Paciente', price: 'Sem custo', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcricao por audio', 'Relatorio institucional'], href: '/sign-up?produto=tcc', cta: 'Comecar com 1 paciente', highlight: false },
-              { name: 'Clinica 50 — Founders', price: 'R$97/mes', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcricao por audio', 'Relatorio institucional', 'Google Calendar sync', 'Multi-terapeuta', 'Onboarding dedicado'], href: '#', cta: 'Entrar como Fundador', highlight: true },
-              { name: 'Clinica 50', price: 'R$197/mes', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcricao por audio', 'Relatorio institucional', 'Google Calendar sync', 'Multi-terapeuta', 'Onboarding dedicado'], href: '#', cta: 'Assinar agora', highlight: false },
-              { name: 'Clinica 150', price: 'R$397/mes', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcricao por audio', 'Relatorio institucional', 'Google Calendar sync', 'Multi-terapeuta', 'Onboarding dedicado'], href: '#', cta: 'Solicitar adesao', highlight: false },
+              { name: 'Profissional', price: 'R$59/mes', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcricao por audio', 'Relatorio institucional', 'Google Calendar sync', 'Pacientes ilimitados'], href: '/sign-up?produto=tcc', cta: 'Assinar Profissional', highlight: true },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: azul } : undefined}>
                 <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
@@ -562,7 +547,6 @@ export default function ProdutoTCCPage() {
                 </ul>
                 <a
                   href={plan.href}
-                  target={plan.href.startsWith('http') ? '_blank' : undefined}
                   className="mt-6 block w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors"
                   style={plan.highlight ? { backgroundColor: azul, color: 'white' } : { border: '1px solid #0F172A', color: '#0F172A' }}
                 >
@@ -580,27 +564,15 @@ export default function ProdutoTCCPage() {
             >
               Comecar com 1 paciente
             </Link>
-            <a
-              href="#"
+            <Link
+              href="/sign-up?produto=tcc"
               className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: azul }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = azulHover)}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = azul)}
             >
-              Entrar como Fundador
-            </a>
-            <a
-              href="#"
-              className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
-            >
-              Assinar agora
-            </a>
-            <a
-              href="#"
-              className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
-            >
-              Solicitar adesao
-            </a>
+              Assinar Profissional
+            </Link>
           </div>
         </div>
       </section>
