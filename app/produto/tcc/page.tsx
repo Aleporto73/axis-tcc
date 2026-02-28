@@ -40,7 +40,7 @@ export default function ProdutoTCCPage() {
       <header className="bg-white border-b border-slate-300 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <Link href="/">
-            <Image src="/axis.png" alt="AXIS TCC" width={140} height={32} className="h-8 w-auto" priority />
+            <Image src="/axistcc.png" alt="AXIS TCC" width={140} height={36} className="h-9 w-auto" priority />
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
             <a href="#sistema" className="hover:text-slate-900 transition-colors">Sistema</a>
