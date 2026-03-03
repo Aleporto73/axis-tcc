@@ -60,6 +60,27 @@ export async function POST(request: NextRequest) {
       // Terapeuta não pode criar aprendizes
       requireAdminOrSupervisor(ctx)
 
+      // ─── Enforcement de limite do plano ───
+      const [tenantRes, countRes] = await Promise.all([
+        ctx.client.query(
+          'SELECT max_patients, plan_tier FROM tenants WHERE id = $1',
+          [ctx.tenantId]
+        ),
+        ctx.client.query(
+          'SELECT COUNT(*)::int as total FROM learners WHERE tenant_id = $1 AND is_active = true AND deleted_at IS NULL',
+          [ctx.tenantId]
+        ),
+      ])
+
+      const maxPatients = tenantRes.rows[0]?.max_patients ?? 1
+      const currentCount = countRes.rows[0]?.total ?? 0
+
+      if (currentCount >= maxPatients) {
+        const err = new Error('PLAN_LIMIT_REACHED') as any
+        err.planLimit = { current: currentCount, max: maxPatients, plan: tenantRes.rows[0]?.plan_tier || 'free' }
+        throw err
+      }
+
       const inserted = await ctx.client.query(
         `INSERT INTO learners (tenant_id, name, birth_date, diagnosis, cid_code, support_level, school, notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -79,7 +100,17 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ learner: result.rows[0] }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === 'PLAN_LIMIT_REACHED') {
+      return NextResponse.json(
+        {
+          error: 'Limite de aprendizes atingido',
+          code: 'PLAN_LIMIT_REACHED',
+          ...error.planLimit,
+        },
+        { status: 403 }
+      )
+    }
     const { message, status } = handleRouteError(error)
     return NextResponse.json({ error: message }, { status })
   }

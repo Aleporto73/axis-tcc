@@ -646,6 +646,8 @@ export default function ProdutoABAPage() {
             </p>
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <Link href="/aba/precos" className="hover:text-slate-200 transition-colors">Preços</Link>
+              <Link href="/termos" className="hover:text-slate-200 transition-colors">Termos de Uso</Link>
+              <Link href="/privacidade" className="hover:text-slate-200 transition-colors">Privacidade</Link>
               <Link href="/sign-up?produto=aba" className="hover:text-slate-200 transition-colors">Criar conta</Link>
             </div>
           </div>

@@ -29,10 +29,10 @@ const COMPLIANCE_ITEMS = [
 ]
 
 const PLAN_OPTIONS = [
-  { tier: 'trial' as const, name: 'Trial', patients: 5, sessions: 15, price: 'Grátis por 30 dias' },
-  { tier: 'starter' as const, name: 'Starter', patients: 15, sessions: 60, price: 'R$ 97/mês' },
-  { tier: 'professional' as const, name: 'Professional', patients: 50, sessions: 200, price: 'R$ 197/mês' },
-  { tier: 'clinic' as const, name: 'Clínica', patients: 999, sessions: 9999, price: 'R$ 497/mês' },
+  { tier: 'free' as const, name: '1 Aprendiz', patients: 1, sessions: 9999, price: 'Gratuito', desc: 'Motor CSO-ABA completo, registro estruturado e relatório institucional.' },
+  { tier: 'founders' as const, name: 'Clínica 100 — Founders', patients: 100, sessions: 9999, price: 'R$ 147/mês', desc: 'Até 100 aprendizes, multi-terapeuta e onboarding dedicado.', hotmart: 'https://pay.hotmart.com/H104663812P?off=u2t04kz5' },
+  { tier: 'clinica_100' as const, name: 'Clínica 100', patients: 100, sessions: 9999, price: 'R$ 247/mês', desc: 'Todos os recursos profissionais para até 100 aprendizes.', hotmart: 'https://pay.hotmart.com/H104663812P?off=iwqieqxc' },
+  { tier: 'clinica_250' as const, name: 'Clínica 250', patients: 250, sessions: 9999, price: 'R$ 497/mês', desc: 'Até 250 aprendizes com relatórios consolidados.', hotmart: 'https://pay.hotmart.com/H104663812P?off=gona25or' },
 ]
 
 const UF_OPTIONS = [
@@ -66,7 +66,7 @@ export default function OnboardingPage() {
   const [newInvite, setNewInvite] = useState<TeamInvite>({ email:'', role:'terapeuta', name:'' })
 
   // Passo 4: Plano
-  const [planTier, setPlanTier] = useState<'trial'|'starter'|'professional'|'clinic'>('trial')
+  const [planTier, setPlanTier] = useState<'free'|'founders'|'clinica_100'|'clinica_250'>('free')
 
   // Passo 5: Documentos
   const [documents, setDocuments] = useState<any[]>([])
@@ -102,7 +102,7 @@ export default function OnboardingPage() {
             address_state: data.tenant.address_state || '',
             address_zip: data.tenant.address_zip || '',
           })
-          setPlanTier(data.tenant.plan_tier || 'trial')
+          setPlanTier(data.tenant.plan_tier || 'free')
         }
         if (data.profile) {
           setRt({

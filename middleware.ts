@@ -17,6 +17,9 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhook/hotmart',
   // Páginas de produto (landing pages públicas)
   '/produto(.*)',
+  // Páginas legais
+  '/termos',
+  '/privacidade',
   // Demo público
   '/demo(.*)',
   '/api/demo/(.*)',

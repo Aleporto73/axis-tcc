@@ -61,12 +61,17 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
               ))}
             </ul>
 
-            <button
-              type="button"
-              className="mt-5 w-full py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors cursor-default"
+            <a
+              href="https://pay.hotmart.com/H104663812P?off=u2t04kz5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 block w-full py-2 rounded-lg text-white text-sm font-medium text-center transition-colors"
+              style={{ backgroundColor: '#c46a50' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#B4532F')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#c46a50')}
             >
               Quero ser Fundador
-            </button>
+            </a>
           </div>
 
           {/* AXIS Clínica 250 */}
@@ -87,12 +92,14 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
               ))}
             </ul>
 
-            <button
-              type="button"
-              className="mt-5 w-full py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors cursor-default"
+            <a
+              href="https://pay.hotmart.com/H104663812P?off=gona25or"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 block w-full py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium text-center hover:bg-slate-50 transition-colors"
             >
-              Falar com consultor
-            </button>
+              Assinar Clínica 250
+            </a>
           </div>
         </div>
 

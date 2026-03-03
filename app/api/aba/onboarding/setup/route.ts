@@ -41,7 +41,7 @@ interface SetupPayload {
   team_invites?: { email: string; role: 'supervisor' | 'terapeuta'; name?: string }[]
 
   // Lacuna 4: Plano selecionado
-  plan_tier?: 'trial' | 'starter' | 'professional' | 'clinic'
+  plan_tier?: 'free' | 'founders' | 'clinica_100' | 'clinica_250'
 
   // Lacuna 6: Itens de compliance aceitos
   compliance_items?: { item_key: string; label: string; accepted: boolean }[]
@@ -108,14 +108,15 @@ export async function POST(request: NextRequest) {
       }
 
       // ── Lacuna 4: Seleção de plano ──
+      // Alinhado com landing page /produto/aba e Hotmart
       if (body.plan_tier) {
         const limits: Record<string, { patients: number; sessions: number }> = {
-          trial:        { patients: 5,   sessions: 15 },
-          starter:      { patients: 15,  sessions: 60 },
-          professional: { patients: 50,  sessions: 200 },
-          clinic:       { patients: 999, sessions: 9999 },
+          free:         { patients: 1,   sessions: 9999 },
+          founders:     { patients: 100, sessions: 9999 },
+          clinica_100:  { patients: 100, sessions: 9999 },
+          clinica_250:  { patients: 250, sessions: 9999 },
         }
-        const tier = limits[body.plan_tier] || limits.trial
+        const tier = limits[body.plan_tier] || limits.free
         await client.query(
           `UPDATE tenants SET plan_tier = $1, max_patients = $2, max_sessions = $3, updated_at = NOW()
            WHERE id = $4`,
@@ -197,7 +198,7 @@ export async function POST(request: NextRequest) {
          ), NOW())`,
         [tenantId, userId, userId,
          body.clinic.clinic_name, body.rt.crp, body.rt.crp_uf,
-         invitesSent.length, body.plan_tier || 'trial',
+         invitesSent.length, body.plan_tier || 'free',
          complianceItems.filter(c => c.accepted).length, protocolsImported]
       )
 
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
         completed: true,
         clinic_name: body.clinic.clinic_name,
         invites_sent: invitesSent.length,
-        plan_tier: body.plan_tier || 'trial',
+        plan_tier: body.plan_tier || 'free',
         compliance_accepted: complianceItems.filter(c => c.accepted).length,
         protocols_imported: protocolsImported,
       }

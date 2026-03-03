@@ -61,13 +61,26 @@ export default async function ABALayout({ children }: { children: React.ReactNod
     redirect('/hub')
   }
 
-  // Verificar licença ABA
-  const licenseResult = await pool.query(
-    'SELECT is_active FROM user_licenses WHERE clerk_user_id = $1 AND product_type = $2 LIMIT 1',
-    [userId, 'aba']
-  )
-
-  const hasLicense = licenseResult.rows[0]?.is_active === true
+  // Verificar licença ABA (resiliente: se tabela não existe, permite acesso)
+  let hasLicense = true
+  try {
+    const licenseResult = await pool.query(
+      'SELECT is_active FROM user_licenses WHERE clerk_user_id = $1 AND product_type = $2 LIMIT 1',
+      [userId, 'aba']
+    )
+    // Se a tabela existe e tem resultado, checar is_active
+    // Se a tabela existe mas não tem registro, bloquear
+    if (licenseResult.rows.length > 0) {
+      hasLicense = licenseResult.rows[0].is_active === true
+    } else {
+      hasLicense = false
+    }
+  } catch (err) {
+    // Tabela user_licenses provavelmente não existe ainda (pre-migration 006)
+    // Permitir acesso para não bloquear usuários existentes
+    console.warn('[ABA Layout] user_licenses query failed, allowing access:', err instanceof Error ? err.message : String(err))
+    hasLicense = true
+  }
 
   if (!hasLicense) {
     await logAccessDenied(tenantId, userId, 'no_active_license')

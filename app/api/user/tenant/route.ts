@@ -121,10 +121,10 @@ export async function GET() {
     try {
       await client.query('BEGIN')
 
-      // Criar tenant
+      // Criar tenant (free tier: 1 aprendiz, sem limite de sessões)
       const tenantInsert = await client.query(
-        `INSERT INTO tenants (name, email, clerk_user_id, role, trial_start, trial_end, trial_status, max_patients, max_sessions, is_admin)
-         VALUES ($1, $2, $3, 'professional', $4, $5, 'trial', 5, 15, false)
+        `INSERT INTO tenants (name, email, clerk_user_id, role, trial_start, trial_end, trial_status, plan_tier, max_patients, max_sessions, is_admin)
+         VALUES ($1, $2, $3, 'professional', $4, $5, 'trial', 'free', 1, 9999, false)
          RETURNING id as tenant_id`,
         [name, email, userId, now, trialEnd]
       )
@@ -148,6 +148,15 @@ export async function GET() {
            JSON.stringify({ role: 'admin', source: 'first_login' })]
         )
       } catch (_) { /* audit non-blocking */ }
+
+      // Criar licença free automática (necessário para o gate em layout.tsx)
+      try {
+        await client.query(
+          `INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
+           VALUES ($1, $2, 'aba', true, NOW(), 'AUTO_FREE_TIER', $3)`,
+          [tenantId, userId, email]
+        )
+      } catch (_) { /* non-blocking — tabela pode não existir ainda */ }
 
       await client.query('COMMIT')
 

@@ -87,6 +87,12 @@ export default function AprendizesPage() {
       })
       if (!res.ok) {
         const err = await res.json()
+        if (err.code === 'PLAN_LIMIT_REACHED') {
+          setShowModal(false)
+          setShowUpgrade(true)
+          setSaving(false)
+          return
+        }
         setError(err.error || 'Erro ao cadastrar')
         setSaving(false)
         return
