@@ -8,10 +8,11 @@
 -- Esta migration cria TUDO que falta, de forma 100% idempotente
 -- (IF NOT EXISTS em tudo). Pode rodar quantas vezes quiser.
 --
--- Gerado: 2026-03-04
+-- SEM BEGIN/COMMIT — cada comando é independente.
+-- Se um falhar, os demais continuam normalmente.
+--
+-- Corrigido: 2026-03-04 v2
 -- =====================================================
-
-BEGIN;
 
 -- ─────────────────────────────────────────────────────
 -- §1. COLUNAS FALTANTES EM TENANTS
@@ -39,12 +40,10 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS role VARCHAR;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMPTZ;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
--- LGPD columns (migration 003)
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS cancellation_scheduled_at TIMESTAMPTZ;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS anonymized_at TIMESTAMPTZ;
 
--- plan_tier constraint (aceita todos os valores possíveis)
 DO $$ BEGIN
   ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_plan_tier_check;
   ALTER TABLE tenants ADD CONSTRAINT tenants_plan_tier_check
@@ -81,7 +80,6 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Colunas que podem faltar se tabela existia de versão anterior
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS invited_by UUID;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS specialty TEXT;
 
@@ -90,7 +88,29 @@ CREATE INDEX IF NOT EXISTS idx_profiles_clerk ON profiles(clerk_user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(tenant_id, role);
 
 -- ─────────────────────────────────────────────────────
--- §3. LEARNER_THERAPISTS (migration 002 — vínculo N:N)
+-- §3. LEARNERS — Tabela core ABA (precisa existir ANTES de learner_therapists)
+-- ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS learners (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  birth_date DATE NOT NULL,
+  diagnosis TEXT,
+  cid_code VARCHAR,
+  support_level INT DEFAULT 2,
+  school TEXT,
+  notes TEXT,
+  is_active BOOLEAN DEFAULT true,
+  deleted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_learners_tenant ON learners(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_learners_active ON learners(tenant_id) WHERE is_active = true AND deleted_at IS NULL;
+
+-- ─────────────────────────────────────────────────────
+-- §4. LEARNER_THERAPISTS (migration 002 — vínculo N:N)
 -- ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS learner_therapists (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -111,59 +131,63 @@ CREATE INDEX IF NOT EXISTS idx_lt_learner ON learner_therapists(learner_id);
 CREATE INDEX IF NOT EXISTS idx_lt_tenant ON learner_therapists(tenant_id);
 
 -- ─────────────────────────────────────────────────────
--- §4. ENGINE_VERSIONS (migration 004)
+-- §5. ENGINE_VERSIONS (migration 004)
+-- ATENÇÃO: a tabela na VPS pode ter só is_current, ou só is_active,
+-- ou ambas, ou nenhuma. Adicionamos ambas para cobrir tudo.
+-- O código usa SOMENTE is_current.
 -- ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS engine_versions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   engine_name TEXT NOT NULL,
   version TEXT NOT NULL,
   description TEXT,
-  weights JSONB NOT NULL,
+  weights JSONB NOT NULL DEFAULT '{}'::jsonb,
   ruleset_hash TEXT,
-  is_active BOOLEAN NOT NULL DEFAULT true,
   is_current BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   deprecated_at TIMESTAMP,
   CONSTRAINT uq_engine_version UNIQUE (engine_name, version)
 );
 
--- Coluna is_current falta na migration original (código usa is_current, migration criou is_active)
+-- Garantir que ambas colunas existam (idempotente)
 ALTER TABLE engine_versions ADD COLUMN IF NOT EXISTS is_current BOOLEAN DEFAULT false;
+ALTER TABLE engine_versions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
-CREATE INDEX IF NOT EXISTS idx_engine_versions_active
+-- Index usa is_current (que é o que o código consulta)
+CREATE INDEX IF NOT EXISTS idx_engine_versions_current
   ON engine_versions (engine_name)
-  WHERE is_active = true;
+  WHERE is_current = true;
 
--- Seed CSO-ABA v3.0 com is_current = true
-INSERT INTO engine_versions (engine_name, version, description, weights, is_active, is_current)
+-- Seed CSO-ABA v3.0 — SEM referência a colunas que possam não existir
+-- Primeiro tenta inserir, se já existe atualiza is_current
+INSERT INTO engine_versions (engine_name, version, description, weights, is_current)
 VALUES (
   'CSO-ABA',
   'v3.0',
   'Motor de sugestões CSO-ABA com pesos equilibrados — Bible S2',
   '{"SAS": 0.25, "PIS": 0.25, "BSS": 0.25, "TCM": 0.25}'::jsonb,
-  true,
   true
 )
 ON CONFLICT (engine_name, version) DO UPDATE SET is_current = true;
 
 -- ─────────────────────────────────────────────────────
--- §5. USER_LICENSES (migration 006)
+-- §6. USER_LICENSES (migration 006)
 -- ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS user_licenses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id),
-  clerk_user_id TEXT NOT NULL,
-  product_type TEXT NOT NULL CHECK (product_type IN ('aba', 'tcc')),
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  valid_from TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  valid_until TIMESTAMPTZ DEFAULT NULL,
+  tenant_id UUID REFERENCES tenants(id),
+  clerk_user_id TEXT,
+  product_type TEXT,
+  is_active BOOLEAN DEFAULT true,
+  valid_from TIMESTAMPTZ DEFAULT NOW(),
+  valid_until TIMESTAMPTZ,
   hotmart_transaction TEXT,
   hotmart_event TEXT,
   hotmart_offer TEXT,
   hotmart_plan TEXT,
   buyer_email TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS tenant_id UUID;
@@ -186,7 +210,7 @@ CREATE INDEX IF NOT EXISTS idx_user_licenses_tenant_type_active
   ON user_licenses (tenant_id, product_type) WHERE is_active = true;
 
 -- ─────────────────────────────────────────────────────
--- §6. AXIS_AUDIT_LOGS (NUNCA FOI CRIADA — referenciada em 60+ files)
+-- §7. AXIS_AUDIT_LOGS (NUNCA FOI CRIADA — referenciada em 60+ files)
 -- ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS axis_audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -206,38 +230,8 @@ CREATE INDEX IF NOT EXISTS idx_axis_audit_logs_tenant
 CREATE INDEX IF NOT EXISTS idx_axis_audit_logs_action
   ON axis_audit_logs (action);
 
-COMMENT ON TABLE axis_audit_logs IS 'Log de auditoria AXIS (compliance LGPD/operadoras). APPEND-ONLY.';
-
 -- ─────────────────────────────────────────────────────
--- §7. LEARNERS — Tabela core ABA (NUNCA CRIADA)
--- ─────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS learners (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  birth_date DATE NOT NULL,
-  diagnosis TEXT,
-  cid_code VARCHAR,
-  support_level INT DEFAULT 2,
-  school TEXT,
-  notes TEXT,
-  is_active BOOLEAN DEFAULT true,
-  deleted_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_learners_tenant ON learners(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_learners_active ON learners(tenant_id) WHERE is_active = true AND deleted_at IS NULL;
-
-COMMENT ON TABLE learners IS 'Aprendizes ABA — cada tenant pode ter N aprendizes (limite por plano).';
-
--- Adicionar FK em learner_therapists se faltava
--- (learner_therapists.learner_id -> learners.id)
--- Não podemos adicionar FK com IF NOT EXISTS, mas é ok se já existir
-
--- ─────────────────────────────────────────────────────
--- §8. SESSIONS_ABA — Sessões ABA (NUNCA CRIADA)
+-- §8. SESSIONS_ABA — Sessões ABA
 -- ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sessions_aba (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -262,8 +256,6 @@ CREATE INDEX IF NOT EXISTS idx_sessions_aba_learner ON sessions_aba(learner_id, 
 CREATE INDEX IF NOT EXISTS idx_sessions_aba_therapist ON sessions_aba(therapist_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_aba_status ON sessions_aba(status);
 
-COMMENT ON TABLE sessions_aba IS 'Sessões ABA agendadas/realizadas. Vinculadas a learner + therapist.';
-
 -- ─────────────────────────────────────────────────────
 -- §9. EBP_PRACTICES — Práticas baseadas em evidência
 -- ─────────────────────────────────────────────────────
@@ -274,9 +266,8 @@ CREATE TABLE IF NOT EXISTS ebp_practices (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Seed: práticas ABA mais comuns
 INSERT INTO ebp_practices (name, description)
-VALUES
+SELECT v.name, v.description FROM (VALUES
   ('DTT', 'Discrete Trial Training — ensino por tentativas discretas'),
   ('NET', 'Natural Environment Teaching — ensino em ambiente natural'),
   ('PRT', 'Pivotal Response Training — treino de respostas pivotais'),
@@ -292,9 +283,8 @@ VALUES
   ('NCR', 'Noncontingent Reinforcement'),
   ('Prompt Fading', 'Esvanecimento gradual de dicas'),
   ('Shaping', 'Modelagem por aproximações sucessivas')
-ON CONFLICT DO NOTHING;
-
-COMMENT ON TABLE ebp_practices IS 'Catálogo de Práticas Baseadas em Evidência para ABA.';
+) AS v(name, description)
+WHERE NOT EXISTS (SELECT 1 FROM ebp_practices WHERE ebp_practices.name = v.name);
 
 -- ─────────────────────────────────────────────────────
 -- §10. PEI_PLANS — Planos Educacionais Individualizados
@@ -336,8 +326,6 @@ CREATE INDEX IF NOT EXISTS idx_pei_goals_plan ON pei_goals(pei_plan_id);
 
 -- ─────────────────────────────────────────────────────
 -- §12. LEARNER_PROTOCOLS — Protocolos ativos por aprendiz
--- Ciclo de Vida: active → mastered → generalization → maintenance
---   (com possível regression a qualquer momento)
 -- ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS learner_protocols (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -368,8 +356,6 @@ CREATE INDEX IF NOT EXISTS idx_lp_learner ON learner_protocols(learner_id);
 CREATE INDEX IF NOT EXISTS idx_lp_tenant ON learner_protocols(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_lp_status ON learner_protocols(status);
 
-COMMENT ON TABLE learner_protocols IS 'Protocolos ABA ativos por aprendiz. Ciclo de vida: active→mastered→generalization→maintenance.';
-
 -- ─────────────────────────────────────────────────────
 -- §13. CLINICAL_STATES_ABA — Estado clínico CSO-ABA
 -- ─────────────────────────────────────────────────────
@@ -388,8 +374,6 @@ CREATE TABLE IF NOT EXISTS clinical_states_aba (
 );
 
 CREATE INDEX IF NOT EXISTS idx_csa_learner ON clinical_states_aba(learner_id, created_at DESC);
-
-COMMENT ON TABLE clinical_states_aba IS 'Estado clínico CSO-ABA. APPEND-ONLY. 4 sub-scores: SAS, PIS, BSS, TCM.';
 
 -- ─────────────────────────────────────────────────────
 -- §14. SESSION_SNAPSHOTS — Snapshots CSO por sessão
@@ -477,8 +461,6 @@ CREATE TABLE IF NOT EXISTS maintenance_probes (
 CREATE INDEX IF NOT EXISTS idx_mp_protocol ON maintenance_probes(protocol_id);
 CREATE INDEX IF NOT EXISTS idx_mp_learner ON maintenance_probes(learner_id);
 
-COMMENT ON TABLE maintenance_probes IS 'Sondas de manutenção pós-mastery. Schedule: semanas 2, 4, 8, 16 pós-mastery.';
-
 -- ─────────────────────────────────────────────────────
 -- §18. GENERALIZATION_PROBES — Sondas de generalização
 -- ─────────────────────────────────────────────────────
@@ -497,8 +479,6 @@ CREATE TABLE IF NOT EXISTS generalization_probes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_gp_protocol ON generalization_probes(protocol_id);
-
-COMMENT ON TABLE generalization_probes IS 'Sondas de generalização 3×2: 3 estímulos × 2 contextos.';
 
 -- ─────────────────────────────────────────────────────
 -- §19. GUARDIANS — Responsáveis legais dos aprendizes
@@ -653,7 +633,7 @@ CREATE TABLE IF NOT EXISTS protocol_library (
   title TEXT NOT NULL,
   domain TEXT NOT NULL,
   objective TEXT NOT NULL,
-  ebp_practice_name TEXT NOT NULL,
+  ebp_practice_name TEXT DEFAULT '',
   measurement_type TEXT DEFAULT 'discrete_trial',
   default_mastery_pct INT DEFAULT 80,
   default_mastery_sessions INT DEFAULT 3,
@@ -664,7 +644,6 @@ CREATE TABLE IF NOT EXISTS protocol_library (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Colunas que podem faltar se tabela existia
 ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS ebp_practice_name TEXT;
 ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS measurement_type TEXT DEFAULT 'discrete_trial';
 ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS default_mastery_pct INT DEFAULT 80;
@@ -693,7 +672,6 @@ CREATE TABLE IF NOT EXISTS onboarding_progress (
 -- ─────────────────────────────────────────────────────
 DO $$
 BEGIN
-  -- Só migra se tenants tiver coluna clerk_user_id
   IF EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'tenants' AND column_name = 'clerk_user_id'
@@ -718,22 +696,26 @@ END $$;
 -- ─────────────────────────────────────────────────────
 -- §28. SEED — Licenças free para tenants existentes
 -- ─────────────────────────────────────────────────────
-INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
-SELECT
-  t.id,
-  p.clerk_user_id,
-  'aba',
-  true,
-  NOW(),
-  'SEED_FREE_TIER',
-  p.email
-FROM tenants t
-JOIN profiles p ON p.tenant_id = t.id AND p.is_active = true AND p.role = 'admin'
-WHERE NOT EXISTS (
-  SELECT 1 FROM user_licenses ul
-  WHERE ul.tenant_id = t.id AND ul.product_type = 'aba'
-)
-ON CONFLICT DO NOTHING;
+DO $$
+BEGIN
+  INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
+  SELECT
+    t.id,
+    p.clerk_user_id,
+    'aba',
+    true,
+    NOW(),
+    'SEED_FREE_TIER',
+    p.email
+  FROM tenants t
+  JOIN profiles p ON p.tenant_id = t.id AND p.is_active = true AND p.role = 'admin'
+  WHERE NOT EXISTS (
+    SELECT 1 FROM user_licenses ul
+    WHERE ul.tenant_id = t.id AND ul.product_type = 'aba'
+  );
+EXCEPTION WHEN others THEN
+  RAISE NOTICE 'Seed licenses skipped: %', SQLERRM;
+END $$;
 
 -- ─────────────────────────────────────────────────────
 -- §29. ATUALIZAR max_patients para planos existentes
@@ -743,4 +725,8 @@ UPDATE tenants SET max_patients = 100 WHERE plan_tier = 'founders' AND (max_pati
 UPDATE tenants SET max_patients = 100 WHERE plan_tier = 'clinica_100' AND (max_patients IS NULL OR max_patients < 100);
 UPDATE tenants SET max_patients = 250 WHERE plan_tier = 'clinica_250' AND (max_patients IS NULL OR max_patients < 250);
 
-COMMIT;
+-- ─────────────────────────────────────────────────────
+-- DONE! Verificar com:
+--   SELECT table_name FROM information_schema.tables
+--   WHERE table_schema = 'public' ORDER BY table_name;
+-- ─────────────────────────────────────────────────────
