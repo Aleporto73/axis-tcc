@@ -90,9 +90,22 @@ export default async function ABALayout({ children }: { children: React.ReactNod
   // ─── Verificar onboarding ───
   // Se o onboarding não foi concluído, redirecionar para o wizard
   // (exceto se já estiver na rota /aba/onboarding para evitar loop)
+  //
+  // IMPORTANTE: x-pathname vem do middleware e SÓ existe em full page load.
+  // Em navegação client-side (RSC), o Next.js envia next-url.
+  // Fallback: referer do browser. Se nenhum disponível, NÃO redirecionar
+  // para evitar loop infinito em /aba/onboarding.
   const headersList = await headers()
-  const pathname = headersList.get('x-pathname') || ''
-  const isOnboardingRoute = pathname.startsWith('/aba/onboarding')
+  const pathname =
+    headersList.get('x-pathname') ||
+    headersList.get('next-url') ||
+    headersList.get('x-invoke-path') ||
+    ''
+  const referer = headersList.get('referer') || ''
+  const isOnboardingRoute =
+    pathname.startsWith('/aba/onboarding') ||
+    referer.includes('/aba/onboarding') ||
+    pathname === '' // Se não conseguiu detectar rota, não redirecionar (evita loop)
 
   if (!isOnboardingRoute) {
     const onboardingResult = await pool.query(
