@@ -26,3 +26,8 @@ Thumbs.db
 # Misc
 *.bak
 *.tsbuildinfo
+
+# Sensitive files
+.env.backup-axistcc
+.env.backup*
+firebase-service-account.json
