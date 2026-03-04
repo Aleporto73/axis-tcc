@@ -41,6 +41,21 @@ CREATE TABLE IF NOT EXISTS user_licenses (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Garantir colunas caso a tabela já exista de versão anterior
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id);
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS clerk_user_id TEXT;
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS product_type TEXT;
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS valid_from TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS valid_until TIMESTAMPTZ;
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS hotmart_transaction TEXT;
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS hotmart_event TEXT;
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS hotmart_offer TEXT;
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS hotmart_plan TEXT;
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS buyer_email TEXT;
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE user_licenses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
 -- Índice para gate de acesso (layout.tsx): busca por clerk_user_id + product_type
 CREATE INDEX IF NOT EXISTS idx_user_licenses_clerk_product
   ON user_licenses (clerk_user_id, product_type)
@@ -72,14 +87,14 @@ COMMENT ON COLUMN user_licenses.valid_until IS 'NULL = sem expiração (assinatu
 INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
 SELECT
   t.id,
-  t.clerk_user_id,
+  p.clerk_user_id,
   'aba',
   true,
   NOW(),
   'SEED_FREE_TIER',
   p.email
 FROM tenants t
-JOIN profiles p ON p.tenant_id = t.id AND p.is_active = true
+JOIN profiles p ON p.tenant_id = t.id AND p.is_active = true AND p.role = 'admin'
 WHERE NOT EXISTS (
   SELECT 1 FROM user_licenses ul
   WHERE ul.tenant_id = t.id AND ul.product_type = 'aba'
