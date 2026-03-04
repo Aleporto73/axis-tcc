@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 interface Learner { id: string; name: string }
@@ -31,12 +32,25 @@ function MiniChart({ data, width=600, height=180 }: { data: CSOPoint[]; width?: 
 }
 
 export default function DashboardABAPage() {
+  const searchParams = useSearchParams()
   const [learners, setLearners] = useState<Learner[]>([])
   const [sel, setSel] = useState('')
   const [cso, setCso] = useState<CSOPoint[]>([])
   const [sStats, setSStats] = useState({total:0,completed:0,scheduled:0})
   const [pStats, setPStats] = useState({total:0,active:0,mastered:0,maintained:0})
   const [loading, setLoading] = useState(true)
+  const [welcomeToast, setWelcomeToast] = useState(false)
+
+  // Toast de boas-vindas após onboarding
+  useEffect(() => {
+    if (searchParams.get('welcome') === '1') {
+      setWelcomeToast(true)
+      // Limpar param da URL sem reload
+      window.history.replaceState({}, '', '/aba/dashboard')
+      const t = setTimeout(() => setWelcomeToast(false), 5000)
+      return () => clearTimeout(t)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     fetch('/api/aba/learners').then(r=>r.json()).then(d => {
@@ -67,6 +81,14 @@ export default function DashboardABAPage() {
 
   return (
     <>
+      {/* Toast de boas-vindas */}
+      {welcomeToast && (
+        <div className="fixed top-4 right-4 z-50 bg-white border border-green-200 rounded-xl shadow-lg px-5 py-3 flex items-center gap-3 animate-[slideIn_0.3s_ease-out]">
+          <span className="text-lg">🎉</span>
+          <p className="text-sm text-slate-700">Tudo pronto! Explore o sistema no seu ritmo.</p>
+          <button onClick={() => setWelcomeToast(false)} className="text-slate-400 hover:text-slate-600 text-xs ml-2">✕</button>
+        </div>
+      )}
       <div className="flex justify-center pt-5 mb-6 px-4">
         <nav className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-3 md:px-5 py-1.5 shadow-sm">
           <Link href="/aba" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600">Painel</Link>
