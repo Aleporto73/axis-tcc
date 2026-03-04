@@ -104,6 +104,17 @@ CREATE TABLE IF NOT EXISTS protocol_library (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Garantir colunas caso a tabela já exista de versão anterior
+ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS ebp_practice_name TEXT;
+ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS measurement_type TEXT DEFAULT 'discrete_trial';
+ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS default_mastery_pct INT DEFAULT 80;
+ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS default_mastery_sessions INT DEFAULT 3;
+ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS default_mastery_trials INT DEFAULT 10;
+ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS difficulty_level INT DEFAULT 1;
+ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
+ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE protocol_library ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
 COMMENT ON TABLE protocol_library IS 'Protocolos-modelo pré-carregados (Anexo D, lacuna 7)';
 
 -- ─── Seed: protocolos-modelo iniciais ───────────────
