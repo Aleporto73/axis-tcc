@@ -65,13 +65,6 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           name: name.trim(),
           specialty: area,
-          // Campos mínimos para manter compatibilidade com o backend
-          clinic: { clinic_name: '' },
-          rt: { name: name.trim(), crp: '', crp_uf: '', specialty: area },
-          team_invites: [],
-          plan_tier: 'free',
-          compliance_items: [],
-          selected_protocol_ids: [],
         }),
       })
 
@@ -165,7 +158,7 @@ export default function OnboardingPage() {
               <div className="mt-6 flex items-start gap-2 bg-amber-50/60 rounded-xl px-4 py-3">
                 <span className="text-base leading-none mt-0.5">💡</span>
                 <p className="text-xs text-amber-700 leading-relaxed">
-                  <strong>Dica:</strong> Clique no ícone <span className="font-medium">(?)</span> na lateral esquerda a qualquer momento. A Ana, nossa IA, está lá pra te ajudar.
+                  <strong>Dica:</strong> Na lateral esquerda você encontra o passo a passo do sistema e a Ana, nossa assistente virtual, sempre pronta pra ajudar.
                 </p>
               </div>
 
@@ -191,7 +184,7 @@ export default function OnboardingPage() {
               {/* Texto claro, sem juridiquês */}
               <div className="bg-slate-50 rounded-xl px-5 py-4 mb-6">
                 <p className="text-sm text-slate-600 leading-relaxed">
-                  O AXIS ABA organiza seus registros clínicos. Ele <strong>não faz diagnóstico</strong> nem substitui seu julgamento profissional — isso é <strong>100% seu</strong>. Seus dados ficam seguros com a gente (LGPD).
+                  O AXIS ABA é uma plataforma de organização clínica para profissionais de ABA. O sistema estrutura seus registros e gera documentação — <strong>as decisões clínicas continuam sendo suas</strong>. Trabalhamos com segurança padrão hospitalar, auditável por operadoras de saúde.
                 </p>
               </div>
 

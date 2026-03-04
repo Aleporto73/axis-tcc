@@ -18,9 +18,13 @@ import { withTenant } from '@/src/database/with-tenant'
 // =====================================================
 
 interface SetupPayload {
-  // Lacuna 1: Dados da clínica
-  clinic: {
-    clinic_name: string
+  // Onboarding Light v2: só nome + área
+  name?: string
+  specialty?: string
+
+  // Campos legados (opcionais, mantidos por compatibilidade)
+  clinic?: {
+    clinic_name?: string
     cnpj?: string
     phone?: string
     address_street?: string
@@ -29,24 +33,16 @@ interface SetupPayload {
     address_zip?: string
   }
 
-  // Lacuna 2: Responsável técnico
-  rt: {
-    name: string
-    crp: string
-    crp_uf: string
+  rt?: {
+    name?: string
+    crp?: string
+    crp_uf?: string
     specialty?: string
   }
 
-  // Lacuna 3: Convites de equipe (emails)
   team_invites?: { email: string; role: 'supervisor' | 'terapeuta'; name?: string }[]
-
-  // Lacuna 4: Plano selecionado
   plan_tier?: 'free' | 'founders' | 'clinica_100' | 'clinica_250'
-
-  // Lacuna 6: Itens de compliance aceitos
   compliance_items?: { item_key: string; label: string; accepted: boolean }[]
-
-  // Lacuna 7: IDs de protocolos-modelo selecionados
   selected_protocol_ids?: string[]
 }
 
@@ -54,35 +50,38 @@ export async function POST(request: NextRequest) {
   try {
     const body: SetupPayload = await request.json()
 
-    if (!body.clinic?.clinic_name) {
-      return NextResponse.json({ error: 'clinic_name é obrigatório' }, { status: 400 })
-    }
-    if (!body.rt?.crp || !body.rt?.crp_uf) {
-      return NextResponse.json({ error: 'CRP e UF do responsável técnico são obrigatórios' }, { status: 400 })
-    }
+    // Onboarding v2: sem campos obrigatórios pesados
+    const displayName = body.name || body.rt?.name || ''
+    const specialty = body.specialty || body.rt?.specialty || ''
 
     const result = await withTenant(async ({ client, tenantId, userId, profileId }) => {
-      // ── Lacuna 1: Atualizar dados da clínica no tenant ──
-      await client.query(
-        `UPDATE tenants SET
-           clinic_name = $1, cnpj = $2, phone = $3,
-           address_street = $4, address_city = $5, address_state = $6, address_zip = $7,
-           updated_at = NOW()
-         WHERE id = $8`,
-        [
-          body.clinic.clinic_name, body.clinic.cnpj || null, body.clinic.phone || null,
-          body.clinic.address_street || null, body.clinic.address_city || null,
-          body.clinic.address_state || null, body.clinic.address_zip || null,
-          tenantId,
-        ]
-      )
+      // ── Atualizar dados da clínica no tenant (se fornecidos) ──
+      if (body.clinic?.clinic_name) {
+        await client.query(
+          `UPDATE tenants SET
+             clinic_name = $1, cnpj = $2, phone = $3,
+             address_street = $4, address_city = $5, address_state = $6, address_zip = $7,
+             updated_at = NOW()
+           WHERE id = $8`,
+          [
+            body.clinic.clinic_name, body.clinic.cnpj || null, body.clinic.phone || null,
+            body.clinic.address_street || null, body.clinic.address_city || null,
+            body.clinic.address_state || null, body.clinic.address_zip || null,
+            tenantId,
+          ]
+        )
+      }
 
-      // ── Lacuna 2: Atualizar CRP/UF do RT no profile ──
+      // ── Atualizar nome e especialidade no profile ──
       await client.query(
         `UPDATE profiles SET
-           name = COALESCE($1, name), crp = $2, crp_uf = $3, specialty = $4, updated_at = NOW()
+           name = COALESCE(NULLIF($1, ''), name),
+           crp = COALESCE(NULLIF($2, ''), crp),
+           crp_uf = COALESCE(NULLIF($3, ''), crp_uf),
+           specialty = COALESCE(NULLIF($4, ''), specialty),
+           updated_at = NOW()
          WHERE id = $5 AND tenant_id = $6`,
-        [body.rt.name, body.rt.crp, body.rt.crp_uf, body.rt.specialty || null, profileId, tenantId]
+        [displayName, body.rt?.crp || '', body.rt?.crp_uf || '', specialty, profileId, tenantId]
       )
 
       // ── Lacuna 3: Enviar convites de equipe ──
@@ -197,14 +196,14 @@ export async function POST(request: NextRequest) {
            'compliance_count', $9, 'protocols_imported', $10
          ), NOW())`,
         [tenantId, userId, userId,
-         body.clinic.clinic_name, body.rt.crp, body.rt.crp_uf,
+         body.clinic?.clinic_name || displayName, body.rt?.crp || '', body.rt?.crp_uf || '',
          invitesSent.length, body.plan_tier || 'free',
          complianceItems.filter(c => c.accepted).length, protocolsImported]
       )
 
       return {
         completed: true,
-        clinic_name: body.clinic.clinic_name,
+        name: displayName,
         invites_sent: invitesSent.length,
         plan_tier: body.plan_tier || 'free',
         compliance_accepted: complianceItems.filter(c => c.accepted).length,
