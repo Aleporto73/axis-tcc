@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 03/03/2026
+## Atualizado: 04/03/2026
 
 ---
 
@@ -46,7 +46,7 @@
 | Landing institucional | 100% | /app/page.tsx — TCC + ABA, Psiform Tecnologia, schema.org |
 | Pagina de precos | 100% | /aba/precos — 3 cards (Free / Clinica 100 Founders / Clinica 250) |
 | Mobile responsivo | 85% | Bottom nav mobile na sidebar, telas principais OK, falta polir |
-| Onboarding clinica | 95% | Wizard com selecao plano (4 tiers), salva max_patients/max_sessions |
+| Onboarding clinica | 100% | v2: 2 etapas acolhedoras (nome+area → termos), sem dependencias complexas |
 
 ### COMERCIAL / BILLING (Hotmart)
 | Area | % | Status |
@@ -243,8 +243,9 @@ PM2 (producao)
 | `app/aba/precos/page.tsx` | Pagina precos (3 planos) |
 | `app/produto/aba/page.tsx` | Landing premium (4 planos, links Hotmart) |
 | `app/components/UpgradeModal.tsx` | Modal upgrade (free → pago) |
-| `app/aba/onboarding/page.tsx` | Wizard onboarding + selecao plano |
-| `app/api/aba/onboarding/setup/route.ts` | API setup — salva plan_tier + limites |
+| `app/aba/onboarding/page.tsx` | Onboarding v2 — 2 etapas (nome+area → termos) |
+| `app/api/aba/onboarding/setup/route.ts` | API setup — salva name+specialty, marca completed |
+| `app/api/aba/onboarding/progress/route.ts` | API progress — checa se onboarding ja completou |
 | `app/aba/aprendizes/page.tsx` | Trigger UpgradeModal (free + >1) |
 | `middleware.ts` | Clerk auth + rotas publicas |
 
@@ -303,10 +304,12 @@ PM2 (producao)
 | 2026-02-28 | Chat Ana com gpt-4o-mini | Custo baixo, respostas rapidas, personality prompt |
 | 2026-02-28 | Landing com 4 colunas de planos | Founders como diferencial |
 | 2026-03-03 | Foco AxisABA primeiro para beta | Mais maduro, mercado definido, TCC depois |
+| 2026-03-04 | Onboarding de 8→2 etapas | Reducao de friccao, acolhimento emocional pos-compra, sem dependencias de tabelas complexas |
+| 2026-03-04 | APIs onboarding independentes | Setup e progress so usam tenants+profiles, tolerante a tabelas faltantes |
 
 ---
 
-## PROXIMOS PASSOS (03/03/2026)
+## PROXIMOS PASSOS (04/03/2026)
 
 1. ~~Criar migration user_licenses~~ ✅
 2. ~~Alinhar planos~~ ✅
@@ -315,12 +318,44 @@ PM2 (producao)
 5. ~~Bug fix /api/aba/me plan_tier~~ ✅
 6. ~~Licenca free automatica no cadastro~~ ✅
 7. ~~Termos de uso + Privacidade~~ ✅
-8. **Rodar migration 006 no banco de producao**
-9. **Testar fluxo completo no ambiente real**: cadastro → onboarding → free → upgrade → webhook
-10. **Build + deploy**
-11. **LANCAMENTO BETA**
+8. ~~Onboarding v2 (2 etapas acolhedoras)~~ ✅ 04/03
+9. **Rodar migration 005 corrigida + 006 no banco de producao**
+10. **Resetar onboarding_completed_at para testar**: `UPDATE tenants SET onboarding_completed_at = NULL;`
+11. **Testar fluxo completo no ambiente real**: cadastro → onboarding → free → upgrade → webhook
+12. **Build + deploy**
+13. **LANCAMENTO BETA**
+
+### PRE-TESTE HOTMART (checklist para 05/03)
+
+| Item | Comando/Acao | Status |
+|---|---|---|
+| Migration 006 rodada | `docker exec -i axis-postgres psql -U axis -d axis_tcc -f - < scripts/migrations/006_add_user_licenses.sql` | ❓ |
+| HOTMART_HOTTOK no .env | Verificar se esta preenchido na VPS. Pegar em: Hotmart > Configuracoes > Webhooks > Hottok | ❓ |
+| URL webhook cadastrada no Hotmart | Confirmar `https://axisclinico.com/api/webhook/hotmart` no painel Hotmart | ❓ |
+| Email comprador = email cadastrado | Webhook busca tenant pelo email do buyer. Se email diferente → fica "pending" | ⚠️ |
+| Produto ABA ID | Confirmar que `7285432` no webhook bate com o produto real no Hotmart | ❓ |
+
+**Fluxo do teste:**
+1. Cadastrar com email X (/sign-up?produto=aba)
+2. Completar onboarding (2 etapas)
+3. Verificar que esta no plano free (1 aprendiz)
+4. Comprar plano Founders (R$147) com o MESMO email X
+5. Verificar que webhook ativou licenca: `docker exec -i axis-postgres psql -U axis -d axis_tcc -c "SELECT * FROM user_licenses ORDER BY created_at DESC LIMIT 5;"`
+6. Verificar que agora pode criar mais de 1 aprendiz
+
+**Limitacao conhecida:** se comprar ANTES de cadastrar, fica status "pending" (TODO: fila de ativacao pendente)
 
 ---
+
+## CONCLUIDO EM 04/03/2026
+
+- [x] Onboarding v2: refatorado de 8 etapas burocraticas para 2 etapas acolhedoras (nome+area → termos)
+- [x] API setup simplificada: so depende de tabelas tenants + profiles (sem onboarding_progress, compliance_checklist, protocol_library)
+- [x] API progress simplificada: apenas checa onboarding_completed_at
+- [x] Toast de boas-vindas no dashboard apos onboarding
+- [x] Fix vitest.setup.ts: NODE_ENV read-only em Next.js 16
+- [x] Fix migration 005: ALTER TABLE IF NOT EXISTS para colunas de protocol_library
+- [x] .gitignore corrigido: .next/ removido do tracking do git
 
 ## CONCLUIDO EM 03/03/2026
 
@@ -338,4 +373,4 @@ PM2 (producao)
 ---
 
 *Este arquivo e a fonte unica de verdade do projeto. Atualizar a cada sessao de trabalho.*
-*Ultima verificacao cruzada com codigo: 03/03/2026*
+*Ultima verificacao cruzada com codigo: 04/03/2026*

@@ -26,6 +26,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [redirecting, setRedirecting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -43,7 +44,11 @@ export default function OnboardingPage() {
         const res = await fetch('/api/aba/onboarding/progress')
         if (!res.ok) { setLoading(false); return }
         const data = await res.json()
-        if (data.completed) { router.push('/aba/dashboard'); return }
+        if (data.completed) {
+          setRedirecting(true)
+          router.push('/aba/dashboard')
+          return
+        }
         // Preencher nome se já existir no profile
         if (data.profile?.name) setName(data.profile.name)
         if (data.profile?.specialty) setArea(data.profile.specialty)
@@ -83,10 +88,12 @@ export default function OnboardingPage() {
     }
   }
 
-  if (loading) {
+  if (loading || redirecting) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
-        <div className="text-slate-400 text-sm animate-pulse">Preparando tudo pra você...</div>
+        <div className="text-slate-400 text-sm animate-pulse">
+          {redirecting ? 'Entrando no sistema...' : 'Preparando tudo pra você...'}
+        </div>
       </div>
     )
   }
