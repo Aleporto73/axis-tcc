@@ -2,213 +2,59 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 
 // =====================================================
-// Anexo D — Onboarding Light: Setup Completo
+// Onboarding Light v2 — Setup simplificado
 //
-// POST: Persiste TODOS os dados do wizard em transação única.
-//   Lacuna 1: Dados da clínica (tenants)
-//   Lacuna 2: CRP/UF do RT (profiles)
-//   Lacuna 3: Convites de equipe (invite batch)
-//   Lacuna 4: Seleção de plano
-//   Lacuna 6: Checklist de conformidade
-//   Lacuna 7: Protocolos-modelo selecionados
-//   Lacuna 8: Esta API é a lacuna 8
-//   Lacuna 9: Marca onboarding completo (banco)
+// POST: Salva nome + especialidade, marca onboarding completo.
+//   1. Atualiza name/specialty em profiles
+//   2. Marca onboarding_completed_at em tenants
+//   3. Registra audit log
 //
-// Lacuna 5 (upload de docs) é tratada em /onboarding/documents
+// Não depende de: onboarding_progress, compliance_checklist,
+// protocol_library, protocol_templates, invite_tokens
 // =====================================================
 
 interface SetupPayload {
-  // Onboarding Light v2: só nome + área
   name?: string
   specialty?: string
-
-  // Campos legados (opcionais, mantidos por compatibilidade)
-  clinic?: {
-    clinic_name?: string
-    cnpj?: string
-    phone?: string
-    address_street?: string
-    address_city?: string
-    address_state?: string
-    address_zip?: string
-  }
-
-  rt?: {
-    name?: string
-    crp?: string
-    crp_uf?: string
-    specialty?: string
-  }
-
-  team_invites?: { email: string; role: 'supervisor' | 'terapeuta'; name?: string }[]
-  plan_tier?: 'free' | 'founders' | 'clinica_100' | 'clinica_250'
-  compliance_items?: { item_key: string; label: string; accepted: boolean }[]
-  selected_protocol_ids?: string[]
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: SetupPayload = await request.json()
 
-    // Onboarding v2: sem campos obrigatórios pesados
-    const displayName = body.name || body.rt?.name || ''
-    const specialty = body.specialty || body.rt?.specialty || ''
+    const displayName = body.name || ''
+    const specialty = body.specialty || ''
 
     const result = await withTenant(async ({ client, tenantId, userId, profileId }) => {
-      // ── Atualizar dados da clínica no tenant (se fornecidos) ──
-      if (body.clinic?.clinic_name) {
-        await client.query(
-          `UPDATE tenants SET
-             clinic_name = $1, cnpj = $2, phone = $3,
-             address_street = $4, address_city = $5, address_state = $6, address_zip = $7,
-             updated_at = NOW()
-           WHERE id = $8`,
-          [
-            body.clinic.clinic_name, body.clinic.cnpj || null, body.clinic.phone || null,
-            body.clinic.address_street || null, body.clinic.address_city || null,
-            body.clinic.address_state || null, body.clinic.address_zip || null,
-            tenantId,
-          ]
-        )
-      }
-
-      // ── Atualizar nome e especialidade no profile ──
+      // ── 1. Atualizar nome e especialidade no profile ──
       await client.query(
         `UPDATE profiles SET
            name = COALESCE(NULLIF($1, ''), name),
-           crp = COALESCE(NULLIF($2, ''), crp),
-           crp_uf = COALESCE(NULLIF($3, ''), crp_uf),
-           specialty = COALESCE(NULLIF($4, ''), specialty),
+           specialty = COALESCE(NULLIF($2, ''), specialty),
            updated_at = NOW()
-         WHERE id = $5 AND tenant_id = $6`,
-        [displayName, body.rt?.crp || '', body.rt?.crp_uf || '', specialty, profileId, tenantId]
+         WHERE id = $3 AND tenant_id = $4`,
+        [displayName, specialty, profileId, tenantId]
       )
 
-      // ── Lacuna 3: Enviar convites de equipe ──
-      const invitesSent: any[] = []
-      if (body.team_invites && body.team_invites.length > 0) {
-        for (const invite of body.team_invites.slice(0, 10)) { // max 10
-          // Verificar se já existe convite para esse email
-          const existing = await client.query(
-            `SELECT id FROM profiles WHERE email = $1 AND tenant_id = $2`,
-            [invite.email, tenantId]
-          )
-          if (existing.rows.length > 0) continue
-
-          const pendingId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-          const ins = await client.query(
-            `INSERT INTO profiles (tenant_id, clerk_user_id, role, name, email, is_active, invited_by)
-             VALUES ($1, $2, $3, $4, $5, false, $6)
-             RETURNING id, email, role`,
-            [tenantId, pendingId, invite.role, invite.name || null, invite.email, userId]
-          )
-          invitesSent.push(ins.rows[0])
-        }
-      }
-
-      // ── Lacuna 4: Seleção de plano ──
-      // Alinhado com landing page /produto/aba e Hotmart
-      if (body.plan_tier) {
-        const limits: Record<string, { patients: number; sessions: number }> = {
-          free:         { patients: 1,   sessions: 9999 },
-          founders:     { patients: 100, sessions: 9999 },
-          clinica_100:  { patients: 100, sessions: 9999 },
-          clinica_250:  { patients: 250, sessions: 9999 },
-        }
-        const tier = limits[body.plan_tier] || limits.free
-        await client.query(
-          `UPDATE tenants SET plan_tier = $1, max_patients = $2, max_sessions = $3, updated_at = NOW()
-           WHERE id = $4`,
-          [body.plan_tier, tier.patients, tier.sessions, tenantId]
-        )
-      }
-
-      // ── Lacuna 6: Checklist de conformidade ──
-      const complianceItems: any[] = []
-      if (body.compliance_items && body.compliance_items.length > 0) {
-        for (const item of body.compliance_items) {
-          const ins = await client.query(
-            `INSERT INTO compliance_checklist (tenant_id, item_key, label, accepted, accepted_by, accepted_at)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             ON CONFLICT (tenant_id, item_key) DO UPDATE SET
-               accepted = EXCLUDED.accepted, accepted_by = EXCLUDED.accepted_by,
-               accepted_at = EXCLUDED.accepted_at
-             RETURNING *`,
-            [tenantId, item.item_key, item.label, item.accepted, item.accepted ? userId : null, item.accepted ? new Date() : null]
-          )
-          complianceItems.push(ins.rows[0])
-        }
-      }
-
-      // ── Lacuna 7: Copiar protocolos-modelo selecionados ──
-      let protocolsImported = 0
-      if (body.selected_protocol_ids && body.selected_protocol_ids.length > 0) {
-        // Buscar os modelos selecionados da biblioteca
-        const models = await client.query(
-          `SELECT * FROM protocol_library WHERE id = ANY($1) AND is_active = true`,
-          [body.selected_protocol_ids]
-        )
-
-        // Buscar ebp_practice_id por nome (ou usar o primeiro encontrado)
-        for (const model of models.rows) {
-          const ebp = await client.query(
-            `SELECT id FROM ebp_practices WHERE name ILIKE $1 LIMIT 1`,
-            [model.ebp_practice_name]
-          )
-          if (ebp.rows.length === 0) continue
-
-          // Inserir como protocolo-modelo no tenant (sem learner — template)
-          await client.query(
-            `INSERT INTO protocol_templates (tenant_id, title, domain, objective, ebp_practice_id,
-              mastery_criteria_pct, mastery_criteria_sessions, mastery_criteria_trials,
-              measurement_type, source_library_id, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-             ON CONFLICT DO NOTHING`,
-            [tenantId, model.title, model.domain, model.objective, ebp.rows[0].id,
-             model.default_mastery_pct, model.default_mastery_sessions, model.default_mastery_trials,
-             model.measurement_type, model.id, userId]
-          )
-          protocolsImported++
-        }
-      }
-
-      // ── Lacuna 8+9: Marcar onboarding como completo ──
+      // ── 2. Marcar onboarding como completo ──
       await client.query(
         `UPDATE tenants SET onboarding_completed_at = NOW() WHERE id = $1`,
         [tenantId]
       )
 
-      await client.query(
-        `INSERT INTO onboarding_progress (tenant_id, current_step, total_steps, steps_completed, skipped, updated_at)
-         VALUES ($1, 8, 8, $2, false, NOW())
-         ON CONFLICT (tenant_id) DO UPDATE SET
-           current_step = 8, steps_completed = EXCLUDED.steps_completed, skipped = false, updated_at = NOW()`,
-        [tenantId, JSON.stringify(['welcome','clinic','rt','team','plan','compliance','protocols','done'])]
-      )
-
-      // ── Audit log ──
-      await client.query(
-        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
-         VALUES ($1, $2, $3, 'ONBOARDING_COMPLETED', 'tenants',
-         jsonb_build_object(
-           'clinic_name', $4, 'crp', $5, 'crp_uf', $6,
-           'invites_sent', $7, 'plan_tier', $8,
-           'compliance_count', $9, 'protocols_imported', $10
-         ), NOW())`,
-        [tenantId, userId, userId,
-         body.clinic?.clinic_name || displayName, body.rt?.crp || '', body.rt?.crp_uf || '',
-         invitesSent.length, body.plan_tier || 'free',
-         complianceItems.filter(c => c.accepted).length, protocolsImported]
-      )
-
-      return {
-        completed: true,
-        name: displayName,
-        invites_sent: invitesSent.length,
-        plan_tier: body.plan_tier || 'free',
-        compliance_accepted: complianceItems.filter(c => c.accepted).length,
-        protocols_imported: protocolsImported,
+      // ── 3. Audit log ──
+      try {
+        await client.query(
+          `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
+           VALUES ($1, $2, $3, 'ONBOARDING_COMPLETED', 'tenants',
+           jsonb_build_object('name', $4, 'specialty', $5), NOW())`,
+          [tenantId, userId, userId, displayName, specialty]
+        )
+      } catch {
+        // audit log is non-critical — don't fail onboarding if table is missing
       }
+
+      return { completed: true, name: displayName }
     })
 
     return NextResponse.json(result, { status: 201 })
