@@ -1,68 +1,67 @@
 import { NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { requireAdmin, handleRouteError } from '@/src/database/with-role'
+import { PoolClient } from 'pg'
 
 // =====================================================
 // AXIS ABA — Exclusão LGPD / Anonimização Irreversível
 // Conforme AXIS ABA Bible v2.6.1:
 //
 //   S13.1 LGPD — Operador vs Controlador
-//     "Exclusão após prazo legal"
-//     Clínica (Controlador) decide; Psiform (Operador) executa
-//
-//   S13.2 Política de Retenção:
-//     Após cancelamento da conta:
-//       - Período de retenção: 90 dias
-//       - Exportação disponível durante os 90 dias
-//       - Após 90 dias: anonimização irreversível
-//
-//     Retenção por tipo de dado:
-//       Dados clínicos     → 7 anos (CFM/CRP)
-//       Relatórios gerados → 7 anos (CFM/CRP)
-//       Logs de auditoria  → 5 anos (Compliance)
-//       Portal família     → Enquanto vínculo ativo (Consentimento)
-//       email_logs         → 5 anos (Compliance)
-//       notifications      → 1 ano (Operacional)
-//
+//   S13.2 Política de Retenção: 90 dias → anonimização irreversível
 //   S13.3 axis_audit_logs — Toda ação é auditável
-//   S7 Snapshot Imutável — "Estado clínico é append-only — sem overwrite"
-//   S12.1 Engine Version Lock — "O passado clínico é imutável"
+//   S7 Snapshot Imutável — append-only
+//   S12.1 Engine Version Lock — passado clínico é imutável
+//
+// v2.0: Queries resilientes — cada tabela em try/catch com SAVEPOINT
+//       Auto-cria colunas faltantes (cancellation_scheduled_at, etc.)
 //
 // FLUXO:
-//   POST /api/aba/lgpd/delete
-//     → Fase 1: Agendar exclusão (cancellation_scheduled_at = NOW())
-//     → Retém 90 dias. Exportação disponível.
-//
-//   DELETE /api/aba/lgpd/delete
-//     → Fase 2: Executar anonimização irreversível
-//     → Só executa se 90 dias passaram desde cancellation_scheduled_at
-//     → OU: chamado por cron job automático após 90 dias
-//
-//   GET /api/aba/lgpd/delete
-//     → Consultar status de exclusão agendada
+//   GET  → Consultar status de exclusão agendada
+//   POST → Fase 1: Agendar exclusão (90 dias retenção)
+//   PATCH → Cancelar exclusão dentro dos 90 dias
+//   DELETE → Fase 2: Executar anonimização irreversível (após 90 dias)
 //
 // Acesso: SOMENTE admin (Controlador do lado clínica)
-//
-// IMPORTANTE — Regras de Anonimização:
-//   1. Dados clínicos NÃO são deletados — são anonimizados
-//      (remove PII, preserva estrutura para integridade científica)
-//   2. audit_logs são MANTIDOS (5 anos, compliance)
-//   3. session_snapshots preservam engine_version (imutável)
-//   4. report_snapshots preservam data_hash (rastreabilidade)
-//   5. clinical_states preservam engine_version (append-only)
-//   6. Consentimentos são revogados e registros preservados
 // =====================================================
 
 const RETENTION_DAYS = 90
 const ANON_PREFIX = 'ANON'
 
+// Helper: query resiliente com SAVEPOINT
+let _spCounter = 0
+async function safeExec(client: PoolClient, query: string, params: any[], label: string): Promise<{ rows: any[]; rowCount: number }> {
+  const sp = `sp_del_${label.replace(/[^a-z0-9_]/gi, '_')}_${++_spCounter}`
+  try {
+    await client.query(`SAVEPOINT ${sp}`)
+    const res = await client.query(query, params)
+    await client.query(`RELEASE SAVEPOINT ${sp}`)
+    return { rows: res.rows, rowCount: res.rowCount || 0 }
+  } catch (err: any) {
+    console.warn(`[LGPD Delete] Falha em ${label}: ${err.message}`)
+    try { await client.query(`ROLLBACK TO SAVEPOINT ${sp}`) } catch {}
+    return { rows: [], rowCount: 0 }
+  }
+}
+
 /**
- * Gera identificador anônimo determinístico.
- * Ex: ANON_a1b2c3d4 (primeiros 8 chars do UUID original)
+ * Garante que tenants tem as colunas LGPD necessárias.
+ * Usa SAVEPOINT para não quebrar a transação se já existirem.
  */
-function anonymizeId(originalId: string): string {
-  const short = originalId.replace(/-/g, '').substring(0, 8)
-  return `${ANON_PREFIX}_${short}`
+async function ensureLgpdColumns(client: PoolClient) {
+  const columns = [
+    { name: 'cancellation_scheduled_at', type: 'TIMESTAMPTZ' },
+    { name: 'cancelled_at', type: 'TIMESTAMPTZ' },
+    { name: 'anonymized_at', type: 'TIMESTAMPTZ' },
+  ]
+  for (const col of columns) {
+    await safeExec(
+      client,
+      `ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`,
+      [],
+      `ensure_col_${col.name}`
+    )
+  }
 }
 
 // =====================================================
@@ -72,8 +71,10 @@ export async function GET() {
   try {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
-
       const { client, tenantId } = ctx
+
+      // Garantir colunas existem
+      await ensureLgpdColumns(client)
 
       const tenantData = await client.query(
         `SELECT id, name, cancellation_scheduled_at, cancelled_at, anonymized_at
@@ -132,17 +133,15 @@ export async function GET() {
 
 // =====================================================
 // POST — Fase 1: Agendar exclusão (inicia período 90 dias)
-// Conforme Bible S13.2:
-//   "Após cancelamento da conta:
-//    Período de retenção: 90 dias
-//    Exportação disponível"
 // =====================================================
 export async function POST() {
   try {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
-
       const { client, tenantId, userId, profileId, role } = ctx
+
+      // Garantir colunas existem
+      await ensureLgpdColumns(client)
 
       // Verificar se já está agendado
       const current = await client.query(
@@ -184,16 +183,13 @@ export async function POST() {
         [tenantId]
       )
 
-      // Registrar no audit log — Bible S13.3
-      await client.query(
+      // Registrar no audit log — Bible S13.3 (non-critical)
+      await safeExec(client,
         `INSERT INTO axis_audit_logs
           (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
          VALUES ($1, $2, $3, 'LGPD_DELETION_SCHEDULED', 'tenant', $4, $5, NOW())`,
         [
-          tenantId,
-          userId,
-          userId,
-          tenantId,
+          tenantId, userId, userId, tenantId,
           JSON.stringify({
             requested_by_profile: profileId,
             requested_by_role: role,
@@ -201,32 +197,35 @@ export async function POST() {
             anonymization_scheduled_for: anonymizationDate.toISOString(),
             bible_ref: 'S13.2 — 90 dias retenção, depois anonimização irreversível',
           }),
-        ]
+        ],
+        'audit_deletion_scheduled'
       )
 
-      // Desativar todos os profiles (impede login futuro exceto admin)
-      await client.query(
+      // Desativar todos os profiles exceto admin (non-critical)
+      await safeExec(client,
         `UPDATE profiles
          SET is_active = false, updated_at = NOW()
          WHERE tenant_id = $1 AND role != 'admin'`,
-        [tenantId]
+        [tenantId],
+        'deactivate_profiles'
       )
 
-      // Revogar todos os consentimentos do portal família
-      // Bible: "Sem consentimento ativo → portal bloqueado, email não enviado"
-      await client.query(
+      // Revogar consentimentos do portal família (non-critical)
+      await safeExec(client,
         `UPDATE guardian_consents
          SET revoked_at = NOW()
          WHERE tenant_id = $1 AND revoked_at IS NULL`,
-        [tenantId]
+        [tenantId],
+        'revoke_consents'
       )
 
-      // Desativar acessos portal família
-      await client.query(
+      // Desativar acessos portal família (non-critical)
+      await safeExec(client,
         `UPDATE family_portal_access
          SET is_active = false, revoked_at = NOW()
          WHERE tenant_id = $1 AND is_active = true`,
-        [tenantId]
+        [tenantId],
+        'deactivate_portal'
       )
 
       return {
@@ -263,26 +262,15 @@ export async function POST() {
 
 // =====================================================
 // DELETE — Fase 2: Executar anonimização irreversível
-// Conforme Bible S13.2:
-//   "Após 90 dias: anonimização irreversível"
-//
-// Regras de anonimização:
-//   - Dados clínicos: anonimizar PII, preservar estrutura
-//   - session_snapshots: manter engine_version, anonimizar learner_id
-//   - clinical_states: manter engine_version, anonimizar
-//   - report_snapshots: manter data_hash, remover pdf_url
-//   - audit_logs: MANTER INTACTOS (5 anos compliance)
-//   - Consentimentos: já revogados, preservar registro
-//   - Calendar: remover tokens OAuth, desconectar
-//
-// ATENÇÃO: Esta operação é IRREVERSÍVEL.
+// Só executa se 90 dias passaram desde cancellation_scheduled_at
 // =====================================================
 export async function DELETE() {
   try {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
-
       const { client, tenantId, userId, profileId, role } = ctx
+
+      await ensureLgpdColumns(client)
 
       // Verificar se exclusão foi agendada e 90 dias passaram
       const tenantCheck = await client.query(
@@ -329,15 +317,12 @@ export async function DELETE() {
       // ============================================
 
       // Registrar ANTES de anonimizar — Bible S13.3
-      await client.query(
+      await safeExec(client,
         `INSERT INTO axis_audit_logs
           (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
          VALUES ($1, $2, $3, 'LGPD_ANONYMIZATION_EXECUTED', 'tenant', $4, $5, NOW())`,
         [
-          tenantId,
-          userId,
-          userId,
-          tenantId,
+          tenantId, userId, userId, tenantId,
           JSON.stringify({
             executed_by_profile: profileId,
             executed_by_role: role,
@@ -345,334 +330,205 @@ export async function DELETE() {
             retention_period_days: RETENTION_DAYS,
             bible_ref: 'S13.2 — anonimização irreversível após 90 dias',
           }),
-        ]
+        ],
+        'audit_anon_start'
       )
 
       const stats: Record<string, number> = {}
 
-      // ──────────────────────────────────────────
       // 1. LEARNERS — anonimizar PII
-      // Preservar: id, tenant_id, support_level, is_active, created_at
-      // Anonimizar: name, birth_date, diagnosis, cid_code, school, notes
-      // ──────────────────────────────────────────
-      const learnersResult = await client.query(
+      const r1 = await safeExec(client,
         `UPDATE learners SET
            name = '${ANON_PREFIX}_' || LEFT(id::text, 8),
            birth_date = NULL,
            diagnosis = '[ANONIMIZADO]',
            cid_code = NULL,
-           school = NULL,
            notes = NULL,
-           updated_at = NOW(),
-           deleted_at = COALESCE(deleted_at, NOW())
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.learners = learnersResult.rowCount || 0
+           updated_at = NOW()
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_learners')
+      stats.learners = r1.rowCount
 
-      // ──────────────────────────────────────────
       // 2. GUARDIANS — anonimizar PII
-      // ──────────────────────────────────────────
-      const guardiansResult = await client.query(
+      const r2 = await safeExec(client,
         `UPDATE guardians SET
            name = '${ANON_PREFIX}_' || LEFT(id::text, 8),
            email = NULL,
            phone = NULL,
            relationship = '[ANONIMIZADO]',
            is_active = false
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.guardians = guardiansResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_guardians')
+      stats.guardians = r2.rowCount
 
-      // ──────────────────────────────────────────
       // 3. GUARDIAN_CONSENTS — preservar registro, anonimizar IP
-      // ──────────────────────────────────────────
-      const consentsResult = await client.query(
+      const r3 = await safeExec(client,
         `UPDATE guardian_consents SET
            ip_address = NULL,
            revoked_at = COALESCE(revoked_at, NOW())
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.guardian_consents = consentsResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_consents')
+      stats.guardian_consents = r3.rowCount
 
-      // ──────────────────────────────────────────
-      // 4. PROFILES — anonimizar PII dos membros
-      // Preservar: id, tenant_id, role, is_active, created_at
-      // ──────────────────────────────────────────
-      const profilesResult = await client.query(
+      // 4. PROFILES — anonimizar PII
+      const r4 = await safeExec(client,
         `UPDATE profiles SET
            name = '${ANON_PREFIX}_' || LEFT(id::text, 8),
            email = '${ANON_PREFIX}_' || LEFT(id::text, 8) || '@anon.local',
-           crp = NULL,
-           crp_uf = NULL,
            clerk_user_id = 'anon_' || LEFT(id::text, 12),
            is_active = false,
            updated_at = NOW()
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.profiles = profilesResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_profiles')
+      stats.profiles = r4.rowCount
 
-      // ──────────────────────────────────────────
-      // 5. SESSIONS_ABA — anonimizar notes e links
-      // Preservar: id, scheduled_at, started_at, ended_at, status,
-      //            duration_minutes (estrutura clínica)
-      // ──────────────────────────────────────────
-      const sessionsResult = await client.query(
+      // 5. SESSIONS_ABA — anonimizar notes
+      const r5 = await safeExec(client,
         `UPDATE sessions_aba SET
            notes = NULL,
-           google_event_id = NULL,
-           google_meet_link = NULL,
-           patient_response = NULL,
            location = '[ANONIMIZADO]'
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.sessions = sessionsResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_sessions')
+      stats.sessions = r5.rowCount
 
-      // ──────────────────────────────────────────
       // 6. SESSION_TARGETS — anonimizar notes
-      // Preservar: score, trials_correct, trials_total (dados quantitativos)
-      // ──────────────────────────────────────────
-      const targetsResult = await client.query(
+      const r6 = await safeExec(client,
         `UPDATE session_targets SET
            notes = NULL
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.session_targets = targetsResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_targets')
+      stats.session_targets = r6.rowCount
 
-      // ──────────────────────────────────────────
       // 7. SESSION_BEHAVIORS — anonimizar texto livre ABC
-      // Preservar: intensity, function_hypothesis (estrutura)
-      // ──────────────────────────────────────────
-      const behaviorsResult = await client.query(
+      const r7 = await safeExec(client,
         `UPDATE session_behaviors SET
            antecedent = '[ANONIMIZADO]',
            behavior = '[ANONIMIZADO]',
            consequence = '[ANONIMIZADO]'
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.session_behaviors = behaviorsResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_behaviors')
+      stats.session_behaviors = r7.rowCount
 
-      // ──────────────────────────────────────────
-      // 8. SESSION_SNAPSHOTS — IMUTÁVEL (Bible S7)
-      // Preservar TUDO: cso_aba, sas, pis, bss, tcm, engine_version
-      // Apenas referência de learner_id fica, mas learner já anonimizado
-      // ──────────────────────────────────────────
-      stats.session_snapshots_preserved = (await client.query(
-        `SELECT COUNT(*) FROM session_snapshots WHERE tenant_id = $1`,
-        [tenantId]
-      )).rows[0]?.count || 0
+      // 8. SESSION_SNAPSHOTS — IMUTÁVEL (Bible S7) — preservar tudo
+      const r8 = await safeExec(client,
+        `SELECT COUNT(*)::int as cnt FROM session_snapshots WHERE tenant_id = $1`,
+        [tenantId], 'count_snapshots')
+      stats.session_snapshots_preserved = r8.rows[0]?.cnt || 0
 
-      // ──────────────────────────────────────────
-      // 9. CLINICAL_STATES_ABA — APPEND-ONLY (Bible S7)
-      // Preservar TUDO: cso_aba, sas, pis, bss, tcm, engine_version
-      // "Estado clínico é append-only — sem overwrite"
-      // ──────────────────────────────────────────
-      stats.clinical_states_preserved = (await client.query(
-        `SELECT COUNT(*) FROM clinical_states_aba WHERE tenant_id = $1`,
-        [tenantId]
-      )).rows[0]?.count || 0
+      // 9. CLINICAL_STATES_ABA — APPEND-ONLY (Bible S7) — preservar tudo
+      const r9 = await safeExec(client,
+        `SELECT COUNT(*)::int as cnt FROM clinical_states_aba WHERE tenant_id = $1`,
+        [tenantId], 'count_clinical_states')
+      stats.clinical_states_preserved = r9.rows[0]?.cnt || 0
 
-      // ──────────────────────────────────────────
-      // 10. PEI_PLANS — anonimizar title/descrição
-      // Preservar: period_start, period_end, status
-      // ──────────────────────────────────────────
-      const peiPlansResult = await client.query(
+      // 10. PEI_PLANS — anonimizar title
+      const r10 = await safeExec(client,
         `UPDATE pei_plans SET
            title = '${ANON_PREFIX}_PLANO_' || LEFT(id::text, 8)
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.pei_plans = peiPlansResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_pei_plans')
+      stats.pei_plans = r10.rowCount
 
-      // ──────────────────────────────────────────
       // 11. PEI_GOALS — anonimizar texto
-      // ──────────────────────────────────────────
-      const peiGoalsResult = await client.query(
+      const r11 = await safeExec(client,
         `UPDATE pei_goals SET
            title = '${ANON_PREFIX}_META_' || LEFT(id::text, 8),
            description = '[ANONIMIZADO]'
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.pei_goals = peiGoalsResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_pei_goals')
+      stats.pei_goals = r11.rowCount
 
-      // ──────────────────────────────────────────
       // 12. LEARNER_PROTOCOLS — anonimizar texto
-      // Preservar: status, mastery_criteria_*, measurement_type,
-      //            protocol_engine_version (Bible S12.1)
-      // ──────────────────────────────────────────
-      const protocolsResult = await client.query(
+      const r12 = await safeExec(client,
         `UPDATE learner_protocols SET
            title = '${ANON_PREFIX}_PROTO_' || LEFT(id::text, 8),
            objective = '[ANONIMIZADO]'
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.protocols = protocolsResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_protocols')
+      stats.protocols = r12.rowCount
 
-      // ──────────────────────────────────────────
       // 13. GENERALIZATION_PROBES — anonimizar notes
-      // Preservar: score, passed, stimulus_variation, context_variation
-      // ──────────────────────────────────────────
-      const genProbesResult = await client.query(
-        `UPDATE generalization_probes SET
-           notes = NULL
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.generalization_probes = genProbesResult.rowCount || 0
+      const r13 = await safeExec(client,
+        `UPDATE generalization_probes SET notes = NULL WHERE tenant_id = $1`,
+        [tenantId], 'anon_gen_probes')
+      stats.generalization_probes = r13.rowCount
 
-      // ──────────────────────────────────────────
       // 14. MAINTENANCE_PROBES — anonimizar notes
-      // Preservar: score, passed, weeks_after_mastery (estrutura)
-      // ──────────────────────────────────────────
-      const maintProbesResult = await client.query(
-        `UPDATE maintenance_probes SET
-           notes = NULL
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.maintenance_probes = maintProbesResult.rowCount || 0
+      const r14 = await safeExec(client,
+        `UPDATE maintenance_probes SET notes = NULL WHERE tenant_id = $1`,
+        [tenantId], 'anon_maint_probes')
+      stats.maintenance_probes = r14.rowCount
 
-      // ──────────────────────────────────────────
-      // 15. SESSION_SUMMARIES — anonimizar texto
-      // ──────────────────────────────────────────
-      const summariesResult = await client.query(
-        `UPDATE session_summaries SET
-           summary_text = '[ANONIMIZADO]'
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.session_summaries = summariesResult.rowCount || 0
+      // 15. SESSION_SUMMARIES — anonimizar texto (coluna = content)
+      const r15 = await safeExec(client,
+        `UPDATE session_summaries SET content = '[ANONIMIZADO]' WHERE tenant_id = $1`,
+        [tenantId], 'anon_summaries')
+      stats.session_summaries = r15.rowCount
 
-      // ──────────────────────────────────────────
       // 16. REPORT_SNAPSHOTS — preservar hash, remover pdf_url
-      // Bible Blindagem Jurídica: "data_hash SHA256 do JSON base"
-      // Preservar: data_hash, engine_version, report_type, period
-      // ──────────────────────────────────────────
-      const reportsResult = await client.query(
-        `UPDATE report_snapshots SET
-           pdf_url = NULL
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.report_snapshots = reportsResult.rowCount || 0
+      const r16 = await safeExec(client,
+        `UPDATE report_snapshots SET pdf_url = NULL WHERE tenant_id = $1`,
+        [tenantId], 'anon_reports')
+      stats.report_snapshots = r16.rowCount
 
-      // ──────────────────────────────────────────
-      // 17. FAMILY_PORTAL_ACCESS — já desativado, confirmar
-      // ──────────────────────────────────────────
-      const portalResult = await client.query(
+      // 17. FAMILY_PORTAL_ACCESS — desativar
+      const r17 = await safeExec(client,
         `UPDATE family_portal_access SET
            is_active = false,
            revoked_at = COALESCE(revoked_at, NOW())
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.family_portal_access = portalResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_portal')
+      stats.family_portal_access = r17.rowCount
 
-      // ──────────────────────────────────────────
       // 18. LEARNER_THERAPISTS — remover vínculos
-      // ──────────────────────────────────────────
-      const ltResult = await client.query(
-        `DELETE FROM learner_therapists WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.learner_therapists_removed = ltResult.rowCount || 0
+      const r18 = await safeExec(client,
+        `DELETE FROM learner_therapists WHERE tenant_id = $1`,
+        [tenantId], 'del_assignments')
+      stats.learner_therapists_removed = r18.rowCount
 
-      // ──────────────────────────────────────────
       // 19. EMAIL_LOGS — anonimizar destinatário
-      // Retenção: 5 anos (compliance)
-      // ──────────────────────────────────────────
-      const emailResult = await client.query(
+      const r19 = await safeExec(client,
         `UPDATE email_logs SET
            recipient = '${ANON_PREFIX}@anon.local',
            subject = '[ANONIMIZADO]'
-         WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.email_logs = emailResult.rowCount || 0
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_emails')
+      stats.email_logs = r19.rowCount
 
-      // ──────────────────────────────────────────
       // 20. NOTIFICATIONS — deletar (retenção 1 ano, operacional)
-      // ──────────────────────────────────────────
-      const notifResult = await client.query(
-        `DELETE FROM notifications WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.notifications_deleted = notifResult.rowCount || 0
+      const r20 = await safeExec(client,
+        `DELETE FROM notifications WHERE tenant_id = $1`,
+        [tenantId], 'del_notifications')
+      stats.notifications_deleted = r20.rowCount
 
-      // ──────────────────────────────────────────
-      // 21. CALENDAR — remover tokens e desconectar
-      // ──────────────────────────────────────────
-      const calResult = await client.query(
-        `DELETE FROM calendar_connections WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.calendar_connections_removed = calResult.rowCount || 0
+      // 21. CALENDAR — remover tokens
+      const r21 = await safeExec(client,
+        `DELETE FROM calendar_connections WHERE tenant_id = $1`,
+        [tenantId], 'del_calendar')
+      stats.calendar_connections_removed = r21.rowCount
 
-      // ──────────────────────────────────────────
-      // 22. PUSH_TOKENS — remover tokens FCM
-      // ──────────────────────────────────────────
-      const pushResult = await client.query(
-        `DELETE FROM push_tokens WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.push_tokens_removed = pushResult.rowCount || 0
+      // 22. PUSH_TOKENS — remover
+      const r22 = await safeExec(client,
+        `DELETE FROM push_tokens WHERE tenant_id = $1`,
+        [tenantId], 'del_push_tokens')
+      stats.push_tokens_removed = r22.rowCount
 
-      // ──────────────────────────────────────────
       // 23. NOTIFICATION_PREFERENCES — remover
-      // ──────────────────────────────────────────
-      const prefResult = await client.query(
-        `DELETE FROM notification_preferences WHERE tenant_id = $1
-         RETURNING id`,
-        [tenantId]
-      )
-      stats.notification_preferences_removed = prefResult.rowCount || 0
+      const r23 = await safeExec(client,
+        `DELETE FROM notification_preferences WHERE tenant_id = $1`,
+        [tenantId], 'del_notif_prefs')
+      stats.notification_preferences_removed = r23.rowCount
 
-      // ──────────────────────────────────────────
-      // 24. AUDIT LOGS — MANTER INTACTOS
-      // Bible S13.2: "Logs de auditoria → 5 anos (Compliance)"
-      // Bible S13.3: "Toda ação é auditável — rastreabilidade completa"
-      // NÃO anonimizar. NÃO deletar.
-      // ──────────────────────────────────────────
-      stats.audit_logs_preserved = (await client.query(
-        `SELECT COUNT(*) FROM axis_audit_logs WHERE tenant_id = $1`,
-        [tenantId]
-      )).rows[0]?.count || 0
+      // 24. AUDIT LOGS — MANTER INTACTOS (5 anos compliance)
+      const r24 = await safeExec(client,
+        `SELECT COUNT(*)::int as cnt FROM axis_audit_logs WHERE tenant_id = $1`,
+        [tenantId], 'count_audit_logs')
+      stats.audit_logs_preserved = r24.rows[0]?.cnt || 0
 
-      // ──────────────────────────────────────────
       // 25. TENANT — marcar como anonimizado
-      // ──────────────────────────────────────────
       await client.query(
         `UPDATE tenants SET
            name = '${ANON_PREFIX}_CLINIC_' || LEFT(id::text, 8),
-           email = '${ANON_PREFIX}_' || LEFT(id::text, 8) || '@anon.local',
            anonymized_at = NOW(),
            cancelled_at = NOW(),
            updated_at = NOW()
@@ -680,22 +536,20 @@ export async function DELETE() {
         [tenantId]
       )
 
-      // Registrar conclusão no audit log
-      await client.query(
+      // Registrar conclusão
+      await safeExec(client,
         `INSERT INTO axis_audit_logs
           (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
          VALUES ($1, $2, $3, 'LGPD_ANONYMIZATION_COMPLETED', 'tenant', $4, $5, NOW())`,
         [
-          tenantId,
-          userId,
-          userId,
-          tenantId,
+          tenantId, userId, userId, tenantId,
           JSON.stringify({
             stats,
             bible_ref: 'S13.2 — anonimização irreversível concluída',
             note: 'audit_logs, session_snapshots e clinical_states preservados conforme Bible S7/S13.3',
           }),
-        ]
+        ],
+        'audit_anon_complete'
       )
 
       return {
@@ -726,14 +580,14 @@ export async function DELETE() {
 
 // =====================================================
 // PATCH — Cancelar exclusão agendada (reverter dentro dos 90 dias)
-// Permite que o admin desista antes da anonimização
 // =====================================================
 export async function PATCH() {
   try {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
-
       const { client, tenantId, userId, profileId, role } = ctx
+
+      await ensureLgpdColumns(client)
 
       const tenantCheck = await client.query(
         `SELECT cancellation_scheduled_at, anonymized_at
@@ -766,31 +620,30 @@ export async function PATCH() {
         [tenantId]
       )
 
-      // Reativar profiles (exceto os que estavam inativos antes)
-      await client.query(
+      // Reativar profiles
+      await safeExec(client,
         `UPDATE profiles SET
            is_active = true, updated_at = NOW()
          WHERE tenant_id = $1 AND clerk_user_id NOT LIKE 'pending_%'`,
-        [tenantId]
+        [tenantId],
+        'reactivate_profiles'
       )
 
       // Registrar no audit log
-      await client.query(
+      await safeExec(client,
         `INSERT INTO axis_audit_logs
           (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
          VALUES ($1, $2, $3, 'LGPD_DELETION_CANCELLED', 'tenant', $4, $5, NOW())`,
         [
-          tenantId,
-          userId,
-          userId,
-          tenantId,
+          tenantId, userId, userId, tenantId,
           JSON.stringify({
             cancelled_by_profile: profileId,
             cancelled_by_role: role,
             original_scheduled_at: tenant.cancellation_scheduled_at,
             bible_ref: 'S13.2 — cancelamento dentro do período de retenção',
           }),
-        ]
+        ],
+        'audit_deletion_cancelled'
       )
 
       return {

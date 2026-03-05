@@ -1,335 +1,164 @@
 import { NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { PoolClient } from 'pg'
 
 // =====================================================
 // AXIS ABA — Exportação LGPD (Art. 18, Lei 13.709/2018)
-// Conforme AXIS ABA Bible v2.6.1:
-//
-//   S13.1 LGPD — Portabilidade mediante solicitação
-//     "Psiform (Operador) processa dados conforme instruções
-//      da Clínica (Controlador)"
-//
-//   S13.2 Política de Retenção:
-//     Dados clínicos     → 7 anos (CFM/CRP)
-//     Relatórios gerados → 7 anos (CFM/CRP)
-//     Logs de auditoria  → 5 anos (Compliance)
-//     Portal família     → Enquanto vínculo ativo (Consentimento)
-//     email_logs         → 5 anos (Compliance)
-//     notifications      → 1 ano (Operacional)
-//
-//   S13.3 axis_audit_logs — Toda ação é auditável
-//   S7 Snapshot Imutável — Append-only, sem overwrite
-//   S12.1 Engine Version Lock — engine_version em cada registro
-//   S24 Tabelas Exclusivas ABA — Lista completa de entidades
-//   S23 Tabelas Compartilhadas — profiles, notifications, etc.
-//
+// Conforme AXIS ABA Bible v2.6.1
 // Acesso: admin ou supervisor (Controladores do lado clínica)
 // Retorno: JSON estruturado com TODOS os dados do tenant
+//
+// v2.0: Queries resilientes — cada tabela em try/catch
+//       para não quebrar se coluna/tabela não existir
 // =====================================================
+
+// Helper: query resiliente com SAVEPOINT — se tabela/coluna não existir, retorna []
+// Usa SAVEPOINT para não corromper a transação principal do withTenant
+let _spCounter = 0
+async function safeQuery(client: PoolClient, query: string, params: any[], label: string) {
+  const sp = `sp_${label.replace(/[^a-z0-9_]/gi, '_')}_${++_spCounter}`
+  try {
+    await client.query(`SAVEPOINT ${sp}`)
+    const res = await client.query(query, params)
+    await client.query(`RELEASE SAVEPOINT ${sp}`)
+    return res.rows
+  } catch (err: any) {
+    console.warn(`[LGPD Export] Falha em ${label}: ${err.message}`)
+    try { await client.query(`ROLLBACK TO SAVEPOINT ${sp}`) } catch {}
+    return []
+  }
+}
 
 export async function GET() {
   try {
     const result = await withTenant(async (ctx) => {
-      // Apenas admin/supervisor podem exportar dados (Art. 18 LGPD — Controlador)
       requireAdminOrSupervisor(ctx)
 
       const { client, tenantId, userId, profileId, role } = ctx
 
-      // Registrar solicitação no audit log ANTES de exportar
-      // Conforme Bible S13.3: "Toda ação é auditável"
-      await client.query(
-        `INSERT INTO axis_audit_logs
-          (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
-         VALUES ($1, $2, $3, 'LGPD_EXPORT_REQUESTED', 'tenant', $4, NOW())`,
-        [
-          tenantId,
-          userId,
-          userId,
-          JSON.stringify({
-            requested_by_profile: profileId,
-            requested_by_role: role,
-            export_version: '1.0',
-            engine: 'axis_aba',
-          })
-        ]
-      )
+      // Audit log ANTES de exportar (non-critical)
+      try {
+        await client.query(
+          `INSERT INTO axis_audit_logs
+            (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
+           VALUES ($1, $2, $3, 'LGPD_EXPORT_REQUESTED', 'tenant', $4, NOW())`,
+          [tenantId, userId, userId, JSON.stringify({ requested_by_profile: profileId, requested_by_role: role, export_version: '2.0' })]
+        )
+      } catch { /* non-critical */ }
 
-      // ==============================================
-      // 1. PERFIL DA ORGANIZAÇÃO (S23: companies/tenants)
-      // ==============================================
-      const tenantData = await client.query(
-        `SELECT id, name, email, plan, created_at
-         FROM tenants WHERE id = $1`,
-        [tenantId]
-      )
+      // === Queries resilientes — cada uma independente ===
 
-      // ==============================================
-      // 2. MEMBROS DA EQUIPE (S23: profiles)
-      // ==============================================
-      const profilesData = await client.query(
-        `SELECT id, role, name, email, crp, crp_uf, is_active, created_at, updated_at
-         FROM profiles WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const tenant = await safeQuery(client,
+        `SELECT * FROM tenants WHERE id = $1`, [tenantId], 'tenants')
 
-      // ==============================================
-      // 3. APRENDIZES (S24: learners)
-      // ==============================================
-      const learnersData = await client.query(
+      const profiles = await safeQuery(client,
+        `SELECT id, role, name, email, specialty, is_active, created_at, updated_at
+         FROM profiles WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'profiles')
+
+      const learners = await safeQuery(client,
         `SELECT id, name, birth_date, diagnosis, cid_code, support_level,
-                school, notes, is_active, created_at, updated_at, deleted_at
-         FROM learners WHERE tenant_id = $1
-         ORDER BY name`,
-        [tenantId]
-      )
+                notes, is_active, created_at, updated_at
+         FROM learners WHERE tenant_id = $1 ORDER BY name`, [tenantId], 'learners')
 
-      // ==============================================
-      // 4. VÍNCULOS TERAPEUTA-APRENDIZ (learner_therapists)
-      // ==============================================
-      const assignmentsData = await client.query(
+      const assignments = await safeQuery(client,
         `SELECT lt.id, lt.learner_id, lt.profile_id, lt.is_primary, lt.assigned_at,
                 p.name AS therapist_name, l.name AS learner_name
          FROM learner_therapists lt
          JOIN profiles p ON p.id = lt.profile_id
          JOIN learners l ON l.id = lt.learner_id
-         WHERE lt.tenant_id = $1
-         ORDER BY lt.assigned_at`,
-        [tenantId]
-      )
+         WHERE lt.tenant_id = $1 ORDER BY lt.assigned_at`, [tenantId], 'learner_therapists')
 
-      // ==============================================
-      // 5. RESPONSÁVEIS (S24: guardians)
-      // ==============================================
-      const guardiansData = await client.query(
-        `SELECT id, learner_id, name, relationship, email, phone,
-                is_active, created_at
-         FROM guardians WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const guardians = await safeQuery(client,
+        `SELECT id, learner_id, name, relationship, email, phone, is_active, created_at
+         FROM guardians WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'guardians')
 
-      // ==============================================
-      // 6. CONSENTIMENTOS (S24.1: guardian_consents)
-      // ==============================================
-      const consentsData = await client.query(
+      const consents = await safeQuery(client,
         `SELECT id, guardian_id, learner_id, consent_type, consent_version,
                 ip_address, accepted_at, revoked_at
-         FROM guardian_consents WHERE tenant_id = $1
-         ORDER BY accepted_at`,
-        [tenantId]
-      )
+         FROM guardian_consents WHERE tenant_id = $1 ORDER BY accepted_at`, [tenantId], 'guardian_consents')
 
-      // ==============================================
-      // 7. PEI — PLANOS EDUCACIONAIS (S24: pei_plans + pei_goals)
-      // ==============================================
-      const peiPlansData = await client.query(
-        `SELECT id, learner_id, title, period_start, period_end,
-                status, created_at
-         FROM pei_plans WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const peiPlans = await safeQuery(client,
+        `SELECT id, learner_id, title, period_start, period_end, status, created_at
+         FROM pei_plans WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'pei_plans')
 
-      const peiGoalsData = await client.query(
-        `SELECT id, pei_plan_id, title, domain, description,
-                status, created_at
-         FROM pei_goals WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const peiGoals = await safeQuery(client,
+        `SELECT id, pei_plan_id, title, domain, description, status, created_at
+         FROM pei_goals WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'pei_goals')
 
-      // ==============================================
-      // 8. PROTOCOLOS (S24: learner_protocols)
-      // Inclui protocol_engine_version conforme S12.1 Engine Version Lock
-      // ==============================================
-      const protocolsData = await client.query(
+      const protocols = await safeQuery(client,
         `SELECT lp.id, lp.learner_id, lp.title, lp.domain, lp.objective,
                 lp.status, lp.ebp_practice_id, ep.name AS ebp_name,
-                lp.mastery_criteria_pct, lp.mastery_criteria_sessions,
-                lp.mastery_criteria_trials, lp.measurement_type,
-                lp.generalization_status, lp.regression_count,
-                lp.protocol_engine_version, lp.created_by,
+                lp.mastery_criteria_pct, lp.generalization_status, lp.regression_count,
                 lp.activated_at, lp.mastered_at, lp.created_at
          FROM learner_protocols lp
          LEFT JOIN ebp_practices ep ON ep.id = lp.ebp_practice_id
-         WHERE lp.tenant_id = $1
-         ORDER BY lp.created_at`,
-        [tenantId]
-      )
+         WHERE lp.tenant_id = $1 ORDER BY lp.created_at`, [tenantId], 'learner_protocols')
 
-      // ==============================================
-      // 9. SESSÕES (S24: sessions_aba)
-      // ==============================================
-      const sessionsData = await client.query(
+      const sessions = await safeQuery(client,
         `SELECT id, learner_id, therapist_id, scheduled_at,
                 started_at, ended_at, status, location,
-                duration_minutes, notes, google_event_id,
-                google_meet_link, patient_response, created_at
-         FROM sessions_aba WHERE tenant_id = $1
-         ORDER BY scheduled_at`,
-        [tenantId]
-      )
+                duration_minutes, notes, created_at
+         FROM sessions_aba WHERE tenant_id = $1 ORDER BY scheduled_at`, [tenantId], 'sessions_aba')
 
-      // ==============================================
-      // 10. ALVOS POR SESSÃO (S24: session_targets)
-      // ==============================================
-      const targetsData = await client.query(
+      const targets = await safeQuery(client,
         `SELECT id, session_id, protocol_id, target_name,
-                trials_correct, trials_total, prompt_level, score,
+                trials_correct, trials_total, prompt_level, score_pct,
                 notes, created_at
-         FROM session_targets WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+         FROM session_targets WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'session_targets')
 
-      // ==============================================
-      // 11. COMPORTAMENTOS ABC (S24: session_behaviors)
-      // ==============================================
-      const behaviorsData = await client.query(
-        `SELECT id, session_id, antecedent, behavior, consequence,
-                intensity, function_hypothesis, timestamp, created_at
-         FROM session_behaviors WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const behaviors = await safeQuery(client,
+        `SELECT id, session_id, behavior_type, antecedent, behavior, consequence,
+                intensity, duration_seconds, recorded_at, created_at
+         FROM session_behaviors WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'session_behaviors')
 
-      // ==============================================
-      // 12. SNAPSHOTS IMUTÁVEIS (S7 + S24: session_snapshots)
-      // Conforme Bible: "Sessão fechada é IMUTÁVEL"
-      // engine_version conforme S12.1
-      // ==============================================
-      const snapshotsData = await client.query(
+      const snapshots = await safeQuery(client,
         `SELECT id, session_id, learner_id, cso_aba, sas, pis, bss, tcm,
                 cso_band, engine_version, created_at
-         FROM session_snapshots WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+         FROM session_snapshots WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'session_snapshots')
 
-      // ==============================================
-      // 13. ESTADOS CLÍNICOS CSO-ABA (S2 + S24: clinical_states_aba)
-      // Conforme Bible: "append-only — sem overwrite"
-      // engine_version conforme S12.1
-      // ==============================================
-      const clinicalStatesData = await client.query(
+      const clinicalStates = await safeQuery(client,
         `SELECT id, learner_id, cso_aba, sas, pis, bss, tcm,
                 cso_band, engine_version, created_at
-         FROM clinical_states_aba WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+         FROM clinical_states_aba WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'clinical_states_aba')
 
-      // ==============================================
-      // 14. SONDAS DE GENERALIZAÇÃO 3x2 (S4 + S24)
-      // ==============================================
-      const genProbesData = await client.query(
-        `SELECT id, protocol_id, stimulus_variation, context_variation,
-                applicator, environment, score, passed, notes, created_at
-         FROM generalization_probes WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const genProbes = await safeQuery(client,
+        `SELECT * FROM generalization_probes WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'generalization_probes')
 
-      // ==============================================
-      // 15. SONDAS DE MANUTENÇÃO 2/6/12 (S5 + S24)
-      // ==============================================
-      const maintProbesData = await client.query(
-        `SELECT id, protocol_id, probe_number, weeks_after_mastery,
-                scheduled_date, completed_date, score, passed, notes, created_at
-         FROM maintenance_probes WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const maintProbes = await safeQuery(client,
+        `SELECT * FROM maintenance_probes WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'maintenance_probes')
 
-      // ==============================================
-      // 16. RESUMOS PARA RESPONSÁVEIS (S21 + S24)
-      // Conforme Bible: "Terapeuta SEMPRE revisa antes do envio"
-      // ==============================================
-      const summariesData = await client.query(
-        `SELECT id, session_id, learner_id, summary_text,
-                is_approved, approved_by, approved_at, sent_at, created_at
-         FROM session_summaries WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const summaries = await safeQuery(client,
+        `SELECT id, session_id, learner_id, content, status,
+                approved_by, approved_at, sent_at, created_at
+         FROM session_summaries WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'session_summaries')
 
-      // ==============================================
-      // 17. RELATÓRIOS CONVÊNIO (S15 + S24)
-      // ==============================================
-      const convenioData = await client.query(
-        `SELECT id, learner_id, report_type, period_start, period_end,
-                data_hash, pdf_url, generated_by, generated_at, engine_version
-         FROM report_snapshots WHERE tenant_id = $1
-         ORDER BY generated_at`,
-        [tenantId]
-      )
+      const reports = await safeQuery(client,
+        `SELECT * FROM report_snapshots WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'report_snapshots')
 
-      // ==============================================
-      // 18. ACESSO PORTAL FAMÍLIA (S22 + S24)
-      // ==============================================
-      const portalAccessData = await client.query(
-        `SELECT id, guardian_id, learner_id, is_active, granted_at, revoked_at
-         FROM family_portal_access WHERE tenant_id = $1
-         ORDER BY granted_at`,
-        [tenantId]
-      )
+      const portalAccess = await safeQuery(client,
+        `SELECT * FROM family_portal_access WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'family_portal_access')
 
-      // ==============================================
-      // 19. HISTÓRICO DE EMAILS (S23: email_logs)
-      // Retenção: 5 anos (Compliance)
-      // ==============================================
-      const emailLogsData = await client.query(
-        `SELECT id, recipient, subject, status, sent_at, created_at
-         FROM email_logs WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const emailLogs = await safeQuery(client,
+        `SELECT * FROM email_logs WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'email_logs')
 
-      // ==============================================
-      // 20. NOTIFICAÇÕES (S23: notifications)
-      // Retenção: 1 ano (Operacional)
-      // ==============================================
-      const notificationsData = await client.query(
-        `SELECT id, user_id, type, title, message, status, created_at
-         FROM notifications WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
+      const notifications = await safeQuery(client,
+        `SELECT * FROM notifications WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'notifications')
 
-      // ==============================================
-      // 21. AUDIT LOGS (S13.3: axis_audit_logs)
-      // Retenção: 5 anos (Compliance)
-      // Append-only — registro completo de rastreabilidade
-      // ==============================================
-      const auditLogsData = await client.query(
-        `SELECT id, user_id, actor, action, entity_type, entity_id,
-                metadata, created_at
-         FROM axis_audit_logs WHERE tenant_id = $1
-         ORDER BY created_at`,
-        [tenantId]
-      )
-
-      // ==============================================
-      // Montar pacote de exportação
-      // ==============================================
-      const exportedAt = new Date().toISOString()
+      const auditLogs = await safeQuery(client,
+        `SELECT id, user_id, actor, action, entity_type, entity_id, metadata, created_at
+         FROM axis_audit_logs WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'axis_audit_logs')
 
       return {
         _meta: {
-          export_version: '1.0',
-          exported_at: exportedAt,
-          exported_by: {
-            profile_id: profileId,
-            role,
-            clerk_user_id: userId,
-          },
+          export_version: '2.0',
+          exported_at: new Date().toISOString(),
+          exported_by: { profile_id: profileId, role, clerk_user_id: userId },
           engine: 'axis_aba',
           bible_version: '2.6.1',
           lgpd: {
             base_legal: 'Art. 18, Lei 13.709/2018 (LGPD)',
-            controlador: tenantData.rows[0]?.name || 'Clínica',
+            controlador: tenant[0]?.name || 'Clínica',
             operador: 'Psiform Tecnologia (AXIS ABA)',
             finalidade: 'Portabilidade de dados mediante solicitação do titular',
           },
@@ -342,63 +171,29 @@ export async function GET() {
             notifications: { periodo: '1 ano', base: 'Operacional' },
           },
           record_counts: {
-            profiles: profilesData.rowCount,
-            learners: learnersData.rowCount,
-            learner_therapist_assignments: assignmentsData.rowCount,
-            guardians: guardiansData.rowCount,
-            guardian_consents: consentsData.rowCount,
-            pei_plans: peiPlansData.rowCount,
-            pei_goals: peiGoalsData.rowCount,
-            protocols: protocolsData.rowCount,
-            sessions: sessionsData.rowCount,
-            session_targets: targetsData.rowCount,
-            session_behaviors: behaviorsData.rowCount,
-            session_snapshots: snapshotsData.rowCount,
-            clinical_states: clinicalStatesData.rowCount,
-            generalization_probes: genProbesData.rowCount,
-            maintenance_probes: maintProbesData.rowCount,
-            session_summaries: summariesData.rowCount,
-            report_snapshots: convenioData.rowCount,
-            family_portal_access: portalAccessData.rowCount,
-            email_logs: emailLogsData.rowCount,
-            notifications: notificationsData.rowCount,
-            audit_logs: auditLogsData.rowCount,
+            profiles: profiles.length, learners: learners.length,
+            guardians: guardians.length, protocols: protocols.length,
+            sessions: sessions.length, targets: targets.length,
+            behaviors: behaviors.length, snapshots: snapshots.length,
+            clinical_states: clinicalStates.length, summaries: summaries.length,
+            audit_logs: auditLogs.length,
           },
         },
-
-        // Organização
-        tenant: tenantData.rows[0] || null,
-        profiles: profilesData.rows,
-
-        // Clínico — Retenção 7 anos (CFM/CRP)
-        learners: learnersData.rows,
-        learner_therapist_assignments: assignmentsData.rows,
-        guardians: guardiansData.rows,
-        guardian_consents: consentsData.rows,
-        pei_plans: peiPlansData.rows,
-        pei_goals: peiGoalsData.rows,
-        protocols: protocolsData.rows,
-        sessions: sessionsData.rows,
-        session_targets: targetsData.rows,
-        session_behaviors: behaviorsData.rows,
-        session_snapshots: snapshotsData.rows,
-        clinical_states: clinicalStatesData.rows,
-        generalization_probes: genProbesData.rows,
-        maintenance_probes: maintProbesData.rows,
-        session_summaries: summariesData.rows,
-        report_snapshots: convenioData.rows,
-        family_portal_access: portalAccessData.rows,
-
-        // Operacional — Retenções variadas
-        email_logs: emailLogsData.rows,
-        notifications: notificationsData.rows,
-
-        // Auditoria — Retenção 5 anos (Compliance)
-        audit_logs: auditLogsData.rows,
+        tenant: tenant[0] || null,
+        profiles, learners, learner_therapist_assignments: assignments,
+        guardians, guardian_consents: consents,
+        pei_plans: peiPlans, pei_goals: peiGoals,
+        protocols, sessions, session_targets: targets,
+        session_behaviors: behaviors, session_snapshots: snapshots,
+        clinical_states: clinicalStates,
+        generalization_probes: genProbes, maintenance_probes: maintProbes,
+        session_summaries: summaries, report_snapshots: reports,
+        family_portal_access: portalAccess,
+        email_logs: emailLogs, notifications,
+        audit_logs: auditLogs,
       }
     })
 
-    // Cabeçalhos de resposta para download
     const filename = `axis_aba_export_${new Date().toISOString().split('T')[0]}.json`
 
     return new NextResponse(JSON.stringify(result, null, 2), {
@@ -407,8 +202,7 @@ export async function GET() {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'X-AXIS-Export-Version': '1.0',
-        'X-AXIS-Bible-Version': '2.6.1',
+        'X-AXIS-Export-Version': '2.0',
       },
     })
   } catch (error) {

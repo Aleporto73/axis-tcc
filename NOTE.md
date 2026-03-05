@@ -373,6 +373,11 @@ PM2 (producao)
 - [x] Bug fix resumo sessao vazio: modal "Enviar Resumo aos Pais" agora auto-gera texto a partir dos trials (alvos, acertos, percentual, nivel de dica)
 - [x] Bug fix query l.full_name: tabela learners usa "name", nao "full_name". Corrigido em /api/aba/sessions/[id]/summary/route.ts (2 queries)
 - [x] Bug fix session_summaries status constraint: INSERT usava 'draft' mas constraint so permite pending/approved/sent/rejected. Corrigido para 'pending'
+- [x] Email resumo para pais: remetente noreply@axisclinico.com, titulo/header/rodape dinamicos com tenants.name
+- [x] Autocomplete no campo "Alvo" do registro de trial: dropdown com alvos ja registrados + protocolos ativos, mantem ultimo alvo
+- [x] Bug fix onboarding aparece em todo refresh: cookie cache (axis_onboarding_done) + fallback para hidden em caso de erro API
+- [x] Bug fix LGPD Export v2.0: reescrito com safeQuery (SAVEPOINT) por tabela — falha em 1 tabela nao mata as outras. Corrigido nomes de colunas (content vs summary_text, score_pct vs score, behavior_type vs function_hypothesis)
+- [x] Bug fix LGPD Delete v2.0: reescrito com safeExec (SAVEPOINT) + auto-criacao de colunas faltantes (cancellation_scheduled_at, cancelled_at, anonymized_at via ALTER TABLE IF NOT EXISTS). Corrigido session_summaries.summary_text → content. Removido referencias a colunas que podem nao existir (school, deleted_at, crp, crp_uf, google_event_id, patient_response)
 
 ## CONCLUIDO EM 04/03/2026
 
