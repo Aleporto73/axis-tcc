@@ -62,15 +62,15 @@ export default async function ABALayout({ children }: { children: React.ReactNod
     redirect('/hub')
   }
 
-  // Verificar licença ABA (resiliente: se tabela não existe, permite acesso)
+  // Verificar licença ABA por tenant_id (não clerk_user_id — suporta auto-provisioning)
   let hasLicense = true
   try {
     const licenseResult = await pool.query(
-      'SELECT is_active FROM user_licenses WHERE clerk_user_id = $1 AND product_type = $2 LIMIT 1',
-      [userId, 'aba']
+      'SELECT is_active FROM user_licenses WHERE tenant_id = $1 AND product_type = $2 AND is_active = true LIMIT 1',
+      [tenantId, 'aba']
     )
     if (licenseResult.rows.length > 0) {
-      hasLicense = licenseResult.rows[0].is_active === true
+      hasLicense = true
     } else {
       hasLicense = false
     }

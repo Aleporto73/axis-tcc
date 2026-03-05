@@ -1,10 +1,14 @@
 import type { Metadata } from 'next'
+import { auth } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
+import pool from '@/src/database/db'
 
 // =====================================================
 // SEO — Landing Page AXIS ABA
-// Title: 50-60 chars, keyword no início
-// Description: 150-160 chars com CTA
-// OG completo + Canonical
+//
+// Se o usuário está logado E tem licença ABA ativa,
+// redireciona direto para /aba/dashboard (não mostra
+// página de vendas para quem já é cliente).
 // =====================================================
 
 const title = 'Sistema ABA para Clínicas — Protocolos e Relatórios | AXIS'
@@ -58,6 +62,40 @@ export const metadata: Metadata = {
   },
 }
 
-export default function ProdutoABALayout({ children }: { children: React.ReactNode }) {
+export default async function ProdutoABALayout({ children }: { children: React.ReactNode }) {
+  // Se logado e tem licença ABA → vai direto pro dashboard
+  try {
+    const { userId } = await auth()
+
+    if (userId) {
+      // Buscar tenant via profiles
+      const profileResult = await pool.query(
+        'SELECT tenant_id FROM profiles WHERE clerk_user_id = $1 AND is_active = true LIMIT 1',
+        [userId]
+      )
+
+      const tenantId = profileResult.rows[0]?.tenant_id
+
+      if (tenantId) {
+        // Verificar licença ABA ativa
+        try {
+          const licResult = await pool.query(
+            'SELECT is_active FROM user_licenses WHERE tenant_id = $1 AND product_type = $2 AND is_active = true LIMIT 1',
+            [tenantId, 'aba']
+          )
+          if (licResult.rows.length > 0) {
+            redirect('/aba/dashboard')
+          }
+        } catch {
+          // Tabela pode não existir — não redirecionar
+        }
+      }
+    }
+  } catch (err: any) {
+    // Se redirect() foi chamado, ele faz throw — não capturar
+    if (err?.digest?.startsWith('NEXT_REDIRECT')) throw err
+    // Auth falhou ou DB falhou — não redirecionar, mostrar landing
+  }
+
   return <>{children}</>
 }
