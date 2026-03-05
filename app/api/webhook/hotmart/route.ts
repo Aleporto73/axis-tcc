@@ -35,6 +35,8 @@ const PRODUCT_MAP: Record<string, string> = {
 
   // ABA — Clínica (todas as ofertas usam o mesmo product_id)
   '7285432': 'aba',
+  // ABA - Clinica 100 Founders
+  '7291024': 'aba',
 }
 
 // ─── Eventos que ATIVAM licença ───
