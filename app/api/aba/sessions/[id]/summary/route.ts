@@ -31,13 +31,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (existing.rows[0]) {
         await client.query(
           'UPDATE session_summaries SET content = $1, status = $2, updated_at = NOW() WHERE id = $3',
-          [content, 'draft', existing.rows[0].id]
+          [content, 'pending', existing.rows[0].id]
         )
         summaryId = existing.rows[0].id
       } else {
         const ins = await client.query(
           `INSERT INTO session_summaries (id, tenant_id, session_id, learner_id, content, status, created_by, created_at, updated_at)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'draft', $5, NOW(), NOW()) RETURNING id`,
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'pending', $5, NOW(), NOW()) RETURNING id`,
           [tenantId, sessionId, session.learner_id, content, userId]
         )
         summaryId = ins.rows[0].id
