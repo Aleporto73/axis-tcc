@@ -25,8 +25,12 @@ export async function GET() {
         [tenantId]
       )
 
+      const completed = !!tenant.rows[0]?.onboarding_completed_at
+      if (!completed) {
+        console.log(`[Onboarding Progress] tenant=${tenantId}, completed_at=${tenant.rows[0]?.onboarding_completed_at}, rows=${tenant.rows.length}`)
+      }
       return {
-        completed: !!tenant.rows[0]?.onboarding_completed_at,
+        completed,
         profile: profile.rows[0] || null,
       }
     })

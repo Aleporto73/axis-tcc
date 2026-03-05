@@ -37,10 +37,11 @@ export async function POST(request: NextRequest) {
       )
 
       // ── 2. Marcar onboarding como completo ──
-      await client.query(
-        `UPDATE tenants SET onboarding_completed_at = NOW() WHERE id = $1`,
+      const updateResult = await client.query(
+        `UPDATE tenants SET onboarding_completed_at = NOW() WHERE id = $1 AND onboarding_completed_at IS NULL`,
         [tenantId]
       )
+      console.log(`[Onboarding Setup] tenant=${tenantId}, rows_updated=${updateResult.rowCount}`)
 
       // ── 3. Audit log ──
       try {

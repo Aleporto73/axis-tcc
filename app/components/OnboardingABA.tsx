@@ -54,16 +54,31 @@ export default function OnboardingABA() {
   useEffect(() => {
     let cancelled = false
     async function check() {
+      // 1. Checar cookie primeiro (evita chamada de API desnecessária)
+      if (document.cookie.includes('axis_onboarding_done=1')) {
+        if (!cancelled) setStatus('hidden')
+        return
+      }
       try {
         const res = await fetch('/api/aba/onboarding/progress')
-        if (!res.ok) { setStatus('show'); return }
+        if (!res.ok) {
+          // Se API falhar, NÃO mostrar onboarding (evita loop infinito no refresh)
+          console.warn('[Onboarding] API retornou erro, assumindo completo')
+          if (!cancelled) setStatus('hidden')
+          return
+        }
         const data = await res.json()
         if (!cancelled) {
+          if (data.completed) {
+            // Setar cookie para não precisar checar de novo
+            document.cookie = 'axis_onboarding_done=1; path=/; max-age=31536000; SameSite=Lax'
+          }
           setStatus(data.completed ? 'hidden' : 'show')
         }
       } catch {
-        // Se API falhar, mostrar onboarding (seguro)
-        if (!cancelled) setStatus('show')
+        // Se falhar conexão, não bloquear o usuário com onboarding
+        console.warn('[Onboarding] Falha de conexão, assumindo completo')
+        if (!cancelled) setStatus('hidden')
       }
     }
     check()
@@ -88,7 +103,8 @@ export default function OnboardingABA() {
         return
       }
 
-      // Esconder overlay
+      // Marcar como completo (cookie + state)
+      document.cookie = 'axis_onboarding_done=1; path=/; max-age=31536000; SameSite=Lax'
       setStatus('hidden')
 
       // Redirecionar conforme escolha
