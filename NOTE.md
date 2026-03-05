@@ -51,7 +51,7 @@
 ### COMERCIAL / BILLING (Hotmart)
 | Area | % | Status |
 |---|---|---|
-| Webhook Hotmart | 100% | 7 eventos, idempotente, audit log, map produto→tipo |
+| Webhook Hotmart | 100% | v2.1: 7 eventos + auto-provisioning (Clerk Invitation + pending profile/license) |
 | Gate de licenca (layout.tsx) | 100% | Bloqueia /aba/* sem licenca ativa → redireciona /hub |
 | API licencas (/api/user/licenses) | 100% | Verifica ativas + nao-expiradas por tenant/user |
 | UpgradeModal | 90% | Dispara no free (>1 aprendiz). FALTA: botoes sem link Hotmart real |
@@ -66,7 +66,7 @@
 | Redis cache | 100% | Dashboard 5min TTL |
 | Clerk auth | 100% | Multi-tenant provider |
 | Firebase (storage + FCM) | 100% | Admin SDK |
-| Resend email | 50% | So tem template session-summary. Falta pos-compra |
+| Resend email | 60% | Template session-summary funcional (auto-gera texto). Falta pos-compra |
 | PM2 producao | 100% | ecosystem.config.cjs |
 
 ---
@@ -159,7 +159,7 @@
 
 - [ ] **Tela "Meu Plano"**: configuracoes nao mostra plano atual nem upgrade
 - [ ] **Email pos-compra**: nenhum template de boas-vindas/ativacao (so tem session-summary)
-- [ ] **Fila licencas pendentes**: TODO no webhook (comprou antes de cadastrar)
+- [x] **Auto-provisioning**: comprou antes de cadastrar → Clerk Invitation + pending profile/license ✅ 05/03
 - [ ] **Popup "Ativar lembretes"**: investigar se faz sentido no ABA ou remover
 - [ ] **Testes criticos**: CSO engine, state machine, webhook Hotmart
 - [ ] **Backup automatizado**: pg_dump cron ou servico
@@ -309,6 +309,8 @@ PM2 (producao)
 | 2026-03-04 | APIs onboarding independentes | Setup e progress so usam tenants+profiles, tolerante a tabelas faltantes |
 | 2026-03-05 | Onboarding refeito como overlay client-side | Redirect server-side dependia de x-pathname (middleware) que nao existe em client-side navigation do Next.js App Router → tela branca. Solucao: overlay z-[9999] que checa API, sem nenhum redirect no layout |
 | 2026-03-05 | Migration 007 full ABA repair | ~20 tabelas ABA criadas (faltavam no banco), UNIQUE constraint em learner_therapists corrigida |
+| 2026-03-05 | Auto-provisioning via Clerk Invitation | Buyer sem conta → invitation email + pending tenant/profile/license. Melhor UX para publico 50+ (evita "esqueci senha") |
+| 2026-03-05 | Licencas resolvidas por tenant_id | clerk_user_id mismatch com pending_hotmart_* quebrava Hub e gate. Corrigido para tenant_id em 3 arquivos |
 
 ---
 
@@ -348,7 +350,7 @@ PM2 (producao)
 5. Verificar que webhook ativou licenca: `docker exec -i axis-postgres psql -U axis -d axis_tcc -c "SELECT * FROM user_licenses ORDER BY created_at DESC LIMIT 5;"`
 6. Verificar que agora pode criar mais de 1 aprendiz
 
-**Limitacao conhecida:** se comprar ANTES de cadastrar, fica status "pending" (TODO: fila de ativacao pendente)
+**Auto-provisioning (implementado 05/03):** se comprar ANTES de cadastrar → Clerk Invitation email + tenant/profile/license pre-criados com `pending_hotmart_*`. Ao criar conta pelo link do email, /api/user/tenant ativa tudo automaticamente.
 
 ---
 
@@ -363,6 +365,14 @@ PM2 (producao)
   - Funciona no primeiro load E no refresh (testado com 2 contas Gmail)
 - [x] Layout ABA limpo: so faz auth → tenant → licenca → renderiza (sem headers/pathname)
 - [x] /aba/onboarding page agora e redirect simples para /aba/dashboard
+- [x] Webhook Hotmart v2.1 com auto-provisioning: buyer sem conta → Clerk Invitation + tenant/profile/license pre-criados (pending_hotmart_*)
+- [x] Ativacao de perfil pendente: /api/user/tenant sincroniza clerk_user_id em tenants + user_licenses ao ativar pending_*
+- [x] Resolucao de licencas por tenant_id: corrigido em /api/user/licenses, /aba/layout.tsx, /produto/aba/layout.tsx (antes filtrava por clerk_user_id que falhava para auto-provisioning)
+- [x] Hub /hub: botao "Acessar" vs "Conhecer" agora funciona corretamente com licencas auto-provisionadas
+- [x] Bug fix dropdown EBP invisivel: API retorna campo "name" mas select usava "name_pt" (undefined → texto vazio). Corrigido para name_pt || name
+- [x] Bug fix resumo sessao vazio: modal "Enviar Resumo aos Pais" agora auto-gera texto a partir dos trials (alvos, acertos, percentual, nivel de dica)
+- [x] Bug fix query l.full_name: tabela learners usa "name", nao "full_name". Corrigido em /api/aba/sessions/[id]/summary/route.ts (2 queries)
+- [x] Bug fix session_summaries status constraint: INSERT usava 'draft' mas constraint so permite pending/approved/sent/rejected. Corrigido para 'pending'
 
 ## CONCLUIDO EM 04/03/2026
 

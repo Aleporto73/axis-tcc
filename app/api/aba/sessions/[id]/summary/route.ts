@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 import { sessionSummaryTemplate } from '@/src/email/session-summary-template'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.RESEND_FROM || 'onboarding@resend.dev'
+const FROM = process.env.RESEND_FROM || 'noreply@axisclinico.com'
 
 // POST — Criar/atualizar resumo (rascunho)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -59,15 +59,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const result = await withTenant(async ({ client, tenantId, userId }) => {
       const sum = await client.query(
-        `SELECT ss.*, s.scheduled_at, s.duration_minutes, l.name as learner_name
+        `SELECT ss.*, s.scheduled_at, s.duration_minutes, l.name as learner_name, t.name as clinic_name
          FROM session_summaries ss
          JOIN sessions_aba s ON s.id = ss.session_id
          JOIN learners l ON l.id = ss.learner_id
+         JOIN tenants t ON t.id = ss.tenant_id
          WHERE ss.id = $1 AND ss.tenant_id = $2`,
         [summary_id, tenantId]
       )
       if (!sum.rows[0]) throw new Error('Resumo não encontrado')
       const s = sum.rows[0]
+      const clinicName = s.clinic_name || 'AXIS ABA'
 
       if (action === 'approve') {
         await client.query(
@@ -86,12 +88,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           sessionDate: s.scheduled_at,
           durationMinutes: s.duration_minutes,
           content: s.content,
+          clinicName,
         })
 
         const emailRes = await resend.emails.send({
           from: FROM,
           to: recipient_email,
-          subject: `Resumo da sessão de ${s.learner_name} — AXIS ABA`,
+          subject: `Sessão de ${s.learner_name} — ${clinicName}`,
           html,
         })
 

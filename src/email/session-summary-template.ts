@@ -6,6 +6,7 @@ export function sessionSummaryTemplate({
   content,
   achievements,
   nextSession,
+  clinicName,
 }: {
   learnerName: string
   sessionDate: string
@@ -14,7 +15,9 @@ export function sessionSummaryTemplate({
   content: string
   achievements?: string[]
   nextSession?: string
+  clinicName?: string
 }) {
+  const clinic = clinicName || 'AXIS ABA'
   const date = new Date(sessionDate).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const achievementsHtml = achievements && achievements.length > 0
     ? `<div style="background:#f0fdf4;border-left:3px solid #22c55e;padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0;">
@@ -35,7 +38,7 @@ export function sessionSummaryTemplate({
       <table width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
         <!-- Header -->
         <tr><td style="background:#C46A2F;padding:24px 28px;">
-          <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;">AXIS ABA</p>
+          <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;">${clinic}</p>
           <h1 style="margin:4px 0 0;font-size:20px;font-weight:300;color:#ffffff;">Resumo da Sessão</h1>
           <p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">${learnerName} · ${date}</p>
         </td></tr>
@@ -54,7 +57,7 @@ export function sessionSummaryTemplate({
         </td></tr>
         <!-- Footer -->
         <tr><td style="padding:16px 28px;border-top:1px solid #f1f5f9;">
-          <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.6;">Este resumo foi revisado e aprovado pelo terapeuta responsável antes do envio. AXIS ABA · Motor CSO-ABA v2.6.1 · As informações clínicas detalhadas são mantidas em sigilo conforme LGPD.</p>
+          <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.6;">Este resumo foi revisado e aprovado pelo terapeuta responsável antes do envio. ${clinic} · As informações clínicas detalhadas são mantidas em sigilo conforme LGPD.</p>
         </td></tr>
       </table>
     </td></tr>
