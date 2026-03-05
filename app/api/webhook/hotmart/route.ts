@@ -5,29 +5,28 @@ import pool from '@/src/database/db'
 // =====================================================
 // AXIS — Webhook Hotmart (Postback v2) + Auto-Provisioning
 //
-// Recebe eventos de compra/cancelamento/reembolso da Hotmart
-// e cria/atualiza registros em user_licenses.
+// AUTO-PROVISIONING via Clerk Invitation:
+//   Quando PURCHASE_APPROVED chega e o email do buyer NÃO existe:
 //
-// AUTO-PROVISIONING (novo):
-//   Quando PURCHASE_APPROVED chega e o email do buyer NÃO existe
-//   no banco, o webhook:
-//   1. Cria usuário no Clerk (sem senha — comprador define depois)
-//   2. Cria tenant + profile + licença no banco
-//   3. Clerk envia email automático com link para definir senha
-//   Resultado: comprador acessa o sistema sem precisar ter feito
-//   cadastro prévio pelo /sign-up.
+//   Caso A — buyer já tem conta Clerk (fez sign-up antes):
+//     1. Encontra user no Clerk por email
+//     2. Cria tenant + profile (ativo) + licença no banco
+//     3. Comprador já pode acessar normalmente
+//
+//   Caso B — buyer NÃO tem conta Clerk (comprou direto):
+//     1. Cria Invitation no Clerk → email com link "Crie sua conta"
+//     2. Pre-cria tenant + profile PENDENTE + licença no banco
+//        (clerk_user_id = 'pending_hotmart_{email}', is_active = false)
+//     3. Comprador recebe email → clica → sign-up → cria senha
+//     4. No primeiro login, /api/user/tenant detecta profile
+//        pendente por email → ativa com clerk_user_id real
+//
+//   Público 50+: email claro, sem "esqueci senha", link direto.
 //
 // Eventos tratados:
-//   PURCHASE_APPROVED        → ativa licença (+ auto-provisioning)
-//   PURCHASE_COMPLETE        → ativa licença (+ auto-provisioning)
-//   PURCHASE_CANCELED        → desativa licença
-//   PURCHASE_REFUNDED        → desativa licença
-//   PURCHASE_CHARGEBACK      → desativa licença
-//   PURCHASE_PROTEST         → desativa licença
-//   SUBSCRIPTION_CANCELLATION → desativa licença
-//
-// Segurança:
-//   Header X-Hotmart-Hottok validado contra env HOTMART_HOTTOK
+//   PURCHASE_APPROVED / COMPLETE  → ativa licença (+ auto-provision)
+//   PURCHASE_CANCELED/REFUNDED/CHARGEBACK/PROTEST → desativa
+//   SUBSCRIPTION_CANCELLATION → desativa
 // =====================================================
 
 // ─── Mapa de produtos Hotmart → product_type AXIS ───
@@ -48,14 +47,7 @@ const OFFER_TO_PLAN: Record<string, { plan_tier: string; max_patients: number }>
 
 const DEFAULT_PAID_PLAN = { plan_tier: 'founders', max_patients: 100 }
 
-// ─── Eventos que ATIVAM licença ───
-
-const ACTIVATE_EVENTS = new Set([
-  'PURCHASE_APPROVED',
-  'PURCHASE_COMPLETE',
-])
-
-// ─── Eventos que DESATIVAM licença ───
+const ACTIVATE_EVENTS = new Set(['PURCHASE_APPROVED', 'PURCHASE_COMPLETE'])
 
 const DEACTIVATE_EVENTS = new Set([
   'PURCHASE_CANCELED',
@@ -65,7 +57,7 @@ const DEACTIVATE_EVENTS = new Set([
   'SUBSCRIPTION_CANCELLATION',
 ])
 
-// ─── Auto-Provisioning: criar Clerk user + tenant + profile + licença ───
+// ─── Auto-Provisioning ───
 
 async function provisionNewBuyer(
   dbClient: any,
@@ -75,75 +67,113 @@ async function provisionNewBuyer(
   transactionId: string,
   event: string,
   planName: string | null,
-): Promise<{ tenant_id: string; clerk_user_id: string }> {
+): Promise<{ tenant_id: string; clerk_user_id: string; method: 'existing_user' | 'invitation' }> {
 
   const email = buyer.email.toLowerCase().trim()
-  const firstName = buyer.first_name || buyer.name?.split(' ')[0] || 'Profissional'
-  const lastName = buyer.last_name || buyer.name?.split(' ').slice(1).join(' ') || ''
-
-  // 1. Criar usuário no Clerk (sem senha — comprador define depois via email)
-  let clerkUserId: string
+  const buyerName = buyer.name || `${buyer.first_name || ''} ${buyer.last_name || ''}`.trim() || 'Profissional'
+  const plan = OFFER_TO_PLAN[offerCode || ''] || DEFAULT_PAID_PLAN
+  const now = new Date()
 
   const clerk = await clerkClient()
 
+  // ── Caso A: buyer já tem conta no Clerk ──
   try {
-    // Verificar se já existe no Clerk (pode ter conta de outro produto)
     const existingUsers = await clerk.users.getUserList({
       emailAddress: [email],
     })
 
     if (existingUsers.data.length > 0) {
-      // Usuário já existe no Clerk mas não tem tenant no banco
-      clerkUserId = existingUsers.data[0].id
-      console.log('[HOTMART AUTO-PROVISION] Clerk user já existe:', clerkUserId)
-    } else {
-      // Criar novo usuário no Clerk
-      const newUser = await clerk.users.createUser({
-        emailAddress: [email],
-        firstName,
-        lastName,
-        skipPasswordRequirement: true,
-      })
-      clerkUserId = newUser.id
-      console.log('[HOTMART AUTO-PROVISION] Clerk user criado:', clerkUserId, email)
+      const clerkUserId = existingUsers.data[0].id
+      console.log('[HOTMART PROVISION] Clerk user já existe:', clerkUserId, email)
+
+      // Criar tenant + profile ATIVO + licença
+      const tenantId = await createTenantWithLicense(
+        dbClient, email, buyerName, clerkUserId, true,
+        plan, productType, transactionId, event, offerCode, planName, now,
+      )
+
+      return { tenant_id: tenantId, clerk_user_id: clerkUserId, method: 'existing_user' }
     }
-  } catch (clerkErr: any) {
-    console.error('[HOTMART AUTO-PROVISION] Erro ao criar Clerk user:', clerkErr?.message || clerkErr)
-    throw new Error(`Clerk createUser failed: ${clerkErr?.message || 'unknown'}`)
+  } catch (err: any) {
+    console.warn('[HOTMART PROVISION] Erro ao buscar user no Clerk:', err?.message)
+    // Continua para invitation
   }
 
-  // 2. Criar tenant no banco
-  const plan = OFFER_TO_PLAN[offerCode || ''] || DEFAULT_PAID_PLAN
-  const now = new Date()
+  // ── Caso B: buyer NÃO tem conta → enviar Invitation ──
+  const pendingClerkId = `pending_hotmart_${email}`
 
+  try {
+    // URL base do app (produção ou dev)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
+
+    await clerk.invitations.createInvitation({
+      emailAddress: email,
+      redirectUrl: `${baseUrl}/aba/dashboard`,
+      ignoreExisting: true,
+      publicMetadata: {
+        source: 'hotmart_purchase',
+        product_type: productType,
+        plan_tier: plan.plan_tier,
+        transaction_id: transactionId,
+      },
+    })
+
+    console.log('[HOTMART PROVISION] Invitation enviada para:', email)
+  } catch (invErr: any) {
+    // Se invitation falhar (ex: email já convidado), não é bloqueante
+    // O profile pendente será criado de qualquer forma
+    console.warn('[HOTMART PROVISION] Invitation falhou (não-bloqueante):', invErr?.message)
+  }
+
+  // Criar tenant + profile PENDENTE + licença
+  // (clerk_user_id = 'pending_hotmart_{email}', is_active = false)
+  // O /api/user/tenant já detecta profiles pendentes e ativa no primeiro login
+  const tenantId = await createTenantWithLicense(
+    dbClient, email, buyerName, pendingClerkId, false,
+    plan, productType, transactionId, event, offerCode, planName, now,
+  )
+
+  return { tenant_id: tenantId, clerk_user_id: pendingClerkId, method: 'invitation' }
+}
+
+// ─── Criar tenant + profile + licença ───
+
+async function createTenantWithLicense(
+  dbClient: any,
+  email: string,
+  name: string,
+  clerkUserId: string,
+  isActive: boolean,
+  plan: { plan_tier: string; max_patients: number },
+  productType: string,
+  transactionId: string,
+  event: string,
+  offerCode: string | null,
+  planName: string | null,
+  now: Date,
+): Promise<string> {
+
+  // 1. Tenant
   const tenantInsert = await dbClient.query(
     `INSERT INTO tenants (
       name, email, clerk_user_id, role,
       trial_start, trial_end, trial_status,
       plan_tier, max_patients, max_sessions, is_admin
-    ) VALUES ($1, $2, $3, 'professional', $4, $5, 'active', $6, $7, 9999, false)
+    ) VALUES ($1, $2, $3, 'professional', $4, NULL, 'active', $5, $6, 9999, false)
     RETURNING id as tenant_id`,
-    [
-      buyer.name || firstName,
-      email,
-      clerkUserId,
-      now,
-      null, // sem trial — comprou direto
-      plan.plan_tier,
-      plan.max_patients,
-    ]
+    [name, email, clerkUserId, now, plan.plan_tier, plan.max_patients]
   )
 
   const tenantId = tenantInsert.rows[0].tenant_id
 
-  // 3. Criar profile (admin do tenant)
+  // 2. Profile (admin) — ativo se user já existe, pendente se invitation
   await dbClient.query(
     `INSERT INTO profiles (tenant_id, clerk_user_id, role, name, email, is_active)
-     VALUES ($1, $2, 'admin', $3, $4, true)`,
-    [tenantId, clerkUserId, buyer.name || firstName, email]
+     VALUES ($1, $2, 'admin', $3, $4, $5)`,
+    [tenantId, clerkUserId, name, email, isActive]
   )
 
-  // 4. Criar licença ativa
+  // 3. Licença ativa (mesmo pendente, licença já vale)
   await dbClient.query(
     `INSERT INTO user_licenses (
       tenant_id, clerk_user_id, product_type, is_active,
@@ -151,25 +181,21 @@ async function provisionNewBuyer(
       hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
       buyer_email, created_at, updated_at
     ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())`,
-    [
-      tenantId, clerkUserId, productType, now,
-      transactionId, event, offerCode, planName, email,
-    ]
+    [tenantId, clerkUserId, productType, now, transactionId, event, offerCode, planName, email]
   )
 
-  // 5. Audit log
+  // 4. Audit log
   try {
     await dbClient.query(
       `INSERT INTO axis_audit_logs (
         tenant_id, user_id, actor, action, entity_type, metadata, created_at
       ) VALUES ($1, $2, 'hotmart_webhook', 'AUTO_PROVISION', 'tenant', $3, NOW())`,
       [
-        tenantId,
-        clerkUserId,
+        tenantId, clerkUserId,
         JSON.stringify({
           source: 'hotmart_auto_provision',
-          buyer_email: email,
-          buyer_name: buyer.name,
+          method: isActive ? 'existing_user' : 'invitation',
+          buyer_email: email, buyer_name: name,
           product_type: productType,
           plan_tier: plan.plan_tier,
           max_patients: plan.max_patients,
@@ -180,15 +206,14 @@ async function provisionNewBuyer(
     )
   } catch (_) { /* audit non-blocking */ }
 
-  console.log('[HOTMART AUTO-PROVISION] Completo:', {
-    tenant_id: tenantId,
-    clerk_user_id: clerkUserId,
-    email,
+  console.log('[HOTMART PROVISION] Tenant criado:', {
+    tenant_id: tenantId, email,
     plan_tier: plan.plan_tier,
-    max_patients: plan.max_patients,
+    is_active: isActive,
+    method: isActive ? 'existing_user' : 'invitation',
   })
 
-  return { tenant_id: tenantId, clerk_user_id: clerkUserId }
+  return tenantId
 }
 
 // ─── Handler ───
@@ -240,7 +265,7 @@ export async function POST(request: NextRequest) {
     // 5. Identificar tenant pelo email do buyer
     const buyerEmail = buyer.email.toLowerCase().trim()
 
-    let tenantResult = await client.query(
+    const tenantResult = await client.query(
       `SELECT p.tenant_id, p.id as profile_id, t.clerk_user_id
        FROM profiles p
        JOIN tenants t ON t.id = p.tenant_id
@@ -254,19 +279,16 @@ export async function POST(request: NextRequest) {
 
     if (tenantResult.rows.length === 0) {
       // ─── AUTO-PROVISIONING ───
-      // Comprador não tem conta. Se é evento de ativação, criar tudo.
-      // Se é desativação, ignorar (não faz sentido desativar quem não existe).
-
       if (!ACTIVATE_EVENTS.has(event)) {
-        console.warn('[HOTMART WEBHOOK] Deactivate event para buyer inexistente:', buyerEmail)
+        console.warn('[HOTMART WEBHOOK] Deactivate para buyer inexistente:', buyerEmail)
         return NextResponse.json({ status: 'ignored', reason: 'no_tenant_for_deactivation', email: buyerEmail })
       }
 
-      console.log('[HOTMART WEBHOOK] Buyer não encontrado, iniciando auto-provisioning:', buyerEmail)
+      console.log('[HOTMART WEBHOOK] Buyer não encontrado, auto-provisioning:', buyerEmail)
 
       const offerCode = purchase?.offer?.code || null
       const planName = product?.name || null
-      const transactionId = purchase?.transaction || subscription?.subscriber?.code || `${event}_${Date.now()}`
+      const txId = purchase?.transaction || subscription?.subscriber?.code || `${event}_${Date.now()}`
 
       await client.query('BEGIN')
 
@@ -279,21 +301,17 @@ export async function POST(request: NextRequest) {
             first_name: buyer.first_name,
             last_name: buyer.last_name,
           },
-          productType,
-          offerCode,
-          transactionId,
-          event,
-          planName,
+          productType, offerCode, txId, event, planName,
         )
 
         await client.query('COMMIT')
 
         return NextResponse.json({
           status: 'provisioned',
+          method: provision.method,
           event,
           product_type: productType,
           tenant_id: provision.tenant_id,
-          clerk_user_id: provision.clerk_user_id,
           email: buyerEmail,
         })
       } catch (provisionErr) {
@@ -307,55 +325,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Tenant encontrado — fluxo normal
+    // ─── Tenant encontrado — fluxo normal ───
     tenantId = tenantResult.rows[0].tenant_id
     clerkUserId = tenantResult.rows[0].clerk_user_id
 
-    // 6. Idempotência — verificar transaction_id
     const transactionId = purchase?.transaction || subscription?.subscriber?.code || `${event}_${Date.now()}`
 
     const existingTx = await client.query(
-      `SELECT id FROM user_licenses
-       WHERE tenant_id = $1 AND hotmart_transaction = $2`,
+      `SELECT id FROM user_licenses WHERE tenant_id = $1 AND hotmart_transaction = $2`,
       [tenantId, transactionId]
     )
 
-    // 7. Processar evento
     await client.query('BEGIN')
 
     if (ACTIVATE_EVENTS.has(event)) {
-      // ─── ATIVAR LICENÇA ───
-
       const offerCode = purchase?.offer?.code || null
       const planName = product?.name || null
       const validFrom = new Date()
 
       if (existingTx.rows.length > 0) {
-        // Reativar licença existente (idempotente)
         await client.query(
           `UPDATE user_licenses
-           SET is_active = true,
-               valid_from = $1,
-               valid_until = NULL,
-               hotmart_event = $2,
-               hotmart_offer = $3,
-               hotmart_plan = $4,
-               updated_at = NOW()
+           SET is_active = true, valid_from = $1, valid_until = NULL,
+               hotmart_event = $2, hotmart_offer = $3, hotmart_plan = $4, updated_at = NOW()
            WHERE tenant_id = $5 AND hotmart_transaction = $6`,
           [validFrom, event, offerCode, planName, tenantId, transactionId]
         )
-
         console.log('[HOTMART WEBHOOK] Licença reativada:', { tenantId, productType, transactionId })
       } else {
-        // Desativar licenças antigas do mesmo tipo (evita duplicatas ativas)
         await client.query(
-          `UPDATE user_licenses
-           SET is_active = false, updated_at = NOW()
+          `UPDATE user_licenses SET is_active = false, updated_at = NOW()
            WHERE tenant_id = $1 AND product_type = $2 AND is_active = true`,
           [tenantId, productType]
         )
 
-        // Criar nova licença
         await client.query(
           `INSERT INTO user_licenses (
             tenant_id, clerk_user_id, product_type, is_active,
@@ -363,81 +366,50 @@ export async function POST(request: NextRequest) {
             hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
             buyer_email, created_at, updated_at
           ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())`,
-          [
-            tenantId, clerkUserId, productType, validFrom,
-            transactionId, event, offerCode, planName, buyerEmail
-          ]
+          [tenantId, clerkUserId, productType, validFrom,
+           transactionId, event, offerCode, planName, buyerEmail]
         )
-
-        console.log('[HOTMART WEBHOOK] Licença criada:', { tenantId, productType, transactionId, buyerEmail })
+        console.log('[HOTMART WEBHOOK] Licença criada:', { tenantId, productType, transactionId })
       }
 
-      // Atualizar plan_tier do tenant se é upgrade
+      // Sync plan_tier
       const plan = OFFER_TO_PLAN[offerCode || ''] || DEFAULT_PAID_PLAN
       await client.query(
-        `UPDATE tenants
-         SET plan_tier = $1, max_patients = $2, trial_status = 'active', updated_at = NOW()
+        `UPDATE tenants SET plan_tier = $1, max_patients = $2, trial_status = 'active', updated_at = NOW()
          WHERE id = $3`,
         [plan.plan_tier, plan.max_patients, tenantId]
       )
 
     } else if (DEACTIVATE_EVENTS.has(event)) {
-      // ─── DESATIVAR LICENÇA ───
-
       const result = await client.query(
         `UPDATE user_licenses
-         SET is_active = false,
-             valid_until = NOW(),
-             hotmart_event = $1,
-             updated_at = NOW()
-         WHERE tenant_id = $2
-           AND product_type = $3
-           AND is_active = true`,
+         SET is_active = false, valid_until = NOW(), hotmart_event = $1, updated_at = NOW()
+         WHERE tenant_id = $2 AND product_type = $3 AND is_active = true`,
         [event, tenantId, productType]
       )
 
-      // Rebaixar para free
       await client.query(
-        `UPDATE tenants
-         SET plan_tier = 'free', max_patients = 1, updated_at = NOW()
-         WHERE id = $1`,
+        `UPDATE tenants SET plan_tier = 'free', max_patients = 1, updated_at = NOW() WHERE id = $1`,
         [tenantId]
       )
 
-      console.log('[HOTMART WEBHOOK] Licença desativada:', {
-        tenantId, productType, event,
-        rows_affected: result.rowCount
-      })
-
+      console.log('[HOTMART WEBHOOK] Licença desativada:', { tenantId, productType, event, rows: result.rowCount })
     } else {
-      // Evento não tratado
-      console.log('[HOTMART WEBHOOK] Evento ignorado:', event)
       await client.query('ROLLBACK')
       return NextResponse.json({ status: 'ignored', reason: 'event_not_handled', event })
     }
 
-    // 8. Audit log
+    // Audit log
     await client.query(
       `INSERT INTO axis_audit_logs (
         tenant_id, user_id, actor, action, entity_type, metadata, created_at
       ) VALUES ($1, $2, 'hotmart_webhook', $3, 'user_licenses', $4, NOW())`,
-      [
-        tenantId,
-        clerkUserId || 'system',
-        `HOTMART_${event}`,
-        JSON.stringify({
-          event,
-          product_id: productId,
-          product_type: productType,
-          transaction_id: transactionId,
-          buyer_email: buyerEmail,
-          offer: purchase?.offer?.code || null,
-        })
-      ]
+      [tenantId, clerkUserId || 'system', `HOTMART_${event}`,
+       JSON.stringify({ event, product_id: productId, product_type: productType,
+         transaction_id: transactionId, buyer_email: buyerEmail, offer: purchase?.offer?.code || null })]
     )
 
     await client.query('COMMIT')
-
     return NextResponse.json({ status: 'ok', event, product_type: productType })
 
   } catch (error) {
@@ -449,14 +421,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ─── Health check (GET) ───
+// ─── Health check ───
 
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
     webhook: 'hotmart',
-    version: '2.0.0',
-    features: ['auto_provisioning', 'plan_sync'],
+    version: '2.1.0',
+    features: ['auto_provisioning', 'clerk_invitation', 'plan_sync'],
     products: Object.entries(PRODUCT_MAP).map(([id, type]) => ({ hotmart_id: id, axis_type: type })),
     offers: Object.entries(OFFER_TO_PLAN).map(([code, plan]) => ({ offer_code: code, ...plan })),
   })

@@ -62,11 +62,29 @@ export async function GET() {
         const row = pendingResult.rows[0]
 
         // Ativar profile com clerk_user_id real
+        const oldClerkId = (await pool.query(
+          `SELECT clerk_user_id FROM profiles WHERE id = $1`, [row.profile_id]
+        )).rows[0]?.clerk_user_id
+
         await pool.query(
           `UPDATE profiles SET clerk_user_id = $1, is_active = true, updated_at = NOW()
            WHERE id = $2`,
           [userId, row.profile_id]
         )
+
+        // Atualizar clerk_user_id no tenant e licenças (auto-provisioned via Hotmart)
+        if (oldClerkId && oldClerkId.startsWith('pending_')) {
+          await pool.query(
+            `UPDATE tenants SET clerk_user_id = $1, updated_at = NOW()
+             WHERE id = $2 AND clerk_user_id = $3`,
+            [userId, row.tenant_id, oldClerkId]
+          )
+          await pool.query(
+            `UPDATE user_licenses SET clerk_user_id = $1, updated_at = NOW()
+             WHERE tenant_id = $2 AND clerk_user_id = $3`,
+            [userId, row.tenant_id, oldClerkId]
+          )
+        }
 
         // Audit log
         try {
@@ -74,7 +92,7 @@ export async function GET() {
             `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
              VALUES ($1, $2, $3, 'PROFILE_ACTIVATED', 'profile', $4, $5, NOW())`,
             [row.tenant_id, userId, userId, row.profile_id,
-             JSON.stringify({ email, role: row.role, source: 'invite_activation' })]
+             JSON.stringify({ email, role: row.role, source: 'invite_activation', old_clerk_id: oldClerkId })]
           )
         } catch (_) { /* audit non-blocking */ }
 
