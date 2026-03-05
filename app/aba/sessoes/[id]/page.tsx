@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -205,6 +205,50 @@ export default function SessionPage() {
     mastery_criteria_pct: 80, mastery_criteria_sessions: 3, mastery_criteria_trials: 10,
   })
 
+  // Autocomplete alvos: sessão atual (primeiro) + protocolos ativos
+  const [showTargetDropdown, setShowTargetDropdown] = useState(false)
+  const targetInputRef = useRef<HTMLInputElement>(null)
+  const targetDropdownRef = useRef<HTMLDivElement>(null)
+
+  const targetSuggestions = useMemo(() => {
+    const seen = new Set<string>()
+    const suggestions: { label: string; source: 'session' | 'protocol' }[] = []
+    // 1. Alvos já registrados nesta sessão (mais recentes primeiro)
+    ;[...targets].reverse().forEach(t => {
+      const name = t.target_name.trim()
+      if (name && !seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase())
+        suggestions.push({ label: name, source: 'session' })
+      }
+    })
+    // 2. Títulos dos protocolos ativos (como sugestão)
+    protocols.filter(p => p.status === 'active' || p.status === 'draft').forEach(p => {
+      if (!seen.has(p.title.toLowerCase())) {
+        seen.add(p.title.toLowerCase())
+        suggestions.push({ label: p.title, source: 'protocol' })
+      }
+    })
+    return suggestions
+  }, [targets, protocols])
+
+  const filteredSuggestions = useMemo(() => {
+    const q = trialForm.target_name.trim().toLowerCase()
+    if (!q) return targetSuggestions
+    return targetSuggestions.filter(s => s.label.toLowerCase().includes(q))
+  }, [targetSuggestions, trialForm.target_name])
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (targetDropdownRef.current && !targetDropdownRef.current.contains(e.target as Node) &&
+          targetInputRef.current && !targetInputRef.current.contains(e.target as Node)) {
+        setShowTargetDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const fetchSession = useCallback(async () => {
     try {
       const res = await fetch(`/api/aba/sessions/${sessionId}`)
@@ -277,7 +321,7 @@ export default function SessionPage() {
         setError(err.error || 'Erro ao registrar trial')
         setSavingTrial(false); return
       }
-      setTrialForm({ ...trialForm, target_name: '', trials_correct: 0, notes: '' })
+      setTrialForm({ ...trialForm, trials_correct: 0, notes: '' })
       await fetchSession()
       setSavingTrial(false)
     } catch { setError('Falha de conexão'); setSavingTrial(false) }
@@ -441,9 +485,35 @@ export default function SessionPage() {
                           ))}
                         </select>
                       </div>
-                      <div>
+                      <div className="relative">
                         <label className="block text-[11px] text-slate-500 mb-1">Alvo *</label>
-                        <input type="text" value={trialForm.target_name} onChange={e => setTrialForm({...trialForm, target_name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Ex: Apontar para copo" />
+                        <input
+                          ref={targetInputRef}
+                          type="text"
+                          value={trialForm.target_name}
+                          onChange={e => { setTrialForm({...trialForm, target_name: e.target.value}); setShowTargetDropdown(true) }}
+                          onFocus={() => setShowTargetDropdown(true)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500"
+                          placeholder="Ex: Apontar para copo"
+                          autoComplete="off"
+                        />
+                        {showTargetDropdown && filteredSuggestions.length > 0 && (
+                          <div ref={targetDropdownRef} className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {filteredSuggestions.map((s, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => { setTrialForm({...trialForm, target_name: s.label}); setShowTargetDropdown(false) }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-aba-500/5 transition-colors flex items-center justify-between gap-2"
+                              >
+                                <span className="text-slate-700 truncate">{s.label}</span>
+                                <span className={`text-[10px] flex-shrink-0 ${s.source === 'session' ? 'text-green-500' : 'text-slate-400'}`}>
+                                  {s.source === 'session' ? 'sessão' : 'protocolo'}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
