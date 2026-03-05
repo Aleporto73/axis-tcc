@@ -119,19 +119,46 @@ export default function SessionPage() {
   const [summaryStatus, setSummaryStatus] = useState<'idle'|'sent'|'error'>('idle')
   const [summaryError, setSummaryError] = useState<string|null>(null)
 
+  const generateSummaryText = () => {
+    if (targets.length === 0 && behaviors.length === 0) return ''
+    const parts: string[] = []
+    const learnerName = session?.learner_name || 'o aprendiz'
+    const date = session?.scheduled_at ? new Date(session.scheduled_at).toLocaleDateString('pt-BR') : 'hoje'
+    parts.push(`Na sessão de ${date}, trabalhamos com ${learnerName} nos seguintes alvos:`)
+    if (targets.length > 0) {
+      targets.forEach(t => {
+        const pct = t.trials_total > 0 ? Math.round((t.trials_correct / t.trials_total) * 100) : 0
+        const promptLabel = promptLabels[t.prompt_level] || t.prompt_level
+        parts.push(`• ${t.target_name}: acertou ${t.trials_correct} de ${t.trials_total} tentativas (${pct}%), com nível de dica "${promptLabel}".`)
+      })
+    }
+    if (behaviors.length > 0) {
+      parts.push('')
+      parts.push(`Foram registrados ${behaviors.length} comportamento(s) durante a sessão.`)
+    }
+    parts.push('')
+    parts.push('Os próximos passos serão...')
+    return parts.join('\n')
+  }
+
   const openSummaryModal = async () => {
     if (!session) return
-    setSummaryText('')
+    setSummaryText(generateSummaryText())
     setSummaryEmail('')
     setSummaryStatus('idle')
     setSummaryError(null)
     try {
       const res = await fetch('/api/aba/guardians?learner_id=' + session.learner_id)
-      const d = await res.json()
-      const gs = d.guardians || []
-      setSummaryGuardians(gs)
-      if (gs.length > 0 && gs[0].email) setSummaryEmail(gs[0].email)
-    } catch {}
+      if (res.ok) {
+        const d = await res.json()
+        const gs = d.guardians || []
+        setSummaryGuardians(gs)
+        const withEmail = gs.filter((g: any) => g.email)
+        if (withEmail.length > 0) setSummaryEmail(withEmail[0].email)
+      }
+    } catch (err) {
+      console.warn('[Summary] Falha ao buscar responsáveis:', err)
+    }
     setShowSummaryModal(true)
   }
 
@@ -552,7 +579,7 @@ export default function SessionPage() {
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Prática EBP</label>
                   <select value={protocolForm.ebp_practice_id} onChange={e => setProtocolForm({...protocolForm, ebp_practice_id: parseInt(e.target.value)})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 bg-white">
-                    {ebps.length > 0 ? ebps.map((e: any) => <option key={e.id} value={e.id}>{e.name_pt}</option>) : <option>Carregando...</option>}
+                    {ebps.length > 0 ? ebps.map((e: any) => <option key={e.id} value={e.id}>{e.name_pt || e.name}</option>) : <option>Carregando...</option>}
                   </select>
                 </div>
                 <div>
