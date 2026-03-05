@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 04/03/2026
+## Atualizado: 05/03/2026
 
 ---
 
@@ -46,7 +46,7 @@
 | Landing institucional | 100% | /app/page.tsx — TCC + ABA, Psiform Tecnologia, schema.org |
 | Pagina de precos | 100% | /aba/precos — 3 cards (Free / Clinica 100 Founders / Clinica 250) |
 | Mobile responsivo | 85% | Bottom nav mobile na sidebar, telas principais OK, falta polir |
-| Onboarding clinica | 100% | v2: 2 etapas acolhedoras (nome+area → termos), sem dependencias complexas |
+| Onboarding clinica | 100% | v3: overlay client-side (LGPD → escolha), sem redirect server-side |
 
 ### COMERCIAL / BILLING (Hotmart)
 | Area | % | Status |
@@ -239,11 +239,12 @@ PM2 (producao)
 |---|---|
 | `app/api/webhook/hotmart/route.ts` | Webhook — cria/desativa user_licenses |
 | `app/api/user/licenses/route.ts` | API verificacao licencas ativas |
-| `app/aba/layout.tsx` | Gate — bloqueia sem licenca → /hub |
+| `app/aba/layout.tsx` | Gate licenca → /hub + inclui OnboardingABA overlay |
 | `app/aba/precos/page.tsx` | Pagina precos (3 planos) |
 | `app/produto/aba/page.tsx` | Landing premium (4 planos, links Hotmart) |
 | `app/components/UpgradeModal.tsx` | Modal upgrade (free → pago) |
-| `app/aba/onboarding/page.tsx` | Onboarding v2 — 2 etapas (nome+area → termos) |
+| `app/components/OnboardingABA.tsx` | Overlay onboarding v3 — 2 telas (LGPD → escolha) |
+| `app/aba/onboarding/page.tsx` | Redirect legacy → /aba/dashboard |
 | `app/api/aba/onboarding/setup/route.ts` | API setup — salva name+specialty, marca completed |
 | `app/api/aba/onboarding/progress/route.ts` | API progress — checa se onboarding ja completou |
 | `app/aba/aprendizes/page.tsx` | Trigger UpgradeModal (free + >1) |
@@ -306,10 +307,12 @@ PM2 (producao)
 | 2026-03-03 | Foco AxisABA primeiro para beta | Mais maduro, mercado definido, TCC depois |
 | 2026-03-04 | Onboarding de 8→2 etapas | Reducao de friccao, acolhimento emocional pos-compra, sem dependencias de tabelas complexas |
 | 2026-03-04 | APIs onboarding independentes | Setup e progress so usam tenants+profiles, tolerante a tabelas faltantes |
+| 2026-03-05 | Onboarding refeito como overlay client-side | Redirect server-side dependia de x-pathname (middleware) que nao existe em client-side navigation do Next.js App Router → tela branca. Solucao: overlay z-[9999] que checa API, sem nenhum redirect no layout |
+| 2026-03-05 | Migration 007 full ABA repair | ~20 tabelas ABA criadas (faltavam no banco), UNIQUE constraint em learner_therapists corrigida |
 
 ---
 
-## PROXIMOS PASSOS (04/03/2026)
+## PROXIMOS PASSOS (05/03/2026)
 
 1. ~~Criar migration user_licenses~~ ✅
 2. ~~Alinhar planos~~ ✅
@@ -319,11 +322,13 @@ PM2 (producao)
 6. ~~Licenca free automatica no cadastro~~ ✅
 7. ~~Termos de uso + Privacidade~~ ✅
 8. ~~Onboarding v2 (2 etapas acolhedoras)~~ ✅ 04/03
-9. **Rodar migration 005 corrigida + 006 no banco de producao**
-10. **Resetar onboarding_completed_at para testar**: `UPDATE tenants SET onboarding_completed_at = NULL;`
-11. **Testar fluxo completo no ambiente real**: cadastro → onboarding → free → upgrade → webhook
-12. **Build + deploy**
-13. **LANCAMENTO BETA**
+9. ~~Migration 007 full ABA repair~~ ✅ 05/03
+10. ~~Onboarding v3 overlay client-side~~ ✅ 05/03
+11. ~~Fix tela branca~~ ✅ 05/03
+12. **Testar fluxo completo no ambiente real**: cadastro → onboarding → free → upgrade → webhook
+13. **Testar checkout Hotmart**: os 3 links reais
+14. **Build + deploy final**
+15. **LANCAMENTO BETA**
 
 ### PRE-TESTE HOTMART (checklist para 05/03)
 
@@ -346,6 +351,18 @@ PM2 (producao)
 **Limitacao conhecida:** se comprar ANTES de cadastrar, fica status "pending" (TODO: fila de ativacao pendente)
 
 ---
+
+## CONCLUIDO EM 05/03/2026
+
+- [x] Migration 007: full ABA repair — ~20 tabelas ABA criadas que faltavam no banco (62 tabelas agora)
+- [x] Fix UNIQUE constraint em learner_therapists (ON CONFLICT falhava)
+- [x] Onboarding v3: refeito do zero como overlay client-side (OnboardingABA.tsx)
+  - Tela 1: Termo LGPD adaptado para profissionais de saude (generico, sem CRP)
+  - Tela 2: Escolha — "Personalizar Clinica" (→ /aba/configuracoes) ou "Cadastrar Aprendiz" (→ /aba/aprendizes)
+  - Eliminado redirect server-side do layout (causa raiz da tela branca)
+  - Funciona no primeiro load E no refresh (testado com 2 contas Gmail)
+- [x] Layout ABA limpo: so faz auth → tenant → licenca → renderiza (sem headers/pathname)
+- [x] /aba/onboarding page agora e redirect simples para /aba/dashboard
 
 ## CONCLUIDO EM 04/03/2026
 
@@ -373,4 +390,4 @@ PM2 (producao)
 ---
 
 *Este arquivo e a fonte unica de verdade do projeto. Atualizar a cada sessao de trabalho.*
-*Ultima verificacao cruzada com codigo: 04/03/2026*
+*Ultima verificacao cruzada com codigo: 05/03/2026*
