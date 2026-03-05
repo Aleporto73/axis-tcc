@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const result = await withTenant(async ({ client, tenantId, userId }) => {
       // Busca sessão
       const sess = await client.query(
-        'SELECT s.*, l.full_name as learner_name FROM sessions_aba s JOIN learners l ON l.id = s.learner_id WHERE s.id = $1 AND s.tenant_id = $2',
+        'SELECT s.*, l.name as learner_name FROM sessions_aba s JOIN learners l ON l.id = s.learner_id WHERE s.id = $1 AND s.tenant_id = $2',
         [sessionId, tenantId]
       )
       if (!sess.rows[0]) throw new Error('Sessão não encontrada')
@@ -59,7 +59,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const result = await withTenant(async ({ client, tenantId, userId }) => {
       const sum = await client.query(
-        `SELECT ss.*, s.scheduled_at, s.duration_minutes, l.full_name as learner_name
+        `SELECT ss.*, s.scheduled_at, s.duration_minutes, l.name as learner_name
          FROM session_summaries ss
          JOIN sessions_aba s ON s.id = ss.session_id
          JOIN learners l ON l.id = ss.learner_id
