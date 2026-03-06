@@ -270,7 +270,7 @@ export default function ConfiguracoesABAPage() {
         alert(`Erro ao exportar: ${err.error || 'Falha na requisição'}`)
         return
       }
-      // Trigger download do JSON
+      // Trigger download do Excel (.xlsx)
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -278,7 +278,7 @@ export default function ConfiguracoesABAPage() {
       // Extrair filename do Content-Disposition ou usar padrão
       const disposition = res.headers.get('Content-Disposition')
       const match = disposition?.match(/filename="?([^"]+)"?/)
-      a.download = match?.[1] || `axis_aba_export_${new Date().toISOString().split('T')[0]}.json`
+      a.download = match?.[1] || `axis_aba_export_${new Date().toISOString().split('T')[0]}.xlsx`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

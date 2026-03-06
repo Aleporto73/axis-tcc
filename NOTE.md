@@ -378,6 +378,7 @@ PM2 (producao)
 - [x] Bug fix onboarding aparece em todo refresh: cookie cache (axis_onboarding_done) + fallback para hidden em caso de erro API
 - [x] Bug fix LGPD Export v2.0: reescrito com safeQuery (SAVEPOINT) por tabela — falha em 1 tabela nao mata as outras. Corrigido nomes de colunas (content vs summary_text, score_pct vs score, behavior_type vs function_hypothesis)
 - [x] Bug fix LGPD Delete v2.0: reescrito com safeExec (SAVEPOINT) + auto-criacao de colunas faltantes (cancellation_scheduled_at, cancelled_at, anonymized_at via ALTER TABLE IF NOT EXISTS). Corrigido session_summaries.summary_text → content. Removido referencias a colunas que podem nao existir (school, deleted_at, crp, crp_uf, google_event_id, patient_response)
+- [x] LGPD Export v3.0: exportacao agora gera Excel (.xlsx) com 14 abas organizadas em portugues (Resumo, Aprendizes, Responsaveis, Profissionais, Protocolos, Sessoes, Alvos/Trials, Comportamentos, Snapshots, Estados Clinicos, PEI, Resumos, Consentimentos, Auditoria). Headers formatados, datas dd/mm/yyyy, cores por aba. JSON mantido via ?format=json. Dep: exceljs@4.4.0
 
 ## CONCLUIDO EM 04/03/2026
 
