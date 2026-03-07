@@ -180,6 +180,19 @@ export default function LearnerDetailPage() {
     }
   }, [showCreateProtocol, ebpPractices.length, ebpLoading, peiGoals.length, learnerId, linkingPeiProtocolId])
 
+  // Carregar metas PEI ao abrir a página (para saber se mostra botão "Vincular ao PEI")
+  const [peiLoaded, setPeiLoaded] = useState(false)
+  useEffect(() => {
+    if (!peiLoaded) {
+      fetch('/api/aba/pei?learner_id=' + learnerId).then(r => r.json()).then(d => {
+        const goals: {id:string;title:string;domain:string}[] = []
+        ;(d.plans || []).forEach((p: any) => { (p.goals || []).forEach((g: any) => goals.push({ id: g.id, title: g.title, domain: g.domain })) })
+        setPeiGoals(goals)
+        setPeiLoaded(true)
+      }).catch(() => setPeiLoaded(true))
+    }
+  }, [learnerId, peiLoaded])
+
   useEffect(() => {
     if (tab === 'guardians' && guardians.length === 0) { fetchGuardians() }
   }, [tab, guardians.length])
@@ -288,9 +301,9 @@ export default function LearnerDetailPage() {
                   <button onClick={() => handleLinkPei(p.id)} disabled={!linkingPeiGoalId || linkingPeiSaving} className="px-2 py-1.5 text-[11px] rounded-lg bg-aba-500 text-white hover:bg-aba-500/90 disabled:opacity-50 transition-colors">{linkingPeiSaving ? '...' : 'Vincular'}</button>
                   <button onClick={() => { setLinkingPeiProtocolId(null); setLinkingPeiGoalId('') }} className="px-2 py-1.5 text-[11px] rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 transition-colors">Cancelar</button>
                 </div>
-              ) : (
+              ) : peiGoals.length > 0 ? (
                 <button onClick={() => setLinkingPeiProtocolId(p.id)} className="inline-block mb-2 px-3 py-1 text-[11px] rounded-lg border border-indigo-200 text-indigo-500 hover:bg-indigo-50 transition-colors">🎯 Vincular ao PEI</button>
-              )}
+              ) : null}
               {p.regression_count > 0 && <p className="text-[11px] text-red-500 mb-2">⚠ {p.regression_count} regressão(ões)</p>}
               {p.status === 'discontinued' && p.discontinuation_reason && <p className="text-[11px] text-slate-400 italic mb-2">Motivo: {p.discontinuation_reason}</p>}
               {p.status === 'generalization' && (
