@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 import { sessionSummaryTemplate } from '@/src/email/session-summary-template'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.RESEND_FROM || 'noreply@axisclinico.com'
+const FROM = process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>'
 
 // POST — Criar/atualizar resumo (rascunho)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

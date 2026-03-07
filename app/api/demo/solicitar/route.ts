@@ -10,15 +10,15 @@ export async function POST(req: NextRequest) {
 
     // Envia notificação interna
     await resend.emails.send({
-      from: process.env.RESEND_FROM || 'onboarding@resend.dev',
-      to: process.env.RESEND_FROM || 'onboarding@resend.dev',
+      from: process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
+      to: process.env.RESEND_ADMIN_EMAIL || 'porto.ar4@gmail.com',
       subject: `[AXIS] Nova solicitação — ${clinica || 'Clínica não informada'}`,
       html: `<p><strong>Nome:</strong> ${nome}</p><p><strong>Clínica:</strong> ${clinica || '—'}</p><p><strong>Email:</strong> ${email}</p><p><strong>Aprendizes:</strong> ${aprendizes || '—'}</p>`,
     })
 
     // Envia confirmação para o solicitante
     await resend.emails.send({
-      from: process.env.RESEND_FROM || 'onboarding@resend.dev',
+      from: process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
       to: email,
       subject: 'AXIS ABA — Solicitação recebida',
       html: `<p>Olá, ${nome}.</p><p>Recebemos sua solicitação de acesso ao padrão AXIS ABA.</p><p>Você receberá o link de acesso em breve.</p><p>— Equipe AXIS</p>`,

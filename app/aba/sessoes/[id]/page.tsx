@@ -117,6 +117,7 @@ export default function SessionPage() {
   const [summaryText, setSummaryText] = useState('')
   const [summaryEmail, setSummaryEmail] = useState('')
   const [summaryGuardians, setSummaryGuardians] = useState<{id:string;name:string;email:string|null}[]>([])
+  const [summaryCustomEmail, setSummaryCustomEmail] = useState(false)
   const [summarySaving, setSummarySaving] = useState(false)
   const [summaryStatus, setSummaryStatus] = useState<'idle'|'sent'|'error'>('idle')
   const [summaryError, setSummaryError] = useState<string|null>(null)
@@ -147,6 +148,7 @@ export default function SessionPage() {
     if (!session) return
     setSummaryText(generateSummaryText())
     setSummaryEmail('')
+    setSummaryCustomEmail(false)
     setSummaryStatus('idle')
     setSummaryError(null)
     try {
@@ -754,16 +756,35 @@ export default function SessionPage() {
                 <>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Para</label>
-                    {summaryGuardians.length > 0 && (
-                      <select value={summaryEmail} onChange={e => setSummaryEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 bg-white mb-2">
+                    {summaryGuardians.filter(g => g.email).length > 0 && (
+                      <select
+                        value={summaryCustomEmail ? '__custom__' : summaryEmail}
+                        onChange={e => {
+                          if (e.target.value === '__custom__') {
+                            setSummaryCustomEmail(true)
+                            setSummaryEmail('')
+                          } else {
+                            setSummaryCustomEmail(false)
+                            setSummaryEmail(e.target.value)
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 bg-white"
+                      >
                         {summaryGuardians.filter(g => g.email).map(g => (
-                          <option key={g.id} value={g.email!}>{g.name} — {g.email}</option>
+                          <option key={g.id} value={g.email!}>Responsável de {session?.learner_name} — {g.email}</option>
                         ))}
-                        <option value="">Outro email...</option>
+                        <option value="__custom__">Outro email...</option>
                       </select>
                     )}
-                    {(summaryGuardians.length === 0 || summaryEmail === '') && (
-                      <input type="email" value={summaryEmail} onChange={e => setSummaryEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="email@exemplo.com" />
+                    {(summaryGuardians.filter(g => g.email).length === 0 || summaryCustomEmail) && (
+                      <input
+                        type="email"
+                        value={summaryEmail}
+                        onChange={e => setSummaryEmail(e.target.value)}
+                        className={`w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 ${summaryCustomEmail ? 'mt-2' : ''}`}
+                        placeholder="email@exemplo.com"
+                        autoFocus={summaryCustomEmail}
+                      />
                     )}
                   </div>
                   <div>
