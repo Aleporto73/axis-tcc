@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
 
       if (pei_goal_id !== undefined) {
-        p.push(pei_goal_id || null); sets.push(`pei_goal_id = $${p.length}`)
+        p.push(pei_goal_id || null); sets.push(`pei_goal_id = $${p.length}::uuid`)
       }
 
       p.push(id, tenantId)
