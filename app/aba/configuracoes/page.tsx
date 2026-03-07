@@ -50,6 +50,11 @@ export default function ConfiguracoesABAPage() {
     summary_approved: true,
   })
 
+  // Clínica
+  const [clinicName, setClinicName] = useState('')
+  const [clinicSaving, setClinicSaving] = useState(false)
+  const [clinicSaved, setClinicSaved] = useState(false)
+
   // Dados
   const [exporting, setExporting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -92,6 +97,33 @@ export default function ConfiguracoesABAPage() {
     fetchProfile()
     if (isAdmin) fetchDeletionStatus()
   }, [isAdmin])
+
+  // Carregar nome da clínica do perfil
+  useEffect(() => {
+    if (roleProfile?.tenant_name && !clinicName) {
+      setClinicName(roleProfile.tenant_name)
+    }
+  }, [roleProfile?.tenant_name])
+
+  const saveClinicName = async () => {
+    if (!clinicName.trim()) return
+    setClinicSaving(true)
+    setClinicSaved(false)
+    try {
+      const res = await fetch('/api/aba/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: clinicName.trim() }),
+      })
+      if (res.ok) {
+        setClinicSaved(true)
+        setTimeout(() => setClinicSaved(false), 2000)
+      }
+    } catch {
+      console.error('Erro ao salvar nome da clínica')
+    }
+    setClinicSaving(false)
+  }
 
   // ============================================
   // Google Calendar (cada terapeuta conecta o seu)
@@ -351,12 +383,22 @@ export default function ConfiguracoesABAPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Nome da clínica</label>
-                <input
-                  type="text"
-                  value={roleProfile?.tenant_name || ''}
-                  readOnly
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-600"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={clinicName}
+                    onChange={(e) => setClinicName(e.target.value)}
+                    placeholder="Nome da clínica"
+                    className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-aba-500/30 focus:border-aba-500"
+                  />
+                  <button
+                    onClick={saveClinicName}
+                    disabled={clinicSaving || clinicName.trim() === (roleProfile?.tenant_name || '')}
+                    className="px-4 py-2.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-40 bg-aba-500 text-white hover:bg-aba-600 disabled:hover:bg-aba-500"
+                  >
+                    {clinicSaving ? '...' : clinicSaved ? 'Salvo' : 'Salvar'}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Plano</label>
@@ -368,9 +410,6 @@ export default function ConfiguracoesABAPage() {
                 />
               </div>
             </div>
-            <p className="text-xs text-slate-400 mt-3">
-              Para alterar dados da clínica, entre em contato com o suporte.
-            </p>
           </section>
         )}
 

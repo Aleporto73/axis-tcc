@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useRole } from '@/app/components/RoleProvider'
 
 interface Session {
   id: string
@@ -86,6 +87,8 @@ function SessionCard({ s, highlight }: { s: Session; highlight?: boolean }) {
 
 export default function SessoesPage() {
   const searchParams = useSearchParams()
+  const { profile } = useRole()
+  const defaultLocation = profile?.tenant_name || ''
   const [sessions, setSessions] = useState<Session[]>([])
   const [learners, setLearners] = useState<Learner[]>([])
   const [loading, setLoading] = useState(true)
@@ -97,9 +100,16 @@ export default function SessoesPage() {
     learner_id: '',
     scheduled_date: '',
     scheduled_time: '',
-    location: '',
+    location: defaultLocation,
     notes: '',
   })
+
+  // Atualizar location default quando profile carregar
+  useEffect(() => {
+    if (profile?.tenant_name && !form.location) {
+      setForm(f => ({ ...f, location: profile.tenant_name || '' }))
+    }
+  }, [profile?.tenant_name])
 
   // Detectar query params ?novo=true&aprendiz=xxx (vindo da ficha do aprendiz)
   useEffect(() => {
@@ -159,7 +169,7 @@ export default function SessoesPage() {
         setSaving(false)
         return
       }
-      setForm({ learner_id: '', scheduled_date: '', scheduled_time: '', location: '', notes: '' })
+      setForm({ learner_id: '', scheduled_date: '', scheduled_time: '', location: profile?.tenant_name || '', notes: '' })
       setShowModal(false)
       setSaving(false)
       fetchSessions()
