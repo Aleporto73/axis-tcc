@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, birth_date, diagnosis, cid_code, support_level, school, notes } = body
+    const { name, birth_date, diagnosis, cid_code, support_level, school, notes, guardian_email } = body
 
     if (!name || !birth_date) {
       return NextResponse.json(
@@ -95,6 +95,15 @@ export async function POST(request: NextRequest) {
          ON CONFLICT (learner_id, profile_id) DO NOTHING`,
         [ctx.tenantId, inserted.rows[0].id, ctx.profileId]
       )
+
+      // Auto-criar guardian se email foi informado no cadastro
+      if (guardian_email && guardian_email.trim()) {
+        await ctx.client.query(
+          `INSERT INTO guardians (tenant_id, learner_id, name, email, relationship, is_active)
+           VALUES ($1, $2, $3, $4, 'Responsável', true)`,
+          [ctx.tenantId, inserted.rows[0].id, `Responsável de ${name}`, guardian_email.trim()]
+        )
+      }
 
       return inserted
     })

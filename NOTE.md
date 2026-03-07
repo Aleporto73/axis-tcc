@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 05/03/2026
+## Atualizado: 06/03/2026
 
 ---
 
@@ -160,7 +160,7 @@
 - [ ] **Tela "Meu Plano"**: configuracoes nao mostra plano atual nem upgrade
 - [ ] **Email pos-compra**: nenhum template de boas-vindas/ativacao (so tem session-summary)
 - [x] **Auto-provisioning**: comprou antes de cadastrar → Clerk Invitation + pending profile/license ✅ 05/03
-- [ ] **Popup "Ativar lembretes"**: investigar se faz sentido no ABA ou remover
+- [x] **Popup "Ativar lembretes"**: condicionado a pos-onboarding + rotas de produto ✅ 06/03
 - [ ] **Testes criticos**: CSO engine, state machine, webhook Hotmart
 - [ ] **Backup automatizado**: pg_dump cron ou servico
 
@@ -311,10 +311,15 @@ PM2 (producao)
 | 2026-03-05 | Migration 007 full ABA repair | ~20 tabelas ABA criadas (faltavam no banco), UNIQUE constraint em learner_therapists corrigida |
 | 2026-03-05 | Auto-provisioning via Clerk Invitation | Buyer sem conta → invitation email + pending tenant/profile/license. Melhor UX para publico 50+ (evita "esqueci senha") |
 | 2026-03-05 | Licencas resolvidas por tenant_id | clerk_user_id mismatch com pending_hotmart_* quebrava Hub e gate. Corrigido para tenant_id em 3 arquivos |
+| 2026-03-06 | Login redireciona para /hub | Botao "Entrar" sem ?produto ia direto pro TCC. Agora sem param → /hub (usuario escolhe) |
+| 2026-03-06 | Onboarding TCC restrito a rotas TCC | Aparecia "Bem-vindo ao AXIS TCC" para usuarios ABA. Agora so renderiza em /dashboard, /sessoes, /pacientes |
+| 2026-03-06 | Push notification pos-onboarding | "Ativar lembretes" aparecia no primeiro acesso. Agora so apos onboarding completo e em rotas de produto |
+| 2026-03-06 | Excluir trial em sessao ativa | Nao tinha como apagar trial errado. Agora tem lixeira com confirmacao (so sessao in_progress, audit log) |
+| 2026-03-06 | Clerk migrado para producao | IDs mudaram — profiles e tenants atualizados no banco com novos clerk_user_id |
 
 ---
 
-## PROXIMOS PASSOS (05/03/2026)
+## PROXIMOS PASSOS (06/03/2026)
 
 1. ~~Criar migration user_licenses~~ ✅
 2. ~~Alinhar planos~~ ✅
@@ -353,6 +358,16 @@ PM2 (producao)
 **Auto-provisioning (implementado 05/03):** se comprar ANTES de cadastrar → Clerk Invitation email + tenant/profile/license pre-criados com `pending_hotmart_*`. Ao criar conta pelo link do email, /api/user/tenant ativa tudo automaticamente.
 
 ---
+
+## CONCLUIDO EM 06/03/2026
+
+- [x] Clerk migrado para producao: atualizados clerk_user_id em profiles e tenants no banco
+- [x] Fix redirect pos-login: sem ?produto agora vai para /hub (antes ia direto /dashboard TCC)
+- [x] Fix sign-up idem: mesma correcao no cadastro
+- [x] Onboarding TCC restrito: componente Onboarding.tsx agora verifica pathname — so renderiza em rotas TCC (/dashboard, /sessoes, /pacientes), nunca em /aba/*, /hub, landing
+- [x] PushNotificationSetup condicionado: so aparece em rotas de produto + apos onboarding completo (checa axis_onboarding localStorage e axis_onboarding_done cookie)
+- [x] Excluir trial em sessao ativa: DELETE /api/aba/sessions/[id]/trials/[targetId] — valida session in_progress + tenant_id + audit log append-only. UI com lixeira hover + confirmacao inline (Sim/Nao). Escondido em sessao finalizada (guardrail 3)
+- [x] Fix Hub "Conhecer" vs "Acessar" para admin: profile apontava para tenant errado (c805e92a vs 123e4567). Corrigido no banco
 
 ## CONCLUIDO EM 05/03/2026
 
@@ -406,4 +421,4 @@ PM2 (producao)
 ---
 
 *Este arquivo e a fonte unica de verdade do projeto. Atualizar a cada sessao de trabalho.*
-*Ultima verificacao cruzada com codigo: 05/03/2026*
+*Ultima verificacao cruzada com codigo: 06/03/2026*

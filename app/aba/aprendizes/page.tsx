@@ -52,6 +52,7 @@ export default function AprendizesPage() {
     support_level: 2,
     school: '',
     notes: '',
+    guardian_email: '',
   })
 
   const fetchLearners = useCallback(() => {
@@ -83,6 +84,7 @@ export default function AprendizesPage() {
           support_level: form.support_level,
           school: form.school.trim() || null,
           notes: form.notes.trim() || null,
+          guardian_email: form.guardian_email.trim() || null,
         }),
       })
       if (!res.ok) {
@@ -97,7 +99,7 @@ export default function AprendizesPage() {
         setSaving(false)
         return
       }
-      setForm({ name: '', birth_date: '', diagnosis: '', cid_code: '', support_level: 2, school: '', notes: '' })
+      setForm({ name: '', birth_date: '', diagnosis: '', cid_code: '', support_level: 2, school: '', notes: '', guardian_email: '' })
       setShowModal(false)
       setSaving(false)
       fetchLearners()
@@ -241,9 +243,15 @@ export default function AprendizesPage() {
                   <input type="text" value={form.cid_code} onChange={e => setForm({...form, cid_code: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Ex: F84.0" />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Escola</label>
-                <input type="text" value={form.school} onChange={e => setForm({...form, school: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Nome da escola" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Escola</label>
+                  <input type="text" value={form.school} onChange={e => setForm({...form, school: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Nome da escola" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Email do responsável</label>
+                  <input type="email" value={form.guardian_email} onChange={e => setForm({...form, guardian_email: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="mae@email.com" />
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Observações</label>
