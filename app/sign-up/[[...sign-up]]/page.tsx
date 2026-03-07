@@ -7,7 +7,11 @@ function SignUpForm() {
   const searchParams = useSearchParams()
   const produto = searchParams.get('produto')
 
-  const redirectUrl = produto === 'aba' ? '/aba/dashboard' : '/dashboard'
+  // Redireciona para o contexto correto:
+  // ?produto=aba → direto para ABA (veio da landing ABA)
+  // ?produto=tcc → direto para TCC
+  // sem param → /hub (usuário escolhe baseado nas licenças)
+  const redirectUrl = produto === 'aba' ? '/aba/dashboard' : produto === 'tcc' ? '/dashboard' : '/hub'
 
   return (
     <SignUp

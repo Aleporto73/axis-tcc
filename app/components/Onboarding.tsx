@@ -1,14 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { OnboardingOverlay } from './OnboardingOverlay';
 import { OnboardingTooltip } from './OnboardingTooltip';
 import { OnboardingChecklist } from './OnboardingChecklist';
 
 export function Onboarding() {
+  const pathname = usePathname();
   const [termsAccepted, setTermsAccepted] = useState<boolean | null>(null);
-  
+
+  // Onboarding TCC só aparece em rotas TCC (/dashboard, /sessoes, /pacientes)
+  // Nunca em rotas ABA, hub, landing, demo, etc.
+  const isTccRoute = pathname?.startsWith('/dashboard') || pathname?.startsWith('/sessoes') || pathname?.startsWith('/pacientes');
+
   const {
     isActive,
     currentStep,
@@ -36,6 +42,8 @@ export function Onboarding() {
     checkTerms();
   }, []);
 
+  // Não renderiza fora do contexto TCC
+  if (!isTccRoute) return null;
   // Don't render if terms not accepted yet or still checking
   if (termsAccepted !== true) return null;
   if (!isActive || !currentStep || isTransitioning) return null;

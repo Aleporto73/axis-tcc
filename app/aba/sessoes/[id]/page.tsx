@@ -109,6 +109,8 @@ export default function SessionPage() {
   })
   const [savingTrial, setSavingTrial] = useState(false)
   const [savingBehavior, setSavingBehavior] = useState(false)
+  const [deletingTrialId, setDeletingTrialId] = useState<string | null>(null)
+  const [confirmDeleteTrialId, setConfirmDeleteTrialId] = useState<string | null>(null)
 
   const [showProtocolModal, setShowProtocolModal] = useState(false)
   const [showSummaryModal, setShowSummaryModal] = useState(false)
@@ -357,6 +359,21 @@ export default function SessionPage() {
     } catch { setError('Falha de conexão'); setSavingBehavior(false) }
   }
 
+  const handleDeleteTrial = async (targetId: string) => {
+    setDeletingTrialId(targetId); setError(null)
+    try {
+      const res = await fetch(`/api/aba/sessions/${sessionId}/trials/${targetId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const err = await res.json()
+        setError(err.error || 'Erro ao excluir trial')
+        setDeletingTrialId(null); setConfirmDeleteTrialId(null); return
+      }
+      setConfirmDeleteTrialId(null)
+      await fetchSession()
+    } catch { setError('Falha de conexão') }
+    setDeletingTrialId(null)
+  }
+
   const handleCreateProtocol = async () => {
     if (!protocolForm.title || !protocolForm.objective) {
       setError('Título e objetivo são obrigatórios'); return
@@ -545,14 +562,43 @@ export default function SessionPage() {
                 {targets.length > 0 ? (
                   <div className="space-y-2">
                     {targets.map(t => (
-                      <div key={t.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200">
+                      <div key={t.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 group">
                         <div>
                           <p className="text-sm font-medium text-slate-800">{t.target_name}</p>
                           <p className="text-[11px] text-slate-400 mt-0.5">{promptLabels[t.prompt_level] || t.prompt_level}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-aba-500">{t.trials_correct}/{t.trials_total}</p>
-                          <p className="text-[11px] text-slate-400">{t.score_pct}%</p>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-aba-500">{t.trials_correct}/{t.trials_total}</p>
+                            <p className="text-[11px] text-slate-400">{t.score_pct}%</p>
+                          </div>
+                          {isActive && (
+                            confirmDeleteTrialId === t.id ? (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleDeleteTrial(t.id)}
+                                  disabled={deletingTrialId === t.id}
+                                  className="px-2 py-1 bg-red-500 text-white text-[11px] font-medium rounded-md hover:bg-red-600 transition-colors disabled:opacity-50"
+                                >
+                                  {deletingTrialId === t.id ? '...' : 'Sim'}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteTrialId(null)}
+                                  className="px-2 py-1 bg-slate-100 text-slate-500 text-[11px] font-medium rounded-md hover:bg-slate-200 transition-colors"
+                                >
+                                  Não
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmDeleteTrialId(t.id)}
+                                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-400 transition-all"
+                                title="Excluir trial"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              </button>
+                            )
+                          )}
                         </div>
                       </div>
                     ))}

@@ -2,17 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
+import { usePathname } from 'next/navigation'
 import { Bell, BellOff, X } from 'lucide-react'
 
 export default function PushNotificationSetup() {
   const { userId } = useAuth()
+  const pathname = usePathname()
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default')
   const [showBanner, setShowBanner] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // Só mostra em rotas de produto (TCC ou ABA), não no hub/landing/demo
+  const isProductRoute = pathname?.startsWith('/dashboard') || pathname?.startsWith('/sessoes') || pathname?.startsWith('/pacientes') || pathname?.startsWith('/aba/')
+
   useEffect(() => {
-    // Só mostra para usuários logados (não na landing/produto/demo)
-    if (!userId) return
+    // Só mostra para usuários logados em rotas de produto
+    if (!userId || !isProductRoute) return
 
     if (typeof window === 'undefined') return
     if (!('Notification' in window)) {
@@ -21,6 +26,19 @@ export default function PushNotificationSetup() {
     }
     setPermission(Notification.permission)
 
+    // Só mostra se onboarding já foi completado ou pulado
+    const onboardingState = localStorage.getItem('axis_onboarding')
+    const abaOnboardingDone = document.cookie.includes('axis_onboarding_done=1')
+    let onboardingDone = abaOnboardingDone // ABA onboarding
+    if (onboardingState) {
+      try {
+        const parsed = JSON.parse(onboardingState)
+        if (parsed.completed || parsed.skipped) onboardingDone = true
+      } catch {}
+    }
+
+    if (!onboardingDone) return
+
     // Mostrar banner apenas se ainda não decidiu
     if (Notification.permission === 'default') {
       const dismissed = localStorage.getItem('push_banner_dismissed')
@@ -28,7 +46,7 @@ export default function PushNotificationSetup() {
         setTimeout(() => setShowBanner(true), 3000)
       }
     }
-  }, [userId])
+  }, [userId, isProductRoute])
 
   const requestPermission = async () => {
     if (!('Notification' in window)) return
