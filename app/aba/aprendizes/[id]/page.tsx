@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-interface Learner { id: string; name: string; birth_date: string; diagnosis: string; cid_code: string; support_level: number }
+interface Learner { id: string; name: string; birth_date: string; diagnosis: string; cid_code: string; cid_system: string | null; cid_label: string | null; support_level: number }
 interface Protocol { id: string; title: string; domain: string; status: string; ebp_name: string; objective: string; mastery_criteria_pct: number; mastery_criteria_sessions: number; generalization_status: string; regression_count: number; activated_at: string|null; mastered_at: string|null; created_at: string; discontinuation_reason: string|null; pei_goal_id: string|null; pei_goal_title: string|null; pei_goal_domain: string|null }
 interface SessionSummary { id: string; scheduled_at: string; ended_at: string|null; status: string; location: string|null }
 interface CSOPoint { session_date: string; cso_aba: number; sas: number; pis: number; bss: number; tcm: number }
@@ -33,6 +33,7 @@ function age(b: string): string {
 
 export default function LearnerDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const learnerId = params.id as string
   const [learner, setLearner] = useState<Learner|null>(null)
   const [protocols, setProtocols] = useState<Protocol[]>([])
@@ -233,7 +234,14 @@ export default function LearnerDetailPage() {
           <div className="w-14 h-14 rounded-full bg-aba-500/10 flex items-center justify-center"><span className="text-xl font-medium text-aba-500">{learner.name.charAt(0)}</span></div>
           <div>
             <h1 className="text-xl font-normal text-slate-800 tracking-tight">{learner.name}</h1>
-            <p className="text-xs text-slate-400 mt-0.5">{age(learner.birth_date)} · {learner.cid_code || 'Sem CID'} · Nível {learner.support_level}{learner.diagnosis && (' · ' + learner.diagnosis)}</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {age(learner.birth_date)}
+              {learner.cid_code ? (
+                <> · <span className="inline-flex items-center gap-1"><span className="bg-aba-500/10 text-aba-600 px-1.5 py-0.5 rounded text-[10px] font-medium">{learner.cid_system || 'CID-10'}</span>{learner.cid_code}{learner.cid_label && ` — ${learner.cid_label}`}</span></>
+              ) : ' · Sem CID'}
+              {' · Nível '}{learner.support_level}
+              {learner.diagnosis && (' · ' + learner.diagnosis)}
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
@@ -308,7 +316,7 @@ export default function LearnerDetailPage() {
 
       {tab === 'sessions' && (
         <div className="space-y-2">
-          {sessions.length === 0 ? <div className="text-center py-12"><div className="w-12 h-12 rounded-full bg-aba-500/10 flex items-center justify-center mx-auto mb-3"><svg className="w-6 h-6 text-aba-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><p className="text-sm text-slate-500 mb-1">Nenhuma sessão registrada</p><p className="text-xs text-slate-400">Sessões aparecem após serem criadas em Sessões</p></div> : sessions.map(s => (
+          {sessions.length === 0 ? <div className="text-center py-12"><div className="w-12 h-12 rounded-full bg-aba-500/10 flex items-center justify-center mx-auto mb-3"><svg className="w-6 h-6 text-aba-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><p className="text-sm text-slate-500 mb-1">Nenhuma sessão registrada</p><p className="text-xs text-slate-400 mb-4">Agende a primeira sessão deste aprendiz</p><button onClick={() => router.push(`/aba/sessoes?novo=true&aprendiz=${learnerId}`)} className="inline-flex items-center gap-1.5 px-4 py-2 border border-aba-500/30 text-aba-500 text-sm font-medium rounded-lg hover:bg-aba-500/5 transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>Agendar Sessão</button></div> : sessions.map(s => (
             <Link key={s.id} href={'/aba/sessoes/' + s.id} className="flex items-center justify-between gap-2 p-3 rounded-xl border border-slate-200 hover:border-aba-500/30 transition-all cursor-pointer">
               <div>
                 <p className="text-sm text-slate-800">{new Date(s.scheduled_at).toLocaleDateString('pt-BR')} às {new Date(s.scheduled_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</p>

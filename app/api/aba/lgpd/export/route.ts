@@ -111,7 +111,7 @@ async function fetchAllData(client: PoolClient, tenantId: string) {
      FROM profiles WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'profiles')
 
   const learners = await safeQuery(client,
-    `SELECT id, name, birth_date, diagnosis, cid_code, support_level,
+    `SELECT id, name, birth_date, diagnosis, cid_code, cid_system, cid_label, support_level,
             notes, is_active, created_at, updated_at
      FROM learners WHERE tenant_id = $1 ORDER BY name`, [tenantId], 'learners')
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 interface Session {
@@ -84,6 +85,7 @@ function SessionCard({ s, highlight }: { s: Session; highlight?: boolean }) {
 }
 
 export default function SessoesPage() {
+  const searchParams = useSearchParams()
   const [sessions, setSessions] = useState<Session[]>([])
   const [learners, setLearners] = useState<Learner[]>([])
   const [loading, setLoading] = useState(true)
@@ -98,6 +100,20 @@ export default function SessoesPage() {
     location: '',
     notes: '',
   })
+
+  // Detectar query params ?novo=true&aprendiz=xxx (vindo da ficha do aprendiz)
+  useEffect(() => {
+    const novo = searchParams.get('novo')
+    const aprendiz = searchParams.get('aprendiz')
+    if (novo === 'true') {
+      setShowModal(true)
+      if (aprendiz) {
+        setForm(f => ({ ...f, learner_id: aprendiz }))
+      }
+      // Limpar query params da URL
+      window.history.replaceState({}, '', '/aba/sessoes')
+    }
+  }, [searchParams])
 
   const fetchSessions = useCallback(() => {
     setLoading(true)

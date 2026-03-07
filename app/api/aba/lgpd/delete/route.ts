@@ -343,6 +343,8 @@ export async function DELETE() {
            birth_date = NULL,
            diagnosis = '[ANONIMIZADO]',
            cid_code = NULL,
+           cid_system = NULL,
+           cid_label = NULL,
            notes = NULL,
            updated_at = NOW()
          WHERE tenant_id = $1`,

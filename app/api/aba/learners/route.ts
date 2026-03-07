@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, birth_date, diagnosis, cid_code, support_level, school, notes, guardian_email } = body
+    const { name, birth_date, diagnosis, cid_code, cid_system, cid_label, support_level, school, notes, guardian_email } = body
 
     if (!name || !birth_date) {
       return NextResponse.json(
@@ -82,10 +82,10 @@ export async function POST(request: NextRequest) {
       }
 
       const inserted = await ctx.client.query(
-        `INSERT INTO learners (tenant_id, name, birth_date, diagnosis, cid_code, support_level, school, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO learners (tenant_id, name, birth_date, diagnosis, cid_code, cid_system, cid_label, support_level, school, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
-        [ctx.tenantId, name, birth_date, diagnosis || null, cid_code || null, support_level || 2, school || null, notes || null]
+        [ctx.tenantId, name, birth_date, diagnosis || null, cid_code || null, cid_system || 'CID-10', cid_label || null, support_level || 2, school || null, notes || null]
       )
 
       // Auto-vincular o criador como terapeuta primário

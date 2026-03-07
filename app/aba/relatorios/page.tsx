@@ -117,7 +117,8 @@ export default function RelatoriosPage() {
     y += 6
     doc.text('Período: ' + (conv.period?.start || '--') + ' a ' + (conv.period?.end || '--'), 15, y)
     y += 6
-    doc.text('Diagnóstico: ' + (conv.learner?.diagnosis || '--') + ' (' + (conv.learner?.cid_code || '--') + ')', 15, y)
+    const cidDisplay = conv.learner?.cid_code ? `${conv.learner.cid_code}${conv.learner.cid_label ? ' — ' + conv.learner.cid_label : ''} (${conv.learner.cid_system || 'CID-10'})` : '--'
+    doc.text('Diagnóstico: ' + (conv.learner?.diagnosis || '--') + ' | CID: ' + cidDisplay, 15, y)
     y += 6
     doc.text('Nível de suporte: ' + (conv.learner?.support_level || '--'), 15, y)
     y += 10

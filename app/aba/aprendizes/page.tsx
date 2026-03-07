@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRole } from '@/app/components/RoleProvider'
 import UpgradeModal from '@/app/components/UpgradeModal'
+import { CIDSelector } from '@/components/CIDSelector'
+import type { CIDSystem } from '@/lib/cid'
 
 interface Learner {
   id: string
@@ -11,6 +13,8 @@ interface Learner {
   birth_date: string
   diagnosis: string | null
   cid_code: string | null
+  cid_system: string | null
+  cid_label: string | null
   support_level: number
   school: string | null
   is_active: boolean
@@ -49,6 +53,8 @@ export default function AprendizesPage() {
     birth_date: '',
     diagnosis: '',
     cid_code: '',
+    cid_system: 'CID-10' as CIDSystem,
+    cid_label: '',
     support_level: 2,
     school: '',
     notes: '',
@@ -81,6 +87,8 @@ export default function AprendizesPage() {
           birth_date: form.birth_date,
           diagnosis: form.diagnosis.trim() || null,
           cid_code: form.cid_code.trim() || null,
+          cid_system: form.cid_system,
+          cid_label: form.cid_label.trim() || null,
           support_level: form.support_level,
           school: form.school.trim() || null,
           notes: form.notes.trim() || null,
@@ -99,7 +107,7 @@ export default function AprendizesPage() {
         setSaving(false)
         return
       }
-      setForm({ name: '', birth_date: '', diagnosis: '', cid_code: '', support_level: 2, school: '', notes: '', guardian_email: '' })
+      setForm({ name: '', birth_date: '', diagnosis: '', cid_code: '', cid_system: 'CID-10', cid_label: '', support_level: 2, school: '', notes: '', guardian_email: '' })
       setShowModal(false)
       setSaving(false)
       fetchLearners()
@@ -233,16 +241,16 @@ export default function AprendizesPage() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Diagnóstico</label>
-                  <input type="text" value={form.diagnosis} onChange={e => setForm({...form, diagnosis: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Ex: TEA" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">CID</label>
-                  <input type="text" value={form.cid_code} onChange={e => setForm({...form, cid_code: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Ex: F84.0" />
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Diagnóstico</label>
+                <input type="text" value={form.diagnosis} onChange={e => setForm({...form, diagnosis: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Ex: TEA" />
               </div>
+              <CIDSelector
+                value={form.cid_code}
+                system={form.cid_system}
+                label={form.cid_label}
+                onChange={(code, sys, label) => setForm({...form, cid_code: code, cid_system: sys, cid_label: label})}
+              />
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Escola</label>
