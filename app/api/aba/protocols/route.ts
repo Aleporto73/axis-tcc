@@ -11,7 +11,7 @@ import { requireAdminOrSupervisor, learnerFilter, canAccessLearner, handleRouteE
 // GET — Listar protocolos (filtrado por role)
 export async function GET(request: NextRequest) {
   try {
-    const result = await withTenant(async (ctx) => {
+    const protocols = await withTenant(async (ctx) => {
       const { searchParams } = new URL(request.url)
       const learnerId = searchParams.get('learner_id')
       const status = searchParams.get('status')
@@ -21,13 +21,7 @@ export async function GET(request: NextRequest) {
 
       let query = `
         SELECT lp.*, l.name as learner_name, ep.name as ebp_name,
-               pg.title as pei_goal_title, pg.domain as pei_goal_domain,
-               CASE WHEN lp.status = 'generalization' THEN (
-                 SELECT COUNT(DISTINCT gp.variation_number * 10 + gp.context_number)::int
-                 FROM generalization_probes gp
-                 WHERE gp.protocol_id = lp.id AND gp.tenant_id = lp.tenant_id
-                   AND gp.score_pct >= lp.mastery_criteria_pct
-               ) ELSE NULL::int END as gen_cells_passed
+               pg.title as pei_goal_title, pg.domain as pei_goal_domain
         FROM learner_protocols lp
         JOIN learners l ON l.id = lp.learner_id
         JOIN ebp_practices ep ON ep.id = lp.ebp_practice_id
@@ -49,10 +43,26 @@ export async function GET(request: NextRequest) {
 
       query += ` ORDER BY lp.created_at DESC`
 
-      return await ctx.client.query(query, params)
+      const result = await ctx.client.query(query, params)
+      const rows = result.rows
+
+      // Buscar gen_cells_passed separadamente para protocolos em generalização
+      const genProtocols = rows.filter((r: any) => r.status === 'generalization')
+      for (const gp of genProtocols) {
+        const genResult = await ctx.client.query(
+          `SELECT COUNT(DISTINCT gp.variation_number * 10 + gp.context_number)::int as passed
+           FROM generalization_probes gp
+           WHERE gp.protocol_id = $1 AND gp.tenant_id = $2
+             AND gp.score_pct >= $3`,
+          [gp.id, ctx.tenantId, gp.mastery_criteria_pct]
+        )
+        gp.gen_cells_passed = genResult.rows[0]?.passed ?? 0
+      }
+
+      return rows
     })
 
-    return NextResponse.json({ protocols: result.rows })
+    return NextResponse.json({ protocols })
   } catch (error) {
     const { message, status } = handleRouteError(error)
     return NextResponse.json({ error: message }, { status })
