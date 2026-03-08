@@ -105,11 +105,14 @@ export default function Sidebar() {
             )}
             {navItems[5].icon}
           </Link>
-          <UserButton 
+          <UserButton
             afterSignOutUrl="/"
             appearance={{
               elements: {
-                avatarBox: "w-9 h-9"
+                avatarBox: "w-9 h-9",
+                userButtonPopoverActionButton__manageAccount: {
+                  display: 'none'
+                }
               }
             }}
           />
@@ -135,11 +138,14 @@ export default function Sidebar() {
               {item.icon}
             </Link>
           ))}
-          <UserButton 
+          <UserButton
             afterSignOutUrl="/"
             appearance={{
               elements: {
-                avatarBox: "w-8 h-8"
+                avatarBox: "w-8 h-8",
+                userButtonPopoverActionButton__manageAccount: {
+                  display: 'none'
+                }
               }
             }}
           />

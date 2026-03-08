@@ -24,7 +24,9 @@ export async function GET() {
           p.is_active,
           p.created_at,
           t.name AS tenant_name,
-          t.plan_tier AS tenant_plan
+          t.plan_tier AS tenant_plan,
+          t.max_patients,
+          (SELECT COUNT(*) FROM learners l WHERE l.tenant_id = p.tenant_id AND l.is_active = true)::int AS learner_count
         FROM profiles p
         JOIN tenants t ON t.id = p.tenant_id
         WHERE p.clerk_user_id = $1 AND p.is_active = true

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRole } from '@/app/components/RoleProvider'
 import {
   User, Bell, Shield, Database, Calendar, RefreshCw,
-  Check, X, Zap, Unlink, Building2, Clock, FileText
+  Check, X, Zap, Unlink, Building2, Clock, FileText, CreditCard, ArrowUpRight
 } from 'lucide-react'
 
 // =====================================================
@@ -54,6 +54,13 @@ export default function ConfiguracoesABAPage() {
   const [clinicName, setClinicName] = useState('')
   const [clinicSaving, setClinicSaving] = useState(false)
   const [clinicSaved, setClinicSaved] = useState(false)
+
+  // Meu Plano
+  const [planData, setPlanData] = useState<{
+    plan_tier: string
+    max_patients: number
+    learner_count: number
+  } | null>(null)
 
   // Dados
   const [exporting, setExporting] = useState(false)
@@ -199,6 +206,12 @@ export default function ConfiguracoesABAPage() {
         setProfileForm({
           name: p.name || '',
           crp: crpFormatted,
+        })
+        // Dados do plano para seção "Meu Plano"
+        setPlanData({
+          plan_tier: p.tenant_plan || 'free',
+          max_patients: p.max_patients || 1,
+          learner_count: p.learner_count || 0,
         })
       }
     } catch (err) {
@@ -366,6 +379,111 @@ export default function ConfiguracoesABAPage() {
       <div className="space-y-6">
 
         {/* ============================================ */}
+        {/* SEÇÃO: Meu Plano (todos os roles) */}
+        {/* Mostra plano atual, uso, e botão upgrade */}
+        {/* ============================================ */}
+        {planData && (() => {
+          const PLAN_LABELS: Record<string, string> = {
+            free: 'Gratuito',
+            founders: 'Founders',
+            clinica_100: 'Clínica 100',
+            clinica_250: 'Clínica 250',
+          }
+          const PLAN_COLORS: Record<string, { badge: string; bar: string }> = {
+            free: { badge: 'bg-slate-100 text-slate-600 border-slate-200', bar: 'bg-slate-400' },
+            founders: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500' },
+            clinica_100: { badge: 'bg-blue-50 text-blue-700 border-blue-200', bar: 'bg-blue-500' },
+            clinica_250: { badge: 'bg-purple-50 text-purple-700 border-purple-200', bar: 'bg-purple-500' },
+          }
+          const UPGRADE_LINKS: Record<string, { url: string; label: string }> = {
+            free: { url: 'https://pay.hotmart.com/H104663812P?off=5hz0et4m', label: 'Founders — R$147/mês' },
+            founders: { url: 'https://pay.hotmart.com/H104663812P?off=gona25or', label: 'Clínica 250 — R$497/mês' },
+            clinica_100: { url: 'https://pay.hotmart.com/H104663812P?off=gona25or', label: 'Clínica 250 — R$497/mês' },
+          }
+
+          const tier = planData.plan_tier
+          const label = PLAN_LABELS[tier] || tier
+          const colors = PLAN_COLORS[tier] || PLAN_COLORS.free
+          const upgrade = UPGRADE_LINKS[tier]
+          const usagePercent = planData.max_patients > 0
+            ? Math.min(100, Math.round((planData.learner_count / planData.max_patients) * 100))
+            : 0
+
+          return (
+            <section className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="flex items-center gap-4 mb-5">
+                <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center">
+                  <CreditCard className="w-6 h-6 text-[#C46A2F]" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold text-slate-800">Meu Plano</h2>
+                    <span className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full border ${colors.badge}`}>
+                      {label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-500">Gerencie sua assinatura e limites</p>
+                </div>
+              </div>
+
+              {/* Uso de aprendizes */}
+              <div className="mb-5">
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="text-sm text-slate-600">Aprendizes cadastrados</span>
+                  <span className="text-sm font-semibold text-slate-800">
+                    {planData.learner_count} <span className="text-slate-400 font-normal">de</span> {planData.max_patients}
+                  </span>
+                </div>
+                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${colors.bar}`}
+                    style={{ width: `${usagePercent}%` }}
+                  />
+                </div>
+                {usagePercent >= 80 && usagePercent < 100 && (
+                  <p className="text-xs text-amber-600 mt-1.5">Você está próximo do limite do seu plano</p>
+                )}
+                {usagePercent >= 100 && (
+                  <p className="text-xs text-red-600 mt-1.5">Limite atingido — faça upgrade para cadastrar mais aprendizes</p>
+                )}
+              </div>
+
+              {/* Detalhes do plano */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Plano</p>
+                  <p className="text-sm text-slate-700 mt-0.5 font-medium">{label}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Limite</p>
+                  <p className="text-sm text-slate-700 mt-0.5 font-medium">{planData.max_patients} aprendizes</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Em uso</p>
+                  <p className="text-sm text-slate-700 mt-0.5 font-medium">{planData.learner_count} aprendizes</p>
+                </div>
+              </div>
+
+              {/* Botão upgrade */}
+              {upgrade && (
+                <a
+                  href={upgrade.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-colors bg-[#C46A2F] text-white hover:bg-[#a85524]"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  Fazer Upgrade — {upgrade.label}
+                </a>
+              )}
+              {!upgrade && (
+                <p className="text-sm text-emerald-600 font-medium">Você está no plano mais completo!</p>
+              )}
+            </section>
+          )
+        })()}
+
+        {/* ============================================ */}
         {/* SEÇÃO: Clínica (admin only) */}
         {/* Conforme Bible S18: Separação por product_type + company_id */}
         {/* ============================================ */}
@@ -380,34 +498,23 @@ export default function ConfiguracoesABAPage() {
                 <p className="text-sm text-slate-500">Informações da organização</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Nome da clínica</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={clinicName}
-                    onChange={(e) => setClinicName(e.target.value)}
-                    placeholder="Nome da clínica"
-                    className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-aba-500/30 focus:border-aba-500"
-                  />
-                  <button
-                    onClick={saveClinicName}
-                    disabled={clinicSaving || clinicName.trim() === (roleProfile?.tenant_name || '')}
-                    className="px-4 py-2.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-40 bg-aba-500 text-white hover:bg-aba-600 disabled:hover:bg-aba-500"
-                  >
-                    {clinicSaving ? '...' : clinicSaved ? 'Salvo' : 'Salvar'}
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Plano</label>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Nome da clínica</label>
+              <div className="flex gap-2">
                 <input
                   type="text"
-                  value={roleProfile?.tenant_plan || 'standard'}
-                  readOnly
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-600"
+                  value={clinicName}
+                  onChange={(e) => setClinicName(e.target.value)}
+                  placeholder="Nome da clínica"
+                  className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-aba-500/30 focus:border-aba-500"
                 />
+                <button
+                  onClick={saveClinicName}
+                  disabled={clinicSaving || clinicName.trim() === (roleProfile?.tenant_name || '')}
+                  className="px-4 py-2.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-40 bg-aba-500 text-white hover:bg-aba-600 disabled:hover:bg-aba-500"
+                >
+                  {clinicSaving ? '...' : clinicSaved ? 'Salvo' : 'Salvar'}
+                </button>
               </div>
             </div>
           </section>

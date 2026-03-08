@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 07/03/2026
+## Atualizado: 08/03/2026 (noite)
 
 ---
 
@@ -11,7 +11,7 @@
 
 ---
 
-## ONDE ESTAMOS (verificado no codigo em 07/03/2026)
+## ONDE ESTAMOS (verificado no codigo em 08/03/2026)
 
 ### CORE ENGINE
 | Area | % | Status |
@@ -53,10 +53,11 @@
 ### COMERCIAL / BILLING (Hotmart)
 | Area | % | Status |
 |---|---|---|
-| Webhook Hotmart | 100% | v2.1: 7 eventos + auto-provisioning (Clerk Invitation + pending profile/license) |
+| Webhook Hotmart | 100% | v2.1: 7 eventos + auto-provisioning + UPSERT + email pos-compra. Produtos: 7285432, 7291024. Offers: u2t04kz5, 5hz0et4m (Founders), iwqieqxc (100), gona25or (250) |
+| Webhook Clerk | 100% | user.created → ativa pending profiles (clerk_user_id, is_active). Svix signature |
 | Gate de licenca (layout.tsx) | 100% | Bloqueia /aba/* sem licenca ativa → redireciona /hub |
 | API licencas (/api/user/licenses) | 100% | Verifica ativas + nao-expiradas por tenant/user |
-| UpgradeModal | 90% | Dispara no free (>1 aprendiz). FALTA: botoes sem link Hotmart real |
+| UpgradeModal | 100% | Dispara no free (>1 aprendiz). Links Hotmart reais. Tela "Meu Plano" nas configuracoes |
 | Middleware | 100% | Clerk auth, rotas publicas corretas (/produto, /demo, /portal, webhook) |
 | Cadastro ABA | 100% | /sign-up?produto=aba diferencia ABA vs TCC |
 | Testes automatizados | 30% | Vitest setup, coverage incompleta |
@@ -66,9 +67,9 @@
 |---|---|---|
 | PostgreSQL multi-tenant | 100% | Todas tabelas com tenant_id, indices |
 | Redis cache | 100% | Dashboard 5min TTL |
-| Clerk auth | 100% | Multi-tenant provider |
+| Clerk auth | 100% | Production Pro ($25/mes). Multi-tenant provider. Invitation flow. Webhook user.created. Email templates PT-BR. Logo configurado |
 | Firebase (storage + FCM) | 100% | Admin SDK |
-| Resend email | 70% | Template session-summary funcional (auto-gera texto). From corrigido para AXIS ABA <noreply@axisclinico.com>. Dominio verificado (DKIM+SPF). Falta: pos-compra, API key producao na env |
+| Resend email | 100% | 3 templates (session-summary, purchase-upgrade, purchase-new-user). From: AXIS ABA <noreply@axisclinico.com>. Dominio verificado (DKIM+SPF). API key producao ativa na VPS |
 | PM2 producao | 100% | ecosystem.config.cjs |
 
 ---
@@ -79,7 +80,7 @@
 **URL producao:** axisclinico.com
 
 **Produtos Hotmart:**
-- ABA: ID `7285432`
+- ABA: ID `7285432` e ID `7291024` (ambos mapeados para 'aba' no webhook)
 - TCC: ID `7299808`
 
 **Planos ABA (landing page /produto/aba — 4 colunas):**
@@ -100,13 +101,15 @@
 
 > **DIVERGENCIA**: Landing tem 4 planos (Free/Founders R$147/Regular R$247/250 R$497). Onboarding tem 4 tiers diferentes (trial/starter/pro/clinic). Precisa alinhar.
 
-**Fluxo comercial implementado:**
+**Fluxo comercial implementado (testado 08/03/2026 com email.paciente.x@gmail.com):**
 1. Usuario se cadastra (Clerk) com ?produto=aba
 2. Onboarding: seleciona plan_tier → salva em tenants (plan_tier, max_patients, max_sessions)
 3. Free: 1 aprendiz. UpgradeModal dispara se tentar criar mais
-4. Compra Hotmart → webhook POST /api/webhook/hotmart → cria/atualiza user_licenses
+4. Compra Hotmart → webhook POST /api/webhook/hotmart → UPSERT user_licenses + email pos-compra via Resend
 5. Layout ABA verifica user_licenses.is_active → redireciona /hub se nao tem
 6. Cancelamento/reembolso → webhook desativa licenca automaticamente
+7. **Auto-provisioning** (compra antes de cadastrar): webhook cria Clerk Invitation + pending tenant/profile/license → buyer aceita email → Clerk webhook user.created ativa tudo
+8. **Pagina obrigado**: /obrigado com 3 passos + botao /hub (URL configurada no Hotmart)
 
 ---
 
@@ -153,19 +156,20 @@
 - [x] **Bug fix /api/aba/me**: agora retorna plan_tier (antes retornava plan que era sempre 'standard') ✅ 03/03
 - [x] **Licenca free automatica**: novo tenant ja nasce com user_licenses (AUTO_FREE_TIER) ✅ 03/03
 - [x] **Termos de uso + Privacidade**: /termos e /privacidade criados, LGPD, middleware atualizado, links no footer ✅ 03/03
-- [ ] **Testar fluxo cadastro ABA**: verificar se ?produto=aba redireciona corretamente (em producao)
-- [ ] **Testar checkout Hotmart**: testar os 3 links reais (em producao)
-- [ ] **Rodar migration 006**: executar no banco de producao
+- [x] **Testar fluxo cadastro ABA**: verificado em producao com email.paciente.x@gmail.com ✅ 08/03
+- [x] **Testar checkout Hotmart**: fluxo completo testado (FREE → compra → webhook → licenca ativa → email) ✅ 08/03
+- [x] **Rodar migration 006**: executada no banco de producao ✅
 
 ### P1 — Importantes para beta
 
-- [ ] **Tela "Meu Plano"**: configuracoes nao mostra plano atual nem upgrade
-- [ ] **Email pos-compra**: nenhum template de boas-vindas/ativacao (so tem session-summary)
+- [x] **Tela "Meu Plano"**: secao nas configuracoes com badge plano, barra progresso aprendizes, botao upgrade Hotmart. API /api/aba/me retorna max_patients + learner_count ✅ 08/03
+- [x] **UserButton simplificado**: "Gerenciar conta" escondido em SidebarABA e Sidebar TCC (publico 50+ — menos opcoes) ✅ 08/03
+- [x] **Email pos-compra**: 2 templates (upgrade + novo usuario) em src/email/purchase-template.ts. Enviados no webhook ✅ 08/03
 - [x] **Auto-provisioning**: comprou antes de cadastrar → Clerk Invitation + pending profile/license ✅ 05/03
 - [x] **Popup "Ativar lembretes"**: condicionado a pos-onboarding + rotas de produto ✅ 06/03
 - [ ] **Testes criticos**: CSO engine, state machine, webhook Hotmart
 - [ ] **Backup automatizado**: pg_dump cron ou servico
-- [ ] **Resend API key producao**: trocar re_test_ por re_live_ na env da VPS (dominio ja verificado)
+- [x] **Resend API key producao**: trocada para re_live_ na VPS. Emails funcionando ✅ 08/03
 - [ ] **Biblioteca de Protocolos**: seed com templates ABA comuns + API listagem + UI seletor ao criar protocolo
 
 ### P2 — Pos-lancamento
@@ -204,8 +208,8 @@ PostgreSQL 14 (multi-tenant, audit imutavel)
 Redis (cache 5min)
 Clerk (auth multi-tenant)
 Firebase Admin SDK (storage + FCM push)
-Hotmart (billing webhook, 3 ofertas ativas)
-Resend (email — 1 template)
+Hotmart (billing webhook, 4 ofertas ativas, 2 produtos ABA)
+Resend (email — 3 templates: session-summary, purchase-upgrade, purchase-new-user)
 OpenAI gpt-4o-mini (Chat Ana + transcricao stub)
 Google Calendar API (sync bidirecional)
 PM2 (producao)
@@ -232,6 +236,7 @@ PM2 (producao)
 | axisclinico.com/sign-up?produto=aba | Cadastro ABA |
 | axisclinico.com/hub | Seletor ABA/TCC |
 | axisclinico.com/portal/[token] | Portal familia (publico) |
+| axisclinico.com/obrigado | Pagina pos-compra (3 passos + botao /hub) |
 | axisclinico.com/termos | Termos de Uso |
 | axisclinico.com/privacidade | Politica de Privacidade (LGPD) |
 
@@ -242,7 +247,10 @@ PM2 (producao)
 ### Billing / Comercial
 | Arquivo | Funcao |
 |---|---|
-| `app/api/webhook/hotmart/route.ts` | Webhook — cria/desativa user_licenses |
+| `app/api/webhook/hotmart/route.ts` | Webhook — UPSERT user_licenses + auto-provisioning + email pos-compra |
+| `app/api/webhook/clerk/route.ts` | Webhook — user.created ativa pending profiles (Svix) |
+| `src/email/purchase-template.ts` | Templates email pos-compra (upgrade + novo usuario) |
+| `app/obrigado/page.tsx` | Pagina pos-compra (3 passos) |
 | `app/api/user/licenses/route.ts` | API verificacao licencas ativas |
 | `app/aba/layout.tsx` | Gate licenca → /hub + inclui OnboardingABA overlay |
 | `app/aba/precos/page.tsx` | Pagina precos (3 planos) |
@@ -328,55 +336,87 @@ PM2 (producao)
 | 2026-03-07 | Local sessao pre-fill | Nova sessao pre-preenche "Local" com nome da clinica (tenant_name via useRole) |
 | 2026-03-07 | Botao PEI condicional | "Vincular ao PEI" so aparece se existem goals cadastrados (progressive disclosure) |
 | 2026-03-07 | Botao "Agendar Sessao" | Estado vazio de sessoes no perfil do aprendiz agora tem botao que redireciona para /aba/sessoes?novo=true |
+| 2026-03-08 | UPSERT em user_licenses | INSERT falhava com duplicate key quando FREE comprava pago. ON CONFLICT uq_user_product DO UPDATE resolve |
+| 2026-03-08 | Clerk webhook user.created | pending_hotmart_* nunca era resolvido. Webhook Svix atualiza clerk_user_id + ativa profile |
+| 2026-03-08 | 2 produtos Hotmart ABA | IDs 7285432 e 7291024 ambos mapeados para 'aba'. OFFER_TO_PLAN com 4 ofertas |
+| 2026-03-08 | Clerk Production Pro | $25/mes — necessario para Invitation flow + email templates customizaveis PT-BR |
+| 2026-03-08 | Pagina /obrigado | Thank You Page no Hotmart → axisclinico.com/obrigado com 3 passos e link /hub |
+| 2026-03-08 | Tela "Meu Plano" | Secao dedicada em configuracoes: badge, barra progresso, upgrade Hotmart. Removido campo Plano da secao Clinica |
+| 2026-03-08 | UserButton simplificado | "Gerenciar conta" escondido — publico 50+, trocar email quebra vinculo licenca |
 
 ---
 
-## PROXIMOS PASSOS (07/03/2026)
+## PROXIMOS PASSOS (atualizado 08/03/2026)
 
-1. ~~Criar migration user_licenses~~ ✅
-2. ~~Alinhar planos~~ ✅
-3. ~~UpgradeModal → Hotmart~~ ✅
-4. ~~Enforcement max_patients~~ ✅
-5. ~~Bug fix /api/aba/me plan_tier~~ ✅
-6. ~~Licenca free automatica no cadastro~~ ✅
-7. ~~Termos de uso + Privacidade~~ ✅
-8. ~~Onboarding v2 (2 etapas acolhedoras)~~ ✅ 04/03
-9. ~~Migration 007 full ABA repair~~ ✅ 05/03
-10. ~~Onboarding v3 overlay client-side~~ ✅ 05/03
-11. ~~Fix tela branca~~ ✅ 05/03
-12. ~~CID-10/CID-11~~ ✅ 07/03
-13. ~~Resend from corrigido~~ ✅ 07/03
-14. ~~Dropdown email resumo~~ ✅ 07/03
-15. ~~Nome clinica editavel + local pre-fill~~ ✅ 07/03
-16. ~~PEI botao condicional + botao Agendar Sessao~~ ✅ 07/03
-17. **Resend API key producao**: trocar re_test_ por re_live_ na env da VPS
-18. **Rodar migration 011**: cid_system + cid_label no banco producao
-19. **Testar fluxo completo no ambiente real**: cadastro → onboarding → free → upgrade → webhook
-20. **Testar checkout Hotmart**: os 3 links reais
-21. **Build + deploy final**
-22. **LANCAMENTO BETA**
+### Concluidos
+1. ~~Criar migration user_licenses~~ ✅ 03/03
+2. ~~Alinhar planos~~ ✅ 03/03
+3. ~~UpgradeModal → Hotmart~~ ✅ 03/03
+4. ~~Enforcement max_patients~~ ✅ 03/03
+5. ~~Bug fix /api/aba/me plan_tier~~ ✅ 03/03
+6. ~~Licenca free automatica no cadastro~~ ✅ 03/03
+7. ~~Termos de uso + Privacidade~~ ✅ 03/03
+8. ~~Onboarding v3 overlay client-side~~ ✅ 05/03
+9. ~~CID-10/CID-11~~ ✅ 07/03
+10. ~~Resend from + API key producao~~ ✅ 07-08/03
+11. ~~Hotmart 4 bugs (UPSERT + Clerk webhook + is_active + offer)~~ ✅ 08/03
+12. ~~Email pos-compra + pagina /obrigado~~ ✅ 08/03
+13. ~~Clerk Production Pro + PT-BR emails + logo~~ ✅ 08/03
+14. ~~Teste fluxo completo~~ ✅ 08/03
 
-### PRE-TESTE HOTMART (checklist para 05/03)
+### Pendente
+15. **Rodar migration 011**: cid_system + cid_label no banco producao
+16. ~~**Tela "Meu Plano"**~~ ✅ 08/03
+17. **Biblioteca de Protocolos**: seed + API + UI
+18. **Testes criticos**: CSO engine, state machine, webhook
+19. **Backup automatizado**: pg_dump cron
+20. **LANCAMENTO BETA PUBLICO**
 
-| Item | Comando/Acao | Status |
-|---|---|---|
-| Migration 006 rodada | `docker exec -i axis-postgres psql -U axis -d axis_tcc -f - < scripts/migrations/006_add_user_licenses.sql` | ❓ |
-| HOTMART_HOTTOK no .env | Verificar se esta preenchido na VPS. Pegar em: Hotmart > Configuracoes > Webhooks > Hottok | ❓ |
-| URL webhook cadastrada no Hotmart | Confirmar `https://axisclinico.com/api/webhook/hotmart` no painel Hotmart | ❓ |
-| Email comprador = email cadastrado | Webhook busca tenant pelo email do buyer. Se email diferente → fica "pending" | ⚠️ |
-| Produto ABA ID | Confirmar que `7285432` no webhook bate com o produto real no Hotmart | ❓ |
+### TESTE HOTMART — CONCLUIDO ✅ 08/03/2026
 
-**Fluxo do teste:**
-1. Cadastrar com email X (/sign-up?produto=aba)
-2. Completar onboarding (2 etapas)
-3. Verificar que esta no plano free (1 aprendiz)
-4. Comprar plano Founders (R$147) com o MESMO email X
-5. Verificar que webhook ativou licenca: `docker exec -i axis-postgres psql -U axis -d axis_tcc -c "SELECT * FROM user_licenses ORDER BY created_at DESC LIMIT 5;"`
-6. Verificar que agora pode criar mais de 1 aprendiz
+| Item | Status |
+|---|---|
+| Migration 006 rodada | ✅ |
+| HOTMART_HOTTOK no .env | ✅ |
+| URL webhook Hotmart | ✅ https://axisclinico.com/api/webhook/hotmart |
+| URL webhook Clerk | ✅ https://axisclinico.com/api/webhook/clerk (user.created) |
+| CLERK_WEBHOOK_SECRET | ✅ |
+| Produtos ABA IDs | ✅ 7285432, 7291024 |
+| Resend API key producao | ✅ re_live_ |
+| URL obrigado no Hotmart | ✅ https://axisclinico.com/obrigado |
 
-**Auto-provisioning (implementado 05/03):** se comprar ANTES de cadastrar → Clerk Invitation email + tenant/profile/license pre-criados com `pending_hotmart_*`. Ao criar conta pelo link do email, /api/user/tenant ativa tudo automaticamente.
+**Teste real (email.paciente.x@gmail.com):** cadastro → onboarding → free → compra Hotmart → webhook → UPSERT licenca → email pos-compra → acesso desbloqueado. **TUDO FUNCIONANDO.**
+
+**Auto-provisioning (implementado 05/03, fix 08/03):** compra ANTES de cadastrar → Clerk Invitation + pending tenant/profile/license. Clerk webhook user.created resolve pending_hotmart_* → ativa profile + licenca.
 
 ---
+
+## CONCLUIDO EM 08/03/2026
+
+### Manha (codigo — Claude Code)
+- [x] Bug 1 Hotmart: INSERT trocado por UPSERT (ON CONFLICT uq_user_product) — usuario FREE que compra pago nao da mais duplicate key. Corrigido em fluxo normal e auto-provisioning
+- [x] Bug 2 Hotmart: Clerk webhook criado (app/api/webhook/clerk/route.ts) — escuta user.created, atualiza clerk_user_id de pending_hotmart_* para ID real em profiles, tenants, user_licenses. Verificacao Svix
+- [x] Bug 3 Hotmart: Clerk webhook tambem seta is_active = true no profile (antes ficava false e API nao encontrava)
+- [x] Bug 4 Hotmart: Offer 5hz0et4m adicionada ao OFFER_TO_PLAN (Founders 100). plan_tier e max_patients ja eram atualizados mas Bug 1 crashava antes
+- [x] Email pos-compra: 2 templates Resend (upgrade + novo usuario) em src/email/purchase-template.ts. Enviados non-blocking no webhook Hotmart apos sucesso
+- [x] Pagina /obrigado: app/obrigado/page.tsx — 3 passos, botao para /hub, contato@axisclinico.com. Rota publica no middleware
+- [x] Middleware atualizado: /api/webhook/clerk e /obrigado adicionados como rotas publicas
+
+### Tarde (deploy + config — manual)
+- [x] Clerk migrado para Production Pro ($25/mes): Invitation flow habilitado, emails customizaveis
+- [x] Email templates Clerk em PT-BR: convite, verificacao, reset senha — todos com branding AXIS ABA coral (#B4532F)
+- [x] Logo AXIS ABA configurado no Clerk (aparece nos emails e tela de login)
+- [x] CLERK_WEBHOOK_SECRET configurado na VPS (endpoint user.created)
+- [x] Resend API key producao: trocada de re_test_ para re_live_ na env da VPS. Emails funcionando
+- [x] URL obrigado configurada no Hotmart (Thank You Page → https://axisclinico.com/obrigado)
+- [x] Build + deploy completo (npm run build && pm2 restart axis-tcc)
+- [x] **Teste fluxo completo** com email.paciente.x@gmail.com: cadastro → onboarding → free → compra Hotmart → webhook processou → licenca ativa → email pos-compra recebido → acesso desbloqueado. TUDO OK
+- [x] Segundo produto Hotmart ID 7291024 confirmado (ambos mapeados para 'aba' no webhook)
+
+### Noite (codigo — Claude Code)
+- [x] Tela "Meu Plano" nas configuracoes: card com badge plano (cores por tier), barra progresso aprendizes (X de Y), detalhes em 3 mini-cards, botao upgrade coral (#C46A2F) com link Hotmart correto por tier. Dados via /api/aba/me (adicionado max_patients + learner_count na query)
+- [x] UserButton Clerk simplificado: "Gerenciar conta" escondido via appearance.elements em SidebarABA.tsx e Sidebar.tsx (publico 50+, trocar email quebraria vinculo licenca)
+- [x] Campo "Plano" removido da secao Clinica (admin) — agora tem secao dedicada
 
 ## CONCLUIDO EM 07/03/2026
 
@@ -451,4 +491,4 @@ PM2 (producao)
 ---
 
 *Este arquivo e a fonte unica de verdade do projeto. Atualizar a cada sessao de trabalho.*
-*Ultima verificacao cruzada com codigo: 07/03/2026*
+*Ultima verificacao cruzada com codigo: 08/03/2026*

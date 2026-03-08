@@ -165,7 +165,10 @@ export default function SidebarABA() {
             afterSignOutUrl="/"
             appearance={{
               elements: {
-                avatarBox: "w-9 h-9"
+                avatarBox: "w-9 h-9",
+                userButtonPopoverActionButton__manageAccount: {
+                  display: 'none'
+                }
               }
             }}
           />
