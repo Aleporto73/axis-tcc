@@ -87,6 +87,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   } catch (error: any) {
     if (error.message === 'Não autenticado') return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     console.error("PATCH protocol error:", error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao atualizar protocolo' }, { status: 500 })
   }
 }
