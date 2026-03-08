@@ -15,6 +15,10 @@ const isPublicRoute = createRouteMatcher([
   '/api/google/webhook',
   // Hotmart webhook (postback — autenticado via hottok, não via Clerk)
   '/api/webhook/hotmart',
+  // Clerk webhook (autenticado via Svix signature, não via Clerk auth)
+  '/api/webhook/clerk',
+  // Página de obrigado pós-compra
+  '/obrigado',
   // Páginas de produto (landing pages públicas)
   '/produto(.*)',
   // Páginas legais

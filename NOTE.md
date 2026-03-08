@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 06/03/2026
+## Atualizado: 07/03/2026
 
 ---
 
@@ -11,7 +11,7 @@
 
 ---
 
-## ONDE ESTAMOS (verificado no codigo em 03/03/2026)
+## ONDE ESTAMOS (verificado no codigo em 07/03/2026)
 
 ### CORE ENGINE
 | Area | % | Status |
@@ -25,12 +25,14 @@
 ### MODULOS CLINICOS
 | Area | % | Status |
 |---|---|---|
-| Portal familia | 100% | Token 90d, consent LGPD, dados filtrados (nunca mostra CSO/trials) |
+| Portal familia | 100% | Token 90d, consent LGPD, dados filtrados (nunca mostra CSO/trials). UI completa: conquistas, proximas sessoes, resumos, habilidades. Sem login (token-based by design) |
 | Push notifications (FCM) | 100% | Lembretes 24h + 10min, cron 60s, token auto-cleanup |
-| Google Calendar | 100% | Sync bidirecional |
+| Google Calendar | 100% | Sync bidirecional. ABA: 7 rotas dedicadas (oauth, callback, status, sync, watch, webhook, disconnect). Multi-terapeuta. Helpers compartilhados com TCC |
 | PDF reports | 100% | Logo AXIS, CSO, protocolos, acentos OK, codigo autenticidade |
+| CID (Classificacao Diagnostica) | 100% | CIDSelector com CID-10/CID-11, catalogo 50+ codigos, 6 grupos, busca, entrada manual, cross-mapping |
 | Dashboard ABA | 90% | KPIs + grafico CSO SVG + alertas regressao. Analytics avancado TBD |
-| PEI (Plano Educacional) | 90% | Tela completa + API + dados demo + sidebar + vinculo protocolo |
+| PEI (Plano Educacional) | 90% | Tela completa + API + dados demo + sidebar + vinculo protocolo. Botao "Vincular ao PEI" so aparece quando existem goals |
+| Biblioteca de Protocolos | 10% | Schema protocol_library existe (migration 007). FK em learner_protocols. SEM API, SEM UI, SEM seed data |
 | Generalizacao tab | 50% | UI existe, validacao 3x2 TBD |
 | Manutencao/sondas | 40% | Schema pronto, UI em progresso. Modelo 2-6-12 semanas documentado |
 | Transcricao sessao (OpenAI) | 20% | Stub existe |
@@ -66,7 +68,7 @@
 | Redis cache | 100% | Dashboard 5min TTL |
 | Clerk auth | 100% | Multi-tenant provider |
 | Firebase (storage + FCM) | 100% | Admin SDK |
-| Resend email | 60% | Template session-summary funcional (auto-gera texto). Falta pos-compra |
+| Resend email | 70% | Template session-summary funcional (auto-gera texto). From corrigido para AXIS ABA <noreply@axisclinico.com>. Dominio verificado (DKIM+SPF). Falta: pos-compra, API key producao na env |
 | PM2 producao | 100% | ecosystem.config.cjs |
 
 ---
@@ -163,6 +165,8 @@
 - [x] **Popup "Ativar lembretes"**: condicionado a pos-onboarding + rotas de produto ✅ 06/03
 - [ ] **Testes criticos**: CSO engine, state machine, webhook Hotmart
 - [ ] **Backup automatizado**: pg_dump cron ou servico
+- [ ] **Resend API key producao**: trocar re_test_ por re_live_ na env da VPS (dominio ja verificado)
+- [ ] **Biblioteca de Protocolos**: seed com templates ABA comuns + API listagem + UI seletor ao criar protocolo
 
 ### P2 — Pos-lancamento
 
@@ -174,6 +178,7 @@
 - [ ] App mobile (React Native)
 - [ ] Skill SEO (buscar skill pronta + customizar)
 - [ ] Real-time (WebSocket)
+- [ ] Portal Familia com login (atualmente token-based — funcional mas sem conta de pai)
 
 ---
 
@@ -316,10 +321,17 @@ PM2 (producao)
 | 2026-03-06 | Push notification pos-onboarding | "Ativar lembretes" aparecia no primeiro acesso. Agora so apos onboarding completo e em rotas de produto |
 | 2026-03-06 | Excluir trial em sessao ativa | Nao tinha como apagar trial errado. Agora tem lixeira com confirmacao (so sessao in_progress, audit log) |
 | 2026-03-06 | Clerk migrado para producao | IDs mudaram — profiles e tenants atualizados no banco com novos clerk_user_id |
+| 2026-03-07 | CID-10/CID-11 implementado | CIDSelector componente, catalogo 50+ codigos, 6 grupos, busca, entrada manual, cross-mapping. Migration 011 (cid_system, cid_label) |
+| 2026-03-07 | Resend from corrigido | Todos os from trocados de onboarding@resend.dev para AXIS ABA <noreply@axisclinico.com>. Dominio verificado (DKIM+SPF) |
+| 2026-03-07 | Dropdown email resumo corrigido | Bug: "Outro email..." sumia ao digitar. Fix: state summaryCustomEmail separado do valor. Sentinel __custom__ no select |
+| 2026-03-07 | Nome clinica editavel | Configuracoes: campo nome agora editavel (admin/supervisor). PUT /api/aba/settings |
+| 2026-03-07 | Local sessao pre-fill | Nova sessao pre-preenche "Local" com nome da clinica (tenant_name via useRole) |
+| 2026-03-07 | Botao PEI condicional | "Vincular ao PEI" so aparece se existem goals cadastrados (progressive disclosure) |
+| 2026-03-07 | Botao "Agendar Sessao" | Estado vazio de sessoes no perfil do aprendiz agora tem botao que redireciona para /aba/sessoes?novo=true |
 
 ---
 
-## PROXIMOS PASSOS (06/03/2026)
+## PROXIMOS PASSOS (07/03/2026)
 
 1. ~~Criar migration user_licenses~~ ✅
 2. ~~Alinhar planos~~ ✅
@@ -332,10 +344,17 @@ PM2 (producao)
 9. ~~Migration 007 full ABA repair~~ ✅ 05/03
 10. ~~Onboarding v3 overlay client-side~~ ✅ 05/03
 11. ~~Fix tela branca~~ ✅ 05/03
-12. **Testar fluxo completo no ambiente real**: cadastro → onboarding → free → upgrade → webhook
-13. **Testar checkout Hotmart**: os 3 links reais
-14. **Build + deploy final**
-15. **LANCAMENTO BETA**
+12. ~~CID-10/CID-11~~ ✅ 07/03
+13. ~~Resend from corrigido~~ ✅ 07/03
+14. ~~Dropdown email resumo~~ ✅ 07/03
+15. ~~Nome clinica editavel + local pre-fill~~ ✅ 07/03
+16. ~~PEI botao condicional + botao Agendar Sessao~~ ✅ 07/03
+17. **Resend API key producao**: trocar re_test_ por re_live_ na env da VPS
+18. **Rodar migration 011**: cid_system + cid_label no banco producao
+19. **Testar fluxo completo no ambiente real**: cadastro → onboarding → free → upgrade → webhook
+20. **Testar checkout Hotmart**: os 3 links reais
+21. **Build + deploy final**
+22. **LANCAMENTO BETA**
 
 ### PRE-TESTE HOTMART (checklist para 05/03)
 
@@ -358,6 +377,17 @@ PM2 (producao)
 **Auto-provisioning (implementado 05/03):** se comprar ANTES de cadastrar → Clerk Invitation email + tenant/profile/license pre-criados com `pending_hotmart_*`. Ao criar conta pelo link do email, /api/user/tenant ativa tudo automaticamente.
 
 ---
+
+## CONCLUIDO EM 07/03/2026
+
+- [x] CID-10/CID-11: CIDSelector componente com toggle sistema, busca, entrada manual, catalogo 50+ codigos em 6 grupos (TEA, TDAH, DI, Linguagem, Motor, Outro), cross-mapping CID-10↔CID-11. Migration 011 (cid_system, cid_label). Badge no perfil do aprendiz. CID no relatorio PDF e LGPD export/delete
+- [x] Resend email from corrigido: todos os from trocados de onboarding@resend.dev para AXIS ABA <noreply@axisclinico.com> (demo/solicitar + sessions/summary). Dominio axisclinico.com verificado (DKIM+SPF). Pendente: trocar RESEND_API_KEY de teste para producao na VPS
+- [x] Fix dropdown email "Enviar Resumo": bug onde selecionar "Outro email..." e digitar fazia o input sumir (summaryEmail !== '' escondia o campo). Corrigido com state summaryCustomEmail + sentinel __custom__ no select
+- [x] Nome clinica editavel: campo nas configuracoes agora editavel (antes readOnly). PUT /api/aba/settings com requireAdminOrSupervisor
+- [x] Local sessao pre-fill: nova sessao pre-preenche campo "Local" com tenant_name via useRole(). Reset do form preserva nome
+- [x] Botao PEI condicional: "Vincular ao PEI" so aparece quando peiGoals.length > 0 (progressive disclosure — evita confusao com dropdown vazio)
+- [x] Botao "Agendar Sessao": estado vazio de sessoes na pagina do aprendiz agora tem botao que redireciona para /aba/sessoes?novo=true&aprendiz={id}. Modal abre automaticamente com aprendiz pre-selecionado
+- [x] Auditoria features: Portal Familia (token-based, 100% funcional), Google Calendar ABA (7 rotas, sync bidirecional, multi-terapeuta, 100% funcional), Biblioteca Protocolos (so schema, 10%)
 
 ## CONCLUIDO EM 06/03/2026
 
@@ -421,4 +451,4 @@ PM2 (producao)
 ---
 
 *Este arquivo e a fonte unica de verdade do projeto. Atualizar a cada sessao de trabalho.*
-*Ultima verificacao cruzada com codigo: 06/03/2026*
+*Ultima verificacao cruzada com codigo: 07/03/2026*

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { clerkClient } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
+import { Resend } from 'resend'
+import { purchaseUpgradeTemplate, purchaseNewUserTemplate } from '@/src/email/purchase-template'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+const EMAIL_FROM = process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>'
 
 // =====================================================
 // AXIS — Webhook Hotmart (Postback v2) + Auto-Provisioning
@@ -41,6 +46,7 @@ const PRODUCT_MAP: Record<string, string> = {
 
 const OFFER_TO_PLAN: Record<string, { plan_tier: string; max_patients: number }> = {
   'u2t04kz5': { plan_tier: 'founders', max_patients: 100 },
+  '5hz0et4m': { plan_tier: 'founders', max_patients: 100 },
   'iwqieqxc': { plan_tier: 'clinica_100', max_patients: 100 },
   'gona25or': { plan_tier: 'clinica_250', max_patients: 250 },
 }
@@ -173,14 +179,23 @@ async function createTenantWithLicense(
     [tenantId, clerkUserId, name, email, isActive]
   )
 
-  // 3. Licença ativa (mesmo pendente, licença já vale)
+  // 3. Licença ativa (UPSERT — mesmo pendente, licença já vale)
   await dbClient.query(
     `INSERT INTO user_licenses (
       tenant_id, clerk_user_id, product_type, is_active,
       valid_from, valid_until,
       hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
       buyer_email, created_at, updated_at
-    ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())`,
+    ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())
+    ON CONFLICT ON CONSTRAINT uq_user_product
+    DO UPDATE SET
+      is_active = true,
+      hotmart_transaction = EXCLUDED.hotmart_transaction,
+      hotmart_event = EXCLUDED.hotmart_event,
+      hotmart_offer = EXCLUDED.hotmart_offer,
+      hotmart_plan = EXCLUDED.hotmart_plan,
+      buyer_email = EXCLUDED.buyer_email,
+      updated_at = NOW()`,
     [tenantId, clerkUserId, productType, now, transactionId, event, offerCode, planName, email]
   )
 
@@ -306,6 +321,26 @@ export async function POST(request: NextRequest) {
 
         await client.query('COMMIT')
 
+        // Email pós-compra (non-blocking)
+        try {
+          const buyerName = buyer.name || `${buyer.first_name || ''} ${buyer.last_name || ''}`.trim() || 'Profissional'
+          const planLabel = OFFER_TO_PLAN[offerCode || '']?.plan_tier || 'Founders'
+          const isNewUser = provision.method === 'invitation'
+          await resend.emails.send({
+            from: EMAIL_FROM,
+            to: buyerEmail,
+            subject: isNewUser
+              ? 'Bem-vindo ao AXIS ABA! Ative sua conta'
+              : 'Seu plano AXIS ABA foi ativado!',
+            html: isNewUser
+              ? purchaseNewUserTemplate({ buyerName, planName: planLabel })
+              : purchaseUpgradeTemplate({ buyerName, planName: planLabel }),
+          })
+          console.log('[HOTMART WEBHOOK] Email pós-compra enviado:', buyerEmail)
+        } catch (emailErr) {
+          console.warn('[HOTMART WEBHOOK] Email pós-compra falhou (non-blocking):', emailErr)
+        }
+
         return NextResponse.json({
           status: 'provisioned',
           method: provision.method,
@@ -343,34 +378,29 @@ export async function POST(request: NextRequest) {
       const planName = product?.name || null
       const validFrom = new Date()
 
-      if (existingTx.rows.length > 0) {
-        await client.query(
-          `UPDATE user_licenses
-           SET is_active = true, valid_from = $1, valid_until = NULL,
-               hotmart_event = $2, hotmart_offer = $3, hotmart_plan = $4, updated_at = NOW()
-           WHERE tenant_id = $5 AND hotmart_transaction = $6`,
-          [validFrom, event, offerCode, planName, tenantId, transactionId]
-        )
-        console.log('[HOTMART WEBHOOK] Licença reativada:', { tenantId, productType, transactionId })
-      } else {
-        await client.query(
-          `UPDATE user_licenses SET is_active = false, updated_at = NOW()
-           WHERE tenant_id = $1 AND product_type = $2 AND is_active = true`,
-          [tenantId, productType]
-        )
-
-        await client.query(
-          `INSERT INTO user_licenses (
-            tenant_id, clerk_user_id, product_type, is_active,
-            valid_from, valid_until,
-            hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
-            buyer_email, created_at, updated_at
-          ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())`,
-          [tenantId, clerkUserId, productType, validFrom,
-           transactionId, event, offerCode, planName, buyerEmail]
-        )
-        console.log('[HOTMART WEBHOOK] Licença criada:', { tenantId, productType, transactionId })
-      }
+      // UPSERT: se licença já existe (ex: FREE → pago), atualiza em vez de falhar
+      await client.query(
+        `INSERT INTO user_licenses (
+          tenant_id, clerk_user_id, product_type, is_active,
+          valid_from, valid_until,
+          hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
+          buyer_email, created_at, updated_at
+        ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())
+        ON CONFLICT ON CONSTRAINT uq_user_product
+        DO UPDATE SET
+          is_active = true,
+          valid_from = EXCLUDED.valid_from,
+          valid_until = NULL,
+          hotmart_transaction = EXCLUDED.hotmart_transaction,
+          hotmart_event = EXCLUDED.hotmart_event,
+          hotmart_offer = EXCLUDED.hotmart_offer,
+          hotmart_plan = EXCLUDED.hotmart_plan,
+          buyer_email = EXCLUDED.buyer_email,
+          updated_at = NOW()`,
+        [tenantId, clerkUserId, productType, validFrom,
+         transactionId, event, offerCode, planName, buyerEmail]
+      )
+      console.log('[HOTMART WEBHOOK] Licença ativada (upsert):', { tenantId, productType, transactionId })
 
       // Sync plan_tier
       const plan = OFFER_TO_PLAN[offerCode || ''] || DEFAULT_PAID_PLAN
@@ -410,6 +440,25 @@ export async function POST(request: NextRequest) {
     )
 
     await client.query('COMMIT')
+
+    // Email pós-compra para upgrade (non-blocking)
+    if (ACTIVATE_EVENTS.has(event)) {
+      try {
+        const buyerName = buyer.name || `${buyer.first_name || ''} ${buyer.last_name || ''}`.trim() || 'Profissional'
+        const offerCode = purchase?.offer?.code || null
+        const planLabel = OFFER_TO_PLAN[offerCode || '']?.plan_tier || 'Founders'
+        await resend.emails.send({
+          from: EMAIL_FROM,
+          to: buyerEmail,
+          subject: 'Seu plano AXIS ABA foi ativado!',
+          html: purchaseUpgradeTemplate({ buyerName, planName: planLabel }),
+        })
+        console.log('[HOTMART WEBHOOK] Email upgrade enviado:', buyerEmail)
+      } catch (emailErr) {
+        console.warn('[HOTMART WEBHOOK] Email upgrade falhou (non-blocking):', emailErr)
+      }
+    }
+
     return NextResponse.json({ status: 'ok', event, product_type: productType })
 
   } catch (error) {
