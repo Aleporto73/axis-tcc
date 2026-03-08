@@ -33,7 +33,7 @@
 | Dashboard ABA | 90% | KPIs + grafico CSO SVG + alertas regressao. Analytics avancado TBD |
 | PEI (Plano Educacional) | 90% | Tela completa + API + dados demo + sidebar + vinculo protocolo. Botao "Vincular ao PEI" so aparece quando existem goals |
 | Biblioteca de Protocolos | 10% | Schema protocol_library existe (migration 007). FK em learner_protocols. SEM API, SEM UI, SEM seed data |
-| Generalizacao tab | 50% | UI existe, validacao 3x2 TBD |
+| Generalizacao tab | 90% | Grid 3x2 funcional (UI + API + auto-transicao). Badge progresso na lista de protocolos. Schema OK no banco. Falta: labels ambiente/pessoa (hoje variacao/contexto) |
 | Manutencao/sondas | 40% | Schema pronto, UI em progresso. Modelo 2-6-12 semanas documentado |
 | Transcricao sessao (OpenAI) | 20% | Stub existe |
 
@@ -174,7 +174,7 @@
 
 ### P2 — Pos-lancamento
 
-- [ ] Generalizacao UI completa (regra 3x2 validada)
+- [x] Generalizacao UI completa (regra 3x2 validada — grid, API, auto-transicao, badge progresso) ✅ 08/03. Falta: renomear labels variacao/contexto para ambiente/pessoa (cosmetico)
 - [ ] Manutencao/sondas UI (modelo 2-6-12)
 - [ ] Transcricao OpenAI integrada
 - [ ] Dashboard analytics avancado (tendencias, predicao)
@@ -343,6 +343,7 @@ PM2 (producao)
 | 2026-03-08 | Pagina /obrigado | Thank You Page no Hotmart → axisclinico.com/obrigado com 3 passos e link /hub |
 | 2026-03-08 | Tela "Meu Plano" | Secao dedicada em configuracoes: badge, barra progresso, upgrade Hotmart. Removido campo Plano da secao Clinica |
 | 2026-03-08 | UserButton simplificado | "Gerenciar conta" escondido — publico 50+, trocar email quebra vinculo licenca |
+| 2026-03-08 | Badge progresso Generalizacao | Subquery CASE WHEN na API retorna gen_cells_passed. Badge ambar/verde na lista protocolos |
 
 ---
 
@@ -417,6 +418,7 @@ PM2 (producao)
 - [x] Tela "Meu Plano" nas configuracoes: card com badge plano (cores por tier), barra progresso aprendizes (X de Y), detalhes em 3 mini-cards, botao upgrade coral (#C46A2F) com link Hotmart correto por tier. Dados via /api/aba/me (adicionado max_patients + learner_count na query)
 - [x] UserButton Clerk simplificado: "Gerenciar conta" escondido via appearance.elements em SidebarABA.tsx e Sidebar.tsx (publico 50+, trocar email quebraria vinculo licenca)
 - [x] Campo "Plano" removido da secao Clinica (admin) — agora tem secao dedicada
+- [x] Badge progresso Generalizacao 3x2: API GET /api/aba/protocols retorna gen_cells_passed (subquery CASE WHEN so para status=generalization). Badge ambar "X/6 celulas" ou verde "✓ 6/6" ao lado do status. Link "Matriz 3x2" tambem mostra (X/6)
 
 ## CONCLUIDO EM 07/03/2026
 

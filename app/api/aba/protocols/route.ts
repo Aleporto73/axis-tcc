@@ -21,7 +21,13 @@ export async function GET(request: NextRequest) {
 
       let query = `
         SELECT lp.*, l.name as learner_name, ep.name as ebp_name,
-               pg.title as pei_goal_title, pg.domain as pei_goal_domain
+               pg.title as pei_goal_title, pg.domain as pei_goal_domain,
+               CASE WHEN lp.status = 'generalization' THEN (
+                 SELECT COUNT(DISTINCT (gp.variation_number, gp.context_number))::int
+                 FROM generalization_probes gp
+                 WHERE gp.protocol_id = lp.id AND gp.tenant_id = lp.tenant_id
+                   AND gp.score_pct >= lp.mastery_criteria_pct
+               ) ELSE NULL END as gen_cells_passed
         FROM learner_protocols lp
         JOIN learners l ON l.id = lp.learner_id
         JOIN ebp_practices ep ON ep.id = lp.ebp_practice_id

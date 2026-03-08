@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 interface Learner { id: string; name: string; birth_date: string; diagnosis: string; cid_code: string; cid_system: string | null; cid_label: string | null; support_level: number }
-interface Protocol { id: string; title: string; domain: string; status: string; ebp_name: string; objective: string; mastery_criteria_pct: number; mastery_criteria_sessions: number; generalization_status: string; regression_count: number; activated_at: string|null; mastered_at: string|null; created_at: string; discontinuation_reason: string|null; pei_goal_id: string|null; pei_goal_title: string|null; pei_goal_domain: string|null }
+interface Protocol { id: string; title: string; domain: string; status: string; ebp_name: string; objective: string; mastery_criteria_pct: number; mastery_criteria_sessions: number; generalization_status: string; regression_count: number; activated_at: string|null; mastered_at: string|null; created_at: string; discontinuation_reason: string|null; pei_goal_id: string|null; pei_goal_title: string|null; pei_goal_domain: string|null; gen_cells_passed: number|null }
 interface SessionSummary { id: string; scheduled_at: string; ended_at: string|null; status: string; location: string|null }
 interface CSOPoint { session_date: string; cso_aba: number; sas: number; pis: number; bss: number; tcm: number }
 interface EBPPractice { id: number; name: string; description: string }
@@ -282,6 +282,11 @@ export default function LearnerDetailPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-sm font-medium text-slate-800">{p.title}</h3>
                     <span className={'px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ' + (protocolStatusColors[p.status] || 'bg-slate-100 text-slate-500')}>{protocolStatusLabels[p.status] || p.status}</span>
+                    {p.status === 'generalization' && p.gen_cells_passed != null && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${p.gen_cells_passed >= 6 ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
+                        {p.gen_cells_passed >= 6 ? '✓' : ''} {p.gen_cells_passed}/6 células
+                      </span>
+                    )}
                   </div>
                   <p className="text-[11px] text-slate-400 mt-0.5">{p.domain} · {p.ebp_name} · Critério: {p.mastery_criteria_pct}%</p>
                 </div>
@@ -307,7 +312,10 @@ export default function LearnerDetailPage() {
               {p.regression_count > 0 && <p className="text-[11px] text-red-500 mb-2">⚠ {p.regression_count} regressão(ões)</p>}
               {p.status === 'discontinued' && p.discontinuation_reason && <p className="text-[11px] text-slate-400 italic mb-2">Motivo: {p.discontinuation_reason}</p>}
               {p.status === 'generalization' && (
-                <Link href={'/aba/aprendizes/' + learnerId + '/generalizacao?protocol_id=' + p.id} className="inline-block mb-2 px-3 py-1 text-[11px] rounded-lg border border-purple-300 text-purple-600 hover:bg-purple-50">📊 Matriz 3×2</Link>
+                <Link href={'/aba/aprendizes/' + learnerId + '/generalizacao?protocol_id=' + p.id} className="inline-flex items-center gap-1.5 mb-2 px-3 py-1 text-[11px] rounded-lg border border-purple-300 text-purple-600 hover:bg-purple-50">
+                  📊 Matriz 3×2
+                  {p.gen_cells_passed != null && <span className="text-[10px] text-purple-400">({p.gen_cells_passed}/6)</span>}
+                </Link>
               )}
               {p.status === 'maintained' && (
                 <Link href={'/aba/aprendizes/' + learnerId + '/manutencao?protocol_id=' + p.id} className="inline-block mb-2 px-3 py-1 text-[11px] rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50">🔄 Sondas</Link>
