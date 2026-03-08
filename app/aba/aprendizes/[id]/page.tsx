@@ -139,6 +139,7 @@ export default function LearnerDetailPage() {
   const [peiGoals, setPeiGoals] = useState<{id:string;title:string;domain:string}[]>([])
 
   const fetchData = useCallback(async () => {
+    setError(null)
     try {
       const [lRes, pRes, sRes] = await Promise.all([
         fetch('/api/aba/learners?id=' + learnerId),

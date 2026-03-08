@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
                  FROM generalization_probes gp
                  WHERE gp.protocol_id = lp.id AND gp.tenant_id = lp.tenant_id
                    AND gp.score_pct >= lp.mastery_criteria_pct
-               ) ELSE NULL END as gen_cells_passed
+               ) ELSE NULL::int END as gen_cells_passed
         FROM learner_protocols lp
         JOIN learners l ON l.id = lp.learner_id
         JOIN ebp_practices ep ON ep.id = lp.ebp_practice_id
@@ -39,12 +39,12 @@ export async function GET(request: NextRequest) {
 
       if (learnerId) {
         params.push(learnerId)
-        query += ` AND lp.learner_id = $${params.length}`
+        query += ` AND lp.learner_id = $${params.length}::uuid`
       }
 
       if (status) {
         params.push(status)
-        query += ` AND lp.status = $${params.length}`
+        query += ` AND lp.status = $${params.length}::text`
       }
 
       query += ` ORDER BY lp.created_at DESC`
