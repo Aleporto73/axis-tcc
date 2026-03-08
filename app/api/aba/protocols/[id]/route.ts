@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
 
       p.push(id, tenantId)
-      const q = `UPDATE learner_protocols SET ${sets.join(', ')} WHERE id = $${p.length-1} AND tenant_id = $${p.length} RETURNING *`
+      const q = `UPDATE learner_protocols SET ${sets.join(', ')} WHERE id = $${p.length-1}::uuid AND tenant_id = $${p.length}::uuid RETURNING *`
       const updated = await client.query(q, p)
       if (updated.rows.length === 0) return { protocol: null, maintenance_probes: [] }
 

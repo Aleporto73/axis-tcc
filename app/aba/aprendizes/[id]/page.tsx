@@ -10,11 +10,11 @@ interface SessionSummary { id: string; scheduled_at: string; ended_at: string|nu
 interface CSOPoint { session_date: string; cso_aba: number; sas: number; pis: number; bss: number; tcm: number }
 interface EBPPractice { id: number; name: string; description: string }
 
-const protocolStatusLabels: Record<string,string> = { draft:'Rascunho', active:'Ativo', mastered:'Dominado', generalization:'Generalização', maintained:'Mantido', archived:'Arquivado', suspended:'Suspenso', discontinued:'Descontinuado' }
-const protocolStatusColors: Record<string,string> = { draft:'bg-slate-100 text-slate-500', active:'bg-blue-50 text-blue-600', mastered:'bg-green-50 text-green-600', generalization:'bg-purple-50 text-purple-600', maintained:'bg-emerald-50 text-emerald-600', archived:'bg-slate-50 text-slate-400', suspended:'bg-amber-50 text-amber-600', discontinued:'bg-red-50 text-red-500' }
+const protocolStatusLabels: Record<string,string> = { draft:'Rascunho', active:'Ativo', mastered:'Dominado', generalization:'Generalização', mastered_validated:'Validado', maintenance:'Manutenção', maintained:'Mantido', archived:'Arquivado', suspended:'Suspenso', discontinued:'Descontinuado', regression:'Regressão' }
+const protocolStatusColors: Record<string,string> = { draft:'bg-slate-100 text-slate-500', active:'bg-blue-50 text-blue-600', mastered:'bg-green-50 text-green-600', generalization:'bg-purple-50 text-purple-600', mastered_validated:'bg-teal-50 text-teal-600', maintenance:'bg-cyan-50 text-cyan-600', maintained:'bg-emerald-50 text-emerald-600', archived:'bg-slate-50 text-slate-400', suspended:'bg-amber-50 text-amber-600', discontinued:'bg-red-50 text-red-500', regression:'bg-orange-50 text-orange-600' }
 const sessionStatusColors: Record<string,string> = { scheduled:'bg-blue-50 text-blue-600', in_progress:'bg-aba-500/10 text-aba-500', completed:'bg-green-50 text-green-600', cancelled:'bg-slate-100 text-slate-400' }
 const sessionStatusLabels: Record<string,string> = { scheduled:'Agendada', in_progress:'Em andamento', completed:'Concluída', cancelled:'Cancelada' }
-const validTransitions: Record<string,string[]> = { draft:['active','archived'], active:['mastered','suspended','discontinued'], mastered:['generalization','regression'], generalization:['maintenance','regression'], maintenance:['maintained','regression'], maintained:['archived','regression'], regression:['active'], suspended:['active','discontinued'] }
+const validTransitions: Record<string,string[]> = { draft:['active','archived'], active:['mastered','suspended','discontinued'], mastered:['generalization','regression'], generalization:['mastered_validated','regression'], mastered_validated:['maintenance','regression'], maintenance:['maintained','regression'], maintained:['archived','regression'], regression:['active'], suspended:['active','discontinued'] }
 
 const domainOptions = [
   { value: 'comunicacao', label: 'Comunicação' },
@@ -139,7 +139,6 @@ export default function LearnerDetailPage() {
   const [peiGoals, setPeiGoals] = useState<{id:string;title:string;domain:string}[]>([])
 
   const fetchData = useCallback(async () => {
-    setError(null)
     try {
       const [lRes, pRes, sRes] = await Promise.all([
         fetch('/api/aba/learners?id=' + learnerId),
@@ -209,7 +208,12 @@ export default function LearnerDetailPage() {
     }
     try {
       const res = await fetch('/api/aba/protocols/' + protocolId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      if (!res.ok) { const err = await res.json(); setError(err.error || 'Erro') }
+      if (!res.ok) {
+        const err = await res.json()
+        setError(err.error || 'Erro na transição')
+        setTransitioning(null)
+        return
+      }
       await fetchData()
     } catch { setError('Falha de conexão') }
     setTransitioning(null)
