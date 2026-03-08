@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Tooltip, { HelpTip } from '@/components/Tooltip'
 
 interface Learner { id: string; name: string; birth_date: string; diagnosis: string; cid_code: string; cid_system: string | null; cid_label: string | null; support_level: number }
 interface Protocol { id: string; title: string; domain: string; status: string; ebp_name: string; objective: string; mastery_criteria_pct: number; mastery_criteria_sessions: number; generalization_status: string; regression_count: number; activated_at: string|null; mastered_at: string|null; created_at: string; discontinuation_reason: string|null; pei_goal_id: string|null; pei_goal_title: string|null; pei_goal_domain: string|null; gen_cells_passed: number|null }
@@ -264,10 +265,10 @@ export default function LearnerDetailPage() {
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
-          <div className="p-3 rounded-xl bg-blue-50/50 text-center"><p className="text-lg font-medium text-blue-600">{activeP}</p><p className="text-[11px] text-slate-400">Protocolos ativos</p></div>
-          <div className="p-3 rounded-xl bg-green-50/50 text-center"><p className="text-lg font-medium text-green-600">{masteredP}</p><p className="text-[11px] text-slate-400">Dominados</p></div>
+          <div className="p-3 rounded-xl bg-blue-50/50 text-center"><p className="text-lg font-medium text-blue-600">{activeP}</p><p className="text-[11px] text-slate-400 flex items-center justify-center gap-0.5">Protocolos ativos <HelpTip tip="aprendiz_protocolos_ativos" /></p></div>
+          <div className="p-3 rounded-xl bg-green-50/50 text-center"><p className="text-lg font-medium text-green-600">{masteredP}</p><p className="text-[11px] text-slate-400 flex items-center justify-center gap-0.5">Dominados <HelpTip tip="aprendiz_dominados" /></p></div>
           <div className="p-3 rounded-xl bg-aba-500/5 text-center"><p className="text-lg font-medium text-aba-500">{completedS}</p><p className="text-[11px] text-slate-400">Sessões</p></div>
-          <div className="p-3 rounded-xl bg-slate-50 text-center"><p className="text-lg font-medium text-slate-700">{lastCSO ? lastCSO.cso_aba : '—'}</p><p className="text-[11px] text-slate-400">CSO atual</p></div>
+          <div className="p-3 rounded-xl bg-slate-50 text-center"><p className="text-lg font-medium text-slate-700">{lastCSO ? lastCSO.cso_aba : '—'}</p><p className="text-[11px] text-slate-400 flex items-center justify-center gap-0.5">CSO atual <HelpTip tip="aprendiz_cso_atual" /></p></div>
         </div>
       </div>
       {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
@@ -294,7 +295,7 @@ export default function LearnerDetailPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5">{p.domain} · {p.ebp_name} · Critério: {p.mastery_criteria_pct}%</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{p.domain} · {p.ebp_name} · <Tooltip tip="aprendiz_criterio_pct"><span>Critério: {p.mastery_criteria_pct}%</span></Tooltip></p>
                 </div>
               </div>
               <p className="text-xs text-slate-500 mb-3">{p.objective}</p>
@@ -328,12 +329,16 @@ export default function LearnerDetailPage() {
               )}
               {validTransitions[p.status] && validTransitions[p.status].length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                  {validTransitions[p.status].map(next => (
-                    <button key={next} onClick={() => handleTransition(p.id, next)} disabled={transitioning===p.id}
-                      className={'px-3 py-1 text-[11px] rounded-lg border transition-colors ' + (next==='discontinued'||next==='suspended' ? 'border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200' : 'border-aba-500/30 text-aba-500 hover:bg-aba-500/5')}>
-                      {transitioning===p.id ? '...' : '→ ' + (protocolStatusLabels[next] || next)}
-                    </button>
-                  ))}
+                  {validTransitions[p.status].map(next => {
+                    const tipMap: Record<string, any> = { mastered:'aprendiz_btn_dominado', suspended:'aprendiz_btn_suspenso', discontinued:'aprendiz_btn_descontinuado', generalization:'aprendiz_btn_generalizacao', regression:'aprendiz_btn_regressao', mastered_validated:'aprendiz_btn_validado', maintenance:'aprendiz_btn_manutencao', maintained:'aprendiz_btn_mantido', archived:'aprendiz_btn_arquivado' }
+                    const btn = (
+                      <button key={next} onClick={() => handleTransition(p.id, next)} disabled={transitioning===p.id}
+                        className={'px-3 py-1 text-[11px] rounded-lg border transition-colors ' + (next==='discontinued'||next==='suspended' ? 'border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200' : 'border-aba-500/30 text-aba-500 hover:bg-aba-500/5')}>
+                        {transitioning===p.id ? '...' : '→ ' + (protocolStatusLabels[next] || next)}
+                      </button>
+                    )
+                    return tipMap[next] ? <Tooltip key={next} tip={tipMap[next]}>{btn}</Tooltip> : btn
+                  })}
                 </div>
               )}
             </div>
@@ -360,7 +365,7 @@ export default function LearnerDetailPage() {
           {csoHistory.length === 0 ? <p className="text-xs text-slate-400 text-center py-12">Sem dados de CSO. Complete sessões para gerar histórico.</p> : (
             <div className="space-y-4">
               <div className="p-4 rounded-xl border border-slate-200">
-                <h3 className="text-xs font-medium text-slate-600 mb-3">Evolução CSO-ABA</h3>
+                <h3 className="text-xs font-medium text-slate-600 mb-3 flex items-center gap-1">Evolução CSO-ABA <HelpTip tip="cso_evolucao" /></h3>
                 <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
                 <div className="relative" style={{height: '180px', minWidth: Math.max(csoHistory.length * 80, 200) + 'px'}}>
                   <svg viewBox={'0 0 ' + Math.max(csoHistory.length * 80, 200) + ' 180'} className="w-full h-full">
@@ -394,7 +399,7 @@ export default function LearnerDetailPage() {
               <div className="space-y-2">
                 {csoHistory.map((c, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-200">
-                    <div className="min-w-0"><p className="text-sm text-slate-800">{new Date(c.session_date).toLocaleDateString('pt-BR')}</p><p className="text-[11px] text-slate-400 truncate">SAS {c.sas} · PIS {c.pis} · BSS {c.bss} · TCM {c.tcm}</p></div>
+                    <div className="min-w-0"><p className="text-sm text-slate-800">{new Date(c.session_date).toLocaleDateString('pt-BR')}</p><Tooltip tip="cso_dimensoes"><p className="text-[11px] text-slate-400 truncate cursor-help">SAS {c.sas} · PIS {c.pis} · BSS {c.bss} · TCM {c.tcm}</p></Tooltip></div>
                     <div className="text-right"><p className="text-lg font-medium text-aba-500">{c.cso_aba}</p><p className="text-[10px] text-slate-400">CSO-ABA</p></div>
                   </div>
                 ))}

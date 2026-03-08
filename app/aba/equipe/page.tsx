@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRole } from '@/app/components/RoleProvider'
 import { useRouter } from 'next/navigation'
+import Tooltip, { HelpTip } from '@/components/Tooltip'
 
 // =====================================================
 // AXIS ABA - Página de Gestão de Equipe
@@ -326,7 +327,10 @@ export default function EquipePage() {
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-8">
         <div className="px-6 py-4 border-b border-slate-100">
           <h2 className="text-sm font-semibold text-slate-700">
-            Vínculos Terapeuta-Aprendiz ({assignments.length})
+            <Tooltip tip="equipe_vinculos">
+              Vínculos Terapeuta-Aprendiz ({assignments.length})
+            </Tooltip>
+            {' '}<HelpTip tip="equipe_vinculos" />
           </h2>
         </div>
         <div className="divide-y divide-slate-50">
@@ -337,9 +341,11 @@ export default function EquipePage() {
                 <span className="text-slate-400 mx-1 sm:mx-2">→</span>
                 <span className="text-slate-600">{a.learner_name}</span>
                 {a.is_primary && (
-                  <span className="ml-1 sm:ml-2 text-[10px] font-semibold text-aba-500 bg-aba-500/10 px-1.5 py-0.5 rounded-full">
-                    Principal
-                  </span>
+                  <Tooltip tip="equipe_principal">
+                    <span className="ml-1 sm:ml-2 text-[10px] font-semibold text-aba-500 bg-aba-500/10 px-1.5 py-0.5 rounded-full">
+                      Principal
+                    </span>
+                  </Tooltip>
                 )}
               </div>
               <button

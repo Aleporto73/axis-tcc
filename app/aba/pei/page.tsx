@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Tooltip, { HelpTip } from '@/components/Tooltip'
 
 interface PEIGoal {
   id: string
@@ -114,7 +115,12 @@ export default function PEIPage() {
 
       <div className="px-4 md:px-8 lg:px-12 xl:px-16">
         <header className="mb-6">
-          <h1 className="text-lg font-normal text-slate-400 tracking-tight mb-0">Plano Educacional Individualizado</h1>
+          <h1 className="text-lg font-normal text-slate-400 tracking-tight mb-0">
+            <Tooltip tip="pei_descricao">
+              Plano Educacional Individualizado
+            </Tooltip>
+            {' '}<HelpTip tip="pei_descricao" />
+          </h1>
           <p className="text-xs text-slate-300 font-light">Metas semestrais vinculadas aos protocolos ABA</p>
         </header>
 
@@ -152,7 +158,12 @@ export default function PEIPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-medium text-aba-500">{goalsMet}/{plan.goals.length}</p>
-                        <p className="text-[10px] text-slate-400">metas atingidas</p>
+                        <p className="text-[10px] text-slate-400">
+                          <Tooltip tip="pei_metas_atingidas">
+                            metas atingidas
+                          </Tooltip>
+                          {' '}<HelpTip tip="pei_metas_atingidas" />
+                        </p>
                       </div>
                     </div>
                     <div className="p-5">

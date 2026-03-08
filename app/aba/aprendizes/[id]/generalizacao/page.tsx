@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Tooltip, { HelpTip } from '@/components/Tooltip'
 
 interface Probe { id:string; variation_number:number; context_number:number; variation_desc:string|null; context_desc:string|null; trials_total:number; trials_correct:number; score_pct:number; prompt_level:string; created_at:string }
 const promptLabels: Record<string,string> = { independent:'Independente', gestural:'Gestual', verbal:'Verbal', modeling:'Modelagem', partial_physical:'Física parcial', full_physical:'Física total' }
@@ -53,15 +54,15 @@ export default function GeneralizacaoPage() {
   return (
     <div className="px-4 md:px-8 lg:px-12 xl:px-16 pt-5">
       <Link href={`/aba/aprendizes/${learnerId}`} className="text-xs text-slate-400 hover:text-aba-500">← Voltar ao aprendiz</Link>
-      <div className="mt-4 mb-6"><h1 className="text-lg font-normal text-slate-800">Generalização 3×2</h1><p className="text-xs text-slate-400">{protocolTitle} · Critério: {criteriaPct}% · {totalPassed}/6 células</p></div>
+      <div className="mt-4 mb-6"><h1 className="text-lg font-normal text-slate-800 flex items-center gap-1.5">Generalização 3×2 <HelpTip tip="gen_descricao" /></h1><p className="text-xs text-slate-400">{protocolTitle} · Critério: {criteriaPct}% · <Tooltip tip="gen_celulas"><span className="cursor-help">{totalPassed}/6 células</span></Tooltip></p></div>
       {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
       {success && <div className="mb-4 p-3 bg-green-50 rounded-lg"><p className="text-xs text-green-600">{success}</p></div>}
 
       <div className="mb-6">
         <div className="grid grid-cols-3 gap-px bg-slate-200 rounded-xl overflow-hidden">
-          <div className="bg-slate-50 p-2 text-center text-[10px] font-medium text-slate-500 uppercase">Variação</div>
-          <div className="bg-slate-50 p-2 text-center text-[10px] font-medium text-slate-500 uppercase">Contexto 1</div>
-          <div className="bg-slate-50 p-2 text-center text-[10px] font-medium text-slate-500 uppercase">Contexto 2</div>
+          <div className="bg-slate-50 p-2 text-center text-[10px] font-medium text-slate-500 uppercase"><Tooltip tip="gen_variacao"><span className="cursor-help">Variação</span></Tooltip></div>
+          <div className="bg-slate-50 p-2 text-center text-[10px] font-medium text-slate-500 uppercase"><Tooltip tip="gen_contexto"><span className="cursor-help">Contexto 1</span></Tooltip></div>
+          <div className="bg-slate-50 p-2 text-center text-[10px] font-medium text-slate-500 uppercase"><Tooltip tip="gen_contexto"><span className="cursor-help">Contexto 2</span></Tooltip></div>
           {[1,2,3].map(v => (<>
             <div key={`v${v}`} className="bg-slate-50 p-3 flex items-center justify-center"><span className="text-xs font-medium text-slate-600">V{v}</span></div>
             {[1,2].map(c => { const cell = getCell(v,c); return (
@@ -78,13 +79,13 @@ export default function GeneralizacaoPage() {
         <div className="p-4 rounded-xl border border-aba-500/30 bg-aba-500/5 mb-6">
           <h3 className="text-sm font-medium text-slate-800 mb-3">Probe — V{selectedCell.v} × C{selectedCell.c}</h3>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <div><label className="block text-[11px] text-slate-500 mb-1">Descrição variação</label><input type="text" value={form.variation_desc} onChange={e => setForm({...form, variation_desc:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" placeholder="Ex: Com brinquedo diferente" /></div>
-            <div><label className="block text-[11px] text-slate-500 mb-1">Descrição contexto</label><input type="text" value={form.context_desc} onChange={e => setForm({...form, context_desc:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" placeholder="Ex: Na sala de espera" /></div>
+            <div><label className="block text-[11px] text-slate-500 mb-1 flex items-center gap-0.5">Descrição variação <HelpTip tip="gen_desc_variacao" /></label><input type="text" value={form.variation_desc} onChange={e => setForm({...form, variation_desc:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" placeholder="Ex: Com brinquedo diferente" /></div>
+            <div><label className="block text-[11px] text-slate-500 mb-1 flex items-center gap-0.5">Descrição contexto <HelpTip tip="gen_desc_contexto" /></label><input type="text" value={form.context_desc} onChange={e => setForm({...form, context_desc:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" placeholder="Ex: Na sala de espera" /></div>
           </div>
           <div className="grid grid-cols-3 gap-3 mb-3">
-            <div><label className="block text-[11px] text-slate-500 mb-1">Total tentativas</label><input type="number" min={1} value={form.trials_total} onChange={e => setForm({...form, trials_total:parseInt(e.target.value)||0})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" /></div>
+            <div><label className="block text-[11px] text-slate-500 mb-1 flex items-center gap-0.5">Total tentativas <HelpTip tip="gen_tentativas" /></label><input type="number" min={1} value={form.trials_total} onChange={e => setForm({...form, trials_total:parseInt(e.target.value)||0})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" /></div>
             <div><label className="block text-[11px] text-slate-500 mb-1">Corretas</label><input type="number" min={0} value={form.trials_correct} onChange={e => setForm({...form, trials_correct:parseInt(e.target.value)||0})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" /></div>
-            <div><label className="block text-[11px] text-slate-500 mb-1">Nível de dica</label><select value={form.prompt_level} onChange={e => setForm({...form, prompt_level:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500 bg-white">{Object.entries(promptLabels).map(([k,v]) => <option key={k} value={k}>{v}</option>)}</select></div>
+            <div><label className="block text-[11px] text-slate-500 mb-1 flex items-center gap-0.5">Nível de dica <HelpTip tip="gen_nivel_dica" /></label><select value={form.prompt_level} onChange={e => setForm({...form, prompt_level:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500 bg-white">{Object.entries(promptLabels).map(([k,v]) => <option key={k} value={k}>{v}</option>)}</select></div>
           </div>
           <div className="flex justify-end gap-2">
             <button onClick={() => setSelectedCell(null)} className="px-3 py-1.5 text-xs text-slate-500">Cancelar</button>

@@ -6,6 +6,7 @@ import {
   User, Bell, Shield, Database, Calendar, RefreshCw,
   Check, X, Zap, Unlink, Building2, Clock, FileText, CreditCard, ArrowUpRight
 } from 'lucide-react'
+import Tooltip, { HelpTip } from '@/components/Tooltip'
 
 // =====================================================
 // AXIS ABA - Configurações (Multi-Terapeuta, Role-Aware)
@@ -779,7 +780,12 @@ export default function ConfiguracoesABAPage() {
             {/* Sonda de manutenção — Bible S5: 2/6/12 semanas */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-800">Sonda de manutenção pendente</p>
+                <p className="text-sm font-medium text-slate-800">
+                  <Tooltip tip="config_sonda_pendente">
+                    Sonda de manutenção pendente
+                  </Tooltip>
+                  {' '}<HelpTip tip="config_sonda_pendente" />
+                </p>
                 <p className="text-xs text-slate-500">Aviso quando sonda 2/6/12 semanas está próxima</p>
               </div>
               <ToggleSwitch
@@ -792,7 +798,12 @@ export default function ConfiguracoesABAPage() {
             {!isTerapeuta && (
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-800">Alerta de regressão</p>
+                  <p className="text-sm font-medium text-slate-800">
+                    <Tooltip tip="config_alerta_regressao">
+                      Alerta de regressão
+                    </Tooltip>
+                    {' '}<HelpTip tip="config_alerta_regressao" />
+                  </p>
                   <p className="text-xs text-slate-500">Notificação quando regressão é detectada em protocolo</p>
                 </div>
                 <ToggleSwitch
@@ -852,7 +863,12 @@ export default function ConfiguracoesABAPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-800">Audit logs</p>
+                  <p className="text-sm font-medium text-slate-800">
+                    <Tooltip tip="config_audit_logs">
+                      Audit logs
+                    </Tooltip>
+                    {' '}<HelpTip tip="config_audit_logs" />
+                  </p>
                   <p className="text-xs text-slate-500">Registro imutável de todas as ações (append-only)</p>
                 </div>
                 <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-medium">
@@ -874,7 +890,12 @@ export default function ConfiguracoesABAPage() {
                 <Clock className="w-6 h-6 text-slate-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-800">Política de Retenção</h2>
+                <h2 className="text-lg font-semibold text-slate-800">
+                  <Tooltip tip="config_retencao">
+                    Política de Retenção
+                  </Tooltip>
+                  {' '}<HelpTip tip="config_retencao" />
+                </h2>
                 <p className="text-sm text-slate-500">Conforme LGPD e regulamentações CFM/CRP</p>
               </div>
             </div>

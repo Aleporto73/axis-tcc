@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { HelpTip } from '@/components/Tooltip'
 
 interface Learner { id: string; name: string }
 interface CSOPoint { session_date: string; cso_aba: number; sas: number; pis: number; bss: number; tcm: number }
@@ -117,7 +118,7 @@ export default function DashboardABAPage() {
             <MiniChart data={cso}/>
           </div>
           <div className="p-4 rounded-2xl border border-slate-200 bg-white">
-            <h3 className="text-xs font-medium text-slate-600 mb-3">Dimensoes</h3>
+            <h3 className="text-xs font-medium text-slate-600 mb-3 flex items-center gap-1">Dimensões <HelpTip tip="cso_dimensoes" /></h3>
             {last ? <div className="space-y-2">
               {[{l:'SAS',v:last.sas,d:'Aquisicao'},{l:'PIS',v:last.pis,d:'Implementacao'},{l:'BSS',v:last.bss,d:'Comportamento'},{l:'TCM',v:last.tcm,d:'Tratamento'}].map(x=>(
                 <div key={x.l}><div className="flex justify-between mb-0.5"><span className="text-[11px] text-slate-500">{x.l} <span className="text-slate-300">({x.d})</span></span><span className="text-xs font-medium text-slate-700">{x.v}</span></div><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${x.v}%`,backgroundColor:bandColors[getBand(x.v)]}}/></div></div>
@@ -126,9 +127,9 @@ export default function DashboardABAPage() {
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100"><p className="text-2xl font-medium text-blue-600">{pStats.active}</p><p className="text-[11px] text-slate-500">Protocolos ativos</p></div>
-          <div className="p-4 rounded-xl bg-green-50/50 border border-green-100"><p className="text-2xl font-medium text-green-600">{pStats.mastered+pStats.maintained}</p><p className="text-[11px] text-slate-500">Dominados</p></div>
-          <div className="p-4 rounded-xl bg-aba-500/5 border border-aba-500/20"><p className="text-2xl font-medium text-aba-500">{sStats.completed}</p><p className="text-[11px] text-slate-500">Sessoes concluidas</p></div>
+          <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100"><p className="text-2xl font-medium text-blue-600">{pStats.active}</p><p className="text-[11px] text-slate-500 flex items-center gap-0.5">Protocolos ativos <HelpTip tip="aprendiz_protocolos_ativos" /></p></div>
+          <div className="p-4 rounded-xl bg-green-50/50 border border-green-100"><p className="text-2xl font-medium text-green-600">{pStats.mastered+pStats.maintained}</p><p className="text-[11px] text-slate-500 flex items-center gap-0.5">Dominados <HelpTip tip="aprendiz_dominados" /></p></div>
+          <div className="p-4 rounded-xl bg-aba-500/5 border border-aba-500/20"><p className="text-2xl font-medium text-aba-500">{sStats.completed}</p><p className="text-[11px] text-slate-500">Sessões concluídas</p></div>
           <div className="p-4 rounded-xl bg-purple-50/50 border border-purple-100"><p className="text-2xl font-medium text-purple-600">{sStats.scheduled}</p><p className="text-[11px] text-slate-500">Agendadas</p></div>
         </div>
         <div className="p-4 rounded-xl border border-slate-200 bg-white">

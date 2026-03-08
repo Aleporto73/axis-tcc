@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf'
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Tooltip, { HelpTip } from '@/components/Tooltip'
 
 interface Learner {
   id: string
@@ -368,7 +369,11 @@ export default function RelatoriosPage() {
                 <div className="bg-slate-50 px-5 py-3 border-b border-slate-200">
                   <h2 className="text-sm font-medium text-slate-700">Relatório para Convênio</h2>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    {conv.learner?.name} · {conv.period?.start} a {conv.period?.end} · Motor v{conv.engine_version}
+                    {conv.learner?.name} · {conv.period?.start} a {conv.period?.end} ·
+                    <Tooltip tip="relatorio_motor">
+                      Motor v{conv.engine_version}
+                    </Tooltip>
+                    {' '}<HelpTip tip="relatorio_motor" />
                   </p>
                 </div>
 
@@ -384,17 +389,32 @@ export default function RelatoriosPage() {
                     </div>
                     <div className="text-center p-3 bg-aba-500/5 rounded-lg">
                       <p className="text-xl font-light text-aba-500">{conv.summary?.cso_aba_current ?? '—'}</p>
-                      <p className="text-[11px] text-slate-400 mt-1">CSO-ABA atual</p>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        <Tooltip tip="relatorio_cso">
+                          CSO-ABA atual
+                        </Tooltip>
+                        {' '}<HelpTip tip="relatorio_cso" />
+                      </p>
                     </div>
                     <div className="text-center p-3 bg-aba-500/5 rounded-lg">
                       <p className="text-xl font-light text-aba-500">{csoBandLabels[conv.summary?.cso_band_current] || conv.summary?.cso_band_current || '—'}</p>
-                      <p className="text-[11px] text-slate-400 mt-1">Banda CSO</p>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        <Tooltip tip="relatorio_banda">
+                          Banda CSO
+                        </Tooltip>
+                        {' '}<HelpTip tip="relatorio_banda" />
+                      </p>
                     </div>
                   </div>
 
                   {conv.dimensions_current && (conv.dimensions_current.sas || conv.dimensions_current.pis || conv.dimensions_current.bss || conv.dimensions_current.tcm) && (
                     <div className="pt-3 border-t border-slate-100">
-                      <h3 className="text-xs font-medium text-slate-600 mb-2">Dimensões atuais</h3>
+                      <h3 className="text-xs font-medium text-slate-600 mb-2">
+                        <Tooltip tip="relatorio_dimensoes">
+                          Dimensões atuais
+                        </Tooltip>
+                        {' '}<HelpTip tip="relatorio_dimensoes" />
+                      </h3>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {['sas', 'pis', 'bss', 'tcm'].map(dim => (
                           <div key={dim} className="text-center">
