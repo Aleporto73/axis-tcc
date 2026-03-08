@@ -38,9 +38,9 @@ export default function ObrigadoPage() {
                   <span className="text-aba-500 text-xs font-bold">2</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Crie ou acesse sua conta</p>
+                  <p className="text-sm font-medium text-slate-700">Acesse sua conta</p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Se já tem conta, faça login. Se não, siga o convite por email.
+                    Já usa o AXIS? Clique no botão abaixo. Primeira vez? Verifique seu email e aceite o convite.
                   </p>
                 </div>
               </div>
@@ -59,14 +59,14 @@ export default function ObrigadoPage() {
             </div>
 
             <Link
-              href="/aba/dashboard"
+              href="/hub"
               className="inline-flex items-center justify-center w-full px-6 py-3 bg-aba-500 text-white text-sm font-medium rounded-lg hover:bg-aba-600 transition-colors"
             >
               Acessar AXIS ABA
             </Link>
 
             <p className="text-[11px] text-slate-400">
-              Dúvidas? Entre em contato pelo email <a href="mailto:suporte@axisclinico.com" className="text-aba-500 hover:underline">suporte@axisclinico.com</a>
+              Dúvidas? Entre em contato pelo email <a href="mailto:contato@axisclinico.com" className="text-aba-500 hover:underline">contato@axisclinico.com</a>
             </p>
           </div>
         </div>
