@@ -25,8 +25,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           discontinued: 'discontinued_at',
           archived: 'archived_at',
         }
-        if (ts[status]) { p.push(new Date().toISOString()); sets.push(`${ts[status]} = $${p.length}`) }
-        if (status === 'discontinued' && discontinuation_reason) { p.push(discontinuation_reason); sets.push(`discontinuation_reason = $${p.length}`) }
+        if (ts[status]) { p.push(new Date().toISOString()); sets.push(`${ts[status]} = $${p.length}::timestamptz`) }
+        if (status === 'discontinued' && discontinuation_reason) { p.push(discontinuation_reason); sets.push(`discontinuation_reason = $${p.length}::text`) }
       }
 
       if (pei_goal_id !== undefined) {
@@ -35,14 +35,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
       p.push(id, tenantId)
       const q = `UPDATE learner_protocols SET ${sets.join(', ')} WHERE id = $${p.length-1}::uuid AND tenant_id = $${p.length}::uuid RETURNING *`
+
+      console.log('PATCH query:', q, 'params:', p.map((v,i) => `$${i+1}=${typeof v}:${String(v).substring(0,20)}`))
+
       const updated = await client.query(q, p)
       if (updated.rows.length === 0) return { protocol: null, maintenance_probes: [] }
 
       const protocol = updated.rows[0]
 
       // ─── Bible S3: Auto-criar 3 sondas de manutenção ao atingir "mastered" ───
-      // Sondas agendadas em 2, 6 e 12 semanas a partir da data de mastered_at.
-      // Idempotente: pula sondas já existentes (mesmo week_number).
       let maintenanceProbes: any[] = []
       if (status === 'mastered') {
         const baseDate = protocol.mastered_at || new Date()
@@ -56,25 +57,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           const scheduledAt = new Date(baseDate)
           scheduledAt.setDate(scheduledAt.getDate() + s.weeks * 7)
 
-          // Idempotência: não duplicar sondas para mesmo protocolo + week_number
           const existing = await client.query(
-            'SELECT id FROM maintenance_probes WHERE protocol_id = $1 AND tenant_id = $2 AND week_number = $3',
+            'SELECT id FROM maintenance_probes WHERE protocol_id = $1::uuid AND tenant_id = $2::uuid AND week_number = $3::int',
             [id, tenantId, s.weeks])
           if (existing.rows.length > 0) continue
 
           const ins = await client.query(
             `INSERT INTO maintenance_probes (tenant_id, protocol_id, learner_id, week_number, label, scheduled_at, status)
-             VALUES ($1, $2, $3, $4, $5, $6, 'pending') RETURNING *`,
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4::int, $5::text, $6::timestamptz, 'pending') RETURNING *`,
             [tenantId, id, protocol.learner_id, s.weeks, s.label, scheduledAt])
           maintenanceProbes.push(ins.rows[0])
         }
 
-        // Audit log
         if (maintenanceProbes.length > 0) {
           await client.query(
             `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
-             VALUES ($1, $2, 'system', 'MAINTENANCE_PROBES_AUTO_CREATED', 'maintenance_probes',
-             jsonb_build_object('protocol_id', $3, 'probes_created', $4, 'weeks', ARRAY[2,6,12]::int[]), NOW())`,
+             VALUES ($1::uuid, $2::text, 'system', 'MAINTENANCE_PROBES_AUTO_CREATED', 'maintenance_probes',
+             jsonb_build_object('protocol_id', $3::text, 'probes_created', $4::int, 'weeks', ARRAY[2,6,12]::int[]), NOW())`,
             [tenantId, userId || 'system', id, maintenanceProbes.length])
         }
       }
