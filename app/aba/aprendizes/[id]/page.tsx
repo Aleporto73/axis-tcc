@@ -10,7 +10,7 @@ interface Protocol { id: string; title: string; domain: string; status: string; 
 interface SessionSummary { id: string; scheduled_at: string; ended_at: string|null; status: string; location: string|null }
 interface CSOPoint { session_date: string; cso_aba: number; sas: number; pis: number; bss: number; tcm: number }
 interface EBPPractice { id: number; name: string; description: string }
-interface LibraryProtocol { id: string; title: string; domain: string; objective: string; ebp_practice_name: string; measurement_type: string; default_mastery_pct: number; default_mastery_sessions: number; default_mastery_trials: number; difficulty_level: number; tags: string[] }
+interface LibraryProtocol { id: string; title: string; domain: string; objective: string; ebp_practice_name: string; ebp_practice_id: number | null; measurement_type: string; default_mastery_pct: number; default_mastery_sessions: number; default_mastery_trials: number; difficulty_level: number; tags: string[] }
 
 const protocolStatusLabels: Record<string,string> = { draft:'Rascunho', active:'Ativo', mastered:'Dominado', generalization:'Generalização', mastered_validated:'Validado', maintenance:'Manutenção', maintained:'Mantido', archived:'Arquivado', suspended:'Suspenso', discontinued:'Descontinuado', regression:'Regressão' }
 const protocolStatusColors: Record<string,string> = { draft:'bg-slate-100 text-slate-500', active:'bg-blue-50 text-blue-600', mastered:'bg-green-50 text-green-600', generalization:'bg-purple-50 text-purple-600', mastered_validated:'bg-teal-50 text-teal-600', maintenance:'bg-cyan-50 text-cyan-600', maintained:'bg-emerald-50 text-emerald-600', archived:'bg-slate-50 text-slate-400', suspended:'bg-amber-50 text-amber-600', discontinued:'bg-red-50 text-red-500', regression:'bg-orange-50 text-orange-600' }
@@ -265,12 +265,11 @@ export default function LearnerDetailPage() {
   }
 
   const selectFromLibrary = (proto: LibraryProtocol) => {
-    // Encontra o ebp_practice_id pelo nome
-    const matchedEbp = ebpPractices.find(e => e.name === proto.ebp_practice_name)
+    // ebp_practice_id vem resolvido do servidor via JOIN
     setFormData({
       title: proto.title,
       domain: proto.domain,
-      ebp_practice_id: matchedEbp ? String(matchedEbp.id) : '',
+      ebp_practice_id: proto.ebp_practice_id ? String(proto.ebp_practice_id) : '',
       objective: proto.objective,
       mastery_criteria_pct: proto.default_mastery_pct,
       pei_goal_id: ''
@@ -578,7 +577,7 @@ export default function LearnerDetailPage() {
                   ) : (
                     <select value={formData.ebp_practice_id} onChange={e => setFormData({...formData, ebp_practice_id: e.target.value})} disabled={ebpLoading} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-aba-500 bg-white disabled:opacity-50">
                       <option value="">{ebpLoading ? 'Carregando práticas...' : 'Selecione uma prática'}</option>
-                      {ebpPractices.map(p => <option key={p.id} value={p.id}>{p.id}. {p.name}</option>)}
+                      {ebpPractices.map(p => <option key={p.id} value={String(p.id)}>{p.id}. {p.name}</option>)}
                     </select>
                   )}
                 </div>

@@ -105,3 +105,14 @@ VALUES
    ARRAY['acadêmico','letras','fonema','alfabetização','pré-escolar'])
 
 ON CONFLICT DO NOTHING;
+
+-- Normaliza ebp_practice_name dos seeds antigos (migration 005)
+-- que usam nomes longos em vez das siglas da tabela ebp_practices
+UPDATE protocol_library SET ebp_practice_name = 'DTT'
+  WHERE ebp_practice_name IN ('Discrete Trial Training', 'discrete_trial_training');
+UPDATE protocol_library SET ebp_practice_name = 'FCT'
+  WHERE ebp_practice_name IN ('Functional Communication Training');
+UPDATE protocol_library SET ebp_practice_name = 'Social Stories'
+  WHERE ebp_practice_name IN ('Social Skills Training');
+UPDATE protocol_library SET ebp_practice_name = 'DRA'
+  WHERE ebp_practice_name IN ('Differential Reinforcement');

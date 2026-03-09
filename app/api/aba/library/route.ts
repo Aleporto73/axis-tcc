@@ -8,21 +8,24 @@ export async function GET(req: NextRequest) {
 
     const result = await withTenant(async ({ client }) => {
       // protocol_library é tabela global (sem tenant_id, sem RLS)
+      // JOIN com ebp_practices para resolver ebp_practice_id pelo nome
       let query = `
-        SELECT id, title, domain, objective, ebp_practice_name,
-               measurement_type, default_mastery_pct, default_mastery_sessions,
-               default_mastery_trials, difficulty_level, tags
-        FROM protocol_library
-        WHERE is_active = true
+        SELECT pl.id, pl.title, pl.domain, pl.objective, pl.ebp_practice_name,
+               pl.measurement_type, pl.default_mastery_pct, pl.default_mastery_sessions,
+               pl.default_mastery_trials, pl.difficulty_level, pl.tags,
+               ep.id as ebp_practice_id
+        FROM protocol_library pl
+        LEFT JOIN ebp_practices ep ON LOWER(ep.name) = LOWER(pl.ebp_practice_name)
+        WHERE pl.is_active = true
       `
       const params: string[] = []
 
       if (domain) {
         params.push(domain)
-        query += ` AND domain = $${params.length}`
+        query += ` AND pl.domain = $${params.length}`
       }
 
-      query += ' ORDER BY difficulty_level ASC, domain ASC, title ASC'
+      query += ' ORDER BY pl.difficulty_level ASC, pl.domain ASC, pl.title ASC'
 
       const res = await client.query(query, params)
       return res.rows
