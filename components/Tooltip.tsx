@@ -99,10 +99,11 @@ export default function Tooltip({ tip, children, icon = false, position }: Toolt
  * Wrapper tooltip para ícone ? standalone (sem children).
  * Uso: <HelpTip tip="aprendiz_dominados" />
  */
-export function HelpTip({ tip, className }: { tip: TooltipKey; className?: string }) {
+export function HelpTip({ tip, className, color }: { tip: TooltipKey; className?: string; color?: string }) {
+  const colorClass = color || 'bg-emerald-100 text-emerald-600'
   return (
     <Tooltip tip={tip}>
-      <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 text-[10px] font-bold leading-none cursor-help ${className || ''}`}>
+      <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${colorClass} text-[10px] font-bold leading-none cursor-help ${className || ''}`}>
         ?
       </span>
     </Tooltip>
