@@ -5,6 +5,12 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Tooltip, { HelpTip } from '@/components/Tooltip'
 
+interface Profile {
+  id: string
+  name: string
+  role: string
+}
+
 interface Session {
   id: string
   learner_id: string
@@ -15,6 +21,12 @@ interface Session {
   ended_at: string | null
   location: string | null
   notes: string | null
+  duration_minutes: number | null
+  duration_minutes_override: number | null
+  applied_by: string | null
+  applied_by_name: string | null
+  active_duration_seconds: number
+  timed_trials: number
 }
 
 interface Target {
@@ -27,6 +39,9 @@ interface Target {
   score_pct: number
   notes: string | null
   protocol_objective: string
+  duration_seconds: number | null
+  applied_by: string | null
+  applied_by_name: string | null
 }
 
 interface Behavior {
@@ -96,14 +111,25 @@ export default function SessionPage() {
   const [behaviors, setBehaviors] = useState<Behavior[]>([])
   const [protocols, setProtocols] = useState<Protocol[]>([])
   const [ebps, setEbps] = useState<EBP[]>([])
+  const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Cronômetro por trial
+  const [timerRunning, setTimerRunning] = useState(false)
+  const [timerSeconds, setTimerSeconds] = useState(0)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Duração editável
+  const [editingDuration, setEditingDuration] = useState(false)
+  const [durationOverrideInput, setDurationOverrideInput] = useState('')
+  const [savingDuration, setSavingDuration] = useState(false)
+
   const [tab, setTab] = useState<'trials' | 'behaviors'>('trials')
 
   const [trialForm, setTrialForm] = useState({
-    protocol_id: '', target_name: '', trials_total: 10, trials_correct: 0, prompt_level: 'full_physical', notes: '',
+    protocol_id: '', target_name: '', trials_total: 10, trials_correct: 0, prompt_level: 'full_physical', notes: '', applied_by: '',
   })
   const [behaviorForm, setBehaviorForm] = useState({
     behavior_type: '', antecedent: '', behavior: '', consequence: '', intensity: 'leve' as string, duration_seconds: '', location: '',
@@ -254,6 +280,65 @@ export default function SessionPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Timer controls
+  const startTimer = () => {
+    if (timerRunning) return
+    setTimerRunning(true)
+    timerRef.current = setInterval(() => setTimerSeconds(s => s + 1), 1000)
+  }
+  const pauseTimer = () => {
+    setTimerRunning(false)
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+  }
+  const resetTimer = () => {
+    pauseTimer()
+    setTimerSeconds(0)
+  }
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [])
+
+  const formatTimer = (secs: number) => {
+    const m = Math.floor(secs / 60)
+    const s = secs % 60
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  }
+
+  // Save duration override
+  const saveDurationOverride = async () => {
+    if (!session) return
+    setSavingDuration(true)
+    try {
+      const val = durationOverrideInput.trim() === '' ? null : parseInt(durationOverrideInput)
+      const res = await fetch(`/api/aba/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ duration_minutes_override: val }),
+      })
+      if (res.ok) {
+        await fetchSession()
+        setEditingDuration(false)
+      } else {
+        const err = await res.json()
+        setError(err.error || 'Erro ao salvar duração')
+      }
+    } catch { setError('Falha de conexão') }
+    setSavingDuration(false)
+  }
+
+  // Save session applied_by
+  const saveSessionAppliedBy = async (profileId: string | null) => {
+    try {
+      const res = await fetch(`/api/aba/sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applied_by: profileId }),
+      })
+      if (res.ok) await fetchSession()
+    } catch {}
+  }
+
   const fetchSession = useCallback(async () => {
     try {
       const res = await fetch(`/api/aba/sessions/${sessionId}`)
@@ -262,6 +347,7 @@ export default function SessionPage() {
       setSession(data.session)
       setTargets(data.targets || [])
       setBehaviors(data.behaviors || [])
+      setProfiles(data.profiles || [])
       if (data.session?.learner_id) {
         const pRes = await fetch(`/api/aba/protocols?learner_id=${data.session.learner_id}`)
         const pData = await pRes.json()
@@ -319,6 +405,8 @@ export default function SessionPage() {
           trials_correct: trialForm.trials_correct,
           prompt_level: trialForm.prompt_level,
           notes: trialForm.notes.trim() || null,
+          duration_seconds: timerSeconds > 0 ? timerSeconds : null,
+          applied_by: trialForm.applied_by || null,
         }),
       })
       if (!res.ok) {
@@ -327,6 +415,7 @@ export default function SessionPage() {
         setSavingTrial(false); return
       }
       setTrialForm({ ...trialForm, trials_correct: 0, notes: '' })
+      resetTimer()
       await fetchSession()
       setSavingTrial(false)
     } catch { setError('Falha de conexão'); setSavingTrial(false) }
@@ -449,20 +538,91 @@ export default function SessionPage() {
         {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
 
         {isCompleted && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-green-700 font-medium">Sessão finalizada</p>
-              <p className="text-xs text-green-600 mt-1">
-                {targets.length} {targets.length === 1 ? 'trial registrado' : 'trials registrados'} · {behaviors.length} {behaviors.length === 1 ? 'comportamento' : 'comportamentos'}
-                {session.started_at && session.ended_at && ` · Duração: ${Math.round((new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 60000)} min`}
-              </p>
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-green-700 font-medium">Sessão finalizada</p>
+                <p className="text-xs text-green-600 mt-1">
+                  {targets.length} {targets.length === 1 ? 'trial registrado' : 'trials registrados'} · {behaviors.length} {behaviors.length === 1 ? 'comportamento' : 'comportamentos'}
+                </p>
+              </div>
+              <Tooltip tip="sessao_enviar_resumo">
+                <button onClick={openSummaryModal} className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-green-300 text-green-700 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  Enviar Resumo
+                </button>
+              </Tooltip>
             </div>
-            <Tooltip tip="sessao_enviar_resumo">
-              <button onClick={openSummaryModal} className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-green-300 text-green-700 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                Enviar Resumo
-              </button>
-            </Tooltip>
+            {/* V2: Painel de duração */}
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              {/* Duração total (relógio) */}
+              {session.started_at && session.ended_at && (
+                <div className="flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span className="text-green-700">Total: {Math.round((new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 60000)} min</span>
+                </div>
+              )}
+              {/* Duração ativa (soma dos trials cronometrados) */}
+              {session.timed_trials > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-aba-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  <span className="text-aba-600">Ativa: {Math.round(session.active_duration_seconds / 60)} min ({session.timed_trials} trials)</span>
+                </div>
+              )}
+              {/* Duração corrigida (editável) */}
+              <div className="flex items-center gap-1.5">
+                {editingDuration ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min="1"
+                      max="480"
+                      value={durationOverrideInput}
+                      onChange={e => setDurationOverrideInput(e.target.value)}
+                      className="w-16 px-2 py-1 border border-green-300 rounded text-xs focus:outline-none focus:border-aba-500"
+                      placeholder="min"
+                      autoFocus
+                    />
+                    <button onClick={saveDurationOverride} disabled={savingDuration} className="px-2 py-1 bg-green-600 text-white text-[10px] font-medium rounded hover:bg-green-700 disabled:opacity-50">
+                      {savingDuration ? '...' : 'OK'}
+                    </button>
+                    <button onClick={() => setEditingDuration(false)} className="px-2 py-1 text-slate-400 text-[10px] hover:text-slate-600">
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setDurationOverrideInput(session.duration_minutes_override?.toString() || ''); setEditingDuration(true) }}
+                    className="flex items-center gap-1 text-green-600 hover:text-green-800 transition-colors"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    {session.duration_minutes_override != null
+                      ? <span>Corrigida: {session.duration_minutes_override} min</span>
+                      : <span>Corrigir duração</span>
+                    }
+                  </button>
+                )}
+              </div>
+              {/* Aplicado por */}
+              {session.applied_by_name && (
+                <div className="flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  <span className="text-green-700">{session.applied_by_name}</span>
+                </div>
+              )}
+              {!session.applied_by && profiles.length > 0 && (
+                <select
+                  onChange={e => { if (e.target.value) saveSessionAppliedBy(e.target.value) }}
+                  className="px-2 py-1 border border-green-300 rounded text-[11px] bg-white focus:outline-none focus:border-aba-500"
+                  defaultValue=""
+                >
+                  <option value="" disabled>Quem aplicou?</option>
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
         )}
 
@@ -566,6 +726,38 @@ export default function SessionPage() {
                         </select>
                       </div>
                     </div>
+                    {/* V2: Cronômetro + Aplicado por */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-slate-500 mb-1">Cronômetro (opcional)</label>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-mono text-sm tabular-nums px-3 py-2 border rounded-lg min-w-[72px] text-center ${timerRunning ? 'border-aba-500 bg-aba-500/5 text-aba-600' : 'border-slate-200 text-slate-700'}`}>
+                            {formatTimer(timerSeconds)}
+                          </span>
+                          {!timerRunning ? (
+                            <button type="button" onClick={startTimer} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Iniciar">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </button>
+                          ) : (
+                            <button type="button" onClick={pauseTimer} className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Pausar">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            </button>
+                          )}
+                          <button type="button" onClick={resetTimer} className="p-2 text-slate-400 hover:bg-slate-50 rounded-lg transition-colors" title="Zerar">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-slate-500 mb-1">Aplicado por</label>
+                        <select value={trialForm.applied_by} onChange={e => setTrialForm({...trialForm, applied_by: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 bg-white">
+                          <option value="">Terapeuta da sessão</option>
+                          {profiles.map(p => (
+                            <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                     <div className="flex justify-end">
                       <button onClick={handleAddTrial} disabled={savingTrial} className="px-4 py-2 bg-aba-500 text-white text-sm font-medium rounded-lg hover:bg-aba-600 transition-colors disabled:opacity-50">
                         {savingTrial ? 'Salvando...' : 'Registrar Trial'}
@@ -580,7 +772,11 @@ export default function SessionPage() {
                       <div key={t.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 group">
                         <div>
                           <p className="text-sm font-medium text-slate-800">{t.target_name}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{promptLabels[t.prompt_level] || t.prompt_level}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            {promptLabels[t.prompt_level] || t.prompt_level}
+                            {t.duration_seconds != null && <span className="ml-2">· {formatTimer(t.duration_seconds)}</span>}
+                            {t.applied_by_name && <span className="ml-2">· {t.applied_by_name}</span>}
+                          </p>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-right">
