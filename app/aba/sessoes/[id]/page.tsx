@@ -704,7 +704,7 @@ export default function SessionPage() {
                         )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-[11px] text-slate-500 mb-1">Total tentativas</label>
                         <input type="number" min="1" max="100" value={trialForm.trials_total} onChange={e => setTrialForm({...trialForm, trials_total: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" />
@@ -869,7 +869,7 @@ export default function SessionPage() {
                             {intensityLabels[b.intensity] || b.intensity}
                           </span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-[11px]">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
                           <div><span className="text-slate-400">A:</span> <span className="text-slate-600">{b.antecedent}</span></div>
                           <div><span className="text-slate-400">B:</span> <span className="text-slate-600">{b.behavior}</span></div>
                           <div><span className="text-slate-400">C:</span> <span className="text-slate-600">{b.consequence}</span></div>
@@ -902,7 +902,7 @@ export default function SessionPage() {
                 <label className="block text-xs font-medium text-slate-600 mb-1">Título *</label>
                 <input type="text" value={protocolForm.title} onChange={e => setProtocolForm({...protocolForm, title: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Ex: Mando - Solicitar itens preferidos" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Prática EBP</label>
                   <select value={protocolForm.ebp_practice_id} onChange={e => setProtocolForm({...protocolForm, ebp_practice_id: parseInt(e.target.value)})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 bg-white">

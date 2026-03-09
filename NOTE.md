@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 09/03/2026 (manha)
+## Atualizado: 09/03/2026 (tarde)
 
 ---
 
@@ -25,15 +25,16 @@
 ### MODULOS CLINICOS
 | Area | % | Status |
 |---|---|---|
-| Portal familia | 100% | Token 90d, consent LGPD, dados filtrados (nunca mostra CSO/trials). UI completa: conquistas, proximas sessoes, resumos, habilidades. Sem login (token-based by design) |
+| Portal familia | 100% | Token 90d, consent LGPD, dados filtrados (nunca mostra CSO/trials). UI completa: conquistas, proximas sessoes, resumos, habilidades. Sem login (token-based by design). SECURITY DEFINER functions para bypass RLS. UPSERT consent/access |
 | Push notifications (FCM) | 100% | Lembretes 24h + 10min, cron 60s, token auto-cleanup |
 | Google Calendar | 100% | Sync bidirecional. ABA: 7 rotas dedicadas (oauth, callback, status, sync, watch, webhook, disconnect). Multi-terapeuta. Helpers compartilhados com TCC |
 | PDF reports | 100% | Logo AXIS, CSO, protocolos, acentos OK, codigo autenticidade |
 | CID (Classificacao Diagnostica) | 100% | CIDSelector com CID-10/CID-11, catalogo 50+ codigos, 6 grupos, busca, entrada manual, cross-mapping |
 | Dashboard ABA | 95% | KPIs com cores pasteis + tooltips educativos + grafico CSO SVG + alertas regressao. Analytics avancado TBD |
+| Sessao Duration V2 | 100% | Cronometro por trial (play/pause/reset), applied_by UUID FK profiles, duration_minutes_override editavel, duracao ativa (soma trials). Migration 016 |
 | PEI (Plano Educacional) | 90% | Tela completa + API + dados demo + sidebar + vinculo protocolo. Botao "Vincular ao PEI" so aparece quando existem goals |
-| Biblioteca de Protocolos | 10% | Schema protocol_library existe (migration 007). FK em learner_protocols. SEM API, SEM UI, SEM seed data |
-| Generalizacao tab | 90% | Grid 3x2 funcional (UI + API + auto-transicao). Badge progresso na lista de protocolos. Schema OK no banco. Falta: labels ambiente/pessoa (hoje variacao/contexto) |
+| Biblioteca de Protocolos | 100% | 15 protocolos seed, API GET /api/aba/library com filtro dominio, UI modal "Usar da Biblioteca" no create protocol. EBP mapeado por ebp_practice_id (FK) |
+| Generalizacao tab | 100% | Grid 3x2 funcional (UI + API + auto-transicao). Badge progresso na lista de protocolos. Labels renomeados: Pessoa (variacao) + Ambiente (contexto). Tooltips atualizados |
 | Manutencao/sondas | 40% | Schema pronto, UI em progresso. Modelo 2-6-12 semanas documentado |
 | Transcricao sessao (OpenAI) | 20% | Stub existe |
 
@@ -175,7 +176,7 @@
 
 ### P2 — Pos-lancamento
 
-- [x] Generalizacao UI completa (regra 3x2 validada — grid, API, auto-transicao, badge progresso) ✅ 08/03. Falta: renomear labels variacao/contexto para ambiente/pessoa (cosmetico)
+- [x] Generalizacao UI completa (regra 3x2 validada — grid, API, auto-transicao, badge progresso) ✅ 08/03. Labels renomeados variacao→pessoa, contexto→ambiente ✅ 09/03
 - [ ] Manutencao/sondas UI (modelo 2-6-12)
 - [ ] Transcricao OpenAI integrada
 - [ ] Dashboard analytics avancado (tendencias, predicao)
@@ -347,6 +348,9 @@ PM2 (producao)
 | 2026-03-08 | Badge progresso Generalizacao | Subquery CASE WHEN na API retorna gen_cells_passed. Badge ambar/verde na lista protocolos |
 | 2026-03-09 | HelpTip wrapper div | Tooltip component tem span.relative que capturava posicionamento absoluto. Fix: envolver HelpTip em div.absolute |
 | 2026-03-09 | Migration 012 manual | Tabela _migrations nao existia no banco (migrations rodadas manualmente). 011 e 013 ja estavam aplicadas. 012 rodada com ALTER TABLE (3 colunas novas, 2 ja existiam) |
+| 2026-03-09 | Portal SECURITY DEFINER | RLS com forced=true impede queries sem tenant_id. Portal e publico (sem auth). Solucao: 7 functions SECURITY DEFINER que rodam como owner, bypassing RLS. Migration 014 |
+| 2026-03-09 | applied_by UUID FK profiles | Campo "quem aplicou" em trials e sessoes usa UUID FK para profiles (nao VARCHAR livre). Evita bagunca de nomes (Joao, joao, JOAO). Migration 016 |
+| 2026-03-09 | Session Duration V2 | Duracao anterior era ended_at - started_at (incluia ociosidade). V2: cronometro por trial (opcional), soma ativa, override manual. Campos novos: duration_seconds, duration_minutes_override, applied_by |
 
 ---
 
@@ -373,8 +377,8 @@ PM2 (producao)
 
 ### Pendente
 18. **Backup automatizado**: pg_dump cron + rotacao 7 dias
-19. **Testes criticos**: CSO engine, state machine, webhook
-20. **Biblioteca de Protocolos**: seed + API + UI
+19. ~~**Biblioteca de Protocolos**: seed + API + UI~~ ✅ 09/03
+20. **Deploy producao**: migration 014/015/016 + build + pm2 restart
 21. **LANCAMENTO BETA PUBLICO**
 
 ### TESTE HOTMART — CONCLUIDO ✅ 08/03/2026
@@ -397,6 +401,14 @@ PM2 (producao)
 ---
 
 ## CONCLUIDO EM 09/03/2026
+
+### Tarde (codigo — Cowork)
+- [x] **Portal Familia bugs**: botao nao abria (silent error), FK violation guardian_id, RLS bloqueando token lookup (SECURITY DEFINER 7 functions — migration 014), consent duplicado (UPSERT), colunas erradas (name vs full_name, birth_date vs date_of_birth, content vs summary_text)
+- [x] **Biblioteca de Protocolos V1**: seed 15 protocolos cobrindo 8 dominios (migration 015), API GET /api/aba/library com filtro dominio, UI modal "Usar da Biblioteca" no create protocol, fix EBP mapping (ebp_practice_id FK, nao string match)
+- [x] **Session Duration V2**: migration 016 (4 colunas: session_targets.duration_seconds, session_targets.applied_by UUID FK profiles, sessions_aba.duration_minutes_override, sessions_aba.applied_by UUID FK profiles). API trials mantém record_target_trial + UPDATE V2. PATCH sessao aceita override + applied_by. Frontend: cronometro play/pause/reset, dropdown applied_by, painel duracao (total/ativa/corrigida/aplicador)
+- [x] **Labels generalizacao**: variacao → pessoa, contexto → ambiente (page + tooltips + ajuda)
+- [x] **Mobile polish**: grids responsivos sm:grid-cols nas telas de sessao (trials 3→2, ABC 3→1, protocolo 2→1)
+- [x] **Testes**: 279/279 passando, TypeScript sem erros
 
 ### Manha (codigo — Cowork)
 - [x] Bug Painel ABA: cards de metricas sem cor pastel → adicionadas cores (coral, azul, verde, ambar) + borders coordenados

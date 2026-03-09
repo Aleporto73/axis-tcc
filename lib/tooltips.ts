@@ -79,12 +79,12 @@ export const TOOLTIPS = {
   config_retencao: 'Tempo mínimo que dados clínicos devem ser guardados conforme CFM/CRP.',
 
   // ─── Generalização 3×2 ───
-  gen_descricao: 'Testar se o aprendiz mantém a habilidade com 3 variações (pessoas/materiais) em 2 contextos (ambientes diferentes).',
-  gen_variacao: 'Diferentes pessoas ou materiais usados para testar a habilidade. Ex: mãe, pai, terapeuta.',
-  gen_contexto: 'Diferentes ambientes onde a habilidade é testada. Ex: clínica, casa.',
-  gen_celulas: 'Precisa completar 6 células (3 variações × 2 contextos) para considerar generalização concluída.',
-  gen_desc_variacao: 'Descreva qual variação está sendo testada. Ex: "Com brinquedo diferente", "Com a mãe".',
-  gen_desc_contexto: 'Descreva o ambiente do teste. Ex: "Na sala de espera", "Em casa".',
+  gen_descricao: 'Testar se o aprendiz mantém a habilidade com 3 pessoas diferentes em 2 ambientes diferentes.',
+  gen_variacao: 'Diferentes pessoas que aplicam a habilidade. Ex: mãe, pai, terapeuta.',
+  gen_contexto: 'Diferentes ambientes onde a habilidade é testada. Ex: clínica, casa, escola.',
+  gen_celulas: 'Precisa completar 6 células (3 pessoas × 2 ambientes) para considerar generalização concluída.',
+  gen_desc_variacao: 'Quem está aplicando. Ex: "Mãe", "Pai", "Terapeuta Ana".',
+  gen_desc_contexto: 'Onde está sendo testado. Ex: "Clínica", "Em casa", "Escola".',
   gen_nivel_dica: 'Quanto de ajuda foi necessária: Independente = sem ajuda, Física total = ajuda completa.',
   gen_tentativas: 'Quantas vezes tentou e quantas acertou. O critério (ex: 80%) é calculado automaticamente.',
 } as const

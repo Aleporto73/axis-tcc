@@ -331,7 +331,7 @@ const sections: HelpSection[] = [
       { title: 'EBP (Evidence-Based Practice)', content: ['Prática Baseada em Evidência. Cada protocolo é vinculado a uma EBP catalogada, garantindo fundamentação científica.'] },
       { title: 'Ensino por tentativas (DTT)', content: ['Método de ensino estruturado: o terapeuta dá uma instrução, o aprendiz responde e recebe uma consequência.'] },
       { title: 'Redução de ajuda (Fading)', content: ['Diminuição gradual da ajuda fornecida ao aprendiz, conforme ele ganha independência. Os 6 níveis de prompt vão de física total até independente.'] },
-      { title: 'Generalização 3×2', content: ['Grid de verificação com 3 variações de estímulo × 2 variações de contexto = 6 células. Todas as 6 células precisam atingir o critério de maestria para o protocolo avançar automaticamente para "validado".'] },
+      { title: 'Generalização 3×2', content: ['Grid de verificação com 3 pessoas × 2 ambientes = 6 células. Todas as 6 células precisam atingir o critério de maestria para o protocolo avançar automaticamente para "validado".'] },
       { title: 'Manutenção', content: ['Sondas periódicas em 2, 6 e 12 semanas após o protocolo ser considerado "mantido". Se o desempenho cair abaixo de 70%, o sistema detecta regressão automaticamente.'] },
       { title: 'Critério de domínio (Mastery)', content: ['O aprendiz atingiu o nível definido de acertos consistentes para determinado alvo. Critérios configuráveis: percentual de acerto, número de sessões e número de trials.'] },
       { title: 'PEI (Plano Educacional Individualizado)', content: ['Plano com período definido e metas organizadas por domínio. Os protocolos podem ser vinculados às metas do PEI para rastreabilidade completa.'] },
