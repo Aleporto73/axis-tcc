@@ -23,7 +23,8 @@ BSS (Behavioral Stability Score): behavior intensity - Leve=0.25, Moderada=0.50,
 TCM (Therapeutic Consistency Metric): CV of last 5 sessions
 
 ## Generalization 3x2
-3 stimulus variations x 2 context variations = 6 cells. All approved -> mastered_validated
+3 stimulus variations x 2 context variations = 6 cells. All 6 approved (>= mastery_criteria_pct) -> auto-transition to mastered_validated.
+Auto-transition is handled by POST /api/aba/generalization — inserts probe, checks grid, updates status if 6/6.
 
 ## Maintenance Probes
 Probe 1: 2 weeks, Probe 2: 6 weeks, Probe 3: 12 weeks. Criterion: >=70%. Fail = regression.

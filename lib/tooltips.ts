@@ -6,11 +6,16 @@
 
 export const TOOLTIPS = {
   // ─── Dashboard Hub ───
+  dash_aprendizes: 'Total de aprendizes cadastrados na clínica.',
+  dash_protocolos: 'Protocolos em fase de ensino ativo. "Dominados" = atingiram critério de 80% em 3 sessões.',
   dash_cso_medio: 'Clinical Significance Outcome — índice geral de progresso clínico. Acima de 70 = bom progresso.',
+  dash_em_alerta: 'Aprendizes com protocolos em regressão ou desempenho abaixo do esperado.',
   dash_taxa_mastery: 'Percentual de protocolos que atingiram critério de domínio (80% em 3 sessões).',
   dash_tempo_mastery: 'Média de dias entre ativar um protocolo e atingir domínio.',
+  dash_sessoes_totais: 'Total de sessões finalizadas. A duração média é calculada automaticamente.',
   dash_gen_manut: 'Protocolos em generalização (testar com outras pessoas/ambientes) ou manutenção (sondas 2/6/12 semanas).',
   dash_regressoes: 'Quando um protocolo dominado apresenta queda de desempenho e precisa ser retomado.',
+  dash_cancelamento: 'Percentual de sessões canceladas nos últimos 30 dias. Acima de 20% merece atenção.',
   dash_alerta_regressao: 'O sistema detectou queda de desempenho. Clique para ver detalhes e decidir se retoma o protocolo.',
 
   // ─── Novo Aprendiz (modal) ───
