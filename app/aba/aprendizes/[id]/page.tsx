@@ -10,6 +10,7 @@ interface Protocol { id: string; title: string; domain: string; status: string; 
 interface SessionSummary { id: string; scheduled_at: string; ended_at: string|null; status: string; location: string|null }
 interface CSOPoint { session_date: string; cso_aba: number; sas: number; pis: number; bss: number; tcm: number }
 interface EBPPractice { id: number; name: string; description: string }
+interface LibraryProtocol { id: string; title: string; domain: string; objective: string; ebp_practice_name: string; measurement_type: string; default_mastery_pct: number; default_mastery_sessions: number; default_mastery_trials: number; difficulty_level: number; tags: string[] }
 
 const protocolStatusLabels: Record<string,string> = { draft:'Rascunho', active:'Ativo', mastered:'Dominado', generalization:'Generalização', mastered_validated:'Validado', maintenance:'Manutenção', maintained:'Mantido', archived:'Arquivado', suspended:'Suspenso', discontinued:'Descontinuado', regression:'Regressão' }
 const protocolStatusColors: Record<string,string> = { draft:'bg-slate-100 text-slate-500', active:'bg-blue-50 text-blue-600', mastered:'bg-green-50 text-green-600', generalization:'bg-purple-50 text-purple-600', mastered_validated:'bg-teal-50 text-teal-600', maintenance:'bg-cyan-50 text-cyan-600', maintained:'bg-emerald-50 text-emerald-600', archived:'bg-slate-50 text-slate-400', suspended:'bg-amber-50 text-amber-600', discontinued:'bg-red-50 text-red-500', regression:'bg-orange-50 text-orange-600' }
@@ -146,6 +147,10 @@ export default function LearnerDetailPage() {
   const [creating, setCreating] = useState(false)
   const [formData, setFormData] = useState({ title: '', domain: 'comunicacao', ebp_practice_id: '', objective: '', mastery_criteria_pct: 80, pei_goal_id: '' })
   const [peiGoals, setPeiGoals] = useState<{id:string;title:string;domain:string}[]>([])
+  const [showLibrary, setShowLibrary] = useState(false)
+  const [libraryProtocols, setLibraryProtocols] = useState<LibraryProtocol[]>([])
+  const [libraryLoading, setLibraryLoading] = useState(false)
+  const [libraryFilter, setLibraryFilter] = useState('')
 
   const fetchData = useCallback(async () => {
     setError(null)
@@ -244,6 +249,33 @@ export default function LearnerDetailPage() {
       await fetchData()
     } catch { setError('Falha de conexão') }
     setCreating(false)
+  }
+
+  const openLibrary = async () => {
+    setShowLibrary(true)
+    if (libraryProtocols.length === 0) {
+      setLibraryLoading(true)
+      try {
+        const res = await fetch('/api/aba/library')
+        const d = await res.json()
+        setLibraryProtocols(d.protocols || [])
+      } catch {}
+      setLibraryLoading(false)
+    }
+  }
+
+  const selectFromLibrary = (proto: LibraryProtocol) => {
+    // Encontra o ebp_practice_id pelo nome
+    const matchedEbp = ebpPractices.find(e => e.name === proto.ebp_practice_name)
+    setFormData({
+      title: proto.title,
+      domain: proto.domain,
+      ebp_practice_id: matchedEbp ? String(matchedEbp.id) : '',
+      objective: proto.objective,
+      mastery_criteria_pct: proto.default_mastery_pct,
+      pei_goal_id: ''
+    })
+    setShowLibrary(false)
   }
 
   if (loading) return <div className="flex items-center justify-center min-h-[50vh]"><div className="animate-pulse text-slate-400 text-sm">Carregando...</div></div>
@@ -517,10 +549,14 @@ export default function LearnerDetailPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateProtocol(false)}>
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-slate-800">Novo Protocolo</h2>
                 <button onClick={() => setShowCreateProtocol(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
               </div>
+              <button onClick={openLibrary} className="w-full mb-5 p-3 rounded-xl border-2 border-dashed border-aba-500/30 text-aba-500 text-sm font-medium hover:bg-aba-500/5 transition-colors flex items-center justify-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                Usar da Biblioteca
+              </button>
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Título do protocolo *</label>
@@ -572,6 +608,50 @@ export default function LearnerDetailPage() {
                   {creating ? 'Criando...' : 'Criar protocolo'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLibrary && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={() => setShowLibrary(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-slate-100 flex-shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-medium text-slate-800">Biblioteca de Protocolos</h3>
+                <button onClick={() => setShowLibrary(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+              </div>
+              <select value={libraryFilter} onChange={e => setLibraryFilter(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:border-aba-500 bg-white">
+                <option value="">Todos os domínios</option>
+                {domainOptions.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+              </select>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 space-y-2">
+              {libraryLoading ? (
+                <div className="text-center py-8"><div className="animate-pulse text-slate-400 text-sm">Carregando biblioteca...</div></div>
+              ) : (libraryProtocols.filter(p => !libraryFilter || p.domain === libraryFilter)).length === 0 ? (
+                <div className="text-center py-8"><p className="text-slate-400 text-sm">Nenhum protocolo encontrado.</p></div>
+              ) : (
+                (libraryProtocols.filter(p => !libraryFilter || p.domain === libraryFilter)).map(proto => (
+                  <button key={proto.id} onClick={() => selectFromLibrary(proto)} className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-aba-500/40 hover:bg-aba-500/5 transition-all group">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-700 group-hover:text-aba-600">{proto.title}</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{domainOptions.find(d => d.value === proto.domain)?.label || proto.domain} · {proto.ebp_practice_name} · Nível {proto.difficulty_level}</p>
+                      </div>
+                      <span className="text-[10px] text-aba-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">Usar &rarr;</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1.5 line-clamp-2">{proto.objective}</p>
+                    {proto.tags && proto.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {proto.tags.slice(0, 4).map((tag, i) => (
+                          <span key={i} className="px-1.5 py-0.5 rounded text-[9px] bg-slate-100 text-slate-400">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
