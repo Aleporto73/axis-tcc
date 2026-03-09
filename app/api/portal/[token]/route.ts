@@ -12,6 +12,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     const { token } = await params
     if (!token) return NextResponse.json({ error: 'Token inválido' }, { status: 400 })
 
+    // Inicia transação para configurar tenant_id (necessário para RLS)
+    await client.query('BEGIN')
+
+    // Bypass RLS para lookup inicial do token (rota pública, auth via token)
+    await client.query('SET LOCAL row_security = off')
+
     // Valida token — tenant_id é derivado do próprio registro, sem hardcode
     const accessRes = await client.query(
       `SELECT fpa.*, gc.accepted_at as consent_accepted
@@ -21,10 +27,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
          AND (fpa.token_expires_at IS NULL OR fpa.token_expires_at > NOW())`,
       [token]
     )
-    if (!accessRes.rows[0]) return NextResponse.json({ error: 'Link inválido ou expirado' }, { status: 403 })
-    if (!accessRes.rows[0].consent_accepted) return NextResponse.json({ error: 'Consentimento pendente' }, { status: 403 })
+    if (!accessRes.rows[0]) { await client.query('ROLLBACK'); return NextResponse.json({ error: 'Link inválido ou expirado' }, { status: 403 }) }
+    if (!accessRes.rows[0].consent_accepted) { await client.query('ROLLBACK'); return NextResponse.json({ error: 'Consentimento pendente' }, { status: 403 }) }
 
     const { learner_id, tenant_id } = accessRes.rows[0]
+
+    // Agora seta tenant_id para RLS e reativa row security para queries subsequentes
+    await client.query("SELECT set_config('app.tenant_id', $1::text, true)", [tenant_id])
+    await client.query('SET LOCAL row_security = on')
 
     // Atualiza last_accessed_at
     await client.query('UPDATE family_portal_access SET last_accessed_at = NOW() WHERE access_token = $1', [token])
@@ -79,6 +89,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       [learner_id, tenant_id]
     )
 
+    await client.query('COMMIT')
+
     return NextResponse.json({
       learner: learner.rows[0],
       summaries: summaries.rows,
@@ -87,6 +99,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       achievements: achievements.rows,
     })
   } catch (err: any) {
+    await client.query('ROLLBACK').catch(() => {})
     console.error('Portal error:', err)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   } finally {
