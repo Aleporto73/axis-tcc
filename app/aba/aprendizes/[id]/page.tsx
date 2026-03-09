@@ -129,7 +129,7 @@ export default function LearnerDetailPage() {
       const res = await fetch('/api/portal/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ learner_id: learnerId, guardian_name: guardian.name, guardian_email: guardian.email })
+        body: JSON.stringify({ learner_id: learnerId, guardian_id: guardian.id, guardian_name: guardian.name, guardian_email: guardian.email })
       })
       const d = await res.json()
       if (!res.ok) { alert(d.error || 'Erro ao gerar link do portal'); setInviteLoading(false); return }

@@ -9,12 +9,19 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked
 
   try {
-    const { learner_id, guardian_name, guardian_email } = await req.json()
-    if (!learner_id || !guardian_name) return NextResponse.json({ error: 'learner_id e guardian_name obrigatórios' }, { status: 400 })
+    const { learner_id, guardian_id, guardian_name, guardian_email } = await req.json()
+    if (!learner_id || !guardian_id) return NextResponse.json({ error: 'learner_id e guardian_id obrigatórios' }, { status: 400 })
 
     const result = await withTenant(async ({ client, tenantId, userId }) => {
-      // Gera IDs
-      const guardian_id = randomBytes(16).toString('hex').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5')
+      // Verifica que o guardian existe e pertence ao tenant
+      const guardianCheck = await client.query(
+        'SELECT id FROM guardians WHERE id = $1 AND tenant_id = $2',
+        [guardian_id, tenantId]
+      )
+      if (guardianCheck.rows.length === 0) {
+        throw new Error('Responsável não encontrado')
+      }
+
       const token = randomBytes(32).toString('hex')
       const expires = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 dias
 
