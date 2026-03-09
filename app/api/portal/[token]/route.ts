@@ -12,39 +12,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     const { token } = await params
     if (!token) return NextResponse.json({ error: 'Token inválido' }, { status: 400 })
 
-    // Inicia transação para configurar tenant_id (necessário para RLS)
-    await client.query('BEGIN')
-
-    // Bypass RLS para lookup inicial do token (rota pública, auth via token)
-    await client.query('SET LOCAL row_security = off')
-
-    // Valida token — tenant_id é derivado do próprio registro, sem hardcode
+    // Lookup via SECURITY DEFINER function — bypassa RLS sem precisar de BYPASSRLS no role
     const accessRes = await client.query(
-      `SELECT fpa.*, gc.accepted_at as consent_accepted
-       FROM family_portal_access fpa
-       LEFT JOIN guardian_consents gc ON gc.learner_id = fpa.learner_id AND gc.guardian_id = fpa.guardian_id AND gc.revoked_at IS NULL
-       WHERE fpa.access_token = $1 AND fpa.is_active = true
-         AND (fpa.token_expires_at IS NULL OR fpa.token_expires_at > NOW())`,
+      'SELECT * FROM portal_token_lookup($1)',
       [token]
     )
-    if (!accessRes.rows[0]) { await client.query('ROLLBACK'); return NextResponse.json({ error: 'Link inválido ou expirado' }, { status: 403 }) }
-    if (!accessRes.rows[0].consent_accepted) { await client.query('ROLLBACK'); return NextResponse.json({ error: 'Consentimento pendente' }, { status: 403 }) }
+    if (!accessRes.rows[0]) return NextResponse.json({ error: 'Link inválido ou expirado' }, { status: 403 })
+    if (!accessRes.rows[0].consent_accepted) return NextResponse.json({ error: 'Consentimento pendente' }, { status: 403 })
 
     const { learner_id, tenant_id } = accessRes.rows[0]
 
-    // Agora seta tenant_id para RLS e reativa row security para queries subsequentes
+    // Seta tenant_id para RLS das queries subsequentes
+    await client.query('BEGIN')
     await client.query("SELECT set_config('app.tenant_id', $1::text, true)", [tenant_id])
-    await client.query('SET LOCAL row_security = on')
 
-    // Atualiza last_accessed_at
+    // Atualiza last_accessed_at (via function não é necessário — usa query direta com tenant setado)
     await client.query('UPDATE family_portal_access SET last_accessed_at = NOW() WHERE access_token = $1', [token])
 
     // Dados do aprendiz (sem scores clínicos)
     const learner = await client.query(
-      `SELECT id, full_name, date_of_birth, diagnosis, level FROM learners WHERE id = $1 AND tenant_id = $2`,
+      'SELECT id, full_name, date_of_birth, diagnosis, level FROM learners WHERE id = $1 AND tenant_id = $2',
       [learner_id, tenant_id]
     )
-    if (!learner.rows[0]) return NextResponse.json({ error: 'Aprendiz não encontrado' }, { status: 404 })
+    if (!learner.rows[0]) { await client.query('COMMIT'); return NextResponse.json({ error: 'Aprendiz não encontrado' }, { status: 404 }) }
 
     // Resumos de sessão aprovados
     const summaries = await client.query(
