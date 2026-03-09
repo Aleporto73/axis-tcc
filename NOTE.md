@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 08/03/2026 (noite)
+## Atualizado: 09/03/2026 (manha)
 
 ---
 
@@ -30,7 +30,7 @@
 | Google Calendar | 100% | Sync bidirecional. ABA: 7 rotas dedicadas (oauth, callback, status, sync, watch, webhook, disconnect). Multi-terapeuta. Helpers compartilhados com TCC |
 | PDF reports | 100% | Logo AXIS, CSO, protocolos, acentos OK, codigo autenticidade |
 | CID (Classificacao Diagnostica) | 100% | CIDSelector com CID-10/CID-11, catalogo 50+ codigos, 6 grupos, busca, entrada manual, cross-mapping |
-| Dashboard ABA | 90% | KPIs + grafico CSO SVG + alertas regressao. Analytics avancado TBD |
+| Dashboard ABA | 95% | KPIs com cores pasteis + tooltips educativos + grafico CSO SVG + alertas regressao. Analytics avancado TBD |
 | PEI (Plano Educacional) | 90% | Tela completa + API + dados demo + sidebar + vinculo protocolo. Botao "Vincular ao PEI" so aparece quando existem goals |
 | Biblioteca de Protocolos | 10% | Schema protocol_library existe (migration 007). FK em learner_protocols. SEM API, SEM UI, SEM seed data |
 | Generalizacao tab | 90% | Grid 3x2 funcional (UI + API + auto-transicao). Badge progresso na lista de protocolos. Schema OK no banco. Falta: labels ambiente/pessoa (hoje variacao/contexto) |
@@ -159,6 +159,7 @@
 - [x] **Testar fluxo cadastro ABA**: verificado em producao com email.paciente.x@gmail.com ✅ 08/03
 - [x] **Testar checkout Hotmart**: fluxo completo testado (FREE → compra → webhook → licenca ativa → email) ✅ 08/03
 - [x] **Rodar migration 006**: executada no banco de producao ✅
+- [x] **Rodar migrations 011/012/013**: 011 (CID) e 013 (ENUM) ja aplicadas, 012 (timestamps lifecycle) rodada manualmente ✅ 09/03
 
 ### P1 — Importantes para beta
 
@@ -344,10 +345,12 @@ PM2 (producao)
 | 2026-03-08 | Tela "Meu Plano" | Secao dedicada em configuracoes: badge, barra progresso, upgrade Hotmart. Removido campo Plano da secao Clinica |
 | 2026-03-08 | UserButton simplificado | "Gerenciar conta" escondido — publico 50+, trocar email quebra vinculo licenca |
 | 2026-03-08 | Badge progresso Generalizacao | Subquery CASE WHEN na API retorna gen_cells_passed. Badge ambar/verde na lista protocolos |
+| 2026-03-09 | HelpTip wrapper div | Tooltip component tem span.relative que capturava posicionamento absoluto. Fix: envolver HelpTip em div.absolute |
+| 2026-03-09 | Migration 012 manual | Tabela _migrations nao existia no banco (migrations rodadas manualmente). 011 e 013 ja estavam aplicadas. 012 rodada com ALTER TABLE (3 colunas novas, 2 ja existiam) |
 
 ---
 
-## PROXIMOS PASSOS (atualizado 08/03/2026)
+## PROXIMOS PASSOS (atualizado 09/03/2026)
 
 ### Concluidos
 1. ~~Criar migration user_licenses~~ ✅ 03/03
@@ -364,14 +367,15 @@ PM2 (producao)
 12. ~~Email pos-compra + pagina /obrigado~~ ✅ 08/03
 13. ~~Clerk Production Pro + PT-BR emails + logo~~ ✅ 08/03
 14. ~~Teste fluxo completo~~ ✅ 08/03
+15. ~~Rodar migrations 011/012/013~~ ✅ 09/03
+16. ~~**Tela "Meu Plano"**~~ ✅ 08/03
+17. ~~**Bug tooltips + cores pasteis Painel ABA**~~ ✅ 09/03
 
 ### Pendente
-15. **Rodar migration 011**: cid_system + cid_label no banco producao
-16. ~~**Tela "Meu Plano"**~~ ✅ 08/03
-17. **Biblioteca de Protocolos**: seed + API + UI
-18. **Testes criticos**: CSO engine, state machine, webhook
-19. **Backup automatizado**: pg_dump cron
-20. **LANCAMENTO BETA PUBLICO**
+18. **Backup automatizado**: pg_dump cron + rotacao 7 dias
+19. **Testes criticos**: CSO engine, state machine, webhook
+20. **Biblioteca de Protocolos**: seed + API + UI
+21. **LANCAMENTO BETA PUBLICO**
 
 ### TESTE HOTMART — CONCLUIDO ✅ 08/03/2026
 
@@ -389,6 +393,19 @@ PM2 (producao)
 **Teste real (email.paciente.x@gmail.com):** cadastro → onboarding → free → compra Hotmart → webhook → UPSERT licenca → email pos-compra → acesso desbloqueado. **TUDO FUNCIONANDO.**
 
 **Auto-provisioning (implementado 05/03, fix 08/03):** compra ANTES de cadastrar → Clerk Invitation + pending tenant/profile/license. Clerk webhook user.created resolve pending_hotmart_* → ativa profile + licenca.
+
+---
+
+## CONCLUIDO EM 09/03/2026
+
+### Manha (codigo — Cowork)
+- [x] Bug Painel ABA: cards de metricas sem cor pastel → adicionadas cores (coral, azul, verde, ambar) + borders coordenados
+- [x] Bug Painel ABA: tooltips ❓ sumidos → adicionados com HelpTip em wrapper div (10 cards total: 4 principais + 6 avancados)
+- [x] Bug Dashboard Clinico: tooltips ❓ no canto errado (esquerdo) → fix wrapper div absolute top-2 right-2 (3 cards)
+- [x] 5 novas chaves tooltip em lib/tooltips.ts: dash_aprendizes, dash_protocolos, dash_em_alerta, dash_sessoes_totais, dash_cancelamento
+- [x] Migration 012 rodada em producao: generalization_started_at, generalization_completed_at, maintenance_started_at (maintained_at e archived_at ja existiam)
+- [x] Verificacao migrations: 011 (CID) ja aplicada, 013 (ENUM mastered_validated) ja aplicada, 012 concluida agora
+- [x] Nota: tabela _migrations NAO existe no banco (migrations foram rodadas manualmente). migrate.sh precisa de psql local — nao funciona com Docker
 
 ---
 
@@ -493,4 +510,4 @@ PM2 (producao)
 ---
 
 *Este arquivo e a fonte unica de verdade do projeto. Atualizar a cada sessao de trabalho.*
-*Ultima verificacao cruzada com codigo: 08/03/2026*
+*Ultima verificacao cruzada com codigo: 09/03/2026*
