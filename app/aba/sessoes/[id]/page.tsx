@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Tooltip, { HelpTip } from '@/components/Tooltip'
 
 interface Session {
   id: string
@@ -456,10 +457,12 @@ export default function SessionPage() {
                 {session.started_at && session.ended_at && ` · Duração: ${Math.round((new Date(session.ended_at).getTime() - new Date(session.started_at).getTime()) / 60000)} min`}
               </p>
             </div>
-            <button onClick={openSummaryModal} className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-green-300 text-green-700 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-              Enviar Resumo
-            </button>
+            <Tooltip tip="sessao_enviar_resumo">
+              <button onClick={openSummaryModal} className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-green-300 text-green-700 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                Enviar Resumo
+              </button>
+            </Tooltip>
           </div>
         )}
 
@@ -478,11 +481,17 @@ export default function SessionPage() {
         {(isActive || isCompleted) && (
           <>
             <div className="flex gap-1 mb-6 border-b border-slate-200">
-              <button onClick={() => setTab('trials')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'trials' ? 'border-aba-500 text-aba-500' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                Trials ({targets.length})
+              <button onClick={() => setTab('trials')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1.5 ${tab === 'trials' ? 'border-aba-500 text-aba-500' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                <Tooltip tip="sessao_trials">
+                  <span>Trials ({targets.length})</span>
+                  <HelpTip tip="sessao_trials" className="w-3.5 h-3.5 text-[9px]" />
+                </Tooltip>
               </button>
-              <button onClick={() => setTab('behaviors')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'behaviors' ? 'border-aba-500 text-aba-500' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
-                Comportamentos ({behaviors.length})
+              <button onClick={() => setTab('behaviors')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1.5 ${tab === 'behaviors' ? 'border-aba-500 text-aba-500' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+                <Tooltip tip="sessao_comportamentos">
+                  <span>Comportamentos ({behaviors.length})</span>
+                  <HelpTip tip="sessao_comportamentos" className="w-3.5 h-3.5 text-[9px]" />
+                </Tooltip>
               </button>
             </div>
 
@@ -545,7 +554,11 @@ export default function SessionPage() {
                         <input type="number" min="0" max={trialForm.trials_total} value={trialForm.trials_correct} onChange={e => setTrialForm({...trialForm, trials_correct: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-slate-500 mb-1">Nível de dica</label>
+                        <label className="block text-[11px] text-slate-500 mb-1">
+                          <Tooltip tip="sessao_prompt_level" icon>
+                            <span>Nível de dica</span>
+                          </Tooltip>
+                        </label>
                         <select value={trialForm.prompt_level} onChange={e => setTrialForm({...trialForm, prompt_level: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 bg-white">
                           {Object.entries(promptLabels).map(([k, v]) => (
                             <option key={k} value={k}>{v}</option>

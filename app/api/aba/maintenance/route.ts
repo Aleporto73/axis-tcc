@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
         let regression = false
         if (score_pct < REGRESSION_THRESHOLD) {
           await client.query(
-            `UPDATE learner_protocols SET status='regression', updated_at=NOW(), regression_count=COALESCE(regression_count,0)+1 WHERE id=$1 AND tenant_id=$2`,
-            [probe.rows[0].protocol_id, tenantId])
+            `UPDATE learner_protocols SET status=$3, updated_at=NOW(), regression_count=COALESCE(regression_count,0)+1 WHERE id=$1 AND tenant_id=$2`,
+            [probe.rows[0].protocol_id, tenantId, 'regression'])
 
           await client.query(
             `INSERT INTO axis_audit_logs (tenant_id,user_id,actor,action,entity_type,metadata,created_at)

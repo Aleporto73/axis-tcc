@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
       let autoTransitioned = false
       if (gridComplete) {
         await client.query(
-          `UPDATE learner_protocols SET status = 'mastered_validated', mastered_validated_at = NOW(), updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
-          [protocol_id, tenantId])
+          `UPDATE learner_protocols SET status = $1, mastered_validated_at = NOW(), updated_at = NOW() WHERE id = $2 AND tenant_id = $3`,
+          ['mastered_validated', protocol_id, tenantId])
         await client.query(
           `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
            VALUES ($1,$2,'system','GENERALIZATION_GRID_COMPLETE','learner_protocols',
@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'Não autenticado') return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     if (error.message.includes('Protocolo')) return NextResponse.json({ error: error.message }, { status: 400 })
+    console.error('POST generalization error:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
       if (status) {
         params.push(status)
-        query += ` AND lp.status = $${params.length}::text`
+        query += ` AND lp.status = $${params.length}`
       }
 
       query += ` ORDER BY lp.created_at DESC`
