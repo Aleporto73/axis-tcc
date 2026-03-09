@@ -123,13 +123,21 @@ export default function LearnerDetailPage() {
 
   const [inviteLoading, setInviteLoading] = useState(false)
 
-  const generateInviteLink = async () => {
+  const generateInviteLink = async (guardian: { id: string; name: string; email: string | null }) => {
     setInviteLoading(true)
     try {
-      const res = await fetch('/api/portal/invite', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ learner_id: learnerId, guardian_name: 'Responsável' }) })
+      const res = await fetch('/api/portal/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ learner_id: learnerId, guardian_name: guardian.name, guardian_email: guardian.email })
+      })
       const d = await res.json()
-      if (d.link) setInviteLink(d.link)
-    } catch { alert('Erro ao gerar link') }
+      if (!res.ok) { alert(d.error || 'Erro ao gerar link do portal'); setInviteLoading(false); return }
+      if (d.link) {
+        window.open(d.link, '_blank')
+        setInviteLink(d.link)
+      }
+    } catch { alert('Erro de conexão ao gerar link') }
     setInviteLoading(false)
   }
   const [ebpPractices, setEbpPractices] = useState<EBPPractice[]>([])
@@ -453,7 +461,7 @@ export default function LearnerDetailPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                    <button onClick={generateInviteLink} disabled={inviteLoading} className="text-xs text-aba-500 hover:text-aba-600 px-2 py-1 rounded border border-aba-500/20 hover:bg-aba-500/5 transition-colors">
+                    <button onClick={() => generateInviteLink(g)} disabled={inviteLoading} className="text-xs text-aba-500 hover:text-aba-600 px-2 py-1 rounded border border-aba-500/20 hover:bg-aba-500/5 transition-colors">
                       {inviteLoading ? '...' : 'Portal'}
                     </button>
                     <button onClick={() => removeGuardian(g.id)} className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded border border-red-200 hover:bg-red-50 transition-colors">Remover</button>
