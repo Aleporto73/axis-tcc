@@ -105,19 +105,19 @@ export default function ABADashboardPage() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="relative p-4 rounded-xl border border-aba-500/20 bg-aba-500/5">
-                <HelpTip tip="dash_aprendizes" color="bg-aba-500/15 text-aba-500" className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_aprendizes" color="bg-aba-500/15 text-aba-500" /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Aprendizes</p>
                 <p className="text-2xl font-light text-aba-500">{data?.total_learners || 0}</p>
                 <p className="text-[10px] text-slate-400">{(data?.sessions_today || 0)} sessão hoje</p>
               </div>
               <div className="relative p-4 rounded-xl border border-blue-200 bg-blue-50/50">
-                <HelpTip tip="dash_protocolos" color="bg-blue-100/60 text-blue-500" className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_protocolos" color="bg-blue-100/60 text-blue-500" /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Protocolos</p>
                 <p className="text-2xl font-light text-blue-600">{data?.active_protocols || 0} <span className="text-sm text-slate-400">ativos</span></p>
                 <p className="text-[10px] text-slate-400">{data?.mastered_protocols || 0} dominados</p>
               </div>
               <div className="relative p-4 rounded-xl border border-green-200 bg-green-50/50">
-                <HelpTip tip="dash_cso_medio" color="bg-green-100/60 text-green-600" className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_cso_medio" color="bg-green-100/60 text-green-600" /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">CSO Médio</p>
                 {data?.avg_cso != null ? (
                   <>
@@ -129,7 +129,7 @@ export default function ABADashboardPage() {
                 )}
               </div>
               <div className={`relative p-4 rounded-xl border ${(data?.learners_critical || 0) > 0 ? 'border-red-200 bg-red-50/40' : 'border-amber-200 bg-amber-50/40'}`}>
-                <HelpTip tip="dash_em_alerta" color={(data?.learners_critical || 0) > 0 ? 'bg-red-100/60 text-red-500' : 'bg-amber-100/60 text-amber-500'} className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_em_alerta" color={(data?.learners_critical || 0) > 0 ? 'bg-red-100/60 text-red-500' : 'bg-amber-100/60 text-amber-500'} /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Em Alerta</p>
                 <p className={`text-2xl font-light ${(data?.learners_critical || 0) > 0 ? 'text-red-500' : 'text-slate-400'}`}>{data?.learners_critical || 0}</p>
                 <p className="text-[10px] text-slate-400">{(data?.sessions_week || 0)} sessões na semana</p>
@@ -143,37 +143,37 @@ export default function ABADashboardPage() {
             <h2 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">Indicadores Avançados</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <div className="relative p-3 rounded-xl border border-emerald-200 bg-emerald-50/40">
-                <HelpTip tip="dash_taxa_mastery" color="bg-emerald-100/60 text-emerald-600" className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_taxa_mastery" color="bg-emerald-100/60 text-emerald-600" /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Taxa Mastery</p>
                 <p className={`text-xl font-light ${data.mastery_rate >= 60 ? 'text-emerald-600' : data.mastery_rate >= 30 ? 'text-amber-500' : 'text-slate-600'}`}>{data.mastery_rate}%</p>
                 <p className="text-[10px] text-slate-400">{data.mastered_protocols} de {data.total_protocols} protocolos</p>
               </div>
               <div className="relative p-3 rounded-xl border border-slate-200 bg-slate-50/50">
-                <HelpTip tip="dash_tempo_mastery" color="bg-slate-200/60 text-slate-500" className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_tempo_mastery" color="bg-slate-200/60 text-slate-500" /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Tempo p/ Mastery</p>
                 <p className="text-xl font-light text-slate-700">{data.avg_days_to_mastery > 0 ? data.avg_days_to_mastery + 'd' : '—'}</p>
                 <p className="text-[10px] text-slate-400">média em dias</p>
               </div>
               <div className="relative p-3 rounded-xl border border-blue-200 bg-blue-50/40">
-                <HelpTip tip="dash_sessoes_totais" color="bg-blue-100/60 text-blue-500" className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_sessoes_totais" color="bg-blue-100/60 text-blue-500" /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Sessões Totais</p>
                 <p className="text-xl font-light text-blue-600">{data.total_sessions_completed}</p>
                 <p className="text-[10px] text-slate-400">{data.avg_session_duration > 0 ? '~' + data.avg_session_duration + 'min média' : 'sem dados'}</p>
               </div>
               <div className="relative p-3 rounded-xl border border-purple-200 bg-purple-50/40">
-                <HelpTip tip="dash_gen_manut" color="bg-purple-100/60 text-purple-600" className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_gen_manut" color="bg-purple-100/60 text-purple-600" /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Gen. + Manut.</p>
                 <p className="text-xl font-light text-purple-600">{data.protocols_gen_maint}</p>
                 <p className="text-[10px] text-slate-400">protocolos em transição</p>
               </div>
               <div className={`relative p-3 rounded-xl border ${data.protocols_regression > 0 ? 'border-red-200 bg-red-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
-                <HelpTip tip="dash_regressoes" color={data.protocols_regression > 0 ? 'bg-red-100/60 text-red-500' : 'bg-slate-200/60 text-slate-500'} className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_regressoes" color={data.protocols_regression > 0 ? 'bg-red-100/60 text-red-500' : 'bg-slate-200/60 text-slate-500'} /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Regressões</p>
                 <p className={`text-xl font-light ${data.protocols_regression > 0 ? 'text-red-500' : 'text-slate-400'}`}>{data.protocols_regression}</p>
                 <p className="text-[10px] text-slate-400">{data.total_regressions} total histórico</p>
               </div>
               <div className={`relative p-3 rounded-xl border ${data.cancel_rate_30d > 20 ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200 bg-slate-50/50'}`}>
-                <HelpTip tip="dash_cancelamento" color={data.cancel_rate_30d > 20 ? 'bg-amber-100/60 text-amber-500' : 'bg-slate-200/60 text-slate-500'} className="absolute top-2 right-2" />
+                <div className="absolute top-2 right-2"><HelpTip tip="dash_cancelamento" color={data.cancel_rate_30d > 20 ? 'bg-amber-100/60 text-amber-500' : 'bg-slate-200/60 text-slate-500'} /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Cancelamento</p>
                 <p className={`text-xl font-light ${data.cancel_rate_30d > 20 ? 'text-amber-500' : 'text-slate-600'}`}>{data.cancel_rate_30d}%</p>
                 <p className="text-[10px] text-slate-400">últimos 30 dias</p>

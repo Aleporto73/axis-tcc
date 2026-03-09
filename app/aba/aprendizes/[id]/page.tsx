@@ -265,10 +265,10 @@ export default function LearnerDetailPage() {
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6">
-          <div className="relative p-3 rounded-xl bg-blue-50/50 text-center"><HelpTip tip="aprendiz_protocolos_ativos" color="bg-blue-100/60 text-blue-500" className="absolute top-2 right-2" /><p className="text-lg font-medium text-blue-600">{activeP}</p><p className="text-[11px] text-slate-400">Protocolos ativos</p></div>
-          <div className="relative p-3 rounded-xl bg-green-50/50 text-center"><HelpTip tip="aprendiz_dominados" color="bg-green-100/60 text-green-600" className="absolute top-2 right-2" /><p className="text-lg font-medium text-green-600">{masteredP}</p><p className="text-[11px] text-slate-400">Dominados</p></div>
+          <div className="relative p-3 rounded-xl bg-blue-50/50 text-center"><div className="absolute top-2 right-2"><HelpTip tip="aprendiz_protocolos_ativos" color="bg-blue-100/60 text-blue-500" /></div><p className="text-lg font-medium text-blue-600">{activeP}</p><p className="text-[11px] text-slate-400">Protocolos ativos</p></div>
+          <div className="relative p-3 rounded-xl bg-green-50/50 text-center"><div className="absolute top-2 right-2"><HelpTip tip="aprendiz_dominados" color="bg-green-100/60 text-green-600" /></div><p className="text-lg font-medium text-green-600">{masteredP}</p><p className="text-[11px] text-slate-400">Dominados</p></div>
           <div className="p-3 rounded-xl bg-aba-500/5 text-center"><p className="text-lg font-medium text-aba-500">{completedS}</p><p className="text-[11px] text-slate-400">Sessões</p></div>
-          <div className="relative p-3 rounded-xl bg-slate-50 text-center"><HelpTip tip="aprendiz_cso_atual" color="bg-slate-200/60 text-slate-500" className="absolute top-2 right-2" /><p className="text-lg font-medium text-slate-700">{lastCSO ? lastCSO.cso_aba : '—'}</p><p className="text-[11px] text-slate-400">CSO atual</p></div>
+          <div className="relative p-3 rounded-xl bg-slate-50 text-center"><div className="absolute top-2 right-2"><HelpTip tip="aprendiz_cso_atual" color="bg-slate-200/60 text-slate-500" /></div><p className="text-lg font-medium text-slate-700">{lastCSO ? lastCSO.cso_aba : '—'}</p><p className="text-[11px] text-slate-400">CSO atual</p></div>
         </div>
       </div>
       {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
