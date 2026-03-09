@@ -45,7 +45,7 @@ export default function PortalPage() {
   )
 
   const { learner, summaries, protocols, upcoming, achievements } = data
-  const age = learner.date_of_birth ? Math.floor((Date.now() - new Date(learner.date_of_birth).getTime()) / (365.25*24*60*60*1000)) : null
+  const age = learner.birth_date ? Math.floor((Date.now() - new Date(learner.birth_date).getTime()) / (365.25*24*60*60*1000)) : null
   const conquistados = protocols.filter((p:any) => p.status_simplificado === 'conquistado').length
   const emProgresso = protocols.filter((p:any) => p.status_simplificado === 'em_progresso').length
 
@@ -58,7 +58,7 @@ export default function PortalPage() {
             <svg className="w-5 h-5 text-aba-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
           </div>
           <div>
-            <h1 className="text-base font-medium text-slate-800">{learner.full_name}</h1>
+            <h1 className="text-base font-medium text-slate-800">{learner.name}</h1>
             <p className="text-xs text-slate-400">Portal da Família · AXIS ABA{age ? ` · ${age} anos` : ''}</p>
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function PortalPage() {
               {summaries.map((s:any, i:number) => (
                 <div key={i} className="p-3 bg-slate-50 rounded-lg">
                   <p className="text-xs text-slate-400 mb-1">{new Date(s.scheduled_at).toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}</p>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{s.content}</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{s.summary_text}</p>
                 </div>
               ))}
             </div>

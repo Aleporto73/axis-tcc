@@ -12,74 +12,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     const { token } = await params
     if (!token) return NextResponse.json({ error: 'Token inválido' }, { status: 400 })
 
-    // Lookup via SECURITY DEFINER function — bypassa RLS sem precisar de BYPASSRLS no role
-    const accessRes = await client.query(
-      'SELECT * FROM portal_token_lookup($1)',
-      [token]
-    )
+    // Todas as queries usam SECURITY DEFINER functions — bypass RLS sem precisar de BYPASSRLS no role
+    // 1. Lookup do token
+    const accessRes = await client.query('SELECT * FROM portal_token_lookup($1)', [token])
     if (!accessRes.rows[0]) return NextResponse.json({ error: 'Link inválido ou expirado' }, { status: 403 })
     if (!accessRes.rows[0].consent_accepted) return NextResponse.json({ error: 'Consentimento pendente' }, { status: 403 })
 
     const { learner_id, tenant_id } = accessRes.rows[0]
 
-    // Seta tenant_id para RLS das queries subsequentes
-    await client.query('BEGIN')
-    await client.query("SELECT set_config('app.tenant_id', $1::text, true)", [tenant_id])
+    // 2. Atualiza last_accessed_at
+    await client.query('SELECT portal_update_last_access($1)', [token])
 
-    // Atualiza last_accessed_at (via function não é necessário — usa query direta com tenant setado)
-    await client.query('UPDATE family_portal_access SET last_accessed_at = NOW() WHERE access_token = $1', [token])
+    // 3. Dados do aprendiz
+    const learner = await client.query('SELECT * FROM portal_get_learner($1, $2)', [learner_id, tenant_id])
+    if (!learner.rows[0]) return NextResponse.json({ error: 'Aprendiz não encontrado' }, { status: 404 })
 
-    // Dados do aprendiz (sem scores clínicos)
-    const learner = await client.query(
-      'SELECT id, full_name, date_of_birth, diagnosis, level FROM learners WHERE id = $1 AND tenant_id = $2',
-      [learner_id, tenant_id]
-    )
-    if (!learner.rows[0]) { await client.query('COMMIT'); return NextResponse.json({ error: 'Aprendiz não encontrado' }, { status: 404 }) }
-
-    // Resumos de sessão aprovados
-    const summaries = await client.query(
-      `SELECT ss.id, ss.content, ss.approved_at, s.scheduled_at, s.duration_minutes
-       FROM session_summaries ss
-       JOIN sessions_aba s ON s.id = ss.session_id
-       WHERE ss.learner_id = $1 AND ss.status = 'approved'
-       ORDER BY s.scheduled_at DESC LIMIT 10`,
-      [learner_id]
-    )
-
-    // Protocolos (só nome e status simplificado — sem scores)
-    const protocols = await client.query(
-      `SELECT title, domain, status,
-        CASE
-          WHEN status IN ('mastered','maintained','generalization','maintenance') THEN 'conquistado'
-          WHEN status = 'active' THEN 'em_progresso'
-          WHEN status = 'regression' THEN 'em_revisao'
-          ELSE 'outro'
-        END as status_simplificado
-       FROM learner_protocols
-       WHERE learner_id = $1 AND tenant_id = $2 AND status != 'discontinued' AND status != 'archived'
-       ORDER BY created_at DESC`,
-      [learner_id, tenant_id]
-    )
-
-    // Próximas sessões
-    const upcoming = await client.query(
-      `SELECT scheduled_at, duration_minutes, status
-       FROM sessions_aba
-       WHERE learner_id = $1 AND tenant_id = $2 AND scheduled_at > NOW() AND status != 'cancelled'
-       ORDER BY scheduled_at ASC LIMIT 5`,
-      [learner_id, tenant_id]
-    )
-
-    // Conquistas (protocolos dominados/mantidos)
-    const achievements = await client.query(
-      `SELECT title, domain, updated_at
-       FROM learner_protocols
-       WHERE learner_id = $1 AND tenant_id = $2 AND status IN ('mastered','maintained','generalization','maintenance')
-       ORDER BY updated_at DESC LIMIT 10`,
-      [learner_id, tenant_id]
-    )
-
-    await client.query('COMMIT')
+    // 4-7. Resumos, protocolos, próximas sessões, conquistas
+    const [summaries, protocols, upcoming, achievements] = await Promise.all([
+      client.query('SELECT * FROM portal_get_summaries($1, $2)', [learner_id, tenant_id]),
+      client.query('SELECT * FROM portal_get_protocols($1, $2)', [learner_id, tenant_id]),
+      client.query('SELECT * FROM portal_get_upcoming($1, $2)', [learner_id, tenant_id]),
+      client.query('SELECT * FROM portal_get_achievements($1, $2)', [learner_id, tenant_id]),
+    ])
 
     return NextResponse.json({
       learner: learner.rows[0],
@@ -89,7 +43,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
       achievements: achievements.rows,
     })
   } catch (err: any) {
-    await client.query('ROLLBACK').catch(() => {})
     console.error('Portal error:', err)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   } finally {
