@@ -135,7 +135,7 @@ export default function PortalPage() {
               {summaries.map((s:any, i:number) => (
                 <div key={i} className="p-3 bg-slate-50 rounded-lg">
                   <p className="text-xs text-slate-400 mb-1">{new Date(s.scheduled_at).toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}</p>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{s.summary_text}</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{s.content}</p>
                 </div>
               ))}
             </div>

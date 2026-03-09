@@ -83,7 +83,7 @@ $$;
 CREATE OR REPLACE FUNCTION portal_get_summaries(p_learner_id uuid, p_tenant_id uuid)
 RETURNS TABLE (
   id uuid,
-  summary_text text,
+  content text,
   approved_at timestamptz,
   scheduled_at timestamptz,
   duration_minutes integer
@@ -92,11 +92,11 @@ SECURITY DEFINER
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT ss.id, ss.summary_text, ss.approved_at, s.scheduled_at, s.duration_minutes
+  SELECT ss.id, ss.content, ss.approved_at, s.scheduled_at, s.duration_minutes
   FROM session_summaries ss
   JOIN sessions_aba s ON s.id = ss.session_id
   WHERE ss.learner_id = p_learner_id AND ss.tenant_id = p_tenant_id
-    AND ss.is_approved = true
+    AND ss.status = 'approved'
   ORDER BY s.scheduled_at DESC
   LIMIT 10;
 $$;
