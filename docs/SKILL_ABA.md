@@ -1,7 +1,7 @@
 # AXIS ABA — Documentação Técnica (Skill)
 
-Última atualização: 2026-02-28
-Versão do sistema: CSO-ABA v1.0.0
+Última atualização: 2026-03-10
+Versão do sistema: CSO-ABA v2.6.1
 
 ---
 
@@ -39,8 +39,11 @@ Aprendiz → Protocolos → Sessões → Trials + Comportamentos ABC → CSO-ABA
 
 ### Equipe (profiles)
 - Roles: admin, supervisor, terapeuta
-- Admin/supervisor: acesso total. Terapeuta: apenas seus aprendizes
+- Admin (Dono da clínica): acesso total — aprendizes, protocolos, sessões, relatórios, equipe, configurações e assinatura
+- Supervisor Clínico: acesso a todos os aprendizes — protocolos, sessões, relatórios, PEI. Não gerencia equipe nem assinatura
+- Terapeuta (Aplicador): acesso apenas aos aprendizes vinculados a ele — aplica sessões e registra trials. Não cria protocolos nem gera relatórios
 - CRP/CRP_UF para registro profissional
+- Um mesmo profissional pode pertencer a múltiplas clínicas (ver seção Multi-Clínica)
 
 ---
 
@@ -82,6 +85,9 @@ Aprendiz → Protocolos → Sessões → Trials + Comportamentos ABC → CSO-ABA
 - Planos com título, período de início e metas
 - Metas do PEI (pei_goals) com domínio, título, percentual alvo
 - Protocolos podem ser vinculados a metas do PEI (rastreabilidade PEI → Protocolo)
+- Status do PEI: rascunho → ativo → concluído
+- Cada meta do PEI mostra o progresso baseado nos protocolos vinculados
+- Visível para admin e supervisor (terapeuta não acessa PEI)
 
 ---
 
@@ -117,7 +123,7 @@ Aprendiz → Protocolos → Sessões → Trials + Comportamentos ABC → CSO-ABA
 
 ---
 
-## 7. MOTOR CSO-ABA v1.0.0
+## 7. MOTOR CSO-ABA v2.6.1
 
 ### O que é
 Clinical State Object para ABA — índice de evolução clínica calculado longitudinalmente.
@@ -196,9 +202,16 @@ Pesos FIXOS (0.25 cada). NÃO ajustáveis por tenant. Padrão nacional.
 
 ## 10. ALERTAS
 
-- Regressões detectadas geram alertas automáticos
+### Alertas de Regressão
+- Regressões detectadas geram alertas automáticos (cor vermelha no painel)
 - Lista protocolo + aprendiz + contagem de regressões
 - Filtrado por role: terapeuta só vê seus aprendizes
+
+### Alertas de Sondas de Manutenção
+- Sondas pendentes que já chegaram na data agendada aparecem no painel principal (cor ciano/azul claro)
+- Mostram o nome do aprendiz, protocolo e qual sonda está pendente (semana 2, 6 ou 12)
+- Clicando no alerta, o profissional é levado direto para a tela de manutenção
+- Também filtrado por role: terapeuta só vê sondas dos seus aprendizes
 
 ---
 
@@ -266,6 +279,8 @@ Pesos FIXOS (0.25 cada). NÃO ajustáveis por tenant. Padrão nacional.
 ### Clerk
 - Autenticação de usuários
 - Multi-tenant por organização/clínica
+- Webhook user.created ativa automaticamente convites pendentes (Hotmart e equipe)
+- Um mesmo e-mail pode ter perfis em múltiplas clínicas (ver seção Multi-Clínica)
 
 ### OpenAI
 - Chat Ana ABA: GPT-4o-mini (assistente virtual do módulo ABA)
@@ -280,7 +295,30 @@ Pesos FIXOS (0.25 cada). NÃO ajustáveis por tenant. Padrão nacional.
 
 ---
 
-## 16. O QUE O AXIS ABA NÃO FAZ
+## 16. MULTI-CLÍNICA
+
+### Como funciona
+- Um profissional pode pertencer a mais de uma clínica no AXIS ABA
+- Exemplo: uma terapeuta pode ser dona de sua própria clínica e também atender como convidada em outra
+- Ao fazer login, se tiver acesso a múltiplas clínicas, o sistema mostra uma tela de seleção
+
+### Tela de Seleção de Clínica
+- Mostra cards com o nome de cada clínica, o perfil do profissional nela e quantos aprendizes e membros tem
+- Ao clicar em um card, o sistema seleciona aquela clínica e redireciona para o painel
+- Se o profissional só tem uma clínica, a seleção é automática (sem tela intermediária)
+
+### Convites de equipe
+- O administrador convida um profissional pelo e-mail na tela Equipe
+- Se o convidado já tem conta no AXIS, o acesso é ativado automaticamente no próximo login
+- Se o convidado ainda não tem conta, ele recebe um link para criar — ao criar, todos os convites pendentes são ativados de uma vez
+
+### Troca de clínica
+- Para trocar de clínica ativa, o profissional pode acessar a tela de seleção novamente
+- Cada clínica tem seus dados completamente isolados — nenhuma informação é compartilhada entre clínicas
+
+---
+
+## 17. O QUE O AXIS ABA NÃO FAZ
 
 - NÃO diagnostica
 - NÃO prescreve intervenções
@@ -293,7 +331,7 @@ Pesos FIXOS (0.25 cada). NÃO ajustáveis por tenant. Padrão nacional.
 
 ---
 
-## 17. TERMINOLOGIA ABA
+## 18. TERMINOLOGIA ABA
 
 | Termo | Significado |
 |-------|-------------|

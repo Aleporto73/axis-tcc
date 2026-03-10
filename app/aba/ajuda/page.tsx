@@ -51,6 +51,15 @@ const sections: HelpSection[] = [
         ],
       },
       {
+        title: 'O que são os alertas no painel principal',
+        content: [
+          'O painel mostra dois tipos de alerta para que você não perca nada importante:',
+          'Alertas de regressão (em vermelho): aparecem quando uma sonda de manutenção detectou queda de desempenho e o protocolo voltou para aquisição. Mostra o nome do aprendiz, o protocolo e quantas vezes já houve regressão.',
+          'Alertas de sondas pendentes (em azul claro): aparecem quando chegou a data de aplicar uma sonda de manutenção (semana 2, 6 ou 12). Clicando no alerta, você vai direto para a tela de manutenção para registrar a sonda.',
+          'Terapeutas veem apenas alertas dos seus aprendizes. Admins e supervisores veem todos.',
+        ],
+      },
+      {
         title: 'Como criar um protocolo de intervenção',
         content: [
           'Abra o perfil do aprendiz e acesse a aba PEI (Plano Educacional Individualizado).',
@@ -75,7 +84,8 @@ const sections: HelpSection[] = [
           'O painel mostra um resumo geral da clínica.',
           'CSO-ABA dos aprendizes ativos com faixas de evolução (Excelente, Bom, Atenção, Crítico).',
           'Sessões realizadas na semana.',
-          'Alertas de regressão ou protocolos sem sessão recente.',
+          'Alertas de regressão (em vermelho) quando um protocolo volta para aquisição.',
+          'Alertas de sondas de manutenção (em azul claro) quando chegou a hora de aplicar uma sonda — clicando, você vai direto para a tela de manutenção.',
         ],
       },
     ],
@@ -311,6 +321,45 @@ const sections: HelpSection[] = [
           'Acesse Equipe, selecione o membro e clique em "Promover a Administrador".',
           'Após a transferência, seu acesso muda automaticamente para Supervisor.',
           'Essa ação fica registrada no histórico do sistema.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'multiplas-clinicas',
+    title: 'Múltiplas Clínicas',
+    icon: Users,
+    items: [
+      {
+        title: 'Posso acessar mais de uma clínica com a mesma conta?',
+        content: [
+          'Sim! Se você foi convidada para outra clínica ou é dona de mais de uma, o AXIS reconhece automaticamente.',
+          'Ao fazer login, se você tiver acesso a mais de uma clínica, aparece uma tela para escolher qual clínica quer acessar.',
+          'Se você só tem uma clínica, essa tela não aparece — vai direto para o painel.',
+        ],
+      },
+      {
+        title: 'Como funciona a tela de seleção de clínica',
+        content: [
+          'A tela mostra um card para cada clínica com o nome, seu perfil (admin, supervisor ou terapeuta), e quantos aprendizes e membros tem.',
+          'Basta clicar no card da clínica que você quer acessar.',
+          'Seus dados em cada clínica são completamente separados — nenhuma informação é compartilhada entre clínicas.',
+        ],
+      },
+      {
+        title: 'Fui convidada para outra clínica, como acesso?',
+        content: [
+          'Se você já tem conta no AXIS: basta fazer login normalmente. O sistema ativa o convite automaticamente e mostra a tela de seleção de clínica.',
+          'Se você ainda não tem conta: clique no link do convite que recebeu por e-mail, crie sua conta, e todos os convites pendentes são ativados de uma vez.',
+          'Não precisa fazer nada manualmente — o sistema cuida da ativação.',
+        ],
+      },
+      {
+        title: 'Posso ter perfis diferentes em clínicas diferentes?',
+        content: [
+          'Sim. Você pode ser administradora na sua própria clínica e terapeuta em outra, por exemplo.',
+          'Cada clínica define o perfil de acesso que você tem nela.',
+          'Ao trocar de clínica, o sistema ajusta automaticamente o que você pode ver e fazer.',
         ],
       },
     ],
