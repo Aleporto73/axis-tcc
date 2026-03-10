@@ -108,11 +108,14 @@ export async function POST(request: NextRequest) {
       // clerk_user_id será preenchido quando o convidado fizer sign-up/login
       const tempClerkId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
+      // invited_by: usar profile real, ou NULL se fallback (tenantId como profileId)
+      const invitedBy = ctx.profileId !== ctx.tenantId ? ctx.profileId : null
+
       const insert = await ctx.client.query(
         `INSERT INTO profiles (tenant_id, clerk_user_id, role, name, email, crp, crp_uf, is_active, invited_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8)
          RETURNING id, name, email, role, is_active, created_at`,
-        [ctx.tenantId, tempClerkId, role, name, email, crp || null, crp_uf || null, ctx.profileId]
+        [ctx.tenantId, tempClerkId, role, name, email, crp || null, crp_uf || null, invitedBy]
       )
 
       // Audit log

@@ -89,11 +89,13 @@ export async function POST(request: NextRequest) {
       )
 
       // Auto-vincular o criador como terapeuta primário
+      // assigned_by: usar profile real, ou NULL se fallback (tenantId como profileId)
+      const assignedBy = ctx.profileId !== ctx.tenantId ? ctx.profileId : null
       await ctx.client.query(
         `INSERT INTO learner_therapists (tenant_id, learner_id, profile_id, is_primary, assigned_by)
-         VALUES ($1, $2, $3, true, $3)
+         VALUES ($1, $2, $3, true, $4)
          ON CONFLICT (learner_id, profile_id) DO NOTHING`,
-        [ctx.tenantId, inserted.rows[0].id, ctx.profileId]
+        [ctx.tenantId, inserted.rows[0].id, ctx.profileId, assignedBy]
       )
 
       // Auto-criar guardian se email foi informado no cadastro

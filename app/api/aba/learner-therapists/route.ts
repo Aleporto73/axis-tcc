@@ -105,13 +105,16 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Verificar se profileId do admin é um profile real (não fallback tenantId)
+      const assignedBy = ctx.profileId !== ctx.tenantId ? ctx.profileId : null
+
       // Criar vínculo
       const insert = await ctx.client.query(
         `INSERT INTO learner_therapists (tenant_id, learner_id, profile_id, is_primary, assigned_by)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (learner_id, profile_id) DO UPDATE SET is_primary = $4
          RETURNING id, learner_id, profile_id, is_primary, assigned_at`,
-        [ctx.tenantId, learner_id, profile_id, is_primary || false, ctx.profileId]
+        [ctx.tenantId, learner_id, profile_id, is_primary || false, assignedBy]
       )
 
       // Audit log
