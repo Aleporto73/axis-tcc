@@ -373,7 +373,7 @@ export default function RelatoriosPage() {
                     <Tooltip tip="relatorio_motor">
                       Motor v{conv.engine_version}
                     </Tooltip>
-                    {' '}<HelpTip tip="relatorio_motor" />
+                    {' '}<HelpTip tip="relatorio_motor" color="bg-slate-200/60 text-slate-500" />
                   </p>
                 </div>
 
@@ -393,7 +393,7 @@ export default function RelatoriosPage() {
                         <Tooltip tip="relatorio_cso">
                           CSO-ABA atual
                         </Tooltip>
-                        {' '}<HelpTip tip="relatorio_cso" />
+                        {' '}<HelpTip tip="relatorio_cso" color="bg-aba-500/10 text-aba-500" />
                       </p>
                     </div>
                     <div className="text-center p-3 bg-aba-500/5 rounded-lg">
@@ -402,7 +402,7 @@ export default function RelatoriosPage() {
                         <Tooltip tip="relatorio_banda">
                           Banda CSO
                         </Tooltip>
-                        {' '}<HelpTip tip="relatorio_banda" />
+                        {' '}<HelpTip tip="relatorio_banda" color="bg-aba-500/10 text-aba-500" />
                       </p>
                     </div>
                   </div>
@@ -413,7 +413,7 @@ export default function RelatoriosPage() {
                         <Tooltip tip="relatorio_dimensoes">
                           Dimensões atuais
                         </Tooltip>
-                        {' '}<HelpTip tip="relatorio_dimensoes" />
+                        {' '}<HelpTip tip="relatorio_dimensoes" color="bg-slate-200/60 text-slate-500" />
                       </h3>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {['sas', 'pis', 'bss', 'tcm'].map(dim => (

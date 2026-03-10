@@ -57,7 +57,7 @@ export default function Tooltip({ tip, children, icon = false, position }: Toolt
     >
       {children}
       {icon && (
-        <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-100 text-emerald-600 text-[9px] font-bold leading-none cursor-help shrink-0 ml-0.5">
+        <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-200/60 text-slate-500 text-[9px] font-bold leading-none cursor-help shrink-0 ml-0.5">
           ?
         </span>
       )}
@@ -100,7 +100,7 @@ export default function Tooltip({ tip, children, icon = false, position }: Toolt
  * Uso: <HelpTip tip="aprendiz_dominados" />
  */
 export function HelpTip({ tip, className, color }: { tip: TooltipKey; className?: string; color?: string }) {
-  const colorClass = color || 'bg-emerald-100 text-emerald-600'
+  const colorClass = color || 'bg-slate-200/60 text-slate-500'
   return (
     <Tooltip tip={tip}>
       <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${colorClass} text-[10px] font-bold leading-none cursor-help ${className || ''}`}>

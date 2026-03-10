@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       const result = await withTenant(async ({ client, tenantId }) => {
         const proto = await client.query('SELECT id, learner_id, status, maintenance_started_at FROM learner_protocols WHERE id = $1 AND tenant_id = $2', [protocol_id, tenantId])
         if (proto.rows.length === 0) throw new Error('Protocolo não encontrado')
-        if (proto.rows[0].status !== 'maintenance') throw new Error('Protocolo precisa estar em "maintenance"')
+        if (proto.rows[0].status !== 'maintenance') throw new Error('Este protocolo ainda não está em fase de manutenção. Primeiro ele precisa passar pela generalização e validação.')
         const baseDate = proto.rows[0].maintenance_started_at || new Date()
         const schedules = [{ weeks:2, label:'Sonda 2 semanas' }, { weeks:6, label:'Sonda 6 semanas' }, { weeks:12, label:'Sonda 12 semanas' }]
         const probes = []
