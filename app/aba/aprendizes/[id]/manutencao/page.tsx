@@ -37,14 +37,16 @@ export default function ManutencaoPage() {
       const res = await fetch('/api/aba/maintenance', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'evaluate', probe_id:probeId, trials_total:form.trials_total, trials_correct:form.trials_correct, prompt_level:form.prompt_level, notes:form.notes||null }) })
       const data = await res.json()
       if (!res.ok) setError(data.error||'Erro'); else {
-        if (data.regression) setSuccess(`Sonda falhou (${data.score_pct}%). Regressão — protocolo voltou para Ativo.`); else setSuccess(`Sonda aprovada (${data.score_pct}%)!`)
+        if (data.regression) setSuccess(`Sonda falhou (${data.score_pct}%). Regressão detectada — protocolo retornou ao ciclo.`)
+        else if (data.auto_maintained) setSuccess(`Sonda aprovada (${data.score_pct}%)! Todas as sondas passaram — protocolo marcado como Mantido automaticamente.`)
+        else setSuccess(`Sonda aprovada (${data.score_pct}%)!`)
         setEvaluating(null); setForm({ trials_total:10, trials_correct:0, prompt_level:'independent', notes:'' }); fetchProbes()
       }
     } catch { setError('Falha de conexão') }; setSaving(null)
   }
 
   if (loading) return <div className="flex items-center justify-center min-h-[40vh]"><p className="text-slate-400 text-sm animate-pulse">Carregando...</p></div>
-  const pending = probes.filter(p => p.status === 'pending'); const completed = probes.filter(p => p.status === 'completed')
+  const pending = probes.filter(p => p.status === 'pending'); const completed = probes.filter(p => p.status === 'completed'); const cancelled = probes.filter(p => p.status === 'cancelled')
 
   return (
     <div className="px-4 md:px-8 lg:px-12 xl:px-16 pt-5">
@@ -68,7 +70,7 @@ export default function ManutencaoPage() {
                 </div>
                 {evaluating === p.id && (
                   <div className="mt-3 pt-3 border-t border-amber-200">
-                    <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                       <div><label className="block text-[11px] text-slate-500 mb-1">Total tentativas</label><input type="number" min={1} value={form.trials_total} onChange={e => setForm({...form, trials_total:parseInt(e.target.value)||0})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" /></div>
                       <div><label className="block text-[11px] text-slate-500 mb-1">Corretas</label><input type="number" min={0} value={form.trials_correct} onChange={e => setForm({...form, trials_correct:parseInt(e.target.value)||0})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" /></div>
                       <div><label className="block text-[11px] text-slate-500 mb-1">Nível de dica</label><select value={form.prompt_level} onChange={e => setForm({...form, prompt_level:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500 bg-white">{Object.entries(promptLabels).map(([k,v]) => <option key={k} value={k}>{v}</option>)}</select></div>
@@ -88,6 +90,19 @@ export default function ManutencaoPage() {
                 <div className="flex items-center justify-between">
                   <div><h3 className="text-sm font-medium text-slate-800">{p.label}</h3><p className="text-[11px] text-slate-400">{p.protocol_title} · {p.trials_correct}/{p.trials_total} ({p.score_pct}%)</p></div>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${p.result==='passed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>{p.result==='passed' ? 'Mantida' : 'Regressão'}</span>
+                </div>
+              </div>
+            ))}</div>
+          </div>
+        )}
+        {cancelled.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-xs font-medium text-slate-300 uppercase tracking-wider mb-3">Canceladas ({cancelled.length})</h2>
+            <div className="space-y-2">{cancelled.map(p => (
+              <div key={p.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 opacity-60">
+                <div className="flex items-center justify-between">
+                  <div><h3 className="text-sm font-medium text-slate-500 line-through">{p.label}</h3><p className="text-[11px] text-slate-400">{p.protocol_title}</p></div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-400">Cancelada</span>
                 </div>
               </div>
             ))}</div>

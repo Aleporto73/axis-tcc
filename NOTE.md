@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 09/03/2026 (tarde)
+## Atualizado: 10/03/2026 (manha)
 
 ---
 
@@ -30,12 +30,12 @@
 | Google Calendar | 100% | Sync bidirecional. ABA: 7 rotas dedicadas (oauth, callback, status, sync, watch, webhook, disconnect). Multi-terapeuta. Helpers compartilhados com TCC |
 | PDF reports | 100% | Logo AXIS, CSO, protocolos, acentos OK, codigo autenticidade |
 | CID (Classificacao Diagnostica) | 100% | CIDSelector com CID-10/CID-11, catalogo 50+ codigos, 6 grupos, busca, entrada manual, cross-mapping |
-| Dashboard ABA | 95% | KPIs com cores pasteis + tooltips educativos + grafico CSO SVG + alertas regressao. Analytics avancado TBD |
+| Dashboard ABA | 100% | KPIs com cores pasteis + tooltips educativos + grafico CSO SVG + alertas regressao. Acesso rapido: Aprendizes, Sessoes, Relatorios, PEI, Biblioteca |
 | Sessao Duration V2 | 100% | Cronometro por trial (play/pause/reset), applied_by UUID FK profiles, duration_minutes_override editavel, duracao ativa (soma trials). Migration 016 |
-| PEI (Plano Educacional) | 90% | Tela completa + API + dados demo + sidebar + vinculo protocolo. Botao "Vincular ao PEI" so aparece quando existem goals |
+| PEI (Plano Educacional) | 100% | Tela completa + API CRUD (GET/POST/PATCH) + vinculo protocolo + transicoes status (draft/active/completed/archived) + audit log + sidebar. Botao "Vincular ao PEI" condicional |
 | Biblioteca de Protocolos | 100% | 15 protocolos seed, API GET /api/aba/library com filtro dominio, UI modal "Usar da Biblioteca" no create protocol. EBP mapeado por ebp_practice_id (FK) |
 | Generalizacao tab | 100% | Grid 3x2 funcional (UI + API + auto-transicao). Badge progresso na lista de protocolos. Labels renomeados: Pessoa (variacao) + Ambiente (contexto). Tooltips atualizados |
-| Manutencao/sondas | 40% | Schema pronto, UI em progresso. Modelo 2-6-12 semanas documentado |
+| Manutencao/sondas | 100% | Auto-criacao 3 sondas (2-6-12sem) ao entrar em maintenance. Auto-transicao maintained quando 3/3 passam. Regressao auto (<70%). Badge progresso no perfil aprendiz ("proxima sonda em Xd"). Cancelamento em cascata. Migration 017 (maintenance_started_at). UI: avaliar, sondas canceladas, grids responsivos |
 | Transcricao sessao (OpenAI) | 20% | Stub existe |
 
 ### UI / UX
@@ -177,7 +177,7 @@
 ### P2 — Pos-lancamento
 
 - [x] Generalizacao UI completa (regra 3x2 validada — grid, API, auto-transicao, badge progresso) ✅ 08/03. Labels renomeados variacao→pessoa, contexto→ambiente ✅ 09/03
-- [ ] Manutencao/sondas UI (modelo 2-6-12)
+- [x] Manutencao/sondas completa (auto-create, auto-maintained, regressao, badge, UI) ✅ 10/03
 - [ ] Transcricao OpenAI integrada
 - [ ] Dashboard analytics avancado (tendencias, predicao)
 - [ ] Multi-clinica (terapeuta em mais de um tenant)
@@ -351,6 +351,10 @@ PM2 (producao)
 | 2026-03-09 | Portal SECURITY DEFINER | RLS com forced=true impede queries sem tenant_id. Portal e publico (sem auth). Solucao: 7 functions SECURITY DEFINER que rodam como owner, bypassing RLS. Migration 014 |
 | 2026-03-09 | applied_by UUID FK profiles | Campo "quem aplicou" em trials e sessoes usa UUID FK para profiles (nao VARCHAR livre). Evita bagunca de nomes (Joao, joao, JOAO). Migration 016 |
 | 2026-03-09 | Session Duration V2 | Duracao anterior era ended_at - started_at (incluia ociosidade). V2: cronometro por trial (opcional), soma ativa, override manual. Campos novos: duration_seconds, duration_minutes_override, applied_by |
+| 2026-03-10 | Auto-schedule em maintenance (nao mastered) | Bible S3: sondas sao criadas ao entrar em maintenance (pos-mastered_validated), nao em mastered. Trigger corrigido |
+| 2026-03-10 | Auto-maintained quando 3/3 passam | Transicao automatica de maintenance→maintained quando todas as 3 sondas (2-6-12sem) tem result=passed. Audit log AUTO_MAINTAINED |
+| 2026-03-10 | PEI state machine | PEI plans agora tem lifecycle: draft→active→completed→archived. PATCH endpoint com validacao de transicoes. Audit PEI_STATUS_CHANGED |
+| 2026-03-10 | maintenance_started_at separado de maintained_at | maintained_at = quando TODAS sondas passaram (fim). maintenance_started_at = quando entrou em maintenance (inicio sondas). Sao momentos distintos |
 
 ---
 
@@ -376,10 +380,12 @@ PM2 (producao)
 17. ~~**Bug tooltips + cores pasteis Painel ABA**~~ ✅ 09/03
 
 ### Pendente
-18. **Backup automatizado**: pg_dump cron + rotacao 7 dias
+18. ~~**Backup automatizado**: pg_dump cron + rotacao 7 dias~~ ✅ 09/03 (cron 3am diario, rotacao 7d)
 19. ~~**Biblioteca de Protocolos**: seed + API + UI~~ ✅ 09/03
-20. **Deploy producao**: migration 014/015/016 + build + pm2 restart
-21. **LANCAMENTO BETA PUBLICO**
+20. ~~**Deploy producao**: migration 014/015/016 + build + pm2 restart~~ ✅ 09/03
+21. **Deploy migration 017** (maintenance_started_at) + build + pm2 restart
+22. **Teste end-to-end** fluxo completo com conta nova
+23. **LANCAMENTO BETA PUBLICO** — quarta 12/03/2026
 
 ### TESTE HOTMART — CONCLUIDO ✅ 08/03/2026
 
@@ -397,6 +403,16 @@ PM2 (producao)
 **Teste real (email.paciente.x@gmail.com):** cadastro → onboarding → free → compra Hotmart → webhook → UPSERT licenca → email pos-compra → acesso desbloqueado. **TUDO FUNCIONANDO.**
 
 **Auto-provisioning (implementado 05/03, fix 08/03):** compra ANTES de cadastrar → Clerk Invitation + pending tenant/profile/license. Clerk webhook user.created resolve pending_hotmart_* → ativa profile + licenca.
+
+---
+
+## CONCLUIDO EM 10/03/2026
+
+### Manha (codigo — Cowork)
+- [x] **Manutencao/sondas 40%→100%**: Fix auto-schedule trigger (mastered→maintenance). Auto-transicao maintained quando 3/3 sondas passam. Fix schedule API status check (maintained→maintenance). Badge progresso no perfil aprendiz com "proxima sonda em Xd". Sondas canceladas na UI. Grids responsivos. Migration 017 (maintenance_started_at)
+- [x] **PEI 90%→100%**: PATCH endpoint /api/aba/pei/[id] (editar titulo, datas, status). State machine PEI (draft→active→completed→archived). Botoes transicao na UI. Goals editaveis. Audit log transicoes
+- [x] **Dashboard 95%→100%**: Links PEI e Biblioteca no acesso rapido (6 cards total)
+- [x] **Testes**: 279/279 passando, TypeScript sem erros
 
 ---
 

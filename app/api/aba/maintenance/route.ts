@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
       const { protocol_id } = body
       if (!protocol_id) return NextResponse.json({ error: 'protocol_id obrigatório' }, { status: 400 })
       const result = await withTenant(async ({ client, tenantId }) => {
-        const proto = await client.query('SELECT id, learner_id, status, maintained_at FROM learner_protocols WHERE id = $1 AND tenant_id = $2', [protocol_id, tenantId])
+        const proto = await client.query('SELECT id, learner_id, status, maintenance_started_at FROM learner_protocols WHERE id = $1 AND tenant_id = $2', [protocol_id, tenantId])
         if (proto.rows.length === 0) throw new Error('Protocolo não encontrado')
-        if (proto.rows[0].status !== 'maintained') throw new Error('Protocolo precisa estar "maintained"')
-        const baseDate = proto.rows[0].maintained_at || new Date()
+        if (proto.rows[0].status !== 'maintenance') throw new Error('Protocolo precisa estar em "maintenance"')
+        const baseDate = proto.rows[0].maintenance_started_at || new Date()
         const schedules = [{ weeks:2, label:'Sonda 2 semanas' }, { weeks:6, label:'Sonda 6 semanas' }, { weeks:12, label:'Sonda 12 semanas' }]
         const probes = []
         for (const s of schedules) {
@@ -92,7 +92,36 @@ export async function POST(request: NextRequest) {
           regression = true
         }
 
-        return { probe_id, result: probeResult, score_pct, passed, regression, regression_threshold: REGRESSION_THRESHOLD }
+        // ─── Bible S3: Auto-transição para "maintained" quando TODAS as 3 sondas passam ───
+        let autoMaintained = false
+        if (!regression && passed) {
+          const allProbes = await client.query(
+            `SELECT id, status, result FROM maintenance_probes
+             WHERE protocol_id = $1 AND tenant_id = $2
+             ORDER BY week_number`,
+            [probe.rows[0].protocol_id, tenantId]
+          )
+          const total = allProbes.rows.length
+          const allPassed = allProbes.rows.every((p: any) => p.status === 'completed' && p.result === 'passed')
+
+          if (total >= 3 && allPassed) {
+            await client.query(
+              `UPDATE learner_protocols SET status = 'maintained', maintained_at = NOW(), updated_at = NOW()
+               WHERE id = $1 AND tenant_id = $2`,
+              [probe.rows[0].protocol_id, tenantId]
+            )
+
+            await client.query(
+              `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
+               VALUES ($1, $2, 'system', 'AUTO_MAINTAINED', 'learner_protocols',
+               jsonb_build_object('protocol_id', $3::text, 'probes_passed', $4::int), NOW())`,
+              [tenantId, userId || 'system', probe.rows[0].protocol_id, total]
+            )
+            autoMaintained = true
+          }
+        }
+
+        return { probe_id, result: probeResult, score_pct, passed, regression, regression_threshold: REGRESSION_THRESHOLD, auto_maintained: autoMaintained }
       })
       return NextResponse.json(result)
     }

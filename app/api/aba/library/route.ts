@@ -8,14 +8,14 @@ export async function GET(req: NextRequest) {
 
     const result = await withTenant(async ({ client }) => {
       // protocol_library é tabela global (sem tenant_id, sem RLS)
-      // JOIN com ebp_practices para resolver ebp_practice_id pelo nome
+      // ebp_practice_id já é integer FK para ebp_practices — não precisa de JOIN
       let query = `
-        SELECT pl.id, pl.title, pl.domain, pl.objective, pl.ebp_practice_name,
+        SELECT pl.id, pl.title, pl.domain, pl.objective,
+               pl.ebp_practice_id, ep.name as ebp_practice_name,
                pl.measurement_type, pl.default_mastery_pct, pl.default_mastery_sessions,
-               pl.default_mastery_trials, pl.difficulty_level, pl.tags,
-               ep.id as ebp_practice_id
+               pl.default_mastery_trials, pl.difficulty_level, pl.tags
         FROM protocol_library pl
-        LEFT JOIN ebp_practices ep ON LOWER(ep.name) = LOWER(pl.ebp_practice_name)
+        LEFT JOIN ebp_practices ep ON ep.id = pl.ebp_practice_id
         WHERE pl.is_active = true
       `
       const params: string[] = []

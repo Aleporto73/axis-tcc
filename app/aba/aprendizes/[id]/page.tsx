@@ -55,6 +55,8 @@ export default function LearnerDetailPage() {
   const [linkingPeiProtocolId, setLinkingPeiProtocolId] = useState<string|null>(null)
   const [linkingPeiGoalId, setLinkingPeiGoalId] = useState('')
   const [linkingPeiSaving, setLinkingPeiSaving] = useState(false)
+  const [probeStats, setProbeStats] = useState<Record<string, { total: number; completed: number; passed: number; nextDate: string | null }>>({})
+
 
   const fetchGuardians = async () => {
     setGuardianLoading(true)
@@ -164,12 +166,32 @@ export default function LearnerDetailPage() {
       const pData = await pRes.json()
       const sData = await sRes.json()
       setLearner(lData.learners?.find((l:any) => l.id === learnerId) || lData.learner || null)
-      setProtocols(pData.protocols || [])
+      const protos = pData.protocols || []
+      setProtocols(protos)
       setSessions(sData.sessions || [])
       try {
         const cRes = await fetch('/api/aba/learners/' + learnerId + '/cso-history')
         if (cRes.ok) { const cData = await cRes.json(); setCsoHistory(cData.history || []) }
       } catch {}
+      // Fetch probe stats for maintenance/maintained protocols
+      const maintenanceProtos = protos.filter((p: Protocol) => p.status === 'maintenance' || p.status === 'maintained')
+      if (maintenanceProtos.length > 0) {
+        try {
+          const mRes = await fetch('/api/aba/maintenance?learner_id=' + learnerId)
+          if (mRes.ok) {
+            const mData = await mRes.json()
+            const stats: Record<string, { total: number; completed: number; passed: number; nextDate: string | null }> = {}
+            for (const proto of maintenanceProtos) {
+              const probes = (mData.probes || []).filter((pr: any) => pr.protocol_id === proto.id)
+              const completed = probes.filter((pr: any) => pr.status === 'completed').length
+              const passed = probes.filter((pr: any) => pr.result === 'passed').length
+              const nextPending = probes.find((pr: any) => pr.status === 'pending')
+              stats[proto.id] = { total: probes.length, completed, passed, nextDate: nextPending?.scheduled_at || null }
+            }
+            setProbeStats(stats)
+          }
+        } catch {}
+      }
       setLoading(false)
     } catch { setError('Falha ao carregar'); setLoading(false) }
   }, [learnerId])
@@ -363,8 +385,28 @@ export default function LearnerDetailPage() {
                   {p.gen_cells_passed != null && <span className="text-[10px] text-purple-400">({p.gen_cells_passed}/6)</span>}
                 </Link>
               )}
-              {p.status === 'maintained' && (
-                <Link href={'/aba/aprendizes/' + learnerId + '/manutencao?protocol_id=' + p.id} className="inline-block mb-2 px-3 py-1 text-[11px] rounded-lg border border-emerald-300 text-emerald-600 hover:bg-emerald-50">🔄 Sondas</Link>
+              {(p.status === 'maintenance' || p.status === 'maintained') && (
+                <div className="mb-2">
+                  <Link href={'/aba/aprendizes/' + learnerId + '/manutencao?protocol_id=' + p.id} className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] rounded-lg border border-cyan-300 text-cyan-600 hover:bg-cyan-50">
+                    🔄 Sondas
+                    {probeStats[p.id] && (
+                      <span className="text-[10px] text-cyan-400">
+                        ({probeStats[p.id].completed}/{probeStats[p.id].total})
+                      </span>
+                    )}
+                  </Link>
+                  {probeStats[p.id]?.nextDate && (
+                    <p className="text-[10px] text-slate-400 mt-1 ml-1">
+                      Próxima sonda: {new Date(probeStats[p.id].nextDate!).toLocaleDateString('pt-BR')}
+                      {(() => {
+                        const days = Math.ceil((new Date(probeStats[p.id].nextDate!).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                        if (days < 0) return <span className="text-amber-500 font-medium"> (atrasada {Math.abs(days)}d)</span>
+                        if (days === 0) return <span className="text-aba-500 font-medium"> (hoje)</span>
+                        return <span> (em {days}d)</span>
+                      })()}
+                    </p>
+                  )}
+                </div>
               )}
               {validTransitions[p.status] && validTransitions[p.status].length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">

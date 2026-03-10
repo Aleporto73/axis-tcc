@@ -20,6 +20,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           mastered: 'mastered_at',
           generalization: 'generalized_at',
           mastered_validated: 'mastered_validated_at',
+          maintenance: 'maintenance_started_at',
           maintained: 'maintained_at',
           suspended: 'suspended_at',
           discontinued: 'discontinued_at',
@@ -43,10 +44,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
       const protocol = updated.rows[0]
 
-      // ─── Bible S3: Auto-criar 3 sondas de manutenção ao atingir "mastered" ───
+      // ─── Bible S3: Auto-criar 3 sondas ao entrar em "maintenance" ───
       let maintenanceProbes: any[] = []
-      if (status === 'mastered') {
-        const baseDate = protocol.mastered_at || new Date()
+      if (status === 'maintenance') {
+        const baseDate = protocol.maintenance_started_at || new Date()
         const schedules = [
           { weeks: 2,  label: 'Sonda 2 semanas' },
           { weeks: 6,  label: 'Sonda 6 semanas' },

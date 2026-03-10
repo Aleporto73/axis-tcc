@@ -42,6 +42,7 @@ export default function PEIPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [learners, setLearners] = useState<any[]>([])
   const [creating, setCreating] = useState(false)
+  const [transitioning, setTransitioning] = useState<string | null>(null)
   const [form, setForm] = useState({ learner_id: '', title: '', start_date: new Date().toISOString().split('T')[0] })
   const [goalInputs, setGoalInputs] = useState([{ title: '', domain: 'Comunicação', target_pct: 80, notes: '' }])
 
@@ -95,6 +96,28 @@ export default function PEIPage() {
       await fetchPlans()
     } catch { setError('Falha de conexão') }
     setCreating(false)
+  }
+
+  const peiValidTransitions: Record<string, string[]> = {
+    draft: ['active'],
+    active: ['completed', 'archived'],
+    completed: ['archived'],
+    archived: [],
+  }
+
+  const handlePeiTransition = async (planId: string, newStatus: string) => {
+    setTransitioning(planId)
+    setError(null)
+    try {
+      const res = await fetch('/api/aba/pei/' + planId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      if (!res.ok) { const err = await res.json(); setError(err.error || 'Erro'); setTransitioning(null); return }
+      await fetchPlans()
+    } catch { setError('Falha de conexão') }
+    setTransitioning(null)
   }
 
   const domainOptions = ['Comunicação', 'Social', 'Acadêmico', 'Autocuidado', 'Motor', 'Comportamento', 'Brincar', 'Cognitivo']
@@ -156,14 +179,26 @@ export default function PEIPage() {
                         </div>
                         <p className="text-xs text-slate-400 mt-0.5">{plan.learner_name} · Início: {new Date(plan.start_date).toLocaleDateString('pt-BR')}{plan.end_date ? ' · Fim: ' + new Date(plan.end_date).toLocaleDateString('pt-BR') : ''}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-medium text-aba-500">{goalsMet}/{plan.goals.length}</p>
-                        <p className="text-[10px] text-slate-400">
-                          <Tooltip tip="pei_metas_atingidas">
-                            metas atingidas
-                          </Tooltip>
-                          {' '}<HelpTip tip="pei_metas_atingidas" />
-                        </p>
+                      <div className="flex items-center gap-4">
+                        {peiValidTransitions[plan.status]?.length > 0 && (
+                          <div className="flex gap-1">
+                            {peiValidTransitions[plan.status].map(next => (
+                              <button key={next} onClick={() => handlePeiTransition(plan.id, next)} disabled={transitioning === plan.id}
+                                className={'px-2 py-1 text-[10px] rounded-lg border transition-colors ' + (next === 'archived' ? 'border-slate-200 text-slate-400 hover:text-slate-600' : 'border-aba-500/30 text-aba-500 hover:bg-aba-500/5')}>
+                                {transitioning === plan.id ? '...' : '→ ' + (statusLabels[next] || next)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="text-right">
+                          <p className="text-lg font-medium text-aba-500">{goalsMet}/{plan.goals.length}</p>
+                          <p className="text-[10px] text-slate-400">
+                            <Tooltip tip="pei_metas_atingidas">
+                              metas atingidas
+                            </Tooltip>
+                            {' '}<HelpTip tip="pei_metas_atingidas" />
+                          </p>
+                        </div>
                       </div>
                     </div>
                     <div className="p-5">
