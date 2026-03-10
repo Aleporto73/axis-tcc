@@ -1,4 +1,4 @@
-import { TenantContext, UserRole } from './with-tenant'
+import { TenantContext, UserRole, TenantSelectionRequired } from './with-tenant'
 
 // =====================================================
 // AXIS ABA - Authorization Helpers (Multi-Terapeuta)
@@ -116,7 +116,10 @@ export class RoleError extends Error {
  * Handler padrão para erros em rotas API.
  * Detecta RoleError e retorna 403.
  */
-export function handleRouteError(error: unknown): { message: string; status: number } {
+export function handleRouteError(error: unknown): { message: string; status: number; tenants?: any[] } {
+  if (error instanceof TenantSelectionRequired) {
+    return { message: 'Seleção de clínica necessária', status: 409, tenants: error.tenants }
+  }
   if (error instanceof RoleError) {
     return { message: error.message, status: 403 }
   }

@@ -59,70 +59,77 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ status: 'ignored', reason: 'no_email' })
       }
 
-      // Buscar profile pendente por email
-      const pendingProfile = await pool.query(
+      // Buscar TODOS os profiles pendentes por email (Hotmart + convites de equipe)
+      const pendingProfiles = await pool.query(
         `SELECT p.id, p.tenant_id, p.clerk_user_id
          FROM profiles p
-         WHERE LOWER(p.email) = $1 AND p.clerk_user_id LIKE 'pending_hotmart_%'
-         LIMIT 1`,
+         WHERE LOWER(p.email) = $1 AND p.clerk_user_id LIKE 'pending_%'`,
         [email]
       )
 
-      if (pendingProfile.rows.length === 0) {
+      if (pendingProfiles.rows.length === 0) {
         console.log('[CLERK WEBHOOK] Nenhum profile pendente para:', email)
         return NextResponse.json({ status: 'ok', action: 'no_pending_profile' })
       }
 
-      const profile = pendingProfile.rows[0]
-      const oldClerkId = profile.clerk_user_id
-      const tenantId = profile.tenant_id
+      const activatedTenants: string[] = []
 
-      console.log('[CLERK WEBHOOK] Ativando profile pendente:', {
-        email, clerkUserId, oldClerkId, tenantId,
-      })
+      for (const profile of pendingProfiles.rows) {
+        const oldClerkId = profile.clerk_user_id
+        const tenantId = profile.tenant_id
 
-      // Atualizar profiles
-      await pool.query(
-        `UPDATE profiles
-         SET clerk_user_id = $1, is_active = true, updated_at = NOW()
-         WHERE tenant_id = $2 AND clerk_user_id = $3`,
-        [clerkUserId, tenantId, oldClerkId]
-      )
+        console.log('[CLERK WEBHOOK] Ativando profile pendente:', {
+          email, clerkUserId, oldClerkId, tenantId,
+        })
 
-      // Atualizar tenants
-      await pool.query(
-        `UPDATE tenants
-         SET clerk_user_id = $1, updated_at = NOW()
-         WHERE id = $2 AND clerk_user_id = $3`,
-        [clerkUserId, tenantId, oldClerkId]
-      )
-
-      // Atualizar user_licenses
-      await pool.query(
-        `UPDATE user_licenses
-         SET clerk_user_id = $1, updated_at = NOW()
-         WHERE tenant_id = $2 AND clerk_user_id = $3`,
-        [clerkUserId, tenantId, oldClerkId]
-      )
-
-      // Audit log
-      try {
+        // Atualizar profile
         await pool.query(
-          `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
-           VALUES ($1, $2, 'clerk_webhook', 'PENDING_PROFILE_ACTIVATED', 'profile', $3, NOW())`,
-          [tenantId, clerkUserId, JSON.stringify({
-            email, old_clerk_id: oldClerkId, new_clerk_id: clerkUserId,
-            source: 'clerk_user_created',
-          })]
+          `UPDATE profiles
+           SET clerk_user_id = $1, is_active = true, updated_at = NOW()
+           WHERE tenant_id = $2 AND clerk_user_id = $3`,
+          [clerkUserId, tenantId, oldClerkId]
         )
-      } catch (_) { /* audit non-blocking */ }
 
-      console.log('[CLERK WEBHOOK] Profile ativado com sucesso:', { email, clerkUserId, tenantId })
+        // Atualizar tenants (só se for profile de dono — Hotmart)
+        if (oldClerkId.startsWith('pending_hotmart_')) {
+          await pool.query(
+            `UPDATE tenants
+             SET clerk_user_id = $1, updated_at = NOW()
+             WHERE id = $2 AND clerk_user_id = $3`,
+            [clerkUserId, tenantId, oldClerkId]
+          )
+
+          await pool.query(
+            `UPDATE user_licenses
+             SET clerk_user_id = $1, updated_at = NOW()
+             WHERE tenant_id = $2 AND clerk_user_id = $3`,
+            [clerkUserId, tenantId, oldClerkId]
+          )
+        }
+
+        // Audit log
+        try {
+          await pool.query(
+            `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
+             VALUES ($1, $2, 'clerk_webhook', 'PENDING_PROFILE_ACTIVATED', 'profile', $3, $4, NOW())`,
+            [tenantId, clerkUserId, profile.id, JSON.stringify({
+              email, old_clerk_id: oldClerkId, new_clerk_id: clerkUserId,
+              source: 'clerk_user_created',
+              type: oldClerkId.startsWith('pending_hotmart_') ? 'hotmart_purchase' : 'team_invite',
+            })]
+          )
+        } catch (_) { /* audit non-blocking */ }
+
+        activatedTenants.push(tenantId)
+      }
+
+      console.log('[CLERK WEBHOOK] Profiles ativados:', { email, clerkUserId, count: activatedTenants.length })
 
       return NextResponse.json({
         status: 'activated',
         email,
-        tenant_id: tenantId,
+        activated_count: activatedTenants.length,
+        tenant_ids: activatedTenants,
       })
     }
 
