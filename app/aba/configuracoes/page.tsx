@@ -522,13 +522,12 @@ export default function ConfiguracoesABAPage() {
         )}
 
         {/* ============================================ */}
-        {/* TODO: reativar quando verificação Google Brand for aprovada */}
         {/* SEÇÃO: Google Calendar (todos os roles) */}
         {/* Conforme Bible S19 + docs/GOOGLE_CALENDAR_INTEGRATION.md */}
         {/* Multi-terapeuta: cada profissional conecta seu Gmail */}
         {/* Tokens salvos por profile_id em calendar_connections */}
         {/* ============================================ */}
-        {false && <section className="bg-white rounded-xl border border-slate-200 p-6">
+        <section className="bg-white rounded-xl border border-slate-200 p-6">
           <div className="flex items-center gap-4 mb-5">
             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
               <Calendar className="w-6 h-6 text-blue-600" />
@@ -670,13 +669,17 @@ export default function ConfiguracoesABAPage() {
                   Eventos criados no Google aparecem no AXIS ABA, e sessões agendadas aqui
                   são enviadas para sua agenda com link do Google Meet.
                 </p>
-                <a
-                  href="/api/aba/google"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                {/* TODO: reativar quando verificação Google Brand for aprovada */}
+                <span
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-lg font-medium opacity-50 cursor-not-allowed"
+                  aria-disabled="true"
                 >
                   <Calendar className="w-4 h-4" />
                   Conectar Google Calendar
-                </a>
+                </span>
+                <p className="text-xs text-amber-600 mt-2">
+                  Em breve — verificação Google em andamento
+                </p>
               </div>
               <p className="text-xs text-slate-400">
                 Cada profissional da clínica conecta sua própria conta Google.
@@ -684,7 +687,7 @@ export default function ConfiguracoesABAPage() {
               </p>
             </div>
           )}
-        </section>}
+        </section>
 
         {/* ============================================ */}
         {/* SEÇÃO: Perfil (todos os roles) */}
