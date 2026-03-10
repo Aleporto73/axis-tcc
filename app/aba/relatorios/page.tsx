@@ -191,7 +191,7 @@ export default function RelatoriosPage() {
       doc.text("Alta Parcial", 15, y)
       y += 8
       doc.setFontSize(10)
-      doc.text((alta.eligible ? 'Elegível' : 'Não elegível') + ' - ' + alta.criteria_met + '/' + alta.criteria_total + ' criterios', 15, y)
+      doc.text((alta.eligible ? 'Elegível' : 'Não elegível') + ' - ' + alta.criteria_met + '/' + alta.criteria_total + ' critérios', 15, y)
       y += 10
     }
     // Grafico Evolucao CSO-ABA com dimensões

@@ -96,23 +96,23 @@ export default function DashboardABAPage() {
           <span className="text-slate-300 text-xs">·</span>
           <Link href="/aba/aprendizes" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600">Aprendizes</Link>
           <span className="text-slate-300 text-xs">·</span>
-          <Link href="/aba/sessoes" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600">Sessoes</Link>
+          <Link href="/aba/sessoes" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600">Sessões</Link>
           <span className="text-slate-300 text-xs">·</span>
-          <Link href="/aba/relatorios" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600">Relatorios</Link>
+          <Link href="/aba/relatorios" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600">Relatórios</Link>
         </nav>
       </div>
       <div className="px-4 md:px-8 lg:px-12 xl:px-16">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-lg font-normal text-slate-400">Dashboard Clinico</h1>
-            <p className="text-xs text-slate-300">Progresso terapeutico</p>
+            <h1 className="text-lg font-normal text-slate-400">Dashboard Clínico</h1>
+            <p className="text-xs text-slate-300">Progresso terapêutico</p>
           </div>
           {learners.length>1 && <select value={sel} onChange={e=>setSel(e.target.value)} className="w-full sm:w-auto px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">{learners.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select>}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="md:col-span-2 p-5 rounded-2xl border border-slate-200 bg-white">
             <div className="flex items-center justify-between mb-4">
-              <div><h2 className="text-sm font-medium text-slate-800">Evolucao CSO-ABA</h2><p className="text-[11px] text-slate-400">Motor v2.6.1 - {cso.length} pontos</p></div>
+              <div><h2 className="text-sm font-medium text-slate-800">Evolução CSO-ABA</h2><p className="text-[11px] text-slate-400">Motor v2.6.1 - {cso.length} pontos</p></div>
               {last && <div className="text-right"><p className="text-2xl font-medium" style={{color:bandColors[getBand(last.cso_aba)]}}>{last.cso_aba}</p><p className="text-[10px]" style={{color:bandColors[getBand(last.cso_aba)]}}>{getBandLabel(last.cso_aba)}{delta!==0 && <span className={delta>0?'text-green-500':'text-red-500'}> ({delta>0?'+':''}{delta.toFixed(1)})</span>}</p></div>}
             </div>
             <MiniChart data={cso}/>
@@ -120,7 +120,7 @@ export default function DashboardABAPage() {
           <div className="p-4 rounded-2xl border border-slate-200 bg-white">
             <h3 className="text-xs font-medium text-slate-600 mb-3 flex items-center gap-1">Dimensões <HelpTip tip="cso_dimensoes" /></h3>
             {last ? <div className="space-y-2">
-              {[{l:'SAS',v:last.sas,d:'Aquisicao'},{l:'PIS',v:last.pis,d:'Implementacao'},{l:'BSS',v:last.bss,d:'Comportamento'},{l:'TCM',v:last.tcm,d:'Tratamento'}].map(x=>(
+              {[{l:'SAS',v:last.sas,d:'Aquisição'},{l:'PIS',v:last.pis,d:'Implementação'},{l:'BSS',v:last.bss,d:'Comportamento'},{l:'TCM',v:last.tcm,d:'Tratamento'}].map(x=>(
                 <div key={x.l}><div className="flex justify-between mb-0.5"><span className="text-[11px] text-slate-500">{x.l} <span className="text-slate-300">({x.d})</span></span><span className="text-xs font-medium text-slate-700">{x.v}</span></div><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${x.v}%`,backgroundColor:bandColors[getBand(x.v)]}}/></div></div>
               ))}
             </div> : <p className="text-xs text-slate-300">Sem dados</p>}
