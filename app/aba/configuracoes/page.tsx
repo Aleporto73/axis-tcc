@@ -522,12 +522,13 @@ export default function ConfiguracoesABAPage() {
         )}
 
         {/* ============================================ */}
+        {/* TODO: reativar quando verificação Google Brand for aprovada */}
         {/* SEÇÃO: Google Calendar (todos os roles) */}
         {/* Conforme Bible S19 + docs/GOOGLE_CALENDAR_INTEGRATION.md */}
         {/* Multi-terapeuta: cada profissional conecta seu Gmail */}
         {/* Tokens salvos por profile_id em calendar_connections */}
         {/* ============================================ */}
-        <section className="bg-white rounded-xl border border-slate-200 p-6">
+        {false && <section className="bg-white rounded-xl border border-slate-200 p-6">
           <div className="flex items-center gap-4 mb-5">
             <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
               <Calendar className="w-6 h-6 text-blue-600" />
@@ -683,7 +684,7 @@ export default function ConfiguracoesABAPage() {
               </p>
             </div>
           )}
-        </section>
+        </section>}
 
         {/* ============================================ */}
         {/* SEÇÃO: Perfil (todos os roles) */}
@@ -966,15 +967,24 @@ export default function ConfiguracoesABAPage() {
 
             {/* Status da exclusão agendada */}
             {deletionStatus?.status === 'scheduled' && (
-              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm font-medium text-amber-800">
-                  Exclusão agendada — {deletionStatus.days_remaining} dia(s) restantes
-                </p>
-                <p className="text-xs text-amber-600 mt-1">
-                  Anonimização irreversível programada para{' '}
-                  {new Date(deletionStatus.anonymization_date).toLocaleDateString('pt-BR')}.
-                  Exporte seus dados antes dessa data.
-                </p>
+              <div className="mt-4 space-y-3">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm font-medium text-amber-800">
+                    Exclusão agendada — {deletionStatus.days_remaining} dia(s) restantes
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1">
+                    Anonimização irreversível programada para{' '}
+                    {new Date(deletionStatus.anonymization_date).toLocaleDateString('pt-BR')}.
+                    Exporte seus dados antes dessa data.
+                  </p>
+                </div>
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    Sua conta foi desativada com sucesso. Para cancelar sua assinatura e evitar cobranças futuras, acesse{' '}
+                    <a href="https://hotmart.com" target="_blank" rel="noopener noreferrer" className="font-medium underline hover:text-blue-900">hotmart.com</a>{' '}
+                    com o e-mail usado na compra.
+                  </p>
+                </div>
               </div>
             )}
 
