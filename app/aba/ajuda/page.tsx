@@ -279,11 +279,11 @@ const sections: HelpSection[] = [
     icon: Shield,
     items: [
       {
-        title: 'Tipos de acesso: Administrador, Supervisor, Terapeuta',
+        title: 'Os 3 perfis de acesso do AXIS ABA',
         content: [
-          'Administrador: acesso total — gerencia equipe, configurações e dados da clínica.',
-          'Supervisor: visualiza todos os aprendizes, gera relatórios e acompanha a equipe.',
-          'Terapeuta: acessa apenas seus próprios aprendizes e sessões.',
+          'Admin (Dono da clínica): Tem acesso total ao sistema. Pode criar protocolos, aplicar sessões, gerar relatórios, convidar e gerenciar membros da equipe, alterar configurações e gerenciar a assinatura do plano. É o responsável geral pela clínica no sistema.',
+          'Supervisor Clínico: Tem acesso a todos os aprendizes da clínica. Pode criar protocolos, aplicar sessões, gerar relatórios e acompanhar o trabalho da equipe. A única coisa que não faz é gerenciar a assinatura e as configurações administrativas.',
+          'Terapeuta (Aplicador): Tem acesso apenas aos aprendizes que foram vinculados a ele. Pode aplicar sessões e registrar tentativas (trials) dos seus aprendizes. Não pode criar protocolos, gerar relatórios nem acessar aprendizes de outros terapeutas.',
         ],
       },
       {
@@ -296,11 +296,12 @@ const sections: HelpSection[] = [
         ],
       },
       {
-        title: 'O que cada tipo de acesso pode ver e fazer',
+        title: 'O que cada perfil pode ver e fazer (resumo)',
         content: [
-          'Administrador: tudo, incluindo Equipe, Configurações e dados financeiros.',
-          'Supervisor: Painel, todos os Aprendizes, todas as Sessões, PEI e Relatórios.',
-          'Terapeuta: Painel resumido, seus Aprendizes e suas Sessões.',
+          'Admin: Painel completo, Aprendizes (todos), Sessões (todas), PEI, Relatórios, Equipe, Configurações, Assinatura.',
+          'Supervisor: Painel completo, Aprendizes (todos), Sessões (todas), PEI, Relatórios. Não acessa Equipe, Configurações nem Assinatura.',
+          'Terapeuta: Painel resumido (só seus dados), Aprendizes (somente os vinculados a ele), Sessões (somente as dos seus aprendizes). Não acessa PEI, Relatórios, Equipe nem Configurações.',
+          'Dica: os ícones na barra lateral mudam conforme o perfil — se um menu não aparece para você, é porque seu perfil não tem acesso àquela área.',
         ],
       },
       {

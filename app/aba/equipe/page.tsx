@@ -62,6 +62,7 @@ export default function EquipePage() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [showRoles, setShowRoles] = useState(false)
 
   // Modal de convite
   const [showInvite, setShowInvite] = useState(false)
@@ -258,6 +259,71 @@ export default function EquipePage() {
           <button onClick={() => setError('')} className="ml-2 text-red-500 hover:text-red-700">x</button>
         </div>
       )}
+
+      {/* Card: Perfis de Acesso */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-8">
+        <button
+          onClick={() => setShowRoles(prev => !prev)}
+          className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-aba-500/10 flex items-center justify-center">
+              <svg className="w-4 h-4 text-aba-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-700">Perfis de Acesso</h2>
+              <p className="text-xs text-slate-400">Entenda o que cada perfil pode fazer no sistema</p>
+            </div>
+          </div>
+          <svg className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${showRoles ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+        </button>
+        {showRoles && (
+          <div className="px-6 pb-5 border-t border-slate-100 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-amber-100 text-amber-700 border border-amber-200">Admin</span>
+                </div>
+                <p className="text-xs font-medium text-slate-700 mb-1.5">Dono da clínica</p>
+                <ul className="space-y-1">
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Acesso total ao sistema</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Cria protocolos e aplica sessões</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Gera relatórios</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Convida e gerencia equipe</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Gerencia assinatura</li>
+                </ul>
+              </div>
+              <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-blue-100 text-blue-700 border border-blue-200">Supervisor</span>
+                </div>
+                <p className="text-xs font-medium text-slate-700 mb-1.5">Supervisor Clínico</p>
+                <ul className="space-y-1">
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Vê todos os aprendizes</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Cria protocolos e aplica sessões</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Gera relatórios</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-slate-300 mt-0.5">&#10007;</span> Não gerencia equipe</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-slate-300 mt-0.5">&#10007;</span> Não gerencia assinatura</li>
+                </ul>
+              </div>
+              <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">Terapeuta</span>
+                </div>
+                <p className="text-xs font-medium text-slate-700 mb-1.5">Aplicador</p>
+                <ul className="space-y-1">
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Seus aprendizes vinculados</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-green-500 mt-0.5">&#10003;</span> Aplica sessões e registra trials</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-slate-300 mt-0.5">&#10007;</span> Não cria protocolos</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-slate-300 mt-0.5">&#10007;</span> Não gera relatórios</li>
+                  <li className="text-[11px] text-slate-500 flex items-start gap-1.5"><span className="text-slate-300 mt-0.5">&#10007;</span> Não acessa outros aprendizes</li>
+                </ul>
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-3 text-center italic">Os ícones na barra lateral mudam conforme o perfil — se um menu não aparece, é porque seu perfil não tem acesso.</p>
+          </div>
+        )}
+      </div>
 
       {/* Membros Ativos */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-8">
