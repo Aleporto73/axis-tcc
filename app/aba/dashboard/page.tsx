@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { HelpTip } from '@/components/Tooltip'
+import { User } from 'lucide-react'
 
 interface Learner { id: string; name: string }
 interface CSOPoint { session_date: string; cso_aba: number; sas: number; pis: number; bss: number; tcm: number }
@@ -92,6 +93,8 @@ export default function DashboardABAPage() {
       )}
       <div className="flex justify-center pt-5 mb-6 px-4">
         <nav className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-3 md:px-5 py-1.5 shadow-sm">
+          <Link href="/aba/dashboard" className="px-3 py-1 text-sm font-medium text-aba-500 bg-aba-500/10 rounded-full">Dashboard</Link>
+          <span className="text-slate-300 text-xs">·</span>
           <Link href="/aba" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600">Painel</Link>
           <span className="text-slate-300 text-xs">·</span>
           <Link href="/aba/aprendizes" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600">Aprendizes</Link>
@@ -102,12 +105,28 @@ export default function DashboardABAPage() {
         </nav>
       </div>
       <div className="px-4 md:px-8 lg:px-12 xl:px-16">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
-          <div>
-            <h1 className="text-lg font-normal text-slate-400">Dashboard Clínico</h1>
-            <p className="text-xs text-slate-300">Progresso terapêutico</p>
-          </div>
-          {learners.length>1 && <select value={sel} onChange={e=>setSel(e.target.value)} className="w-full sm:w-auto px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white">{learners.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select>}
+        <div className="text-center mb-5">
+          <h1 className="text-lg font-normal text-slate-400">Dashboard Clínico</h1>
+          <p className="text-xs text-slate-300 mb-4">Progresso terapêutico</p>
+
+          {/* Seletor de aprendiz centralizado e destacado */}
+          {learners.length > 0 && (
+            <div className="flex justify-center">
+              <div className="relative inline-flex items-center gap-2.5 bg-white border-2 border-aba-500/30 rounded-xl px-5 py-2.5 shadow-sm hover:border-aba-500/50 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-aba-500/10 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-aba-500" />
+                </div>
+                <select
+                  value={sel}
+                  onChange={e => setSel(e.target.value)}
+                  className="appearance-none bg-transparent text-base font-medium text-slate-700 pr-6 cursor-pointer focus:outline-none"
+                >
+                  {learners.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+                <svg className="w-4 h-4 text-slate-400 absolute right-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="md:col-span-2 p-5 rounded-2xl border border-slate-200 bg-white">

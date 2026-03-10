@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 10/03/2026 (manha)
+## Atualizado: 10/03/2026 (tarde)
 
 ---
 
@@ -11,14 +11,14 @@
 
 ---
 
-## ONDE ESTAMOS (verificado no codigo em 08/03/2026)
+## ONDE ESTAMOS (verificado no codigo em 10/03/2026)
 
 ### CORE ENGINE
 | Area | % | Status |
 |---|---|---|
 | Motor CSO-ABA v2.6.1 | 100% | 4 dimensoes (SAS, PIS, BSS, TCM), bandas, formula fixa 25% cada |
 | Maquina de estados (protocolos) | 100% | 10 estados, transicoes validadas por trigger, audit imutavel |
-| Multi-tenant + RBAC | 100% | tenant_id em tudo, admin/supervisor/terapeuta, learnerFilter |
+| Multi-tenant + RBAC | 100% | tenant_id em tudo, admin/supervisor/terapeuta, learnerFilter. Multi-clinica: 1 usuario pode pertencer a N tenants (cookie-based routing, auto-ativacao convites, tela selecao clinica). Migration 018 |
 | Audit log imutavel | 100% | axis_audit_logs append-only, metadata JSONB |
 | Regressao automatica | 100% | Detecta queda >15pts ou mudanca de banda, alerta no dashboard |
 
@@ -27,10 +27,10 @@
 |---|---|---|
 | Portal familia | 100% | Token 90d, consent LGPD, dados filtrados (nunca mostra CSO/trials). UI completa: conquistas, proximas sessoes, resumos, habilidades. Sem login (token-based by design). SECURITY DEFINER functions para bypass RLS. UPSERT consent/access |
 | Push notifications (FCM) | 100% | Lembretes 24h + 10min, cron 60s, token auto-cleanup |
-| Google Calendar | 100% | Sync bidirecional. ABA: 7 rotas dedicadas (oauth, callback, status, sync, watch, webhook, disconnect). Multi-terapeuta. Helpers compartilhados com TCC |
+| Google Calendar | 100% | Sync bidirecional. ABA: 7 rotas dedicadas. Multi-terapeuta. Helpers compartilhados com TCC. **Botao desabilitado no beta** — aguardando verificacao Google Brand. Codigo 100% funcional, so UI bloqueada |
 | PDF reports | 100% | Logo AXIS, CSO, protocolos, acentos OK, codigo autenticidade |
 | CID (Classificacao Diagnostica) | 100% | CIDSelector com CID-10/CID-11, catalogo 50+ codigos, 6 grupos, busca, entrada manual, cross-mapping |
-| Dashboard ABA | 100% | KPIs com cores pasteis + tooltips educativos + grafico CSO SVG + alertas regressao. Acesso rapido: Aprendizes, Sessoes, Relatorios, PEI, Biblioteca |
+| Dashboard ABA | 100% | KPIs com cores pasteis + tooltips educativos + grafico CSO SVG + alertas regressao (vermelho) + alertas sondas pendentes (ciano). Acesso rapido: Aprendizes, Sessoes, Relatorios, PEI, Biblioteca |
 | Sessao Duration V2 | 100% | Cronometro por trial (play/pause/reset), applied_by UUID FK profiles, duration_minutes_override editavel, duracao ativa (soma trials). Migration 016 |
 | PEI (Plano Educacional) | 100% | Tela completa + API CRUD (GET/POST/PATCH) + vinculo protocolo + transicoes status (draft/active/completed/archived) + audit log + sidebar. Botao "Vincular ao PEI" condicional |
 | Biblioteca de Protocolos | 100% | 15 protocolos seed, API GET /api/aba/library com filtro dominio, UI modal "Usar da Biblioteca" no create protocol. EBP mapeado por ebp_practice_id (FK) |
@@ -42,7 +42,7 @@
 | Area | % | Status |
 |---|---|---|
 | SidebarABA | 100% | Role-aware (admin/supervisor/terapeuta), sem badges, logo circulo "ABA" |
-| Central de Ajuda | 100% | 7 secoes accordion + busca + highlight, glossario ABA completo |
+| Central de Ajuda | 100% | 8 secoes accordion + busca + highlight, glossario ABA completo, secao Multiplas Clinicas, alertas dashboard explicados |
 | Chat Ana (IA) | 100% | API OpenAI (gpt-4o-mini), personality prompt, carrega SKILL_ABA.md |
 | Demo publica | 100% | /demo com tarja coral, layout dedicado, relatorios com chat simulado |
 | Landing ABA premium | 100% | /produto/aba — hero, ciclo ABA, relatorio mockup, chat Ana mockup |
@@ -55,13 +55,13 @@
 | Area | % | Status |
 |---|---|---|
 | Webhook Hotmart | 100% | v2.1: 7 eventos + auto-provisioning + UPSERT + email pos-compra. Produtos: 7285432, 7291024. Offers: u2t04kz5, 5hz0et4m (Founders), iwqieqxc (100), gona25or (250) |
-| Webhook Clerk | 100% | user.created → ativa pending profiles (clerk_user_id, is_active). Svix signature |
+| Webhook Clerk | 100% | user.created → ativa TODOS pending profiles (hotmart + equipe). Svix signature. Loop multi-profile |
 | Gate de licenca (layout.tsx) | 100% | Bloqueia /aba/* sem licenca ativa → redireciona /hub |
 | API licencas (/api/user/licenses) | 100% | Verifica ativas + nao-expiradas por tenant/user |
 | UpgradeModal | 100% | Dispara no free (>1 aprendiz). Links Hotmart reais. Tela "Meu Plano" nas configuracoes |
 | Middleware | 100% | Clerk auth, rotas publicas corretas (/produto, /demo, /portal, webhook) |
 | Cadastro ABA | 100% | /sign-up?produto=aba diferencia ABA vs TCC |
-| Testes automatizados | 30% | Vitest setup, coverage incompleta |
+| Testes automatizados | 50% | Vitest 279/279 passando (CSO engine, lifecycle, webhook). Coverage incompleta mas core coberto |
 
 ### INFRAESTRUTURA
 | Area | % | Status |
@@ -169,10 +169,10 @@
 - [x] **Email pos-compra**: 2 templates (upgrade + novo usuario) em src/email/purchase-template.ts. Enviados no webhook ✅ 08/03
 - [x] **Auto-provisioning**: comprou antes de cadastrar → Clerk Invitation + pending profile/license ✅ 05/03
 - [x] **Popup "Ativar lembretes"**: condicionado a pos-onboarding + rotas de produto ✅ 06/03
-- [ ] **Testes criticos**: CSO engine, state machine, webhook Hotmart
+- [x] **Testes criticos**: CSO engine (44 testes), state machine (57 testes), webhook Hotmart (25 testes) — 279/279 passando ✅ 10/03
 - [ ] **Backup automatizado**: pg_dump cron ou servico
 - [x] **Resend API key producao**: trocada para re_live_ na VPS. Emails funcionando ✅ 08/03
-- [ ] **Biblioteca de Protocolos**: seed com templates ABA comuns + API listagem + UI seletor ao criar protocolo
+- [x] **Biblioteca de Protocolos**: seed 15 protocolos, API listagem, UI seletor ao criar protocolo ✅ 09/03
 
 ### P2 — Pos-lancamento
 
@@ -180,7 +180,7 @@
 - [x] Manutencao/sondas completa (auto-create, auto-maintained, regressao, badge, UI) ✅ 10/03
 - [ ] Transcricao OpenAI integrada
 - [ ] Dashboard analytics avancado (tendencias, predicao)
-- [ ] Multi-clinica (terapeuta em mais de um tenant)
+- [x] Multi-clinica (terapeuta em mais de um tenant) ✅ 10/03 — migration 018, cookie-based routing, auto-ativacao convites, tela selecao, FK fix
 - [ ] App mobile (React Native)
 - [ ] Skill SEO (buscar skill pronta + customizar)
 - [ ] Real-time (WebSocket)
@@ -235,6 +235,7 @@ PM2 (producao)
 | axisclinico.com/aba/precos | Pagina de precos |
 | axisclinico.com/aba/onboarding | Wizard onboarding |
 | axisclinico.com/aba/configuracoes | Configuracoes |
+| axisclinico.com/aba/selecionar-clinica | Selecao de clinica (multi-tenant) |
 | axisclinico.com/sign-up?produto=aba | Cadastro ABA |
 | axisclinico.com/hub | Seletor ABA/TCC |
 | axisclinico.com/portal/[token] | Portal familia (publico) |
@@ -275,6 +276,16 @@ PM2 (producao)
 | `app/demo/relatorios/page.tsx` | Demo relatorios + chat simulado |
 | `app/page.tsx` | Landing institucional (TCC + ABA) |
 | `docs/SKILL_ABA.md` | Documentacao que alimenta Chat Ana |
+
+### Multi-tenant / Auth
+| Arquivo | Funcao |
+|---|---|
+| `src/database/with-tenant.ts` | Resolucao multi-tenant: auto-ativa convites, cookie routing, TenantSelectionRequired |
+| `src/database/with-role.ts` | RBAC + handleRouteError (409 para selecao clinica) |
+| `app/api/aba/tenant-select/route.ts` | API GET (listar clinicas) + POST (setar cookie) |
+| `app/aba/selecionar-clinica/page.tsx` | UI selecao de clinica (cards, auto-select se 1) |
+| `app/components/RoleProvider.tsx` | Detecta 409 → redirect selecao clinica |
+| `scripts/migrations/018_multi_tenant_profiles.sql` | Drop UNIQUE clerk_user_id, add compound index |
 
 ### Engine
 | Arquivo | Funcao |
@@ -355,10 +366,13 @@ PM2 (producao)
 | 2026-03-10 | Auto-maintained quando 3/3 passam | Transicao automatica de maintenance→maintained quando todas as 3 sondas (2-6-12sem) tem result=passed. Audit log AUTO_MAINTAINED |
 | 2026-03-10 | PEI state machine | PEI plans agora tem lifecycle: draft→active→completed→archived. PATCH endpoint com validacao de transicoes. Audit PEI_STATUS_CHANGED |
 | 2026-03-10 | maintenance_started_at separado de maintained_at | maintained_at = quando TODAS sondas passaram (fim). maintenance_started_at = quando entrou em maintenance (inicio sondas). Sao momentos distintos |
+| 2026-03-10 | Multi-clinica (migration 018) | profiles.clerk_user_id UNIQUE impedia 1 user em N tenants. Drop UNIQUE, add compound (clerk_user_id, tenant_id). Cookie-based routing com auto-ativacao |
+| 2026-03-10 | Google Calendar desabilitado no beta | Verificacao Google Brand pendente. Botao desabilitado visualmente, codigo 100% funcional. Reativar quando aprovado |
+| 2026-03-10 | Mensagem Hotmart na exclusao | Ao excluir conta, orienta usuario a cancelar assinatura em hotmart.com. Sem mencao a contato AXIS |
 
 ---
 
-## PROXIMOS PASSOS (atualizado 09/03/2026)
+## PROXIMOS PASSOS (atualizado 10/03/2026)
 
 ### Concluidos
 1. ~~Criar migration user_licenses~~ ✅ 03/03
@@ -383,9 +397,16 @@ PM2 (producao)
 18. ~~**Backup automatizado**: pg_dump cron + rotacao 7 dias~~ ✅ 09/03 (cron 3am diario, rotacao 7d)
 19. ~~**Biblioteca de Protocolos**: seed + API + UI~~ ✅ 09/03
 20. ~~**Deploy producao**: migration 014/015/016 + build + pm2 restart~~ ✅ 09/03
-21. **Deploy migration 017** (maintenance_started_at) + build + pm2 restart
-22. **Teste end-to-end** fluxo completo com conta nova
+21. **Deploy migrations 017 + 018** (maintenance_started_at + multi_tenant_profiles) + build + pm2 restart
+22. **Teste end-to-end** fluxo completo com conta nova (incluir multi-clinica)
 23. **LANCAMENTO BETA PUBLICO** — quarta 12/03/2026
+
+### STATUS GERAL PARA LANCAMENTO: ~95%
+O que falta (so operacional):
+- [ ] Rodar migration 017 + 018 no banco de producao
+- [ ] git pull + npm run next:build + pm2 restart axis-tcc
+- [ ] Teste e2e com conta nova (cadastro → onboarding → free → sessao → convite equipe → multi-clinica)
+- [ ] Verificacao Google Brand (nao-bloqueante — botao ja desabilitado)
 
 ### TESTE HOTMART — CONCLUIDO ✅ 08/03/2026
 
@@ -407,6 +428,19 @@ PM2 (producao)
 ---
 
 ## CONCLUIDO EM 10/03/2026
+
+### Tarde (codigo — Cowork)
+- [x] **Tooltips cor padrao**: HelpTip default mudou de emerald para slate (neutro). Cards relatorios com cores explicitas
+- [x] **Alertas sondas no dashboard**: API retorna maintenance_probe alerts (pendentes com data <= hoje). UI diferencia: sondas em ciano (relogio) vs regressao em vermelho (warning). Link direto para tela manutencao
+- [x] **Fix acentuacao dashboard**: 8 palavras sem acento corrigidas (Sessoes, Relatorios, Clinico, terapeutico, Evolucao, Aquisicao, Implementacao) + 1 em relatorios (criterios)
+- [x] **Equipe — Perfis de Acesso**: card colapsavel 3 colunas (Admin ambar / Supervisor azul / Terapeuta verde) com checkmarks de permissoes. Central de Ajuda expandida com descricao detalhada dos 3 perfis
+- [x] **BUG CRITICO — Multi-tenant**: profiles.clerk_user_id tinha UNIQUE (1 user = 1 tenant). Reescrito with-tenant.ts para N tenants. Migration 018 (drop UNIQUE, add compound index). Cookie-based routing. Auto-ativacao convites por email. Tela selecao clinica. TenantSelectionRequired (409). RoleProvider redirect. Clerk webhook expandido (pending_%)
+- [x] **BUG FK constraint**: ctx.profileId === ctx.tenantId no fallback causava FK violation em learner_therapists.assigned_by, team.invited_by, learners auto-assign. Fix: NULL quando fallback
+- [x] **SKILL_ABA.md atualizado**: v2.6.1, 18 secoes, multi-clinica, alertas sondas, roles expandidos, PEI status
+- [x] **Central de Ajuda expandida**: 8 secoes (era 7). Nova secao Multiplas Clinicas (4 items). Alertas dashboard explicados
+- [x] **Google Calendar desabilitado no beta**: botao "Conectar" com opacity-50 + cursor-not-allowed + "Em breve — verificacao Google em andamento". Codigo intacto
+- [x] **Mensagem exclusao conta**: ao confirmar exclusao, card azul orienta cancelar assinatura no hotmart.com
+- [x] **Testes**: 279/279 passando, TypeScript 0 erros
 
 ### Manha (codigo — Cowork)
 - [x] **Manutencao/sondas 40%→100%**: Fix auto-schedule trigger (mastered→maintenance). Auto-transicao maintained quando 3/3 sondas passam. Fix schedule API status check (maintained→maintenance). Badge progresso no perfil aprendiz com "proxima sonda em Xd". Sondas canceladas na UI. Grids responsivos. Migration 017 (maintenance_started_at)
@@ -538,4 +572,4 @@ PM2 (producao)
 ---
 
 *Este arquivo e a fonte unica de verdade do projeto. Atualizar a cada sessao de trabalho.*
-*Ultima verificacao cruzada com codigo: 09/03/2026*
+*Ultima verificacao cruzada com codigo: 10/03/2026*
