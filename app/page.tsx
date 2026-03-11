@@ -134,6 +134,7 @@ export default function HomePage() {
             >
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a1f4e] to-[#9a9ab8] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
               <div className="flex flex-col h-full">
+                <img src="/logo-axis-tcc.jpg" alt="AXIS TCC" className="h-10 object-contain object-left mb-6" />
                 <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-[#1a1f4e]/5 text-[#1a1f4e] mb-6">
                   Para psicólogos
                 </span>
@@ -175,6 +176,7 @@ export default function HomePage() {
             >
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a1f4e] to-[#c4785a] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
               <div className="flex flex-col h-full">
+                <img src="/logo-axis-aba.jpg" alt="AXIS ABA" className="h-10 object-contain object-left mb-6" />
                 <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-[#c4785a]/8 text-[#c4785a] mb-6">
                   Para clínicas
                 </span>
