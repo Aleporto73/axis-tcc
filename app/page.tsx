@@ -49,7 +49,7 @@ export default function HomePage() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa]/90 backdrop-blur-md border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-[#1a1f4e] tracking-tight">AXIS</span>
+            <span className="text-xl font-bold text-[#1a1f4e] tracking-tight">AXIS Clínico</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <Link href="#produtos" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
@@ -395,6 +395,7 @@ export default function HomePage() {
       <footer className="py-8 px-6 bg-[#1a1f4e] text-white/60">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-sm">© 2026 AXIS. Psiform Tecnologia.</span>
+          <div className="flex gap-4 text-xs"><a href="/privacidade" className="hover:text-white underline">Política de Privacidade</a><a href="/termos" className="hover:text-white underline">Termos de Serviço</a></div>
           <p className="text-xs text-center md:text-right max-w-md">
             Este sistema é uma ferramenta de apoio e organização. Não substitui o julgamento clínico do profissional.
           </p>
