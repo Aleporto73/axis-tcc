@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 10/03/2026 (tarde)
+## Atualizado: 10/03/2026 (noite)
 
 ---
 
@@ -170,7 +170,7 @@
 - [x] **Auto-provisioning**: comprou antes de cadastrar → Clerk Invitation + pending profile/license ✅ 05/03
 - [x] **Popup "Ativar lembretes"**: condicionado a pos-onboarding + rotas de produto ✅ 06/03
 - [x] **Testes criticos**: CSO engine (44 testes), state machine (57 testes), webhook Hotmart (25 testes) — 279/279 passando ✅ 10/03
-- [ ] **Backup automatizado**: pg_dump cron ou servico
+- [x] **Backup automatizado**: pg_dump cron diario 3h, rotacao 7d, /root/backups/axis-tcc/ ✅ 10/03
 - [x] **Resend API key producao**: trocada para re_live_ na VPS. Emails funcionando ✅ 08/03
 - [x] **Biblioteca de Protocolos**: seed 15 protocolos, API listagem, UI seletor ao criar protocolo ✅ 09/03
 
@@ -397,16 +397,13 @@ PM2 (producao)
 18. ~~**Backup automatizado**: pg_dump cron + rotacao 7 dias~~ ✅ 09/03 (cron 3am diario, rotacao 7d)
 19. ~~**Biblioteca de Protocolos**: seed + API + UI~~ ✅ 09/03
 20. ~~**Deploy producao**: migration 014/015/016 + build + pm2 restart~~ ✅ 09/03
-21. **Deploy migrations 017 + 018** (maintenance_started_at + multi_tenant_profiles) + build + pm2 restart
-22. **Teste end-to-end** fluxo completo com conta nova (incluir multi-clinica)
-23. **LANCAMENTO BETA PUBLICO** — quarta 12/03/2026
+21. ~~**Deploy migrations 017 + 018** (maintenance_started_at + multi_tenant_profiles) + build + pm2 restart~~ ✅ 10/03
+22. ~~**Teste end-to-end** fluxo completo com conta nova (incluir multi-clinica)~~ ✅ 10/03
+23. **LANCAMENTO BETA PUBLICO** — quarta 12/03/2026 ✅ PRONTO
 
-### STATUS GERAL PARA LANCAMENTO: ~95%
-O que falta (so operacional):
-- [ ] Rodar migration 017 + 018 no banco de producao
-- [ ] git pull + npm run next:build + pm2 restart axis-tcc
-- [ ] Teste e2e com conta nova (cadastro → onboarding → free → sessao → convite equipe → multi-clinica)
-- [ ] Verificacao Google Brand (nao-bloqueante — botao ja desabilitado)
+### STATUS GERAL PARA LANCAMENTO: 100% — Beta comercial pronto para venda
+AGUARDANDO:
+- [ ] Verificacao Google Brand (3-6 semanas) → reativar botao Google Calendar quando aprovado
 
 ### TESTE HOTMART — CONCLUIDO ✅ 08/03/2026
 
@@ -428,6 +425,25 @@ O que falta (so operacional):
 ---
 
 ## CONCLUIDO EM 10/03/2026
+
+### Noite (codigo — Cowork) — Finalização para Beta Comercial
+- [x] **Google Calendar OAuth**: branding submetido para verificacao Google (3-6 semanas). Dominio axisclinico.com verificado no Google Search Console via arquivo HTML. Botao "Conectar Google Calendar" desabilitado com mensagem "Em breve" ate aprovacao
+- [x] **Footer landing page**: links Politica de Privacidade e Termos de Servico adicionados
+- [x] **Nome "AXIS Clinico"**: adicionado na pagina inicial (exigencia Google Brand Verification)
+- [x] **Logo 120x120px**: enviado para Google Cloud Branding
+- [x] **Exclusao de conta LGPD**: testada e funcionando — modal com 90 dias retencao + mensagem orientando cancelar assinatura em hotmart.com
+- [x] **Cron backup**: duplicatas removidas do crontab, backup diario as 3h funcionando em /root/backups/axis-tcc/
+- [x] **Migrations 017 + 018**: maintenance_started_at e multi_tenant_profiles confirmadas no banco de producao
+- [x] **Dashboard e Painel**: navegacao unificada — top nav padronizado em todas as paginas (Dashboard · Painel · Aprendizes · Sessoes · Relatorios). Dashboard com header horizontal compacto (titulo esquerda, seletor aprendiz direita com borda cinza)
+- [x] **SKILL_ABA v2.6.1 + Central de Ajuda**: multi-clinica em producao
+- [x] **Google Calendar secao**: escondida corretamente (botao desabilitado, nao codigo removido)
+
+**Arquivos alterados:**
+- `app/page.tsx` (footer links + nome AXIS Clinico)
+- `app/aba/configuracoes/page.tsx` (Google Calendar desabilitado + mensagem Hotmart exclusao)
+- `app/aba/dashboard/page.tsx` (header horizontal + top nav)
+- `app/aba/page.tsx` (top nav padronizado)
+- `public/google336eb922a9244ae4.html` (verificacao Google Search Console — NAO REMOVER)
 
 ### Tarde (codigo — Cowork)
 - [x] **Tooltips cor padrao**: HelpTip default mudou de emerald para slate (neutro). Cards relatorios com cores explicitas
@@ -572,4 +588,4 @@ O que falta (so operacional):
 ---
 
 *Este arquivo e a fonte unica de verdade do projeto. Atualizar a cada sessao de trabalho.*
-*Ultima verificacao cruzada com codigo: 10/03/2026*
+*Ultima verificacao cruzada com codigo: 10/03/2026 (noite)*

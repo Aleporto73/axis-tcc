@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       model: 'whisper-1',
       language: 'pt',
       response_format: 'text',
-      prompt: 'Transcrição de resumo clínico feito por psicólogo. Termos técnicos: TCC, cognição, comportamento, emoção, ansiedade, depressão, TDAH, trauma, intervenção, psicoterapia.',
+      prompt: 'cognicao, comportamento, emocao, ansiedade, depressao, TDAH, TCC, trauma, intervencao, psicoterapia, terapeuta, paciente',
     })
 
     return NextResponse.json({

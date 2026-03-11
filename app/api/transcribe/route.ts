@@ -36,7 +36,7 @@ async function getAudioDuration(filePath: string): Promise<number> {
   }
 }
 
-async function splitAudio(inputPath: string, sessionId: string): Promise<string[]> {
+async function splitAudio(inputPath: string, jobId: string): Promise<string[]> {
   const duration = await getAudioDuration(inputPath)
   const chunks: string[] = []
 
@@ -47,7 +47,7 @@ async function splitAudio(inputPath: string, sessionId: string): Promise<string[
   const numChunks = Math.ceil(duration / CHUNK_DURATION)
   for (let i = 0; i < numChunks; i++) {
     const startTime = i * CHUNK_DURATION
-    const chunkPath = path.join(TEMP_DIR, sessionId + '_chunk_' + i + '.mp3')
+    const chunkPath = path.join(TEMP_DIR, jobId + '_chunk_' + i + '.mp3')
 
     try {
       await execAsync(
@@ -62,24 +62,32 @@ async function splitAudio(inputPath: string, sessionId: string): Promise<string[
   return chunks
 }
 
-async function transcribeChunk(filePath: string, chunkIndex: number): Promise<string> {
-  try {
-    const fileBuffer = await readFile(filePath)
-    const file = new File([fileBuffer], 'parte_' + chunkIndex + '.mp3', { type: 'audio/mpeg' })
+async function transcribeChunk(filePath: string, chunkIndex: number, maxRetries: number = 3): Promise<string> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const fileBuffer = await readFile(filePath)
+      const file = new File([fileBuffer], 'parte_' + chunkIndex + '.mp3', { type: 'audio/mpeg' })
 
-    const transcription = await openai.audio.transcriptions.create({
-      file: file,
-      model: 'whisper-1',
-      language: 'pt',
-      response_format: 'text',
-      prompt: 'Transcricao de sessao de psicoterapia TCC. Termos: cognicao, comportamento, emocao, ansiedade, depressao, TDAH, trauma, psicoterapia, terapeuta, paciente.',
-    })
+      const transcription = await openai.audio.transcriptions.create({
+        file: file,
+        model: 'whisper-1',
+        language: 'pt',
+        response_format: 'text',
+        prompt: 'cognicao, comportamento, emocao, ansiedade, depressao, TDAH, trauma, psicoterapia, terapeuta, paciente',
+      })
 
-    return transcription as unknown as string
-  } catch (error) {
-    console.error('[TRANSCRIBE] Erro ao transcrever parte ' + chunkIndex + ':', error)
-    return ''
+      return transcription as unknown as string
+    } catch (error) {
+      console.error(`[TRANSCRIBE] Erro chunk ${chunkIndex}, tentativa ${attempt}/${maxRetries}:`, error)
+      if (attempt < maxRetries) {
+        const delay = attempt * 2000
+        console.log(`[TRANSCRIBE] Aguardando ${delay}ms antes de tentar novamente...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
   }
+  console.error(`[TRANSCRIBE] FALHA DEFINITIVA chunk ${chunkIndex} apos ${maxRetries} tentativas`)
+  return ''
 }
 
 async function cleanupFiles(files: string[]) {
@@ -137,6 +145,7 @@ export async function POST(request: NextRequest) {
         model: 'whisper-1',
         language: 'pt',
         response_format: 'text',
+        prompt: 'cognicao, comportamento, emocao, ansiedade, depressao, TDAH, trauma, psicoterapia, terapeuta, paciente',
       })
 
       const fullTranscription = transcription as unknown as string
@@ -167,14 +176,17 @@ export async function POST(request: NextRequest) {
 
           await ensureTempDir()
 
-          const tempInputPath = path.join(TEMP_DIR, sessionId + '_input_' + Date.now() + '.mp3')
+          const jobId = `${sessionId}_${Date.now()}`
+          const originalName = audioFile.name || 'audio.webm'
+          const ext = path.extname(originalName) || '.webm'
+          const tempInputPath = path.join(TEMP_DIR, jobId + '_input' + ext)
           const arrayBuffer = await audioFile.arrayBuffer()
           await writeFile(tempInputPath, Buffer.from(arrayBuffer))
           filesToCleanup.push(tempInputPath)
 
           sendProgress({ type: 'status', message: 'Dividindo audio em partes...' })
 
-          const chunkPaths = await splitAudio(tempInputPath, sessionId)
+          const chunkPaths = await splitAudio(tempInputPath, jobId)
           const totalChunks = chunkPaths.length
 
           for (const cp of chunkPaths) {
