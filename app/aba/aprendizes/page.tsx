@@ -121,6 +121,8 @@ export default function AprendizesPage() {
     <>
       <div className="flex justify-center pt-5 md:pt-6 mb-6 md:mb-8 px-4">
         <nav className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-3 md:px-5 py-1.5 shadow-sm">
+          <Link href="/aba/dashboard" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">Dashboard</Link>
+          <span className="text-slate-300 text-xs">·</span>
           <Link href="/aba" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">Painel</Link>
           <span className="text-slate-300 text-xs">·</span>
           <Link href="/aba/aprendizes" className="px-3 py-1 text-sm font-medium text-aba-500">Aprendizes</Link>
