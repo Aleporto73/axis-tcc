@@ -65,6 +65,12 @@ Ana: "Isso acontece quando o sistema não tem informação suficiente pra sugeri
 
 Responda sempre em português brasileiro, de forma acolhedora e prática.`
 
+/* ─── types ─── */
+interface ChatMsg {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 /* ─── handler ─── */
 export async function POST(request: NextRequest) {
   try {
@@ -73,7 +79,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const { message } = await request.json()
+    const body = await request.json()
+    const message: string | undefined = body.message
+    const history: ChatMsg[] = Array.isArray(body.history) ? body.history : []
+
     if (!message) {
       return NextResponse.json({ error: 'Mensagem não fornecida' }, { status: 400 })
     }
@@ -90,13 +99,21 @@ DOCUMENTAÇÃO TÉCNICA DO SISTEMA (use como referência para responder com prec
 
 ${docs}`
 
+    // Monta histórico de mensagens (últimas 10 trocas para manter contexto sem estourar tokens)
+    const recentHistory = history.slice(-20) // 20 msgs = ~10 trocas user/assistant
+    const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+      { role: 'system', content: systemPrompt },
+      ...recentHistory.map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      })),
+      { role: 'user', content: message },
+    ]
+
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message },
-      ],
-      max_tokens: 500,
+      messages,
+      max_tokens: 800,
       temperature: 0.7,
     })
 

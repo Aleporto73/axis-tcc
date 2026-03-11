@@ -580,10 +580,16 @@ export default function AjudaPage() {
     setIsLoading(true)
 
     try {
+      // Monta histórico no formato da API (user → assistant)
+      const history = messages.map((m) => ({
+        role: m.role === 'ana' ? 'assistant' : 'user',
+        content: m.content,
+      }))
+
       const res = await fetch('/api/chat-ana', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, history }),
       })
 
       if (!res.ok) {

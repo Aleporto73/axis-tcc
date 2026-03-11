@@ -1,6 +1,6 @@
 # AXIS TCC — Documentação Técnica (Skill)
 
-Última atualização: 2026-02-28
+Última atualização: 2026-03-11
 Versão do sistema: CSO-TCC v3.0.0
 
 ---
@@ -8,12 +8,15 @@ Versão do sistema: CSO-TCC v3.0.0
 ## 1. VISÃO GERAL
 
 O AXIS TCC é um sistema de apoio à prática clínica em Terapia Cognitivo-Comportamental.
+É um sistema SOLO — feito para o psicólogo individual, sem equipe, sem supervisão hierárquica.
+Site: axisclinico.com
 
 **Princípios:**
 - IA NÃO decide, NÃO executa, NÃO substitui julgamento clínico
 - Decisão final SEMPRE humana
 - Dados append-only (nunca sobrescreve histórico)
 - Toda ação é auditável
+- Compatível com as diretrizes do CFP (Conselho Federal de Psicologia)
 
 ---
 
@@ -189,3 +192,63 @@ Arquivo: src/engines/suggestion.ts
 | Indicador | Cada uma das 4 dimensões do CSO |
 | Histórico | Registro permanente e imutável de todas as sessões |
 | Relatório | Documento exportável com resumo da evolução |
+
+---
+
+## 11. PLANOS E PREÇOS
+
+### Free (Gratuito)
+- 1 paciente
+- Motor CSO-TCC completo
+- Registro estruturado de sessões
+- Transcrição automática por áudio
+- Relatório institucional
+- Sem custo, sem cartão, sem prazo
+
+### Profissional — R$59/mês
+- Pacientes ilimitados
+- Tudo do Free +
+- Google Calendar sync
+- Suporte prioritário
+- Link para assinar: https://pay.hotmart.com/J104687347A?off=sn8ebdqc
+
+### Sobre limites de pacientes
+- O plano Profissional NÃO tem limite de pacientes
+- Diferente do AXIS ABA, o TCC não restringe quantidade
+- Como o sistema é solo (1 profissional), os dados são restritos ao próprio psicólogo
+
+---
+
+## 12. MODELO SOLO (v1.x)
+
+- 1 psicólogo por conta (tenant)
+- Sem multi-usuário
+- Sem níveis de permissão internos
+- Sem supervisão hierárquica
+- O modelo clínica (multi-profissional) será implementado na v2.x
+- Se o usuário perguntar sobre equipe ou múltiplos profissionais, explique que essa funcionalidade virá em uma atualização futura
+
+---
+
+## 13. COMO COMEÇAR (ONBOARDING)
+
+1. Acesse axisclinico.com e clique em "Começar Grátis" no card do AXIS TCC
+2. Crie sua conta com e-mail ou Google
+3. O sistema cria automaticamente seu consultório digital
+4. Cadastre seu primeiro paciente
+5. Agende e registre sua primeira sessão
+6. O sistema começa a calcular o índice de evolução automaticamente
+
+---
+
+## 14. PERGUNTAS FREQUENTES (ÉTICA E SEGURANÇA)
+
+- O AXIS TCC NÃO diagnostica — organiza dados funcionais para o profissional
+- A IA nunca decide sozinha — toda sugestão passa pela decisão humana
+- Compatível com o CFP — não delega atos privativos do psicólogo
+- A transcrição gera texto bruto, sem interpretação automática
+- Sugestões são opcionais, não obrigatórias
+- Registros NÃO são laudos nem documentos periciais
+- Sistema 100% auditável (append-only, logs separados)
+- Dados protegidos por criptografia e isolamento por tenant (multi-tenant)
+- Nenhum dado é compartilhado entre profissionais

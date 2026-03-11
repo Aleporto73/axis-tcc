@@ -227,6 +227,15 @@ CRISIS_PROTOCOL (10), PAUSE_EXPOSURE (9/8), CHECK_ADHERENCE (8), COGNITIVE_INTER
 - Suporte ampliado: sessoes de ate 70min (antes ~50min pelo limite Nginx)
 - PENDENTE NA VPS: Nginx reload + npm run next:build + restart app
 
+### 2026-03-11 — Wiring Comercial TCC (3 fixes)
+- ✅ Fix auto-license: /api/user/tenant agora cria AMBAS licenças (tcc + aba) no primeiro login
+- ✅ Gate de licença TCC: layout.tsx criado em /dashboard, /sessoes, /pacientes (auth + license check)
+- ✅ Redirect /produto/tcc → /dashboard para users com licença TCC ativa
+- ✅ Criado docs/REFERENCE_TCC.md (consolidado dos Documentos Mestres)
+- DECISAO: TCC v1.x = Solo, SEM limite de pacientes (sem UpgradeModal)
+- DECISAO: Clinica multi-profissional so na v2.x
+- PENDENTE NA VPS: git pull --rebase + npm run next:build + pm2 restart all
+
 ---
 
 ## DECISOES TOMADAS
@@ -234,6 +243,8 @@ CRISIS_PROTOCOL (10), PAUSE_EXPOSURE (9/8), CHECK_ADHERENCE (8), COGNITIVE_INTER
 |---|---|---|
 | 11/03/2026 | NOTE_TCC.md separado do NOTE.md (ABA) | Rastreabilidade por produto |
 | 11/03/2026 | Mapeamento completo antes de comecar | Saber exatamente onde estamos |
+| 11/03/2026 | TCC v1.x sem limite de pacientes | Solo profissional, dados restritos ao psicologo |
+| 11/03/2026 | Auto-license cria TCC + ABA | Cada layout verifica seu product_type independente |
 
 ---
 

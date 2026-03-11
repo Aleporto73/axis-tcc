@@ -167,8 +167,14 @@ export async function GET() {
         )
       } catch (_) { /* audit non-blocking */ }
 
-      // Criar licença free automática (necessário para o gate em layout.tsx)
+      // Criar licenças free automáticas (necessário para o gate em layout.tsx)
+      // Cria ambas (TCC + ABA) — cada layout verifica seu product_type
       try {
+        await client.query(
+          `INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
+           VALUES ($1, $2, 'tcc', true, NOW(), 'AUTO_FREE_TIER', $3)`,
+          [tenantId, userId, email]
+        )
         await client.query(
           `INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
            VALUES ($1, $2, 'aba', true, NOW(), 'AUTO_FREE_TIER', $3)`,
