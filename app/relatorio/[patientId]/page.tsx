@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { Target, Activity, Clock, TrendingUp, TrendingDown, Minus, AlertTriangle, Calendar, FileText, MessageSquare } from 'lucide-react'
+import { Target, Activity, Clock, TrendingUp, TrendingDown, Minus, AlertTriangle, Calendar, FileText, MessageSquare, Download } from 'lucide-react'
+import { jsPDF } from 'jspdf'
 
 interface EvolutionData {
   patient_name: string
@@ -86,6 +87,229 @@ export default function RelatorioPrintPage() {
     const sorted = Object.entries(data.event_counts).sort((a, b) => b[1] - a[1])
     const labelMap: Record<string, string> = { EVITOU: 'Evitação', ENFRENTOU: 'Enfrentamento', AJUSTOU: 'Ajuste', RECUPEROU: 'Recuperação' }
     return `Maior frequência de ${labelMap[sorted[0][0]]} (${data.event_percentages[sorted[0][0] as keyof typeof data.event_percentages]}%), seguido por ${labelMap[sorted[1][0]]} (${data.event_percentages[sorted[1][0] as keyof typeof data.event_percentages]}%).`
+  }
+
+  const downloadPDF = () => {
+    if (!data) return
+    const doc = new jsPDF()
+    const w = doc.internal.pageSize.getWidth()
+    const margin = 20
+    const contentW = w - margin * 2
+    let y = 20
+
+    // Helpers
+    const addText = (text: string, x: number, yPos: number, opts: { size?: number; style?: string; color?: [number, number, number]; maxWidth?: number } = {}) => {
+      doc.setFontSize(opts.size || 10)
+      doc.setFont('helvetica', opts.style || 'normal')
+      doc.setTextColor(...(opts.color || [51, 51, 51]))
+      if (opts.maxWidth) {
+        doc.text(text, x, yPos, { maxWidth: opts.maxWidth })
+      } else {
+        doc.text(text, x, yPos)
+      }
+    }
+
+    const checkPage = (needed: number) => {
+      if (y + needed > 275) {
+        doc.addPage()
+        y = 20
+      }
+    }
+
+    const drawLine = () => {
+      doc.setDrawColor(220, 220, 220)
+      doc.line(margin, y, w - margin, y)
+      y += 6
+    }
+
+    const sectionTitle = (title: string) => {
+      checkPage(20)
+      addText(title, margin, y, { size: 11, style: 'bold', color: [30, 30, 80] })
+      y += 8
+    }
+
+    // ─── Logo ───
+    const logoB64 = 'data:image/jpeg;base64,/9j/4QC8RXhpZgAASUkqAAgAAAAGABIBAwABAAAAAQAAABoBBQABAAAAVgAAABsBBQABAAAAXgAAACgBAwABAAAAAgAAABMCAwABAAAAAQAAAGmHBAABAAAAZgAAAAAAAABgAAAAAQAAAGAAAAABAAAABgAAkAcABAAAADAyMTABkQcABAAAAAECAwAAoAcABAAAADAxMDABoAMAAQAAAP//AAACoAQAAQAAAFgCAAADoAQAAQAAAMgAAAAAAAAA'
+    try { doc.addImage(logoB64, 'JPEG', margin, y, 50, 17) } catch { /* logo skip */ }
+    y += 22
+
+    // ─── Header ───
+    addText('Evolucao do Processo', margin, y, { size: 18, style: 'bold', color: [30, 30, 80] })
+    y += 7
+    addText(`Relatorio longitudinal - ${data.total_sessions} sessoes analisadas`, margin, y, { size: 10, color: [120, 120, 120] })
+    y += 6
+    addText(`Paciente: ${patientName}`, margin, y, { size: 12, style: 'bold' })
+    y += 6
+    const now = new Date()
+    addText(`Gerado em ${now.toLocaleDateString('pt-BR')} as ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} — AXIS TCC`, margin, y, { size: 8, color: [160, 160, 160] })
+    y += 10
+
+    drawLine()
+
+    // ─── Disclaimer ───
+    doc.setFillColor(248, 248, 248)
+    doc.roundedRect(margin, y - 2, contentW, 14, 2, 2, 'F')
+    addText('Este relatorio descreve padroes observaveis ao longo do tempo. Nao contem inferencia', margin + 3, y + 3, { size: 8, color: [100, 100, 100] })
+    addText('diagnostica, interpretacao psicologica ou juizo clinico.', margin + 3, y + 8, { size: 8, color: [100, 100, 100] })
+    y += 18
+
+    // ─── Contexto Clínico ───
+    if (clinicalRecord) {
+      sectionTitle('Contexto Clinico Inicial')
+      addText('[Registro do Profissional]', margin, y, { size: 7, color: [120, 180, 120] })
+      y += 5
+      const fields = [
+        { label: 'Evento ou contexto inicial', value: clinicalRecord.complaint },
+        { label: 'Aspectos mencionados no historico', value: clinicalRecord.patterns },
+        { label: 'Intervencoes previas relatadas', value: clinicalRecord.interventions },
+        { label: 'Situacao atual conforme relato', value: clinicalRecord.current_state },
+      ]
+      for (const f of fields) {
+        if (f.value) {
+          checkPage(14)
+          addText(f.label, margin, y, { size: 8, style: 'bold', color: [100, 100, 100] })
+          y += 4
+          const lines = doc.splitTextToSize(f.value, contentW)
+          addText(lines.join('\n'), margin, y, { size: 9, maxWidth: contentW })
+          y += lines.length * 4.5 + 3
+        }
+      }
+      y += 4
+      drawLine()
+    }
+
+    // ─── Indicadores ───
+    sectionTitle('Indicadores')
+    addText('[Calculo automatico]', margin, y, { size: 7, color: [180, 180, 200] })
+    y += 6
+
+    const indicators = [
+      { label: 'Sessoes finalizadas', value: String(data.total_sessions) },
+      { label: 'Eventos registrados', value: String(data.total_events) },
+      { label: 'Recuperacao media', value: data.avg_recovery_time ? `${data.avg_recovery_time} min` : '-' },
+      { label: 'Tendencia', value: data.trend === 'up' ? 'Positiva' : data.trend === 'down' ? 'Observada' : 'Estavel' },
+    ]
+
+    const colW = contentW / 4
+    indicators.forEach((ind, i) => {
+      const x = margin + i * colW
+      doc.setFillColor(248, 250, 252)
+      doc.roundedRect(x, y - 2, colW - 4, 18, 2, 2, 'F')
+      addText(ind.label, x + 3, y + 3, { size: 7, color: [120, 120, 120] })
+      addText(ind.value, x + 3, y + 11, { size: 14, style: 'bold', color: [30, 30, 30] })
+    })
+    y += 24
+
+    // ─── Tendência ───
+    sectionTitle('Tendencia de Processo')
+    const trendText = getTrendText(data.trend, data)
+    const trendLines = doc.splitTextToSize(trendText, contentW)
+    addText(trendLines.join('\n'), margin, y, { size: 9, maxWidth: contentW })
+    y += trendLines.length * 4.5 + 6
+    drawLine()
+
+    // ─── Distribuição de Eventos ───
+    sectionTitle('Distribuicao de Eventos')
+    const labelMap: Record<string, string> = { EVITOU: 'Evitou', ENFRENTOU: 'Enfrentou', AJUSTOU: 'Ajustou', RECUPEROU: 'Recuperou' }
+    const colorMap: Record<string, [number, number, number]> = {
+      EVITOU: [217, 119, 6], ENFRENTOU: [5, 150, 105], AJUSTOU: [8, 145, 178], RECUPEROU: [124, 58, 237]
+    }
+    const barMax = Math.max(data.event_percentages.EVITOU, data.event_percentages.ENFRENTOU, data.event_percentages.AJUSTOU, data.event_percentages.RECUPEROU, 1)
+
+    for (const key of ['EVITOU', 'ENFRENTOU', 'AJUSTOU', 'RECUPEROU'] as const) {
+      checkPage(12)
+      addText(`${labelMap[key]}:  ${data.event_counts[key]} (${data.event_percentages[key]}%)`, margin, y, { size: 9 })
+      y += 4
+      doc.setFillColor(230, 230, 230)
+      doc.roundedRect(margin, y, contentW, 4, 1, 1, 'F')
+      const barW = (data.event_percentages[key] / barMax) * contentW
+      if (barW > 0) {
+        doc.setFillColor(...colorMap[key])
+        doc.roundedRect(margin, y, Math.max(barW, 2), 4, 1, 1, 'F')
+      }
+      y += 8
+    }
+
+    addText(getDistributionText(data), margin, y, { size: 8, color: [120, 120, 120], maxWidth: contentW })
+    y += 8
+    drawLine()
+
+    // ─── Comparativo ───
+    if (data.sessions_early && data.sessions_recent && data.total_sessions >= 4) {
+      sectionTitle('Comparativo Temporal')
+      // Table header
+      const cols = [margin, margin + 50, margin + 90, margin + 130]
+      addText('Periodo', cols[0], y, { size: 8, style: 'bold', color: [100, 100, 100] })
+      addText('Sessoes', cols[1], y, { size: 8, style: 'bold', color: [100, 100, 100] })
+      addText('Eventos', cols[2], y, { size: 8, style: 'bold', color: [100, 100, 100] })
+      addText('Recuperacao', cols[3], y, { size: 8, style: 'bold', color: [100, 100, 100] })
+      y += 5
+      doc.setDrawColor(220, 220, 220)
+      doc.line(margin, y, w - margin, y)
+      y += 5
+
+      addText('Sessoes iniciais', cols[0], y, { size: 9 })
+      addText(String(data.sessions_early.count), cols[1], y, { size: 9 })
+      addText(String(data.sessions_early.events), cols[2], y, { size: 9 })
+      addText(`${data.sessions_early.avg_recovery} min`, cols[3], y, { size: 9 })
+      y += 6
+      addText('Sessoes recentes', cols[0], y, { size: 9 })
+      addText(String(data.sessions_recent.count), cols[1], y, { size: 9 })
+      addText(String(data.sessions_recent.events), cols[2], y, { size: 9 })
+      addText(`${data.sessions_recent.avg_recovery} min`, cols[3], y, { size: 9 })
+      y += 8
+      drawLine()
+    }
+
+    // ─── Outliers ───
+    if (data.outlier_sessions && data.outlier_sessions.length > 0) {
+      sectionTitle('Sessoes com Variacao')
+      for (const s of data.outlier_sessions) {
+        checkPage(8)
+        addText(`Sessao #${s.session_number} — ${s.reason}`, margin, y, { size: 9, color: [146, 64, 14] })
+        y += 5
+      }
+      y += 4
+      drawLine()
+    }
+
+    // ─── Timeline ───
+    sectionTitle('Linha do Tempo')
+    const timeColW = contentW / 4
+    data.timeline.forEach((s, idx) => {
+      const col = idx % 4
+      if (col === 0 && idx > 0) y += 10
+      if (col === 0) checkPage(12)
+      const x = margin + col * timeColW
+      addText(`#${s.session_number}`, x, y, { size: 9, style: 'bold' })
+      addText(new Date(s.date).toLocaleDateString('pt-BR'), x + 12, y, { size: 8, color: [100, 100, 100] })
+      if (s.duration) addText(`${s.duration}min`, x + 42, y, { size: 7, color: [160, 160, 160] })
+    })
+    y += 14
+    drawLine()
+
+    // ─── Contexto Supervisão ───
+    if (supervisionContext) {
+      sectionTitle('Contexto para Supervisao')
+      addText('[Registro do Profissional]', margin, y, { size: 7, color: [120, 180, 120] })
+      y += 5
+      const supLines = doc.splitTextToSize(supervisionContext, contentW)
+      addText(supLines.join('\n'), margin, y, { size: 9, maxWidth: contentW })
+      y += supLines.length * 4.5 + 6
+    }
+
+    // ─── Rodapé ───
+    checkPage(20)
+    drawLine()
+    addText('Este relatorio nao substitui avaliacao clinica profissional.', margin, y, { size: 8, color: [160, 160, 160] })
+    y += 4
+    addText('Interpretacao exclusiva do profissional responsavel.', margin, y, { size: 8, color: [160, 160, 160] })
+    y += 4
+    addText(`AXIS TCC — CSO-TCC v3.0.0 — ${now.toLocaleDateString('pt-BR')}`, margin, y, { size: 7, color: [200, 200, 200] })
+
+    // Download
+    const safePatient = patientName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)
+    doc.save(`relatorio_${safePatient}_${now.toISOString().slice(0, 10)}.pdf`)
   }
 
   if (loading) return <div className="min-h-screen bg-white flex items-center justify-center"><div className="animate-pulse space-y-4 w-full max-w-4xl px-8"><div className="h-8 bg-gray-100 rounded w-1/3"></div></div></div>
@@ -314,9 +538,14 @@ export default function RelatorioPrintPage() {
         <p className="text-xs text-gray-500 text-center">Este relatório não substitui avaliação clínica profissional. Interpretação exclusiva do profissional responsável.</p>
       </div>
 
-      {/* Botão Imprimir */}
-      <div className="mt-8 flex justify-center print:hidden">
-        <button onClick={() => window.print()} className="px-6 py-3 text-white rounded-xl text-sm font-medium transition-all hover:opacity-90" style={{ backgroundColor: '#16a34a' }}>Imprimir / Salvar PDF</button>
+      {/* Botões PDF + Imprimir */}
+      <div className="mt-8 flex justify-center gap-3 print:hidden">
+        <button onClick={downloadPDF} className="flex items-center gap-2 px-6 py-3 text-white rounded-xl text-sm font-medium transition-all hover:opacity-90" style={{ backgroundColor: '#1a1f4e' }}>
+          <Download className="w-4 h-4" />Baixar PDF
+        </button>
+        <button onClick={() => window.print()} className="px-6 py-3 rounded-xl text-sm font-medium transition-all border border-gray-300 text-gray-600 hover:bg-gray-50">
+          Imprimir
+        </button>
       </div>
     </div>
   )
