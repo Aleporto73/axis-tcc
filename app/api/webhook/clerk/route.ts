@@ -6,10 +6,16 @@ import pool from '@/src/database/db'
 // AXIS — Clerk Webhook
 //
 // Eventos tratados:
-//   user.created — Quando usuário aceita convite e cria conta.
-//     Atualiza clerk_user_id em profiles, tenants e user_licenses
-//     que estavam com 'pending_hotmart_{email}'.
-//     Também ativa o profile (is_active = true).
+//   user.created:
+//     A) Profile pendente encontrado (Hotmart/convite):
+//        Atualiza clerk_user_id em profiles, tenants e user_licenses
+//        que estavam com 'pending_hotmart_{email}'.
+//        Também ativa o profile (is_active = true).
+//
+//     B) Nenhum profile pendente (cadastro direto):
+//        Auto-provisioning FREE: cria tenant + profile + licenças
+//        FREE para TCC (max_patients=1) e ABA (max_learners=1).
+//        Garante que usuário já tem tudo pronto no primeiro page load.
 //
 // Verificação: Svix signature (CLERK_WEBHOOK_SECRET)
 // =====================================================
@@ -68,8 +74,78 @@ export async function POST(req: NextRequest) {
       )
 
       if (pendingProfiles.rows.length === 0) {
-        console.log('[CLERK WEBHOOK] Nenhum profile pendente para:', email)
-        return NextResponse.json({ status: 'ok', action: 'no_pending_profile' })
+        // ─── AUTO-PROVISIONING: cadastro direto (sem compra Hotmart) ───
+        // Cria tenant + profile + licenças FREE para TCC e ABA
+        console.log('[CLERK WEBHOOK] Nenhum profile pendente, auto-provisioning FREE:', email)
+
+        const userName = [event.data.first_name, event.data.last_name].filter(Boolean).join(' ') || email.split('@')[0]
+        const now = new Date()
+
+        const client = await pool.connect()
+        try {
+          await client.query('BEGIN')
+
+          // 1. Tenant
+          const tenantInsert = await client.query(
+            `INSERT INTO tenants (name, email, clerk_user_id, role, trial_start, trial_end, trial_status, plan_tier, max_patients, max_sessions, is_admin)
+             VALUES ($1, $2, $3, 'professional', $4, NULL, 'active', 'free', 1, 9999, false)
+             RETURNING id as tenant_id`,
+            [userName, email, clerkUserId, now]
+          )
+          const tenantId = tenantInsert.rows[0].tenant_id
+
+          // 2. Profile (admin, ativo)
+          const profileInsert = await client.query(
+            `INSERT INTO profiles (tenant_id, clerk_user_id, role, name, email, is_active)
+             VALUES ($1, $2, 'admin', $3, $4, true)
+             RETURNING id`,
+            [tenantId, clerkUserId, userName, email]
+          )
+
+          // 3. Licenças FREE — TCC e ABA
+          await client.query(
+            `INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
+             VALUES ($1, $2, 'tcc', true, NOW(), 'CLERK_FREE_TIER', $3)`,
+            [tenantId, clerkUserId, email]
+          )
+          await client.query(
+            `INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
+             VALUES ($1, $2, 'aba', true, NOW(), 'CLERK_FREE_TIER', $3)`,
+            [tenantId, clerkUserId, email]
+          )
+
+          // 4. Audit log
+          try {
+            await client.query(
+              `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
+               VALUES ($1, $2, 'clerk_webhook', 'FREE_TIER_PROVISIONED', 'tenant', $3, $4, NOW())`,
+              [tenantId, clerkUserId, tenantId, JSON.stringify({
+                email, name: userName, source: 'clerk_user_created',
+                licenses: ['tcc', 'aba'], plan_tier: 'free', max_patients: 1,
+              })]
+            )
+          } catch (_) { /* audit non-blocking */ }
+
+          await client.query('COMMIT')
+
+          console.log('[CLERK WEBHOOK] FREE tier provisioned:', { email, clerkUserId, tenantId })
+
+          return NextResponse.json({
+            status: 'provisioned',
+            action: 'free_tier_created',
+            email,
+            tenant_id: tenantId,
+            profile_id: profileInsert.rows[0].id,
+            licenses: ['tcc', 'aba'],
+          })
+        } catch (provisionErr) {
+          await client.query('ROLLBACK').catch(() => {})
+          console.error('[CLERK WEBHOOK] Auto-provision FREE falhou:', provisionErr)
+          // Não retorna 500 — fallback para /api/user/tenant criar no primeiro login
+          return NextResponse.json({ status: 'ok', action: 'provision_failed_fallback', error: String(provisionErr) })
+        } finally {
+          client.release()
+        }
       }
 
       const activatedTenants: string[] = []
@@ -147,7 +223,8 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     webhook: 'clerk',
-    version: '1.0.0',
+    version: '2.0.0',
     events: ['user.created'],
+    features: ['pending_profile_activation', 'free_tier_auto_provisioning'],
   })
 }

@@ -94,7 +94,8 @@
 |---|---|---|
 | Webhook Hotmart | ✅ | Product-aware: TCC (ID 7299808), branding/subject/redirect corretos |
 | User licenses | ✅ | Tabela + UPSERT on purchase |
-| Free tier gate | ✅ | 1 paciente gratis, UpgradeModal apos limite |
+| Free tier gate | ✅ | 1 paciente gratis, UpgradeModalTCC apos limite |
+| Auto-provision FREE | ✅ | Clerk webhook cria tenant+profile+licenças no cadastro direto (sem Hotmart) |
 | Gate no layout | ✅ | License check via tcc-license-gate.ts (DRY, 3 layouts simplificados) |
 | Email pos-compra | ✅ | Templates product-aware (navy TCC / coral ABA) |
 | /obrigado | ✅ | Thank you page com branding AXIS |
@@ -218,6 +219,7 @@
 - ✅ Landing page: logos AXIS TCC/ABA aumentados (h-10 → h-16)
 - ✅ UpgradeModalTCC.tsx: componente proprio (navy/rosa, R$59/mes, checkout Hotmart)
 - ✅ pacientes/page.tsx: integra UpgradeModalTCC no 403 (limite de pacientes)
+- ✅ Clerk webhook v2.0: auto-provisioning FREE (tenant + profile + licenças TCC/ABA) no cadastro direto
 
 ---
 
