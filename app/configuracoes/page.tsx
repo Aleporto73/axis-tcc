@@ -3,18 +3,10 @@
 import { useAuth } from '@clerk/nextjs'
 import { useState, useEffect, useCallback } from 'react'
 import Sidebar from '../components/Sidebar'
-import { User, Bell, Shield, Database, Calendar, RefreshCw, Check, X, Zap, Unlink, Save } from 'lucide-react'
+import { User, Bell, Shield, Database, Calendar, Check } from 'lucide-react'
 
 export default function ConfiguracoesPage() {
   const { isLoaded } = useAuth()
-  const [googleStatus, setGoogleStatus] = useState<any>(null)
-  const [syncing, setSyncing] = useState(false)
-  const [syncResult, setSyncResult] = useState<any>(null)
-  const [activatingWebhook, setActivatingWebhook] = useState(false)
-  const [webhookResult, setWebhookResult] = useState<any>(null)
-  const [disconnecting, setDisconnecting] = useState(false)
-  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false)
-  
   // Profile state
   const [profile, setProfile] = useState({ name: '', crp: '' })
   const [profileLoading, setProfileLoading] = useState(true)
@@ -22,7 +14,6 @@ export default function ConfiguracoesPage() {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    fetchGoogleStatus()
     fetchProfile()
   }, [])
 
@@ -78,60 +69,6 @@ export default function ConfiguracoesPage() {
     debouncedSave(newProfile)
   }
 
-  const fetchGoogleStatus = async () => {
-    try {
-      const res = await fetch('/api/google/status')
-      const data = await res.json()
-      setGoogleStatus(data)
-    } catch (err) {
-      console.error('Erro ao buscar status do Google:', err)
-    }
-  }
-
-  const handleSync = async () => {
-    setSyncing(true)
-    setSyncResult(null)
-    try {
-      const res = await fetch('/api/google/sync', { method: 'POST' })
-      const data = await res.json()
-      setSyncResult(data)
-      fetchGoogleStatus()
-    } catch (err) {
-      setSyncResult({ error: 'Erro ao sincronizar' })
-    }
-    setSyncing(false)
-  }
-
-  const handleActivateWebhook = async () => {
-    setActivatingWebhook(true)
-    setWebhookResult(null)
-    try {
-      const res = await fetch('/api/google/watch', { method: 'POST' })
-      const data = await res.json()
-      setWebhookResult(data)
-      fetchGoogleStatus()
-    } catch (err) {
-      setWebhookResult({ error: 'Erro ao ativar sync automático' })
-    }
-    setActivatingWebhook(false)
-  }
-
-  const handleDisconnect = async () => {
-    setDisconnecting(true)
-    try {
-      const res = await fetch('/api/google/disconnect', { method: 'POST' })
-      if (res.ok) {
-        setGoogleStatus({ connected: false })
-        setShowDisconnectConfirm(false)
-        setSyncResult(null)
-        setWebhookResult(null)
-      }
-    } catch (err) {
-      console.error('Erro ao desconectar:', err)
-    }
-    setDisconnecting(false)
-  }
-
   if (!isLoaded) {
     return (
       <div className="flex min-h-screen bg-neutral-50">
@@ -154,91 +91,26 @@ export default function ConfiguracoesPage() {
           </div>
 
           <div className="space-y-6">
-            {/* Google Calendar */}
-            <div className="bg-white rounded-lg border border-neutral-200 p-6">
+            {/* Google Calendar — Em breve */}
+            <div className="bg-white rounded-lg border border-neutral-200 p-6 opacity-80">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-blue-600" />
                 </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-neutral-900">Google Calendar</h2>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold text-neutral-900">Google Calendar</h2>
+                    <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">Em breve</span>
+                  </div>
                   <p className="text-sm text-neutral-500">Sincronize sua agenda automaticamente</p>
                 </div>
               </div>
-              
-              {googleStatus?.connected ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-emerald-600">
-                    <Check className="w-5 h-5" />
-                    <span className="font-medium">Conectado</span>
-                  </div>
-                  <div className="text-sm text-neutral-500">
-                    <p>Calendário: {googleStatus.calendar_id}</p>
-                    {googleStatus.last_sync_at && (
-                      <p>Última sincronização: {new Date(googleStatus.last_sync_at).toLocaleString('pt-BR')}</p>
-                    )}
-                    {googleStatus.webhook_active && (
-                      <p className="text-emerald-600 font-medium">Sync automático ativo até {new Date(googleStatus.webhook_expiration).toLocaleDateString('pt-BR')}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-4 flex-wrap">
-                    <button
-                      onClick={handleSync}
-                      disabled={syncing}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    >
-                      <RefreshCw className={syncing ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
-                      {syncing ? 'Sincronizando...' : 'Sincronizar Agora'}
-                    </button>
-                    {!googleStatus.webhook_active && (
-                      <button
-                        onClick={handleActivateWebhook}
-                        disabled={activatingWebhook}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                      >
-                        <Zap className={activatingWebhook ? 'w-4 h-4 animate-pulse' : 'w-4 h-4'} />
-                        {activatingWebhook ? 'Ativando...' : 'Ativar Sync Automático'}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setShowDisconnectConfirm(true)}
-                      className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <Unlink className="w-4 h-4" />
-                      Desconectar
-                    </button>
-                  </div>
-                  {syncResult && (
-                    <div className={syncResult.error ? 'p-4 rounded-lg bg-red-50 text-red-800' : 'p-4 rounded-lg bg-emerald-50 text-emerald-800'}>
-                      {syncResult.error ? (
-                        <p>{syncResult.error}</p>
-                      ) : (
-                        <p>Sincronização concluída: {syncResult.imported} importados, {syncResult.updated} atualizados, {syncResult.skipped} ignorados</p>
-                      )}
-                    </div>
-                  )}
-                  {webhookResult && (
-                    <div className={webhookResult.error ? 'p-4 rounded-lg bg-red-50 text-red-800' : 'p-4 rounded-lg bg-emerald-50 text-emerald-800'}>
-                      {webhookResult.error ? (
-                        <p>{webhookResult.error}</p>
-                      ) : (
-                        <p>Sync automático ativado! Eventos do Google Calendar serão importados instantaneamente.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-neutral-500">
-                    <X className="w-5 h-5" />
-                    <span>Não conectado</span>
-                  </div>
-                  <a href="/api/google" data-onboarding="connect-google" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    <Calendar className="w-4 h-4" />
-                    Conectar Google Calendar
-                  </a>
-                </div>
-              )}
+              <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  A integração com o Google Calendar está aguardando a aprovação de verificação do Google.
+                  Assim que aprovada, você poderá sincronizar suas sessões diretamente com sua agenda.
+                </p>
+              </div>
             </div>
 
             {/* Perfil */}
@@ -366,37 +238,14 @@ export default function ConfiguracoesPage() {
                 </div>
               </div>
               <div className="flex gap-4">
-                <button className="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors">Exportar Dados</button>
-                <button className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors">Excluir Conta</button>
+                <button disabled className="px-4 py-2 border border-neutral-200 text-neutral-400 rounded-lg cursor-not-allowed">Exportar Dados (em breve)</button>
+                <button disabled className="px-4 py-2 border border-neutral-200 text-neutral-400 rounded-lg cursor-not-allowed">Excluir Conta (em breve)</button>
               </div>
             </div>
           </div>
         </div>
       </main>
 
-      {showDisconnectConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-2">Desconectar Google Calendar?</h3>
-            <p className="text-neutral-600 mb-6">A sincronização automática será desativada. As sessões já importadas permanecerão no sistema.</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowDisconnectConfirm(false)}
-                className="px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleDisconnect}
-                disabled={disconnecting}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-              >
-                {disconnecting ? 'Desconectando...' : 'Desconectar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
