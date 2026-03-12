@@ -103,7 +103,7 @@
 | Tiers/precos TCC | ✅ | Profissional R$59/mes (plano unico) |
 | UpgradeModalTCC | ✅ | Componente proprio com branding navy/rosa, checkout Hotmart J104687347A, integrado em /pacientes (403) |
 
-### SEGURANCA — 98% (subiu de ~95%)
+### SEGURANCA — 100% ✅ (subiu de 98% — audit de tenant_id em 12/03)
 | Area | Status | Detalhe |
 |---|---|---|
 | CSO engine tenant isolation | ✅ | FIX 1: AND tenant_id = $2 adicionado |
@@ -113,6 +113,11 @@
 | Layout gates DRY | ✅ | FIX 11: tcc-license-gate.ts compartilhado |
 | Dashboard error state | ✅ | FIX 13: csoError com feedback visual |
 | Suggestion rules alive | ✅ | FIX 7: Regras 6/10/11 reescritas para usar campos reais |
+| sessions/finish tenant_id | ✅ | UPDATE + 2 SELECTs agora filtram por tenant_id |
+| sessions/delete reminders | ✅ | DELETE scheduled_reminders agora filtra por tenant_id |
+| suggestions/decide tenant | ✅ | Checagem de decisão existente agora filtra por tenant_id |
+| analyze-tcc cross-tenant | ✅ | CRITICO: patient_id/session_id validados contra tenant antes do INSERT. transcript UPDATE com tenant_id |
+| Todas as rotas /api/patients/* | ✅ | Migradas para withTenant (RLS compliance) |
 
 ---
 
@@ -238,6 +243,16 @@
 - ✅ Migration 021: colunas Google Calendar faltavam na tabela sessions TCC (segurança)
 - Resultado: sessions↔API OK, suggestions↔API OK, configurações↔API OK, dashboard↔stats OK
 - Rotas de sessão TCC usam pool.query() direto (não withTenant) — funcional porque sessions não tem RLS strict
+
+### 2026-03-12 (tarde) — Security Audit: tenant_id isolation
+- Audit de segurança em 17 rotas TCC (sessions, events, suggestions, analyze-tcc, stats, audit)
+- ✅ CRITICO: analyze-tcc — patient_id/session_id do body não eram validados contra tenant (cross-tenant injection possível)
+- ✅ CRITICO: analyze-tcc — UPDATE transcripts sem tenant_id
+- ✅ ALTO: sessions/finish — UPDATE sessions + SELECT transcripts + SELECT tcc_analyses sem tenant_id
+- ✅ ALTO: sessions/[id] DELETE — scheduled_reminders sem tenant_id
+- ✅ ALTO: suggestions/decide — checagem de decisão existente sem tenant_id
+- Total: 7 queries corrigidas em 4 arquivos
+- Segurança: 98% → 100%
 
 ---
 
