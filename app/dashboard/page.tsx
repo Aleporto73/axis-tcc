@@ -247,7 +247,7 @@ export default function DashboardPage() {
   }
 
   const getStatusDot = (status: string, patientResponse?: string) => {
-    if (status === "em_andamento") return "bg-[#FC608F]"
+    if (status === "em_andamento") return "bg-tcc-accent"
     if (status === "finalizada") return "bg-slate-300"
     if (status === "cancelada") return "bg-slate-300"
     if (status === "agendada") {
@@ -315,7 +315,7 @@ export default function DashboardPage() {
         {/* Top Capsule Navigation */}
         <div className="flex justify-center pt-5 md:pt-6 mb-6 md:mb-8 px-4">
           <nav className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-3 md:px-5 py-1.5 shadow-sm">
-            <Link href="/dashboard" className="px-3 py-1 text-sm font-medium text-[#FC608F]">Hoje</Link>
+            <Link href="/dashboard" className="px-3 py-1 text-sm font-medium text-tcc-accent">Hoje</Link>
             <span className="text-slate-300 text-xs">·</span>
             <Link href="/sessoes" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">Sessões</Link>
             <span className="text-slate-300 text-xs">·</span>
@@ -336,7 +336,7 @@ export default function DashboardPage() {
           {/* Metrics Line + AXIS Assist */}
           <section className="mb-6 md:mb-8 pb-5 md:pb-6 border-b border-slate-100">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base md:text-xl text-slate-700 mb-1">
-              <span className="text-xs text-[#FC608F]">{sessionsToday} {sessionsToday === 1 ? 'sessão' : 'sessões'} hoje</span>
+              <span className="text-xs text-tcc-accent">{sessionsToday} {sessionsToday === 1 ? 'sessão' : 'sessões'} hoje</span>
               {inProgress > 0 && (
                 <>
                   <span className="text-slate-300">·</span>
@@ -348,7 +348,7 @@ export default function DashboardPage() {
             {suggestions > 0 && (
               <p className="text-sm text-slate-500 mt-1">
                 AXIS Assist — {suggestions} {suggestions === 1 ? 'sugestão aguarda' : 'sugestões aguardam'} revisão{' '}
-                <Link href="/sugestoes" className="text-[#FC608F] hover:text-[#FC608F]/80 font-medium">→ Ver</Link>
+                <Link href="/sugestoes" className="text-tcc-accent hover:text-tcc-accent/80 font-medium">→ Ver</Link>
               </p>
             )}
           </section>
@@ -474,7 +474,7 @@ export default function DashboardPage() {
                 <select
                   value={selectedPatient}
                   onChange={(e) => setSelectedPatient(e.target.value)}
-                  className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1f4e]/20 max-w-xs"
+                  className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-tcc-700/20 max-w-xs"
                 >
                   {patients.map(p => (
                     <option key={p.id} value={p.id}>{p.full_name}</option>

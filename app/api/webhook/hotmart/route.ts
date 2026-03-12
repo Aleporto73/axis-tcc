@@ -5,7 +5,20 @@ import { Resend } from 'resend'
 import { purchaseUpgradeTemplate, purchaseNewUserTemplate } from '@/src/email/purchase-template'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const EMAIL_FROM = process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>'
+const EMAIL_FROM_MAP: Record<string, string> = {
+  tcc: process.env.RESEND_FROM_TCC || 'AXIS TCC <noreply@axisclinico.com>',
+  aba: process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
+}
+
+const PRODUCT_LABEL: Record<string, string> = {
+  tcc: 'AXIS TCC',
+  aba: 'AXIS ABA',
+}
+
+const DASHBOARD_PATH: Record<string, string> = {
+  tcc: '/dashboard',
+  aba: '/aba/dashboard',
+}
 
 // =====================================================
 // AXIS — Webhook Hotmart (Postback v2) + Auto-Provisioning
@@ -114,7 +127,7 @@ async function provisionNewBuyer(
 
     await clerk.invitations.createInvitation({
       emailAddress: email,
-      redirectUrl: `${baseUrl}/aba/dashboard`,
+      redirectUrl: `${baseUrl}${DASHBOARD_PATH[productType] || '/dashboard'}`,
       ignoreExisting: true,
       publicMetadata: {
         source: 'hotmart_purchase',
@@ -326,17 +339,18 @@ export async function POST(request: NextRequest) {
           const buyerName = buyer.name || `${buyer.first_name || ''} ${buyer.last_name || ''}`.trim() || 'Profissional'
           const planLabel = OFFER_TO_PLAN[offerCode || '']?.plan_tier || 'Founders'
           const isNewUser = provision.method === 'invitation'
+          const label = PRODUCT_LABEL[productType] || 'AXIS'
           await resend.emails.send({
-            from: EMAIL_FROM,
+            from: EMAIL_FROM_MAP[productType] || EMAIL_FROM_MAP.aba,
             to: buyerEmail,
             subject: isNewUser
-              ? 'Bem-vindo ao AXIS ABA! Ative sua conta'
-              : 'Seu plano AXIS ABA foi ativado!',
+              ? `Bem-vindo ao ${label}! Ative sua conta`
+              : `Seu plano ${label} foi ativado!`,
             html: isNewUser
-              ? purchaseNewUserTemplate({ buyerName, planName: planLabel })
-              : purchaseUpgradeTemplate({ buyerName, planName: planLabel }),
+              ? purchaseNewUserTemplate({ buyerName, planName: planLabel, productType })
+              : purchaseUpgradeTemplate({ buyerName, planName: planLabel, productType }),
           })
-          console.log('[HOTMART WEBHOOK] Email pós-compra enviado:', buyerEmail)
+          console.log('[HOTMART WEBHOOK] Email pós-compra enviado:', buyerEmail, productType)
         } catch (emailErr) {
           console.warn('[HOTMART WEBHOOK] Email pós-compra falhou (non-blocking):', emailErr)
         }
@@ -447,13 +461,14 @@ export async function POST(request: NextRequest) {
         const buyerName = buyer.name || `${buyer.first_name || ''} ${buyer.last_name || ''}`.trim() || 'Profissional'
         const offerCode = purchase?.offer?.code || null
         const planLabel = OFFER_TO_PLAN[offerCode || '']?.plan_tier || 'Founders'
+        const label = PRODUCT_LABEL[productType] || 'AXIS'
         await resend.emails.send({
-          from: EMAIL_FROM,
+          from: EMAIL_FROM_MAP[productType] || EMAIL_FROM_MAP.aba,
           to: buyerEmail,
-          subject: 'Seu plano AXIS ABA foi ativado!',
-          html: purchaseUpgradeTemplate({ buyerName, planName: planLabel }),
+          subject: `Seu plano ${label} foi ativado!`,
+          html: purchaseUpgradeTemplate({ buyerName, planName: planLabel, productType }),
         })
-        console.log('[HOTMART WEBHOOK] Email upgrade enviado:', buyerEmail)
+        console.log('[HOTMART WEBHOOK] Email upgrade enviado:', buyerEmail, productType)
       } catch (emailErr) {
         console.warn('[HOTMART WEBHOOK] Email upgrade falhou (non-blocking):', emailErr)
       }

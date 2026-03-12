@@ -139,7 +139,7 @@ export default function SessoesPage() {
   }
 
   const getStatusStyle = (status: string, patientResponse: string) => {
-    if (status === 'em_andamento') return 'text-[#FC608F]'
+    if (status === 'em_andamento') return 'text-tcc-accent'
     if (status === 'finalizada') return 'text-slate-400'
     if (status === 'cancelada') return 'text-slate-400 line-through'
     if (status === 'agendada') {
@@ -154,7 +154,7 @@ export default function SessoesPage() {
   }
 
   const getStatusDot = (status: string, patientResponse: string) => {
-    if (status === "em_andamento") return "bg-[#FC608F]"
+    if (status === "em_andamento") return "bg-tcc-accent"
     if (status === "finalizada") return "bg-slate-300"
     if (status === "cancelada") return "bg-slate-300"
     if (status === "agendada") {
@@ -245,7 +245,7 @@ export default function SessoesPage() {
       <div className="min-h-screen bg-white">
         <Sidebar />
         <main className="md:ml-20 min-h-screen flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#FC608F] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-tcc-accent border-t-transparent rounded-full animate-spin"></div>
         </main>
       </div>
     )
@@ -261,7 +261,7 @@ export default function SessoesPage() {
           <nav className="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-3 md:px-5 py-1.5 shadow-sm">
             <Link href="/dashboard" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">Hoje</Link>
             <span className="text-slate-300 text-xs">·</span>
-            <Link href="/sessoes" className="px-3 py-1 text-sm font-medium text-[#FC608F]">Sessões</Link>
+            <Link href="/sessoes" className="px-3 py-1 text-sm font-medium text-tcc-accent">Sessões</Link>
             <span className="text-slate-300 text-xs">·</span>
             <Link href="/pacientes" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">Pacientes</Link>
             <span className="text-slate-300 text-xs hidden sm:inline">·</span>
@@ -423,8 +423,8 @@ export default function SessoesPage() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Quando</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => setSessionMode('now')} className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${sessionMode === 'now' ? 'border-[#FC608F] bg-[#FC608F]/10 text-[#FC608F]' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>Iniciar Agora</button>
-                  <button type="button" onClick={() => setSessionMode('schedule')} className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${sessionMode === 'schedule' ? 'border-[#FC608F] bg-[#FC608F]/10 text-[#FC608F]' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>Agendar</button>
+                  <button type="button" onClick={() => setSessionMode('now')} className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${sessionMode === 'now' ? 'border-tcc-accent bg-tcc-accent/10 text-tcc-accent' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>Iniciar Agora</button>
+                  <button type="button" onClick={() => setSessionMode('schedule')} className={`px-4 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${sessionMode === 'schedule' ? 'border-tcc-accent bg-tcc-accent/10 text-tcc-accent' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>Agendar</button>
                 </div>
               </div>
               {sessionMode === 'schedule' && (
@@ -442,7 +442,7 @@ export default function SessoesPage() {
             </div>
             <div className="flex justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50 rounded-b-xl">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg text-sm">Cancelar</button>
-              <button onClick={handleCreateSession} disabled={creating || !selectedPatient} className="px-5 py-2 bg-[#FC608F] text-white rounded-lg hover:bg-[#FC608F]/90 disabled:opacity-50 text-sm font-medium flex items-center gap-2">
+              <button onClick={handleCreateSession} disabled={creating || !selectedPatient} className="px-5 py-2 bg-tcc-accent text-white rounded-lg hover:bg-tcc-accent/90 disabled:opacity-50 text-sm font-medium flex items-center gap-2">
                 {creating ? (<><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>Criando...</>) : sessionMode === 'now' ? 'Iniciar Sessão' : 'Agendar Sessão'}
               </button>
             </div>

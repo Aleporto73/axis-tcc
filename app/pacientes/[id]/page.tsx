@@ -7,26 +7,67 @@ import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
 import EvolutionReport from '../../components/EvolutionReport'
 
+interface Patient {
+  id: string
+  full_name: string
+  name?: string
+  email: string | null
+  phone: string | null
+  birth_date: string | null
+  gender: string | null
+  diagnosis: string | null
+  medication: string | null
+  notes: string | null
+}
+
+interface PatientSession {
+  id: string
+  session_number: number
+  scheduled_at: string | null
+  started_at: string | null
+  created_at: string
+  status: string
+  duration_minutes: number | null
+}
+
+interface EditFormData {
+  name: string
+  email: string
+  phone: string
+  birth_date: string
+  gender: string
+  diagnosis: string
+  medication: string
+  notes: string
+}
+
+interface ClinicalRecord {
+  complaint: string | null
+  patterns: string | null
+  interventions: string | null
+  current_state: string | null
+}
+
 export default function PatientDetailPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
   const { isLoaded, userId } = useAuth()
-  const [patient, setPatient] = useState<any>(null)
-  const [sessions, setSessions] = useState<any[]>([])
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [sessions, setSessions] = useState<PatientSession[]>([])
   const [loading, setLoading] = useState(true)
   const [showEdit, setShowEdit] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [editData, setEditData] = useState<any>({})
+  const [editData, setEditData] = useState<EditFormData>({ name: '', email: '', phone: '', birth_date: '', gender: '', diagnosis: '', medication: '', notes: '' })
   const [showPushLink, setShowPushLink] = useState(false)
   const [pushLink, setPushLink] = useState('')
   const [pushLoading, setPushLoading] = useState(false)
   const [pushCopied, setPushCopied] = useState(false)
   const [showEvolution, setShowEvolution] = useState(false)
   
-  const [clinicalRecord, setClinicalRecord] = useState<any>(null)
+  const [clinicalRecord, setClinicalRecord] = useState<ClinicalRecord | null>(null)
   const [clinicalRecordExists, setClinicalRecordExists] = useState(false)
   const [showClinicalModal, setShowClinicalModal] = useState(false)
   const [clinicalStep, setClinicalStep] = useState<'record' | 'review' | 'edit'>('record')

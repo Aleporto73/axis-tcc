@@ -49,8 +49,8 @@ export default function Sidebar() {
       <aside className="hidden md:flex w-20 bg-white border-r border-slate-100 min-h-screen flex-col items-center py-8 fixed left-0 top-0 z-40">
         {/* Logo + Voltar ao Hub */}
         <Link href="/hub" className="mb-12" title="Voltar ao Hub">
-          <div className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:border-[#1a1f4e]/40 transition-colors bg-white">
-            <span className="text-sm font-bold tracking-tight" style={{ color: '#1a1f4e' }}>TCC</span>
+          <div className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:border-tcc-700/40 transition-colors bg-white">
+            <span className="text-sm font-bold tracking-tight text-tcc-700">TCC</span>
           </div>
         </Link>
 
@@ -63,12 +63,12 @@ export default function Sidebar() {
               title={item.label}
               className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
                 isActive(item.href)
-                  ? 'text-[#FC608F] bg-[#FC608F]/10 shadow-sm shadow-[#FC608F]/10'
+                  ? 'text-tcc-accent bg-tcc-accent/10 shadow-sm shadow-tcc-accent/10'
                   : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
               }`}
             >
               {isActive(item.href) && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 bg-[#FC608F] rounded-r-full" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 bg-tcc-accent rounded-r-full" />
               )}
               {item.icon}
             </Link>
@@ -82,12 +82,12 @@ export default function Sidebar() {
             title="Ajuda"
             className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
               isActive('/ajuda')
-                ? 'text-[#9a9ab8] bg-[#9a9ab8]/10 shadow-sm shadow-[#9a9ab8]/10'
+                ? 'text-tcc-300 bg-tcc-300/10 shadow-sm shadow-tcc-300/10'
                 : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
             }`}
           >
             {isActive('/ajuda') && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 bg-[#9a9ab8] rounded-r-full" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 bg-tcc-300 rounded-r-full" />
             )}
             {navItems[4].icon}
           </Link>
@@ -96,12 +96,12 @@ export default function Sidebar() {
             title="Configurações"
             className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
               isActive('/configuracoes')
-                ? 'text-[#FC608F] bg-[#FC608F]/10 shadow-sm shadow-[#FC608F]/10'
+                ? 'text-tcc-accent bg-tcc-accent/10 shadow-sm shadow-tcc-accent/10'
                 : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
             }`}
           >
             {isActive('/configuracoes') && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 bg-[#FC608F] rounded-r-full" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 bg-tcc-accent rounded-r-full" />
             )}
             {navItems[5].icon}
           </Link>
@@ -128,12 +128,12 @@ export default function Sidebar() {
               href={item.href}
               className={`relative p-3 rounded-xl transition-colors ${
                 isActive(item.href)
-                  ? 'text-[#FC608F]'
+                  ? 'text-tcc-accent'
                   : 'text-slate-400'
               }`}
             >
               {isActive(item.href) && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-5 h-[3px] bg-[#FC608F] rounded-b-full" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-5 h-[3px] bg-tcc-accent rounded-b-full" />
               )}
               {item.icon}
             </Link>

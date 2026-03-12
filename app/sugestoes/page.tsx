@@ -74,7 +74,7 @@ export default function SugestoesPage() {
       <div className="min-h-screen bg-white">
         <Sidebar />
         <main className="md:ml-20 min-h-screen flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#FC608F] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-tcc-accent border-t-transparent rounded-full animate-spin"></div>
         </main>
       </div>
     )
@@ -95,7 +95,7 @@ export default function SugestoesPage() {
             <span className="text-slate-300 text-xs">·</span>
             <Link href="/pacientes" className="px-3 py-1 text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">Pacientes</Link>
             <span className="text-slate-300 text-xs hidden sm:inline">·</span>
-            <Link href="/sugestoes" className="hidden sm:inline px-3 py-1 text-sm font-medium text-[#FC608F]">Sugestões</Link>
+            <Link href="/sugestoes" className="hidden sm:inline px-3 py-1 text-sm font-medium text-tcc-accent">Sugestões</Link>
           </nav>
         </div>
 
