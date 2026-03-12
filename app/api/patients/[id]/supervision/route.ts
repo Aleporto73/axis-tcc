@@ -1,28 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import pool from '@/src/database/db'
+import { withTenant } from '@/src/database/with-tenant'
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-
     const params = await context.params
     const patientId = params.id
 
-    const tenant = await pool.query('SELECT id FROM tenants WHERE clerk_user_id = $1', [userId])
-    if (tenant.rows.length === 0) return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 })
+    return await withTenant(async (ctx) => {
+      const result = await ctx.client.query(
+        'SELECT supervision_context FROM patients WHERE id = $1 AND tenant_id = $2',
+        [patientId, ctx.tenantId]
+      )
 
-    const result = await pool.query(
-      'SELECT supervision_context FROM patients WHERE id = $1 AND tenant_id = $2',
-      [patientId, tenant.rows[0].id]
-    )
-
-    return NextResponse.json({
-      context: result.rows[0]?.supervision_context || ''
+      return NextResponse.json({
+        context: result.rows[0]?.supervision_context || ''
+      })
     })
   } catch (error) {
     console.error('Erro ao buscar contexto supervisão:', error)
@@ -35,9 +30,6 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-
     const params = await context.params
     const patientId = params.id
     const body = await request.json()
@@ -47,21 +39,20 @@ export async function PUT(
       return NextResponse.json({ error: 'Texto inválido (máx 800 caracteres)' }, { status: 400 })
     }
 
-    const tenant = await pool.query('SELECT id FROM tenants WHERE clerk_user_id = $1', [userId])
-    if (tenant.rows.length === 0) return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 })
+    return await withTenant(async (ctx) => {
+      await ctx.client.query(
+        'UPDATE patients SET supervision_context = $1 WHERE id = $2 AND tenant_id = $3',
+        [supervisionContext || null, patientId, ctx.tenantId]
+      )
 
-    await pool.query(
-      'UPDATE patients SET supervision_context = $1 WHERE id = $2 AND tenant_id = $3',
-      [supervisionContext || null, patientId, tenant.rows[0].id]
-    )
+      await ctx.client.query(
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata)
+         VALUES ($1, $2, 'professional', 'SUPERVISION_CONTEXT_SAVED', 'patient', $3, $4)`,
+        [ctx.tenantId, ctx.userId, patientId, JSON.stringify({ patient_id: patientId, length: supervisionContext.length })]
+      )
 
-    await pool.query(
-      `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata)
-       VALUES ($1, $2, 'professional', 'SUPERVISION_CONTEXT_SAVED', 'patient', $3, $4)`,
-      [tenant.rows[0].id, userId, patientId, JSON.stringify({ patient_id: patientId, length: supervisionContext.length })]
-    )
-
-    return NextResponse.json({ success: true })
+      return NextResponse.json({ success: true })
+    })
   } catch (error) {
     console.error('Erro ao salvar contexto supervisão:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })

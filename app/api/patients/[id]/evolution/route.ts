@@ -1,53 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import pool from '@/src/database/db'
+import { withTenant } from '@/src/database/with-tenant'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-    }
-
     const { id } = await params
 
-    const tenantResult = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      [userId]
-    )
-    if (tenantResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Tenant nao encontrado' }, { status: 404 })
-    }
-    const tenantId = tenantResult.rows[0].id
+    return await withTenant(async (ctx) => {
+      const patientResult = await ctx.client.query(
+        'SELECT id, full_name FROM patients WHERE id = $1 AND tenant_id = $2',
+        [id, ctx.tenantId]
+      )
+      if (patientResult.rows.length === 0) {
+        return NextResponse.json({ error: 'Paciente nao encontrado' }, { status: 404 })
+      }
 
-    const patientResult = await pool.query(
-      'SELECT id, full_name FROM patients WHERE id = $1 AND tenant_id = $2',
-      [id, tenantId]
-    )
-    if (patientResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Paciente nao encontrado' }, { status: 404 })
-    }
+      const sessionsResult = await ctx.client.query(
+        `SELECT id, session_number, started_at, ended_at, duration_minutes, created_at
+         FROM sessions
+         WHERE patient_id = $1 AND tenant_id = $2 AND status = 'finalizada'
+         ORDER BY created_at ASC`,
+        [id, ctx.tenantId]
+      )
+      const sessions = sessionsResult.rows
 
-    const sessionsResult = await pool.query(
-      `SELECT id, session_number, started_at, ended_at, duration_minutes, created_at
-       FROM sessions 
-       WHERE patient_id = $1 AND tenant_id = $2 AND status = 'finalizada'
-       ORDER BY created_at ASC`,
-      [id, tenantId]
-    )
-    const sessions = sessionsResult.rows
-
-    const eventsResult = await pool.query(
-      `SELECT event_type, COUNT(*) as count
-       FROM events
-       WHERE patient_id = $1 AND tenant_id = $2
-       AND event_type IN ('AVOIDANCE_OBSERVED', 'CONFRONTATION_OBSERVED', 'ADJUSTMENT_OBSERVED', 'RECOVERY_OBSERVED')
-       GROUP BY event_type`,
-      [id, tenantId]
-    )
+      const eventsResult = await ctx.client.query(
+        `SELECT event_type, COUNT(*) as count
+         FROM events
+         WHERE patient_id = $1 AND tenant_id = $2
+         AND event_type IN ('AVOIDANCE_OBSERVED', 'CONFRONTATION_OBSERVED', 'ADJUSTMENT_OBSERVED', 'RECOVERY_OBSERVED')
+         GROUP BY event_type`,
+        [id, ctx.tenantId]
+      )
     
     const eventCounts: Record<string, number> = { EVITOU: 0, ENFRENTOU: 0, AJUSTOU: 0, RECUPEROU: 0 }
     let totalEvents = 0
@@ -68,14 +54,14 @@ export async function GET(
       RECUPEROU: totalEvents > 0 ? Math.round((eventCounts.RECUPEROU / totalEvents) * 100) : 0
     }
 
-    const csoResult = await pool.query(
-      `SELECT created_at, flex_trend, recovery_time, activation_level, system_confidence
-       FROM clinical_states
-       WHERE patient_id = $1 AND tenant_id = $2
-       ORDER BY created_at ASC`,
-      [id, tenantId]
-    )
-    const csoHistory = csoResult.rows
+      const csoResult = await ctx.client.query(
+        `SELECT created_at, flex_trend, recovery_time, activation_level, system_confidence
+         FROM clinical_states
+         WHERE patient_id = $1 AND tenant_id = $2
+         ORDER BY created_at ASC`,
+        [id, ctx.tenantId]
+      )
+      const csoHistory = csoResult.rows
 
     let avgRecoveryTime = 0
     let validCount = 0
@@ -122,17 +108,17 @@ export async function GET(
       const recentIds = recent.map((s: any) => s.id)
       
       // Eventos por periodo
-      const earlyEventsResult = await pool.query(
-        `SELECT COUNT(*) as count FROM events 
+      const earlyEventsResult = await ctx.client.query(
+        `SELECT COUNT(*) as count FROM events
          WHERE related_entity_id = ANY($1) AND tenant_id = $2
          AND event_type IN ('AVOIDANCE_OBSERVED', 'CONFRONTATION_OBSERVED', 'ADJUSTMENT_OBSERVED', 'RECOVERY_OBSERVED')`,
-        [earlyIds, tenantId]
+        [earlyIds, ctx.tenantId]
       )
-      const recentEventsResult = await pool.query(
-        `SELECT COUNT(*) as count FROM events 
+      const recentEventsResult = await ctx.client.query(
+        `SELECT COUNT(*) as count FROM events
          WHERE related_entity_id = ANY($1) AND tenant_id = $2
          AND event_type IN ('AVOIDANCE_OBSERVED', 'CONFRONTATION_OBSERVED', 'ADJUSTMENT_OBSERVED', 'RECOVERY_OBSERVED')`,
-        [recentIds, tenantId]
+        [recentIds, ctx.tenantId]
       )
       
       const earlyAvgDuration = early.reduce((sum: number, s: any) => sum + (s.duration_minutes || 0), 0) / early.length
@@ -169,19 +155,20 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({
-      patient_name: patientResult.rows[0].full_name,
-      total_sessions: sessions.length,
-      total_events: totalEvents,
-      event_counts: eventCounts,
-      event_percentages: eventPercentages,
-      avg_recovery_time: avgRecoveryTime,
-      trend,
-      timeline,
-      frc_data: frcData,
-      sessions_early,
-      sessions_recent,
-      outlier_sessions: outlier_sessions.length > 0 ? outlier_sessions : null
+      return NextResponse.json({
+        patient_name: patientResult.rows[0].full_name,
+        total_sessions: sessions.length,
+        total_events: totalEvents,
+        event_counts: eventCounts,
+        event_percentages: eventPercentages,
+        avg_recovery_time: avgRecoveryTime,
+        trend,
+        timeline,
+        frc_data: frcData,
+        sessions_early,
+        sessions_recent,
+        outlier_sessions: outlier_sessions.length > 0 ? outlier_sessions : null
+      })
     })
 
   } catch (error) {
