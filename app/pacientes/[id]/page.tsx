@@ -143,7 +143,16 @@ export default function PatientDetailPage() {
       const res = await fetch(`/api/patients/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editData)
+        body: JSON.stringify({
+          full_name: editData.name,
+          email: editData.email,
+          phone: editData.phone,
+          birth_date: editData.birth_date,
+          gender: editData.gender,
+          diagnosis: editData.diagnosis,
+          medication: editData.medication,
+          notes: editData.notes,
+        })
       })
       if (res.ok) {
         setShowEdit(false)
