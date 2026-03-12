@@ -45,14 +45,23 @@ async function evaluateRules(cso: any): Promise<SuggestionCandidate[]> {
   const suggestions: SuggestionCandidate[] = [];
 
   // REGRA 1: CRISIS_PROTOCOL (Prioridade maxima)
-  if (cso.risk_flags && cso.risk_flags.includes('CRISIS_ALERT')) {
+  // Dispara quando activation_level muito baixo E emotional_load muito alta simultaneamente
+  // Indica paciente em possivel crise: desengajado + sobrecarregado emocionalmente
+  if (cso.activation_level !== null && cso.activation_level < 0.2 &&
+      cso.emotional_load !== null && cso.emotional_load > 0.85) {
     suggestions.push({
       type: 'CRISIS_PROTOCOL',
       title: 'Protocolo de Crise Ativado',
-      reason: ['Alerta de crise detectado'],
-      confidence: 0.95,
+      reason: [
+        'Ativação muito baixa (< 0.2) combinada com carga emocional muito alta (> 0.85)',
+        'Padrão compatível com desengajamento por sobrecarga — avaliar risco'
+      ],
+      confidence: 0.90,
       priority: 10,
-      context: { risk_flags: cso.risk_flags }
+      context: {
+        activation_level: cso.activation_level,
+        emotional_load: cso.emotional_load,
+      }
     });
   }
 

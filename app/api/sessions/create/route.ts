@@ -50,7 +50,7 @@ async function createGoogleCalendarEvent(
 
     const endTime = new Date(scheduledAt.getTime() + durationMinutes * 60 * 1000)
 
-    const event: any = {
+    const event: Record<string, unknown> = {
       summary: `Sessao - ${patientName}`,
       start: {
         dateTime: scheduledAt.toISOString(),
@@ -136,8 +136,8 @@ export async function POST(request: NextRequest) {
     const patientEmail = patientResult.rows[0].email
 
     const countResult = await pool.query(
-      'SELECT COUNT(*) as total FROM sessions WHERE patient_id = $1',
-      [patient_id]
+      'SELECT COUNT(*) as total FROM sessions WHERE patient_id = $1 AND tenant_id = $2',
+      [patient_id, tenantId]
     )
     const sessionNumber = parseInt(countResult.rows[0].total) + 1
 

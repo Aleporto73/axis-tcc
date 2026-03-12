@@ -56,9 +56,9 @@ export async function PUT(
     )
 
     await pool.query(
-      `INSERT INTO axis_audit_logs (tenant_id, action, metadata)
-       VALUES ($1, 'SUPERVISION_CONTEXT_SAVED', $2)`,
-      [tenant.rows[0].id, JSON.stringify({ patient_id: patientId, length: supervisionContext.length })]
+      `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata)
+       VALUES ($1, $2, 'professional', 'SUPERVISION_CONTEXT_SAVED', 'patient', $3, $4)`,
+      [tenant.rows[0].id, userId, patientId, JSON.stringify({ patient_id: patientId, length: supervisionContext.length })]
     )
 
     return NextResponse.json({ success: true })

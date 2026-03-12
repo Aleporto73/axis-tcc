@@ -7,10 +7,20 @@ import Link from 'next/link'
 import Sidebar from '../components/Sidebar'
 import Toast from '../components/Toast'
 
+interface PatientListItem {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  total_sessions: number
+  last_session: string | null
+  push_tokens: number | string
+}
+
 export default function PacientesPage() {
   const router = useRouter()
   const { isLoaded, userId } = useAuth()
-  const [patients, setPatients] = useState<any[]>([])
+  const [patients, setPatients] = useState<PatientListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)

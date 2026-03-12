@@ -78,7 +78,7 @@ export default function SessoesPage() {
     }
     try {
       setCreating(true)
-      const body: any = { patient_id: selectedPatient }
+      const body: { patient_id: string; start_now?: boolean; scheduled_at?: string } = { patient_id: selectedPatient }
       if (sessionMode === 'now') {
         body.start_now = true
       } else {

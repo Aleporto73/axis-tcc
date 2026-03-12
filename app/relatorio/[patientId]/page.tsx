@@ -97,8 +97,13 @@ export default function RelatorioPrintPage() {
     const contentW = w - margin * 2
     let y = 20
 
+    // Helper: remove acentos para compatibilidade com fonte helvetica do jsPDF
+    const stripAccents = (text: string): string =>
+      text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
     // Helpers
     const addText = (text: string, x: number, yPos: number, opts: { size?: number; style?: string; color?: [number, number, number]; maxWidth?: number } = {}) => {
+      text = stripAccents(text)
       doc.setFontSize(opts.size || 10)
       doc.setFont('helvetica', opts.style || 'normal')
       doc.setTextColor(...(opts.color || [51, 51, 51]))
@@ -134,9 +139,9 @@ export default function RelatorioPrintPage() {
     y += 22
 
     // ─── Header ───
-    addText('Evolucao do Processo', margin, y, { size: 18, style: 'bold', color: [30, 30, 80] })
+    addText('Evolução do Processo', margin, y, { size: 18, style: 'bold', color: [30, 30, 80] })
     y += 7
-    addText(`Relatorio longitudinal - ${data.total_sessions} sessoes analisadas`, margin, y, { size: 10, color: [120, 120, 120] })
+    addText(`Relatório longitudinal - ${data.total_sessions} sessões analisadas`, margin, y, { size: 10, color: [120, 120, 120] })
     y += 6
     addText(`Paciente: ${patientName}`, margin, y, { size: 12, style: 'bold' })
     y += 6
@@ -149,20 +154,20 @@ export default function RelatorioPrintPage() {
     // ─── Disclaimer ───
     doc.setFillColor(248, 248, 248)
     doc.roundedRect(margin, y - 2, contentW, 14, 2, 2, 'F')
-    addText('Este relatorio descreve padroes observaveis ao longo do tempo. Nao contem inferencia', margin + 3, y + 3, { size: 8, color: [100, 100, 100] })
-    addText('diagnostica, interpretacao psicologica ou juizo clinico.', margin + 3, y + 8, { size: 8, color: [100, 100, 100] })
+    addText('Este relatório descreve padrões observáveis ao longo do tempo. Não contém inferência', margin + 3, y + 3, { size: 8, color: [100, 100, 100] })
+    addText('diagnóstica, interpretação psicológica ou juízo clínico.', margin + 3, y + 8, { size: 8, color: [100, 100, 100] })
     y += 18
 
     // ─── Contexto Clínico ───
     if (clinicalRecord) {
-      sectionTitle('Contexto Clinico Inicial')
+      sectionTitle('Contexto Clínico Inicial')
       addText('[Registro do Profissional]', margin, y, { size: 7, color: [120, 180, 120] })
       y += 5
       const fields = [
         { label: 'Evento ou contexto inicial', value: clinicalRecord.complaint },
-        { label: 'Aspectos mencionados no historico', value: clinicalRecord.patterns },
-        { label: 'Intervencoes previas relatadas', value: clinicalRecord.interventions },
-        { label: 'Situacao atual conforme relato', value: clinicalRecord.current_state },
+        { label: 'Aspectos mencionados no histórico', value: clinicalRecord.patterns },
+        { label: 'Intervenções prévias relatadas', value: clinicalRecord.interventions },
+        { label: 'Situação atual conforme relato', value: clinicalRecord.current_state },
       ]
       for (const f of fields) {
         if (f.value) {
@@ -239,21 +244,21 @@ export default function RelatorioPrintPage() {
       sectionTitle('Comparativo Temporal')
       // Table header
       const cols = [margin, margin + 50, margin + 90, margin + 130]
-      addText('Periodo', cols[0], y, { size: 8, style: 'bold', color: [100, 100, 100] })
-      addText('Sessoes', cols[1], y, { size: 8, style: 'bold', color: [100, 100, 100] })
+      addText('Período', cols[0], y, { size: 8, style: 'bold', color: [100, 100, 100] })
+      addText('Sessões', cols[1], y, { size: 8, style: 'bold', color: [100, 100, 100] })
       addText('Eventos', cols[2], y, { size: 8, style: 'bold', color: [100, 100, 100] })
-      addText('Recuperacao', cols[3], y, { size: 8, style: 'bold', color: [100, 100, 100] })
+      addText('Recuperação', cols[3], y, { size: 8, style: 'bold', color: [100, 100, 100] })
       y += 5
       doc.setDrawColor(220, 220, 220)
       doc.line(margin, y, w - margin, y)
       y += 5
 
-      addText('Sessoes iniciais', cols[0], y, { size: 9 })
+      addText('Sessões iniciais', cols[0], y, { size: 9 })
       addText(String(data.sessions_early.count), cols[1], y, { size: 9 })
       addText(String(data.sessions_early.events), cols[2], y, { size: 9 })
       addText(`${data.sessions_early.avg_recovery} min`, cols[3], y, { size: 9 })
       y += 6
-      addText('Sessoes recentes', cols[0], y, { size: 9 })
+      addText('Sessões recentes', cols[0], y, { size: 9 })
       addText(String(data.sessions_recent.count), cols[1], y, { size: 9 })
       addText(String(data.sessions_recent.events), cols[2], y, { size: 9 })
       addText(`${data.sessions_recent.avg_recovery} min`, cols[3], y, { size: 9 })
@@ -301,9 +306,9 @@ export default function RelatorioPrintPage() {
     // ─── Rodapé ───
     checkPage(20)
     drawLine()
-    addText('Este relatorio nao substitui avaliacao clinica profissional.', margin, y, { size: 8, color: [160, 160, 160] })
+    addText('Este relatório não substitui avaliação clínica profissional.', margin, y, { size: 8, color: [160, 160, 160] })
     y += 4
-    addText('Interpretacao exclusiva do profissional responsavel.', margin, y, { size: 8, color: [160, 160, 160] })
+    addText('Interpretação exclusiva do profissional responsável.', margin, y, { size: 8, color: [160, 160, 160] })
     y += 4
     addText(`AXIS TCC — CSO-TCC v3.0.0 — ${now.toLocaleDateString('pt-BR')}`, margin, y, { size: 7, color: [200, 200, 200] })
 
