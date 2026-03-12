@@ -144,7 +144,7 @@ export function OnboardingTooltip({
               justifyContent: 'center',
             }}
           >
-            <img src="/favicon_axis.png" alt="AXIS" width={48} height={48} style={{ objectFit: 'contain' }} />
+            <img src="/logo-axis-tcc.jpg" alt="AXIS TCC" width={48} height={48} style={{ objectFit: 'contain' }} />
           </div>
           <h2
             style={{
@@ -176,7 +176,7 @@ export function OnboardingTooltip({
                   flex: 1,
                   height: '4px',
                   borderRadius: '2px',
-                  background: i <= currentStep ? '#2563EB' : '#E2E8F0',
+                  background: i <= currentStep ? '#1a1f4e' : '#E2E8F0',
                   transition: 'background 0.3s ease',
                 }}
               />
@@ -214,7 +214,7 @@ export function OnboardingTooltip({
                 padding: '12px 20px',
                 borderRadius: '10px',
                 border: 'none',
-                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                background: 'linear-gradient(135deg, #1a1f4e 0%, #2a2f5e 100%)',
                 color: 'white',
                 fontSize: '14px',
                 fontWeight: 600,
@@ -323,7 +323,7 @@ export function OnboardingTooltip({
             style={{
               height: '100%',
               width: `${((currentStep + 1) / totalSteps) * 100}%`,
-              background: '#2563EB',
+              background: '#1a1f4e',
               borderRadius: '2px',
               transition: 'width 0.3s ease',
             }}
@@ -359,7 +359,7 @@ export function OnboardingTooltip({
               padding: '10px 16px',
               borderRadius: '8px',
               border: 'none',
-              background: '#2563EB',
+              background: '#1a1f4e',
               color: 'white',
               fontSize: '13px',
               fontWeight: 600,
