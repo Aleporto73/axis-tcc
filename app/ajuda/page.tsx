@@ -15,6 +15,7 @@ import {
   Send,
   Bot,
 } from 'lucide-react'
+import Sidebar from '../components/Sidebar'
 
 /* ─── brand TCC ─── */
 const brand = '#1a1f4e'
@@ -632,7 +633,9 @@ export default function AjudaPage() {
   }, [search])
 
   return (
-    <div className="min-h-screen bg-slate-50" style={{ scrollBehavior: 'smooth' }}>
+    <div className="min-h-screen bg-slate-50">
+      <Sidebar />
+      <main className="md:ml-20 min-h-screen pb-20 md:pb-8" style={{ scrollBehavior: 'smooth' }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 md:py-16">
 
         {/* Header */}
@@ -823,6 +826,7 @@ export default function AjudaPage() {
         </div>
 
       </div>
+      </main>
     </div>
   )
 }
