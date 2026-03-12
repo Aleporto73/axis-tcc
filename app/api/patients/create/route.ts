@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ patient: result.rows[0] })
   } catch (error) {
-    console.error('Erro ao criar paciente:', error)
-    return NextResponse.json({ error: 'Erro ao criar paciente' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : 'Erro desconhecido'
+    console.error('Erro ao criar paciente:', msg, error)
+    return NextResponse.json({ error: `Erro ao criar paciente: ${msg}` }, { status: 500 })
   }
 }
