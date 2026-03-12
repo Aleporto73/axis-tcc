@@ -66,7 +66,7 @@ export default function PacientesPage() {
     }
   }
 
-  const formatPhone = (phone: string) => {
+  const formatPhone = (phone: string | null) => {
     if (!phone) return '-'
     const clean = phone.replace(/\D/g, '')
     if (clean.length === 11) return `(${clean.slice(0,2)}) ${clean.slice(2,7)}-${clean.slice(7)}`
