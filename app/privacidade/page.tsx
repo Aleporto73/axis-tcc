@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Política de Privacidade — AXIS ABA',
-  description: 'Política de privacidade e proteção de dados do AXIS ABA, em conformidade com a LGPD.',
+  title: 'Política de Privacidade — AXIS',
+  description: 'Política de privacidade e proteção de dados do AXIS, em conformidade com a LGPD.',
 }
 
 export default function PrivacidadePage() {
@@ -25,7 +25,7 @@ export default function PrivacidadePage() {
           <section>
             <h2 className="text-lg font-semibold text-slate-800">1. Controlador dos Dados</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              A Psiform Tecnologia, operadora do sistema AXIS ABA, atua como operadora de dados
+              A Psiform Tecnologia, operadora da plataforma AXIS, atua como operadora de dados
               nos termos da LGPD. O controlador dos dados clínicos é o profissional de saúde
               (usuário do sistema) e/ou a clínica à qual está vinculado.
             </p>
@@ -34,20 +34,20 @@ export default function PrivacidadePage() {
           <section>
             <h2 className="text-lg font-semibold text-slate-800">2. Dados Coletados</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              O AXIS ABA coleta e processa os seguintes tipos de dados:
+              O AXIS coleta e processa os seguintes tipos de dados:
             </p>
             <p className="text-sm text-slate-600 leading-relaxed mt-2">
-              <strong>Dados do profissional:</strong> nome, email, CRP/UF, especialidade, dados da clínica (nome, CNPJ, endereço, telefone).
+              <strong>Dados do profissional:</strong> nome, email, registro profissional (CRP/CFF),
+              especialidade, dados da clínica (nome, CNPJ, endereço, telefone).
             </p>
             <p className="text-sm text-slate-600 leading-relaxed mt-2">
-              <strong>Dados dos aprendizes (pacientes):</strong> nome, data de nascimento, diagnóstico, CID, nível de suporte,
-              escola, notas clínicas, registros de sessão, protocolos terapêuticos, escores CSO-ABA.
+              <strong>Dados dos pacientes:</strong> nome, data de nascimento, informações clínicas,
+              notas de sessão, registros de eventos terapêuticos, escores evolutivos (CSO-TCC/CSO-ABA),
+              transcrições de sessão.
             </p>
             <p className="text-sm text-slate-600 leading-relaxed mt-2">
-              <strong>Dados dos responsáveis:</strong> nome, parentesco, email, telefone, consentimentos LGPD.
-            </p>
-            <p className="text-sm text-slate-600 leading-relaxed mt-2">
-              <strong>Dados técnicos:</strong> logs de acesso, endereço IP (para segurança), tokens de push notification.
+              <strong>Dados técnicos:</strong> logs de acesso, endereço IP (para segurança), tokens de
+              push notification.
             </p>
           </section>
 
@@ -56,7 +56,7 @@ export default function PrivacidadePage() {
             <p className="text-sm text-slate-600 leading-relaxed">
               O tratamento de dados pessoais é realizado com base no consentimento do titular (Art. 7º, I, LGPD)
               e na tutela da saúde (Art. 7º, VIII, LGPD) para dados sensíveis de saúde. Os dados clínicos
-              dos aprendizes são tratados exclusivamente para fins de assistência à saúde, sob responsabilidade
+              dos pacientes são tratados exclusivamente para fins de assistência à saúde, sob responsabilidade
               do profissional controlador.
             </p>
           </section>
@@ -64,9 +64,10 @@ export default function PrivacidadePage() {
           <section>
             <h2 className="text-lg font-semibold text-slate-800">4. Finalidade do Tratamento</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Os dados são utilizados para: organização e documentação de protocolos terapêuticos ABA,
-              cálculo de indicadores evolutivos (CSO-ABA), geração de relatórios clínicos e institucionais,
-              gestão de agenda e notificações, e comunicação com responsáveis através do Portal Família.
+              Os dados são utilizados para: organização e documentação de sessões e protocolos
+              terapêuticos, cálculo de indicadores evolutivos (CSO-TCC e CSO-ABA), geração de
+              relatórios clínicos, gestão de agenda e notificações, e suporte ao profissional
+              via assistente virtual.
             </p>
           </section>
 
@@ -74,7 +75,7 @@ export default function PrivacidadePage() {
             <h2 className="text-lg font-semibold text-slate-800">5. Compartilhamento</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
               Os dados clínicos não são compartilhados com terceiros, exceto: com responsáveis legais
-              autorizados pelo profissional (via Portal Família, com consentimento registrado), com
+              autorizados pelo profissional (quando aplicável, com consentimento registrado), com
               processadores de pagamento (Hotmart — apenas dados de cobrança, nunca dados clínicos),
               e quando exigido por ordem judicial.
             </p>
@@ -85,9 +86,8 @@ export default function PrivacidadePage() {
             <p className="text-sm text-slate-600 leading-relaxed">
               Implementamos medidas técnicas e organizacionais para proteger os dados: isolamento
               por tenant (multi-tenancy), autenticação via Clerk com criptografia, registros de
-              auditoria imutáveis (append-only), controle de acesso baseado em papéis (admin, supervisor,
-              terapeuta), soft delete com preservação de histórico, e tokens temporários para o
-              Portal Família (expiração em 90 dias).
+              auditoria imutáveis (append-only), controle de acesso baseado em papéis, soft delete
+              com preservação de histórico, e histórico clínico com versionamento de motor.
             </p>
           </section>
 
@@ -115,7 +115,7 @@ export default function PrivacidadePage() {
           <section>
             <h2 className="text-lg font-semibold text-slate-800">9. Cookies e Rastreamento</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              O AXIS ABA utiliza cookies estritamente necessários para autenticação e funcionamento
+              O AXIS utiliza cookies estritamente necessários para autenticação e funcionamento
               do sistema. Não utilizamos cookies de rastreamento, publicidade ou analytics de terceiros.
             </p>
           </section>
@@ -149,7 +149,7 @@ export default function PrivacidadePage() {
 
         <div className="mt-12 pt-8 border-t border-slate-200">
           <p className="text-xs text-slate-400">
-            © 2026 AXIS ABA — Psiform Tecnologia. Todos os direitos reservados.
+            © 2026 AXIS — Psiform Tecnologia. Todos os direitos reservados.
           </p>
         </div>
       </main>

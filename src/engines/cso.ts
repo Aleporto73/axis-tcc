@@ -76,13 +76,13 @@ export async function processEvent(event: Event): Promise<ClinicalState | null> 
   }
 
   const lastCSOQuery = `
-    SELECT * FROM clinical_states 
-    WHERE patient_id = $1 
-    ORDER BY created_at DESC 
+    SELECT * FROM clinical_states
+    WHERE patient_id = $1 AND tenant_id = $2
+    ORDER BY created_at DESC
     LIMIT 1
   `;
 
-  const result = await pool.query(lastCSOQuery, [event.patient_id]);
+  const result = await pool.query(lastCSOQuery, [event.patient_id, event.tenant_id]);
   const lastCSO = result.rows[0] || null;
 
   const newCSO = calculateNewCSO(lastCSO, event);

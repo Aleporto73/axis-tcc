@@ -79,6 +79,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
+    // Verificar licença TCC ativa
+    const pool = (await import('@/src/database/db')).default
+    const tenantRes = await pool.query(
+      'SELECT id FROM tenants WHERE clerk_user_id = $1',
+      [userId]
+    )
+    if (tenantRes.rows.length === 0) {
+      return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 })
+    }
+    const licRes = await pool.query(
+      `SELECT id FROM user_licenses
+       WHERE tenant_id = $1 AND product_type = 'tcc' AND is_active = true LIMIT 1`,
+      [tenantRes.rows[0].id]
+    )
+    if (licRes.rows.length === 0) {
+      return NextResponse.json({ error: 'Licença TCC não encontrada' }, { status: 403 })
+    }
+
     const body = await request.json()
     const message: string | undefined = body.message
     const history: ChatMsg[] = Array.isArray(body.history) ? body.history : []

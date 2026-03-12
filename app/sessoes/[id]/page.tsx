@@ -313,16 +313,18 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                 <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">Micro-eventos de Flexibilidade</h2>
                 <p className="text-sm text-slate-400 mb-4">Marque comportamentos observados durante a sessão</p>
                 <div className="grid grid-cols-4 gap-3 mb-4">
-                  {[
-                    { type: 'AVOIDANCE_OBSERVED', label: 'Evitou', color: 'amber' },
-                    { type: 'CONFRONTATION_OBSERVED', label: 'Enfrentou', color: 'emerald' },
-                    { type: 'ADJUSTMENT_OBSERVED', label: 'Ajustou', color: 'sky' },
-                    { type: 'RECOVERY_OBSERVED', label: 'Recuperou', color: 'violet' },
-                  ].map(m => (
-                    <button key={m.type} onClick={() => openMicroModal(m.type)} className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-${m.color}-200 bg-${m.color}-50 hover:bg-${m.color}-100 transition-colors`}>
-                      <span className={`text-sm font-medium text-${m.color}-700`}>{m.label}</span>
-                    </button>
-                  ))}
+                  <button onClick={() => openMicroModal('AVOIDANCE_OBSERVED')} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors">
+                    <span className="text-sm font-medium text-amber-700">Evitou</span>
+                  </button>
+                  <button onClick={() => openMicroModal('CONFRONTATION_OBSERVED')} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors">
+                    <span className="text-sm font-medium text-emerald-700">Enfrentou</span>
+                  </button>
+                  <button onClick={() => openMicroModal('ADJUSTMENT_OBSERVED')} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-sky-200 bg-sky-50 hover:bg-sky-100 transition-colors">
+                    <span className="text-sm font-medium text-sky-700">Ajustou</span>
+                  </button>
+                  <button onClick={() => openMicroModal('RECOVERY_OBSERVED')} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-violet-200 bg-violet-50 hover:bg-violet-100 transition-colors">
+                    <span className="text-sm font-medium text-violet-700">Recuperou</span>
+                  </button>
                 </div>
                 {microEvents.length > 0 && (
                   <div className="flex flex-wrap gap-2">

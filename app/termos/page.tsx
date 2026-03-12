@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Termos de Uso — AXIS ABA',
-  description: 'Termos de uso do sistema AXIS ABA, ferramenta de gestão clínica para Análise do Comportamento Aplicada.',
+  title: 'Termos de Uso — AXIS',
+  description: 'Termos de uso do sistema AXIS, plataforma de gestão clínica para profissionais de saúde.',
 }
 
 export default function TermosPage() {
@@ -23,21 +23,22 @@ export default function TermosPage() {
         <div className="prose prose-slate prose-sm max-w-none space-y-8">
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-800">1. Sobre o AXIS ABA</h2>
+            <h2 className="text-lg font-semibold text-slate-800">1. Sobre o AXIS</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              O AXIS ABA é um sistema de apoio à gestão clínica para profissionais que atuam com Análise do
-              Comportamento Aplicada (ABA). O sistema é desenvolvido e operado pela Psiform Tecnologia.
-              O AXIS ABA é uma ferramenta de organização e documentação — não substitui o julgamento clínico
-              do profissional responsável.
+              O AXIS é uma plataforma de apoio à gestão clínica para profissionais de saúde.
+              Inclui os módulos AXIS TCC (Terapia Cognitivo-Comportamental) e AXIS ABA
+              (Análise do Comportamento Aplicada). O sistema é desenvolvido e operado pela
+              Psiform Tecnologia. O AXIS é uma ferramenta de organização e documentação — não
+              substitui o julgamento clínico do profissional responsável.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-slate-800">2. Elegibilidade</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              O uso do sistema é destinado a profissionais de saúde com registro ativo em conselho profissional
-              competente (CRP, CFF ou equivalente). Ao se cadastrar, o usuário declara possuir habilitação
-              profissional válida para atuar na área.
+              O uso do sistema é destinado a profissionais de saúde com registro ativo em conselho
+              profissional competente (CRP, CFF ou equivalente). Ao se cadastrar, o usuário declara
+              possuir habilitação profissional válida para atuar na área.
             </p>
           </section>
 
@@ -53,21 +54,22 @@ export default function TermosPage() {
           <section>
             <h2 className="text-lg font-semibold text-slate-800">4. Planos e Pagamento</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              O AXIS ABA oferece um plano gratuito (1 aprendiz) e planos pagos com limites maiores.
-              Os pagamentos são processados pela plataforma Hotmart. A cobrança é mensal e recorrente.
-              O cancelamento pode ser feito a qualquer momento pelo painel da Hotmart, com efeito
-              ao final do período já pago. Não há reembolso proporcional de períodos parciais.
+              Cada módulo do AXIS (TCC e ABA) oferece um plano gratuito limitado e planos pagos com
+              recursos ampliados. Os pagamentos são processados pela plataforma Hotmart. A cobrança
+              é mensal e recorrente. O cancelamento pode ser feito a qualquer momento pelo painel da
+              Hotmart, com efeito ao final do período já pago. Não há reembolso proporcional de
+              períodos parciais.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-slate-800">5. Responsabilidade Clínica</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              O AXIS ABA é uma ferramenta de apoio. Todas as decisões clínicas são de inteira
-              responsabilidade do profissional que as realiza. Os cálculos automatizados (como o CSO-ABA)
-              são indicadores auxiliares e não devem ser interpretados como diagnósticos ou
-              recomendações terapêuticas. O profissional deve sempre exercer seu julgamento clínico
-              independente.
+              O AXIS é uma ferramenta de apoio. Todas as decisões clínicas são de inteira
+              responsabilidade do profissional que as realiza. Os cálculos automatizados (como o
+              CSO-TCC e o CSO-ABA) são indicadores auxiliares e não devem ser interpretados como
+              diagnósticos ou recomendações terapêuticas. O profissional deve sempre exercer seu
+              julgamento clínico independente.
             </p>
           </section>
 
@@ -85,20 +87,19 @@ export default function TermosPage() {
           <section>
             <h2 className="text-lg font-semibold text-slate-800">7. Propriedade Intelectual</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              O sistema AXIS ABA, incluindo seu motor CSO-ABA, interface, código e documentação,
-              são propriedade da Psiform Tecnologia. É proibida a reprodução, engenharia reversa
-              ou redistribuição sem autorização expressa. Os dados clínicos inseridos pelo usuário
-              permanecem de propriedade do profissional e de seus pacientes.
+              O sistema AXIS, incluindo seus motores CSO-TCC e CSO-ABA, interface, código e
+              documentação, são propriedade da Psiform Tecnologia. É proibida a reprodução,
+              engenharia reversa ou redistribuição sem autorização expressa. Os dados clínicos
+              inseridos pelo usuário permanecem de propriedade do profissional e de seus pacientes.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-slate-800">8. Disponibilidade</h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              O AXIS ABA é fornecido &quot;como está&quot; (as is). Embora nos esforcemos para manter o sistema
+              O AXIS é fornecido &quot;como está&quot; (as is). Embora nos esforcemos para manter o sistema
               disponível 24h, não garantimos disponibilidade ininterrupta. Manutenções programadas
-              serão comunicadas com antecedência quando possível. O AXIS ABA está em fase beta e pode
-              apresentar instabilidades.
+              serão comunicadas com antecedência quando possível.
             </p>
           </section>
 
@@ -132,7 +133,7 @@ export default function TermosPage() {
 
         <div className="mt-12 pt-8 border-t border-slate-200">
           <p className="text-xs text-slate-400">
-            © 2026 AXIS ABA — Psiform Tecnologia. Todos os direitos reservados.
+            © 2026 AXIS — Psiform Tecnologia. Todos os direitos reservados.
           </p>
         </div>
       </main>

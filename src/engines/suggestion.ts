@@ -118,18 +118,19 @@ async function evaluateRules(cso: any): Promise<SuggestionCandidate[]> {
     });
   }
 
-  // REGRA 6: COGNITIVE_INTERVENTION (Media prioridade)
-  if (cso.cognitive_rigidity && cso.cognitive_rigidity > 0.7) {
+  // REGRA 6: COGNITIVE_INTERVENTION — baseada em flex_trend como proxy de rigidez cognitiva
+  // (cognitive_rigidity como campo dedicado será implementado em v3.1)
+  if (cso.flex_trend === 'down' && cso.recovery_time !== null && cso.recovery_time >= 3) {
     suggestions.push({
       type: 'COGNITIVE_INTERVENTION',
       title: 'Intervencao Cognitiva Indicada',
       reason: [
-        'Rigidez cognitiva elevada (>0.7)',
+        'Flexibilidade em queda por ' + cso.recovery_time + ' sessoes',
         'Paciente pode estar preso em padroes rigidos de pensamento'
       ],
-      confidence: 0.78,
+      confidence: 0.72,
       priority: 7,
-      context: { cognitive_rigidity: cso.cognitive_rigidity }
+      context: { flex_trend: cso.flex_trend, recovery_time: cso.recovery_time }
     });
   }
 
@@ -179,33 +180,35 @@ async function evaluateRules(cso: any): Promise<SuggestionCandidate[]> {
     });
   }
 
-  // REGRA 10: ADJUST_PACE (Baixa prioridade)
-  if (cso.sessions_in_phase > 8 && cso.treatment_phase === 'exposicao') {
+  // REGRA 10: ADJUST_PACE — baseada em clinical_phase e flex_trend prolongado
+  // (sessions_in_phase será calculado em v3.1 do CSO)
+  if (cso.clinical_phase === 'exposicao' && cso.flex_trend === 'flat' && cso.recovery_time !== null && cso.recovery_time >= 4) {
     suggestions.push({
       type: 'ADJUST_PACE',
       title: 'Revisar Ritmo do Tratamento',
       reason: [
-        'Paciente ha ' + cso.sessions_in_phase + ' sessoes na mesma fase',
+        'Paciente na fase de exposicao com flexibilidade estagnada',
         'Pode estar pronto para avancar ou precisa de ajuste'
       ],
       confidence: 0.68,
       priority: 5,
-      context: { sessions_in_phase: cso.sessions_in_phase, treatment_phase: cso.treatment_phase }
+      context: { clinical_phase: cso.clinical_phase, flex_trend: cso.flex_trend, recovery_time: cso.recovery_time }
     });
   }
 
-  // REGRA 11: BRIDGE_TO_LAST (Baixa prioridade)
-  if (cso.engagement_trend === 'declining') {
+  // REGRA 11: BRIDGE_TO_LAST — baseada em activation_level em queda
+  // (engagement_trend será implementado em v3.1 do CSO)
+  if (cso.activation_level !== null && cso.activation_level < 0.3) {
     suggestions.push({
       type: 'BRIDGE_TO_LAST',
       title: 'Fazer Ponte com Sessao Anterior',
       reason: [
-        'Engajamento em declinio',
+        'Nivel de ativacao/engajamento baixo (<0.3)',
         'Reconectar com conteudo da ultima sessao pode ajudar'
       ],
       confidence: 0.65,
       priority: 4,
-      context: { engagement_trend: cso.engagement_trend }
+      context: { activation_level: cso.activation_level }
     });
   }
 

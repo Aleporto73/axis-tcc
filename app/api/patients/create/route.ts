@@ -18,6 +18,28 @@ export async function POST(request: NextRequest) {
     }
     const tenantId = tenantResult.rows[0].id
 
+    // Verificar limite de pacientes do plano TCC
+    const licenseResult = await pool.query(
+      `SELECT max_patients FROM user_licenses
+       WHERE tenant_id = $1 AND product_type = 'tcc' AND is_active = true
+       ORDER BY created_at DESC LIMIT 1`,
+      [tenantId]
+    )
+    const maxPatients = licenseResult.rows[0]?.max_patients ?? 1 // free = 1
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*)::int AS total FROM patients WHERE tenant_id = $1',
+      [tenantId]
+    )
+    const currentCount = countResult.rows[0]?.total ?? 0
+
+    if (currentCount >= maxPatients) {
+      return NextResponse.json(
+        { error: `Limite de ${maxPatients} paciente(s) atingido. Faça upgrade para o plano Profissional.` },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const { name, email, phone, birth_date, notes } = body
 
