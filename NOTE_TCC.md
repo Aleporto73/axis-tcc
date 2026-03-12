@@ -1,5 +1,5 @@
 # AXIS TCC — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 11/03/2026 (noite — 9 fixes criticos/altos deployed + build green)
+## Atualizado: 12/03/2026 (tarde — audit completo frontend↔API + 3 fixes + 2 migrations)
 
 ---
 
@@ -11,9 +11,9 @@
 
 ---
 
-## ONDE ESTAMOS — TCC (auditado em 11/03/2026, noite)
+## ONDE ESTAMOS — TCC (auditado em 12/03/2026, tarde)
 
-### Completude Geral: ~95% (subiu de ~93% — 9 criticas/altas resolvidas)
+### Completude Geral: ~96% (subiu de ~95% — audit sistematico + 3 fixes)
 
 ### CORE ENGINE — 100% ✅
 | Area | % | Status |
@@ -29,13 +29,13 @@
 |---|---|---|
 | Schema TCC | 100% | 15+ tabelas (patients, sessions, events, clinical_states, suggestions, tasks, transcripts, etc.) |
 | Multi-tenant | 100% | tenant_id em todas as tabelas, RLS enforced |
-| Migrations | 100% | 18 migrations aplicadas |
+| Migrations | 100% | 21 migrations (019: patient profile cols, 020: patient clinical cols, 021: session google cols) |
 | Audit log | 100% | axis_audit_logs append-only |
 
 ### API ENDPOINTS — 100% ✅
 | Endpoint | Status | Descricao |
 |---|---|---|
-| /api/patients/* | ✅ | CRUD completo + clinical-record + evolution + sessions + supervision + push-link |
+| /api/patients/* | ✅ | CRUD completo + clinical-record + evolution + sessions + supervision + push-link (TODOS com withTenant) |
 | /api/sessions/* | ✅ | CRUD + start + finish + report + create |
 | /api/suggestions/* | ✅ | GET lista + PATCH decide (aprovar/editar/ignorar) |
 | /api/events/create | ✅ | Pipeline de entrada de eventos clinicos |
@@ -60,11 +60,11 @@
 | /sessoes | ✅ | Lista + filtros + paginacao + modal nova sessao |
 | /sessoes/[id] | ✅ | Detalhe com eventos (classes estaticas Tailwind corrigidas) |
 | /pacientes | ✅ | Lista + Toast feedback + busca |
-| /pacientes/[id] | ✅ | Perfil com interfaces TS tipadas (Patient, PatientSession, EditFormData, ClinicalRecord) |
+| /pacientes/[id] | ✅ | Perfil com interfaces TS tipadas + edit modal corrigido (full_name mismatch fix) |
 | /relatorio/[id] | ✅ | Relatorio evolucao (PDF via jsPDF) — acentos corrigidos com stripAccents() |
 | /configuracoes | ✅ | Configuracoes |
 | /sugestoes | ✅ | Gestao de sugestoes |
-| /ajuda | ✅ | Central de ajuda + Chat Ana integrado |
+| /ajuda | ✅ | Central de ajuda + Chat Ana integrado + Sidebar adicionada |
 | /produto/tcc | ✅ | Landing page com schema.org |
 | /demo | ✅ | Demo mode completo |
 | /termos | ✅ | Termos genericos AXIS (TCC + ABA) |
@@ -142,6 +142,10 @@
 12. **sessions/create L54** — `const event: any` no Google Calendar event.
 
 13. **Acessibilidade** — Spinners sem aria-label/aria-busy em sessoes, sugestoes, pacientes.
+
+14. **Rotas de sessão TCC sem withTenant** — 6 arquivos em /api/sessions/* usam pool.query() direto com lookup manual de tenant. Funcional mas inconsistente com padrão do /api/patients/*. Migrar para withTenant no v2.x.
+
+15. **Dashboard pending_notes/pending_confirmation** — Interface Stats define esses campos mas /api/stats não os retorna. Não causa crash (campos undefined ignorados) mas é dead code.
 
 ### BAIXAS (pos-lancamento)
 
@@ -222,6 +226,19 @@
 - ✅ Clerk webhook v2.0: auto-provisioning FREE (tenant + profile + licenças TCC/ABA) no cadastro direto
 - ✅ patients/create: corrigido max_patients (coluna não existe em user_licenses) → regra via hotmart_plan
 
+### 2026-03-12 (manha-tarde) — RLS Fix + withTenant Migration
+- ✅ Migração de TODOS os 8 arquivos de rota /api/patients/* para withTenant (RLS compliance)
+- ✅ Onboarding tooltip: logo corrigido (/favicon_axis.png → /logo-axis-tcc.jpg) + cores navy
+
+### 2026-03-12 (tarde) — Audit Sistematico Frontend↔API
+- Rastreamento completo: 94 rotas API auditadas, todas as páginas TCC verificadas
+- ✅ FIX: /ajuda sem Sidebar → adicionada (mesmo padrão do dashboard/pacientes/sessões)
+- ✅ FIX: Patient edit enviava `name` em vez de `full_name` → API retornava 400 silencioso
+- ✅ Migration 020: colunas `gender`, `diagnosis`, `medication` faltavam na tabela patients
+- ✅ Migration 021: colunas Google Calendar faltavam na tabela sessions TCC (segurança)
+- Resultado: sessions↔API OK, suggestions↔API OK, configurações↔API OK, dashboard↔stats OK
+- Rotas de sessão TCC usam pool.query() direto (não withTenant) — funcional porque sessions não tem RLS strict
+
 ---
 
 ## DECISOES TOMADAS
@@ -233,6 +250,9 @@
 | 11/03/2026 | Inline styles em hub/ajuda/landing = debt v2 | Precisam refactor para usar tokens, nao e bloqueante |
 | 11/03/2026 | ~~Regra CRISIS_PROTOCOL dead code~~ → CORRIGIDA | Reescrita com activation_level < 0.2 + emotional_load > 0.85 |
 | 12/03/2026 | Limite pacientes via hotmart_plan (não max_patients) | v1.x: FREE (NULL) = 1, PRO (NOT NULL) = ilimitado. v2.x tera seats/roles |
+| 12/03/2026 | Todas as rotas /api/patients/* migradas para withTenant | RLS exige set_config('app.tenant_id') — pool.query() direto falhava em INSERT/UPDATE |
+| 12/03/2026 | Rotas /api/sessions/* mantidas com pool.query() | Sessions table não tem RLS strict — funcional com WHERE tenant_id manual. Migrar para withTenant no v2.x |
+| 12/03/2026 | Migrations 020/021 criadas para colunas faltantes | gender/diagnosis/medication em patients + google cols em sessions. IF NOT EXISTS para idempotencia |
 
 ---
 
