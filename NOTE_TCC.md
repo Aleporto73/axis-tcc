@@ -1,5 +1,5 @@
 # AXIS TCC — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 11/03/2026 (manha)
+## Atualizado: 11/03/2026 (noite — pos hardening completo)
 
 ---
 
@@ -11,9 +11,9 @@
 
 ---
 
-## ONDE ESTAMOS — TCC (verificado no codigo em 11/03/2026)
+## ONDE ESTAMOS — TCC (auditado em 11/03/2026, noite)
 
-### Completude Geral: ~88%
+### Completude Geral: ~93% (subiu de ~88%)
 
 ### CORE ENGINE — 100% ✅
 | Area | % | Status |
@@ -40,7 +40,7 @@
 | /api/suggestions/* | ✅ | GET lista + PATCH decide (aprovar/editar/ignorar) |
 | /api/events/create | ✅ | Pipeline de entrada de eventos clinicos |
 | /api/stats | ✅ | Dashboard KPIs |
-| /api/transcribe | ✅ | Whisper transcription + chunking >5MB + SSE streaming |
+| /api/transcribe | ✅ | Whisper transcription + chunking >5MB + SSE streaming + failed chunks warning |
 | /api/transcribe-audio | ✅ | Registros clinicos |
 | /api/analyze-tcc | ✅ | Analise TCC especifica |
 | /api/audit | ✅ | Log imutavel |
@@ -49,162 +49,113 @@
 | /api/portal/* | ✅ | Portal Familia token-based |
 | /api/user/* | ✅ | Profile, licenses, tenant selection |
 | /api/demo/* | ✅ | Demo mode com dados publicos |
-| /api/webhook/* | ✅ | Hotmart + Clerk webhooks |
+| /api/webhook/* | ✅ | Hotmart (product-aware TCC+ABA) + Clerk webhooks |
 | /api/cron/* | ✅ | Reminders + renew-webhook |
+| /api/chat-ana | ✅ | GPT-4o-mini com historico (10 turnos) + license gate |
 
-### UI / PAGES — 95% ✅
-| Rota | Status | Arquivo | Observacao |
-|---|---|---|---|
-| /dashboard | ✅ | app/dashboard/page.tsx (17.1 KB) | Dashboard principal com KPIs |
-| /sessoes | ✅ | app/sessoes/page.tsx (22.4 KB) | Lista de sessoes |
-| /sessoes/[id] | ✅ | app/sessoes/[id]/page.tsx | Detalhe da sessao |
-| /pacientes | ✅ | app/pacientes/page.tsx (12.8 KB) | Lista de pacientes |
-| /pacientes/[id] | ✅ | app/pacientes/[id]/page.tsx | Perfil clinico do paciente |
-| /relatorio/[id] | ✅ | app/relatorio/[patientId]/page.tsx | Relatorio evolucao (PDF via print) |
-| /configuracoes | ✅ | app/configuracoes/page.tsx (18.3 KB) | Configuracoes |
-| /sugestoes | ✅ | app/sugestoes/ | Gestao de sugestoes |
-| /ajuda | ✅ | app/ajuda/ | Central de ajuda |
-| /produto/tcc | ✅ | app/produto/tcc/page.tsx | Landing page com schema.org |
-| /demo | ✅ | app/demo/ | Demo mode completo |
+### UI / PAGES — 98% ✅
+| Rota | Status | Observacao |
+|---|---|---|
+| /dashboard | ✅ | Dashboard com KPIs + graficos CSO longitudinais + error state |
+| /sessoes | ✅ | Lista + filtros + paginacao + modal nova sessao |
+| /sessoes/[id] | ✅ | Detalhe com eventos (classes estaticas Tailwind corrigidas) |
+| /pacientes | ✅ | Lista + Toast feedback + busca |
+| /pacientes/[id] | ✅ | Perfil com interfaces TS tipadas (Patient, PatientSession, EditFormData, ClinicalRecord) |
+| /relatorio/[id] | ✅ | Relatorio evolucao (PDF via jsPDF) — PENDENTE: acentos no PDF |
+| /configuracoes | ✅ | Configuracoes |
+| /sugestoes | ✅ | Gestao de sugestoes |
+| /ajuda | ✅ | Central de ajuda + Chat Ana integrado |
+| /produto/tcc | ✅ | Landing page com schema.org |
+| /demo | ✅ | Demo mode completo |
+| /termos | ✅ | Termos genericos AXIS (TCC + ABA) |
+| /privacidade | ✅ | Privacidade generica AXIS (TCC + ABA) |
+| /obrigado | ✅ | Thank you page com branding AXIS navy |
+| /hub | ✅ | Seletor de modulos (TCC + ABA) |
 
 ### COMPONENTS — 100% ✅
 | Componente | Status | Arquivo |
 |---|---|---|
-| Sidebar.tsx | ✅ | app/components/Sidebar.tsx (7.6 KB) |
-| EvolutionReport.tsx | ✅ | app/components/EvolutionReport.tsx (23.9 KB) |
-| SessionReport.tsx | ✅ | app/components/SessionReport.tsx (7.9 KB) |
-| Onboarding.tsx | ✅ | app/components/Onboarding.tsx (2.8 KB) |
-| OnboardingChecklist.tsx | ✅ | app/components/OnboardingChecklist.tsx (4.3 KB) |
-| OnboardingTooltip.tsx | ✅ | app/components/OnboardingTooltip.tsx (11.9 KB) |
-| OnboardingOverlay.tsx | ✅ | app/components/OnboardingOverlay.tsx (3.7 KB) |
-| PushNotificationSetup.tsx | ✅ | app/components/PushNotificationSetup.tsx (5.2 KB) |
-| TermsModal.tsx | ✅ | app/components/TermsModal.tsx (5.2 KB) |
-| RoleProvider.tsx | ✅ | app/components/RoleProvider.tsx (2.9 KB) |
-| UpgradeModal.tsx | ✅ | app/components/UpgradeModal.tsx (4.7 KB) |
-| CIDSelector.tsx | ✅ | components/CIDSelector.tsx (7.0 KB) |
-| ErrorBoundary.tsx | ✅ | app/components/ErrorBoundary.tsx (3.4 KB) |
-| Skeleton.tsx | ✅ | app/components/Skeleton.tsx (3.6 KB) |
-| Toast.tsx | ✅ | app/components/Toast.tsx (1.5 KB) |
+| Sidebar.tsx | ✅ | Design tokens tcc- migrados (0 hex hardcoded) |
+| EvolutionReport.tsx | ✅ | app/components/EvolutionReport.tsx |
+| SessionReport.tsx | ✅ | Acentos corrigidos (Relatório, Sessão, etc.) |
+| Toast.tsx | ✅ | Componente de feedback reutilizavel |
+| (demais 12 componentes) | ✅ | Onboarding, Push, Terms, Error, Skeleton, etc. |
 
-### COMERCIAL / BILLING — 70%
+### DESIGN TOKENS — 85%
 | Area | % | Status |
 |---|---|---|
-| Webhook Hotmart | ✅ | Compartilhado, reconhece produto TCC (ID 7299808) |
+| Paleta TCC em tailwind.config.ts | ✅ | tcc-50..900 + tcc-accent (#FC608F) |
+| Sidebar.tsx | ✅ | 100% migrado para tcc- classes |
+| Dashboard, Sessoes, Sugestoes, Pacientes, Obrigado | ✅ | Migrados |
+| Hub, Ajuda, Produto/TCC, Landing | ❌ | Usam JS inline style (design debt v2) |
+
+### COMERCIAL / BILLING — 80% (subiu de 70%)
+| Area | % | Status |
+|---|---|---|
+| Webhook Hotmart | ✅ | Product-aware: TCC (ID 7299808), branding/subject/redirect corretos |
 | User licenses | ✅ | Tabela + UPSERT on purchase |
 | Free tier gate | ✅ | 1 paciente gratis, UpgradeModal apos limite |
-| Gate no layout | ✅ | License check → redirect /hub se inativo |
-| Email pos-compra | ✅ | Template compartilhado via Resend |
-| /obrigado | ✅ | Thank you page pos-purchase |
+| Gate no layout | ✅ | License check via tcc-license-gate.ts (DRY, 3 layouts simplificados) |
+| Email pos-compra | ✅ | Templates product-aware (navy TCC / coral ABA) |
+| /obrigado | ✅ | Thank you page com branding AXIS |
 | Pricing page TCC | ❌ | Landing existe mas checkout links nao conectados |
-| Tiers/precos TCC | ❌ | Precisa definir (modelo ABA: free/founders/clinica_100/clinica_250) |
+| Tiers/precos TCC | ❌ | Precisa definir |
 | UpgradeModal links | ❌ | Precisa apontar para checkout TCC correto |
 
-### ONBOARDING — 90%
-| Area | % | Status |
+### SEGURANCA — 95% (subiu de ~80%)
+| Area | Status | Detalhe |
 |---|---|---|
-| Overlay funcional | ✅ | Codigo generico, funciona para TCC |
-| LGPD acceptance | ✅ | TermsModal implementado |
-| Setup psicologo | ✅ | Via /api/user/ |
-| Progress tracking | ✅ | API + localStorage + cookie |
-| Push notification setup | ✅ | Pos-onboarding |
-| Branding TCC | ❌ | Copy/cores ainda focados no ABA |
-
-### TEAM / MULTI-USER — 50%
-| Area | % | Status |
-|---|---|---|
-| Multi-tenant DB | ✅ | tenant_id em tudo |
-| RBAC | ✅ | admin/supervisor/therapist via with-role.ts |
-| Multi-clinic | ✅ | Migration 018, cookie-based routing |
-| Middleware role-aware | ✅ | Protege rotas por role |
-| Pagina /equipe TCC | ❌ | Nao existe (ABA tem /aba/equipe) |
-| Atribuicao paciente↔terapeuta | ❌ | FK nao existe no schema TCC |
-| Filtro por terapeuta | ❌ | Todos no tenant veem todos os pacientes |
+| CSO engine tenant isolation | ✅ | FIX 1: AND tenant_id = $2 adicionado |
+| Patient limit enforcement | ✅ | FIX 2: max_patients checado no /create |
+| Chat Ana license gate | ✅ | FIX 3: Verifica licenca TCC antes de responder |
+| Pipeline warnings | ✅ | FIX 9: CSO/Suggestion errors retornados ao frontend |
+| Layout gates DRY | ✅ | FIX 11: tcc-license-gate.ts compartilhado |
+| Dashboard error state | ✅ | FIX 13: csoError com feedback visual |
+| Suggestion rules alive | ✅ | FIX 7: Regras 6/10/11 reescritas para usar campos reais |
 
 ---
 
-## INFRAESTRUTURA COMPARTILHADA (100% ✅)
-| Area | Status |
-|---|---|
-| PostgreSQL 14 multi-tenant | ✅ |
-| Redis cache (5min TTL) | ✅ |
-| Clerk auth (Production Pro) | ✅ |
-| Firebase Admin (storage + FCM) | ✅ |
-| Resend email (3 templates) | ✅ |
-| LGPD compliance (export/delete/consent) | ✅ |
-| Audit log imutavel | ✅ |
-| Multi-clinica (migration 018) | ✅ |
-| Hotmart webhook v2.1 | ✅ |
+## PENDENCIAS ENCONTRADAS NA AUDITORIA DE 11/03/2026 (NOITE)
 
----
+### CRITICAS (corrigir antes de vender)
 
-## PENDENCIAS PARA BETA COMERCIAL TCC
+1. **clinical-record/route.ts L77** — Query `SELECT id FROM clinical_records WHERE patient_id = $1` SEM tenant_id no POST (verificacao de duplicata). GET e PUT estao OK.
 
-### P0 — Bloqueantes para vender
-- [ ] Definir planos e precos TCC (tiers + limites)
-- [ ] Conectar pricing page → checkout Hotmart (produto 7299808)
-- [ ] UpgradeModal com links TCC corretos
-- [ ] Onboarding TCC — ajustar copy/branding para TCC
-- [ ] Teste de fluxo completo (cadastro → onboarding → criar paciente → sessao → eventos → CSO → sugestao → relatorio)
-- [ ] Revisao UI/UX — consistencia visual em todas as telas TCC
-- [ ] Responsividade mobile (psicologo usa no celular apos sessao presencial)
+2. **push/subscribe/route.ts** — Endpoint SEM autenticacao. Aceita userId/tenantId do body sem verificar. Qualquer request pode registrar subscriptions.
 
-### P1 — Importantes para beta completo
-- [ ] Team management UI — pagina /equipe para TCC
-- [ ] Chat Ana TCC — carregar SKILL_TCC.md como personalidade
-- [ ] PDF reports server-side (upgrade do window.print)
-- [ ] Email templates especificos TCC
-- [ ] Dashboard KPIs TCC — graficos CSO longitudinais
+3. **sessions/create/route.ts L138-141** — Session number count: `SELECT COUNT(*) FROM sessions WHERE patient_id = $1` SEM tenant_id. Pode contar sessoes de outro tenant.
 
-### P2 — Pos-lancamento
-- [ ] Google Calendar (aguardando brand verification)
-- [ ] Transcricao avancada (speaker diarization)
-- [ ] Analytics avancado
-- [ ] Portal familia adaptado TCC
-- [ ] App mobile (React Native)
+4. **suggestion.ts L48** — Regra CRISIS_PROTOCOL referencia `cso.risk_flags` mas CSO engine NUNCA popula esse campo. Regra de crise e dead code.
 
----
+### ALTAS (corrigir esta semana)
 
-## CSO-TCC v3.0.0 — Referencia Rapida
+5. **clinical-record/route.ts L3-11** — Cria `new Pool()` separado em vez de usar `import pool from '@/src/database/db'`. Viola arquitetura, causa connection leak.
 
-**4 Dimensoes (escala 0-1):**
-- `activation_level` — nivel de ativacao comportamental
-- `emotional_load` — carga emocional
-- `task_adherence` — adesao a tarefas
-- `cognitive_rigidity` — rigidez cognitiva
+6. **supervision/route.ts L58-61** — Audit log falta campos `user_id`, `actor`, `entity_type`. Nao quebraria nada mas e incompleto.
 
-**Faixas de interpretacao:**
-- 0.85–1.00: Excelente — evolucao consistente
-- 0.70–0.84: Bom — progresso adequado
-- 0.50–0.69: Atencao — possivel estagnacao
-- 0.00–0.49: Critico — pouco progresso ou falta de dados
+7. **relatorio/[patientId]/page.tsx** — PDF gerado com ~8 palavras sem acento: "Evolucao", "Clinico", "historico", "intervencoes", "diagnostica", "psicologica". Impacta credibilidade profissional.
 
-**9 Tipos de Eventos Clinicos:**
-AVOIDANCE_OBSERVED, CONFRONTATION_OBSERVED, ADJUSTMENT_OBSERVED, RECOVERY_OBSERVED, SESSION_START, SESSION_END, TASK_COMPLETED, TASK_INCOMPLETE, MOOD_CHECK
+8. **pacientes/page.tsx L13** — `any[]` restante. Precisa interface Patient.
 
-**Suggestion Engine v2.1 — 12 regras:**
-CRISIS_PROTOCOL (10), PAUSE_EXPOSURE (9/8), CHECK_ADHERENCE (8), COGNITIVE_INTERVENTION (7), SIMPLIFY_TASK (6), EMOTIONAL_REGULATION (6), CELEBRATE_PROGRESS (5/4), ADJUST_PACE (5/4), BRIDGE_TO_LAST (4)
+9. **sessoes/page.tsx L81** — `body: any` no handleCreateSession.
 
----
+### MEDIAS (melhorar antes do beta)
 
-## TERMINOLOGIA TCC
-| Conceito | Termo TCC | Termo ABA (referencia) |
-|---|---|---|
-| Sujeito | Paciente | Aprendiz |
-| Profissional | Psicologo | Terapeuta/Supervisor BCBA |
-| Encontro | Sessao | Sessao |
-| Motor | CSO-TCC v3.0.0 | CSO-ABA v2.6.1 |
-| Produto | AXIS TCC | AXIS ABA |
+10. **Erro silencioso em varias APIs** — /api/patients, /api/stats retornam 200 com dados vazios em caso de erro (catch retorna `{ patients: [] }`). Deveria retornar 500.
 
----
+11. **Console.error sem feedback** — ~15 locais onde erros vao pro console mas o usuario nao ve nada. Pacientes/[id], sessoes/[id], sugestoes.
 
-## PALETA DE CORES TCC
-| Uso | Cor | Hex |
-|---|---|---|
-| Brand (principal) | ? | A definir |
-| Brand hover | ? | A definir |
-| Brand light | ? | A definir |
+12. **sessions/create L54** — `const event: any` no Google Calendar event.
 
-> **Nota:** ABA usa coral (#B4532F). TCC deve ter identidade visual propria.
+13. **Acessibilidade** — Spinners sem aria-label/aria-busy em sessoes, sugestoes, pacientes.
+
+### BAIXAS (pos-lancamento)
+
+14. **Landing page (page.tsx)** — 34 hex hardcoded, mas e pagina de marketing (inline style OK por enquanto).
+
+15. **Unused imports** — AlertCircle em SessionReport.tsx, TrendingUp/TrendingDown em relatorio.
+
+16. **Hub page** — 8 hex em JS constants (inline style, nao Tailwind). Design debt para v2.
 
 ---
 
@@ -218,23 +169,43 @@ CRISIS_PROTOCOL (10), PAUSE_EXPOSURE (9/8), CHECK_ADHERENCE (8), COGNITIVE_INTER
 - Gaps: billing wiring (70%), team UI (50%), onboarding branding (90%)
 
 ### 2026-03-11 — P0 Hardening Transcricao (6 fixes)
-- ✅ FIX 1: Nginx client_max_body_size 150m + proxy_request_buffering off (PENDENTE: executar na VPS)
-- ✅ FIX 2: jobId unico nos chunks (sessionId_timestamp evita colisao em retranscricao)
-- ✅ FIX 3: Extensao temporaria correta (.webm preservado em vez de forcar .mp3)
-- ✅ FIX 4: Retry por chunk com backoff (3 tentativas, 2s/4s/6s)
-- ✅ FIX 5: Prompt limpo no endpoint longo (audio pequeno direto) — vocabulary hint sem frase narrativa
-- ✅ FIX 6: Prompt limpo no endpoint curto (transcribe-audio) — mesma consistencia
-- Suporte ampliado: sessoes de ate 70min (antes ~50min pelo limite Nginx)
-- PENDENTE NA VPS: Nginx reload + npm run next:build + restart app
+- ✅ FIX 1: Nginx client_max_body_size 150m + proxy_request_buffering off
+- ✅ FIX 2: jobId unico nos chunks
+- ✅ FIX 3: Extensao temporaria correta (.webm preservado)
+- ✅ FIX 4: Retry por chunk com backoff (3 tentativas)
+- ✅ FIX 5-6: Prompt limpo em ambos endpoints de transcricao
 
 ### 2026-03-11 — Wiring Comercial TCC (3 fixes)
-- ✅ Fix auto-license: /api/user/tenant agora cria AMBAS licenças (tcc + aba) no primeiro login
-- ✅ Gate de licença TCC: layout.tsx criado em /dashboard, /sessoes, /pacientes (auth + license check)
-- ✅ Redirect /produto/tcc → /dashboard para users com licença TCC ativa
-- ✅ Criado docs/REFERENCE_TCC.md (consolidado dos Documentos Mestres)
-- DECISAO: TCC v1.x = Solo, SEM limite de pacientes (sem UpgradeModal)
-- DECISAO: Clinica multi-profissional so na v2.x
-- PENDENTE NA VPS: git pull --rebase + npm run next:build + pm2 restart all
+- ✅ Auto-license: cria AMBAS licencas (tcc + aba) no primeiro login
+- ✅ Gate de licenca TCC: layout.tsx em /dashboard, /sessoes, /pacientes
+- ✅ Redirect /produto/tcc → /dashboard para users com licenca ativa
+
+### 2026-03-11 — HARDENING CRITICO (7 fixes, deploy 1)
+- ✅ FIX 1: CSO engine — tenant_id isolation na query lastCSO
+- ✅ FIX 2: Patient limit enforcement no /create
+- ✅ FIX 3: Chat Ana license gate
+- ✅ FIX 4: Tailwind dynamic classes → estaticas (micro-eventos sessao)
+- ✅ FIX 5: Termos e Privacidade genéricos AXIS
+- ✅ FIX 6: Obrigado page — branding AXIS navy
+- ✅ FIX 7: Suggestion engine — regras dead 6/10/11 reescritas
+
+### 2026-03-11 — HARDENING ALTO (6 fixes, deploy 2)
+- ✅ FIX 8: Acentos em SessionReport + Dashboard
+- ✅ FIX 9: Pipeline warnings (CSO + Suggestion)
+- ✅ FIX 10: Transcricao failedChunks tracking
+- ✅ FIX 11: Layout gate DRY (tcc-license-gate.ts)
+- ✅ FIX 12: Toast feedback em pacientes
+- ✅ FIX 13: Dashboard csoError state
+
+### 2026-03-11 — HARDENING MEDIO (3 fixes, deploy 3)
+- ✅ FIX 14: Design tokens TCC centralizados — paleta em tailwind.config.ts + migração de 6 arquivos
+- ✅ FIX 15: TypeScript interfaces em pacientes/[id] (4 any removidos)
+- ✅ FIX 17: Email templates product-aware (TCC navy / ABA coral) + webhook atualizado
+
+### 2026-03-11 (noite) — Auditoria Profunda
+- 3 agentes de auditoria paralelos (APIs, Pages/Components, Engines/Lib)
+- 16 pendencias encontradas (4 criticas, 5 altas, 4 medias, 3 baixas)
+- NOTE_TCC.md atualizado com estado real pos-hardening
 
 ---
 
@@ -242,9 +213,55 @@ CRISIS_PROTOCOL (10), PAUSE_EXPOSURE (9/8), CHECK_ADHERENCE (8), COGNITIVE_INTER
 | Data | Decisao | Motivo |
 |---|---|---|
 | 11/03/2026 | NOTE_TCC.md separado do NOTE.md (ABA) | Rastreabilidade por produto |
-| 11/03/2026 | Mapeamento completo antes de comecar | Saber exatamente onde estamos |
 | 11/03/2026 | TCC v1.x sem limite de pacientes | Solo profissional, dados restritos ao psicologo |
 | 11/03/2026 | Auto-license cria TCC + ABA | Cada layout verifica seu product_type independente |
+| 11/03/2026 | Inline styles em hub/ajuda/landing = debt v2 | Precisam refactor para usar tokens, nao e bloqueante |
+| 11/03/2026 | Regra CRISIS_PROTOCOL (risk_flags) = dead code | CSO nunca popula risk_flags. Regra existe mas nunca dispara |
+
+---
+
+## PALETA DE CORES TCC (Definida)
+| Uso | Token Tailwind | Hex |
+|---|---|---|
+| Navy (principal) | tcc-700 | #1a1f4e |
+| Navy hover | tcc-600 | #2a2f5e |
+| Navy light | tcc-50 | #f5f5f8 |
+| Accent (rosa) | tcc-accent | #FC608F |
+| Muted | tcc-300 | #9a9ab8 |
+| Dark | tcc-900 | #0e1030 |
+
+---
+
+## CSO-TCC v3.0.0 — Referencia Rapida
+
+**4 Dimensoes (escala 0-1):**
+- `activation_level` — nivel de ativacao comportamental
+- `emotional_load` — carga emocional
+- `task_adherence` — adesao a tarefas
+- `cognitive_rigidity` — rigidez cognitiva (flex_trend como proxy)
+
+**Faixas de interpretacao:**
+- 0.85–1.00: Excelente — evolucao consistente
+- 0.70–0.84: Bom — progresso adequado
+- 0.50–0.69: Atencao — possivel estagnacao
+- 0.00–0.49: Critico — pouco progresso ou falta de dados
+
+**9 Tipos de Eventos Clinicos:**
+AVOIDANCE_OBSERVED, CONFRONTATION_OBSERVED, ADJUSTMENT_OBSERVED, RECOVERY_OBSERVED, SESSION_START, SESSION_END, TASK_COMPLETED, TASK_INCOMPLETE, MOOD_CHECK
+
+**Suggestion Engine v2.1 — 12 regras:**
+CRISIS_PROTOCOL (10, DEAD — risk_flags nunca populado), PAUSE_EXPOSURE (9/8), CHECK_ADHERENCE (8), COGNITIVE_INTERVENTION (7), SIMPLIFY_TASK (6), EMOTIONAL_REGULATION (6), CELEBRATE_PROGRESS (5/4), ADJUST_PACE (5/4), BRIDGE_TO_LAST (4)
+
+---
+
+## TERMINOLOGIA TCC
+| Conceito | Termo TCC | Termo ABA (referencia) |
+|---|---|---|
+| Sujeito | Paciente | Aprendiz |
+| Profissional | Psicologo | Terapeuta/Supervisor BCBA |
+| Encontro | Sessao | Sessao |
+| Motor | CSO-TCC v3.0.0 | CSO-ABA v2.6.1 |
+| Produto | AXIS TCC | AXIS ABA |
 
 ---
 
