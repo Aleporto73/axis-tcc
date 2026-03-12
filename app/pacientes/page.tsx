@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '../components/Sidebar'
 import Toast from '../components/Toast'
+import UpgradeModalTCC from '../components/UpgradeModalTCC'
 
 interface PatientListItem {
   id: string
@@ -27,6 +28,7 @@ export default function PacientesPage() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', birth_date: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [showUpgrade, setShowUpgrade] = useState(false)
 
   const loadPatients = async () => {
     try {
@@ -55,6 +57,9 @@ export default function PacientesPage() {
         setFormData({ name: '', email: '', phone: '', birth_date: '', notes: '' })
         setToast({ message: 'Paciente cadastrado com sucesso', type: 'success' })
         loadPatients()
+      } else if (res.status === 403) {
+        setShowModal(false)
+        setShowUpgrade(true)
       } else {
         const data = await res.json().catch(() => ({ error: 'Erro ao cadastrar paciente' }))
         setToast({ message: data.error || 'Erro ao cadastrar paciente', type: 'error' })
@@ -242,6 +247,9 @@ export default function PacientesPage() {
           </div>
         </div>
       )}
+
+      {/* Upgrade Modal TCC */}
+      <UpgradeModalTCC open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </div>
   )
 }

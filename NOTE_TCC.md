@@ -89,7 +89,7 @@
 | Dashboard, Sessoes, Sugestoes, Pacientes, Obrigado | ✅ | Migrados |
 | Hub, Ajuda, Produto/TCC, Landing | ❌ | Usam JS inline style (design debt v2) |
 
-### COMERCIAL / BILLING — 80% (subiu de 70%)
+### COMERCIAL / BILLING — 90% (subiu de 80%)
 | Area | % | Status |
 |---|---|---|
 | Webhook Hotmart | ✅ | Product-aware: TCC (ID 7299808), branding/subject/redirect corretos |
@@ -99,8 +99,8 @@
 | Email pos-compra | ✅ | Templates product-aware (navy TCC / coral ABA) |
 | /obrigado | ✅ | Thank you page com branding AXIS |
 | Pricing page TCC | ❌ | Landing existe mas checkout links nao conectados |
-| Tiers/precos TCC | ❌ | Precisa definir |
-| UpgradeModal links | ❌ | Precisa apontar para checkout TCC correto |
+| Tiers/precos TCC | ✅ | Profissional R$59/mes (plano unico) |
+| UpgradeModalTCC | ✅ | Componente proprio com branding navy/rosa, checkout Hotmart J104687347A, integrado em /pacientes (403) |
 
 ### SEGURANCA — 98% (subiu de ~95%)
 | Area | Status | Detalhe |
@@ -211,6 +211,13 @@
 - ✅ sessoes/page.tsx: body tipado
 - ✅ email templates: product-aware TCC/ABA + webhook Hotmart atualizado
 - Build green, deployed em producao
+
+### 2026-03-12 (manha) — Polimento Beta
+- ✅ Configuracoes: Google Calendar → banner "Em breve" (167 linhas mortas removidas)
+- ✅ Configuracoes: Exportar/Excluir desabilitados com "(em breve)"
+- ✅ Landing page: logos AXIS TCC/ABA aumentados (h-10 → h-16)
+- ✅ UpgradeModalTCC.tsx: componente proprio (navy/rosa, R$59/mes, checkout Hotmart)
+- ✅ pacientes/page.tsx: integra UpgradeModalTCC no 403 (limite de pacientes)
 
 ---
 
