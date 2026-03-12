@@ -1,5 +1,5 @@
 # AXIS TCC — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 11/03/2026 (noite — pos hardening completo)
+## Atualizado: 11/03/2026 (noite — 9 fixes criticos/altos deployed + build green)
 
 ---
 
@@ -13,7 +13,7 @@
 
 ## ONDE ESTAMOS — TCC (auditado em 11/03/2026, noite)
 
-### Completude Geral: ~93% (subiu de ~88%)
+### Completude Geral: ~95% (subiu de ~93% — 9 criticas/altas resolvidas)
 
 ### CORE ENGINE — 100% ✅
 | Area | % | Status |
@@ -61,7 +61,7 @@
 | /sessoes/[id] | ✅ | Detalhe com eventos (classes estaticas Tailwind corrigidas) |
 | /pacientes | ✅ | Lista + Toast feedback + busca |
 | /pacientes/[id] | ✅ | Perfil com interfaces TS tipadas (Patient, PatientSession, EditFormData, ClinicalRecord) |
-| /relatorio/[id] | ✅ | Relatorio evolucao (PDF via jsPDF) — PENDENTE: acentos no PDF |
+| /relatorio/[id] | ✅ | Relatorio evolucao (PDF via jsPDF) — acentos corrigidos com stripAccents() |
 | /configuracoes | ✅ | Configuracoes |
 | /sugestoes | ✅ | Gestao de sugestoes |
 | /ajuda | ✅ | Central de ajuda + Chat Ana integrado |
@@ -102,7 +102,7 @@
 | Tiers/precos TCC | ❌ | Precisa definir |
 | UpgradeModal links | ❌ | Precisa apontar para checkout TCC correto |
 
-### SEGURANCA — 95% (subiu de ~80%)
+### SEGURANCA — 98% (subiu de ~95%)
 | Area | Status | Detalhe |
 |---|---|---|
 | CSO engine tenant isolation | ✅ | FIX 1: AND tenant_id = $2 adicionado |
@@ -117,27 +117,20 @@
 
 ## PENDENCIAS ENCONTRADAS NA AUDITORIA DE 11/03/2026 (NOITE)
 
-### CRITICAS (corrigir antes de vender)
+### CRITICAS — ✅ TODAS CORRIGIDAS (deployed 11/03/2026 noite)
 
-1. **clinical-record/route.ts L77** — Query `SELECT id FROM clinical_records WHERE patient_id = $1` SEM tenant_id no POST (verificacao de duplicata). GET e PUT estao OK.
+1. ~~**clinical-record/route.ts** — Query SEM tenant_id~~ → ✅ `AND tenant_id = $2` adicionado + pool compartilhado (fix 5 junto)
+2. ~~**push/subscribe/route.ts** — SEM autenticacao~~ → ✅ Reescrito com `auth()` do Clerk + validacao de tenant
+3. ~~**sessions/create/route.ts** — Session count SEM tenant_id~~ → ✅ `AND tenant_id = $2` adicionado
+4. ~~**suggestion.ts** — CRISIS_PROTOCOL dead code~~ → ✅ Reescrito com `activation_level < 0.2 && emotional_load > 0.85`
 
-2. **push/subscribe/route.ts** — Endpoint SEM autenticacao. Aceita userId/tenantId do body sem verificar. Qualquer request pode registrar subscriptions.
+### ALTAS — ✅ TODAS CORRIGIDAS (deployed 11/03/2026 noite)
 
-3. **sessions/create/route.ts L138-141** — Session number count: `SELECT COUNT(*) FROM sessions WHERE patient_id = $1` SEM tenant_id. Pode contar sessoes de outro tenant.
-
-4. **suggestion.ts L48** — Regra CRISIS_PROTOCOL referencia `cso.risk_flags` mas CSO engine NUNCA popula esse campo. Regra de crise e dead code.
-
-### ALTAS (corrigir esta semana)
-
-5. **clinical-record/route.ts L3-11** — Cria `new Pool()` separado em vez de usar `import pool from '@/src/database/db'`. Viola arquitetura, causa connection leak.
-
-6. **supervision/route.ts L58-61** — Audit log falta campos `user_id`, `actor`, `entity_type`. Nao quebraria nada mas e incompleto.
-
-7. **relatorio/[patientId]/page.tsx** — PDF gerado com ~8 palavras sem acento: "Evolucao", "Clinico", "historico", "intervencoes", "diagnostica", "psicologica". Impacta credibilidade profissional.
-
-8. **pacientes/page.tsx L13** — `any[]` restante. Precisa interface Patient.
-
-9. **sessoes/page.tsx L81** — `body: any` no handleCreateSession.
+5. ~~**clinical-record/route.ts** — `new Pool()` separado~~ → ✅ Migrado para `import pool from '@/src/database/db'`
+6. ~~**supervision/route.ts** — Audit log incompleto~~ → ✅ Campos `user_id`, `actor`, `entity_type`, `entity_id` adicionados
+7. ~~**relatorio/[patientId]/page.tsx** — Acentos no PDF~~ → ✅ `stripAccents()` no helper `addText`, todas as strings normalizadas
+8. ~~**pacientes/page.tsx** — `any[]`~~ → ✅ Interface `PatientListItem` + `formatPhone(string | null)`
+9. ~~**sessoes/page.tsx** — `body: any`~~ → ✅ Tipado com `{ patient_id: string; start_now?: boolean; scheduled_at?: string }`
 
 ### MEDIAS (melhorar antes do beta)
 
@@ -207,6 +200,18 @@
 - 16 pendencias encontradas (4 criticas, 5 altas, 4 medias, 3 baixas)
 - NOTE_TCC.md atualizado com estado real pos-hardening
 
+### 2026-03-11 (noite) — 9 Fixes Criticos/Altos (deploy final)
+- ✅ clinical-record: tenant_id na duplicata + pool compartilhado
+- ✅ push/subscribe: autenticacao Clerk adicionada
+- ✅ sessions/create: tenant_id no count
+- ✅ CRISIS_PROTOCOL: reescrito com campos reais (activation_level + emotional_load)
+- ✅ supervision: audit log completo
+- ✅ relatorio PDF: stripAccents() em todo texto
+- ✅ pacientes/page.tsx: interface PatientListItem + formatPhone(string | null)
+- ✅ sessoes/page.tsx: body tipado
+- ✅ email templates: product-aware TCC/ABA + webhook Hotmart atualizado
+- Build green, deployed em producao
+
 ---
 
 ## DECISOES TOMADAS
@@ -216,7 +221,7 @@
 | 11/03/2026 | TCC v1.x sem limite de pacientes | Solo profissional, dados restritos ao psicologo |
 | 11/03/2026 | Auto-license cria TCC + ABA | Cada layout verifica seu product_type independente |
 | 11/03/2026 | Inline styles em hub/ajuda/landing = debt v2 | Precisam refactor para usar tokens, nao e bloqueante |
-| 11/03/2026 | Regra CRISIS_PROTOCOL (risk_flags) = dead code | CSO nunca popula risk_flags. Regra existe mas nunca dispara |
+| 11/03/2026 | ~~Regra CRISIS_PROTOCOL dead code~~ → CORRIGIDA | Reescrita com activation_level < 0.2 + emotional_load > 0.85 |
 
 ---
 
@@ -250,7 +255,7 @@
 AVOIDANCE_OBSERVED, CONFRONTATION_OBSERVED, ADJUSTMENT_OBSERVED, RECOVERY_OBSERVED, SESSION_START, SESSION_END, TASK_COMPLETED, TASK_INCOMPLETE, MOOD_CHECK
 
 **Suggestion Engine v2.1 — 12 regras:**
-CRISIS_PROTOCOL (10, DEAD — risk_flags nunca populado), PAUSE_EXPOSURE (9/8), CHECK_ADHERENCE (8), COGNITIVE_INTERVENTION (7), SIMPLIFY_TASK (6), EMOTIONAL_REGULATION (6), CELEBRATE_PROGRESS (5/4), ADJUST_PACE (5/4), BRIDGE_TO_LAST (4)
+CRISIS_PROTOCOL (10, CORRIGIDA — usa activation_level < 0.2 + emotional_load > 0.85), PAUSE_EXPOSURE (9/8), CHECK_ADHERENCE (8), COGNITIVE_INTERVENTION (7), SIMPLIFY_TASK (6), EMOTIONAL_REGULATION (6), CELEBRATE_PROGRESS (5/4), ADJUST_PACE (5/4), BRIDGE_TO_LAST (4)
 
 ---
 
