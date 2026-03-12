@@ -220,6 +220,7 @@
 - ✅ UpgradeModalTCC.tsx: componente proprio (navy/rosa, R$59/mes, checkout Hotmart)
 - ✅ pacientes/page.tsx: integra UpgradeModalTCC no 403 (limite de pacientes)
 - ✅ Clerk webhook v2.0: auto-provisioning FREE (tenant + profile + licenças TCC/ABA) no cadastro direto
+- ✅ patients/create: corrigido max_patients (coluna não existe em user_licenses) → regra via hotmart_plan
 
 ---
 
@@ -231,6 +232,7 @@
 | 11/03/2026 | Auto-license cria TCC + ABA | Cada layout verifica seu product_type independente |
 | 11/03/2026 | Inline styles em hub/ajuda/landing = debt v2 | Precisam refactor para usar tokens, nao e bloqueante |
 | 11/03/2026 | ~~Regra CRISIS_PROTOCOL dead code~~ → CORRIGIDA | Reescrita com activation_level < 0.2 + emotional_load > 0.85 |
+| 12/03/2026 | Limite pacientes via hotmart_plan (não max_patients) | v1.x: FREE (NULL) = 1, PRO (NOT NULL) = ilimitado. v2.x tera seats/roles |
 
 ---
 

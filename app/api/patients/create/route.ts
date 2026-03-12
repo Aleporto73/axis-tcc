@@ -19,13 +19,15 @@ export async function POST(request: NextRequest) {
     const tenantId = tenantResult.rows[0].id
 
     // Verificar limite de pacientes do plano TCC
+    // Regra v1.x: FREE (sem hotmart_plan) = 1 paciente, PRO (com hotmart_plan) = ilimitado
     const licenseResult = await pool.query(
-      `SELECT max_patients FROM user_licenses
+      `SELECT hotmart_plan FROM user_licenses
        WHERE tenant_id = $1 AND product_type = 'tcc' AND is_active = true
-       ORDER BY created_at DESC LIMIT 1`,
+       LIMIT 1`,
       [tenantId]
     )
-    const maxPatients = licenseResult.rows[0]?.max_patients ?? 1 // free = 1
+    const isPro = licenseResult.rows[0]?.hotmart_plan != null
+    const maxPatients = isPro ? 999999 : 1
 
     const countResult = await pool.query(
       'SELECT COUNT(*)::int AS total FROM patients WHERE tenant_id = $1',
@@ -35,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     if (currentCount >= maxPatients) {
       return NextResponse.json(
-        { error: `Limite de ${maxPatients} paciente(s) atingido. Faça upgrade para o plano Profissional.` },
+        { error: 'Limite de pacientes atingido. Faça upgrade para o plano Profissional.' },
         { status: 403 }
       )
     }
