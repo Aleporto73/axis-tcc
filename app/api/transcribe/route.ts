@@ -196,6 +196,7 @@ export async function POST(request: NextRequest) {
           }
 
           const transcriptions: string[] = []
+          let failedChunks = 0
 
           for (let i = 0; i < totalChunks; i++) {
             const percent = Math.round(((i) / totalChunks) * 100)
@@ -214,7 +215,17 @@ export async function POST(request: NextRequest) {
             const text = await transcribeChunk(chunkPaths[i], i)
             if (text) {
               transcriptions.push(text)
+            } else {
+              failedChunks++
             }
+          }
+
+          if (failedChunks > 0) {
+            sendProgress({
+              type: 'status',
+              message: `Atenção: ${failedChunks} de ${totalChunks} partes não foram transcritas. O texto pode estar incompleto.`,
+              percent: 90
+            })
           }
 
           const fullTranscription = transcriptions.join(' ')

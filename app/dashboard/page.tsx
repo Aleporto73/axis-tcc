@@ -73,7 +73,7 @@ function DimensionChart({
     return invert ? 1 - v : v
   })
   const latest = values[values.length - 1]
-  const band = latest >= 0.85 ? 'Excelente' : latest >= 0.70 ? 'Bom' : latest >= 0.50 ? 'Atencao' : 'Critico'
+  const band = latest >= 0.85 ? 'Excelente' : latest >= 0.70 ? 'Bom' : latest >= 0.50 ? 'Atenção' : 'Crítico'
   const bandColor = latest >= 0.85 ? '#10b981' : latest >= 0.70 ? '#22c55e' : latest >= 0.50 ? '#f59e0b' : '#ef4444'
 
   const xStep = (w - pad * 2) / (values.length - 1)
@@ -108,8 +108,8 @@ function DimensionChart({
         ))}
       </svg>
       <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-slate-400">Sessao 1</span>
-        <span className="text-[10px] text-slate-400">Sessao {data.length}</span>
+        <span className="text-[10px] text-slate-400">Sessão 1</span>
+        <span className="text-[10px] text-slate-400">Sessão {data.length}</span>
       </div>
     </div>
   )
@@ -156,16 +156,23 @@ export default function DashboardPage() {
     }
   }, [isLoaded, userId])
 
+  const [csoError, setCsoError] = useState(false)
+
   const loadCSO = useCallback(async (patientId: string) => {
     if (!patientId) return
     setCsoLoading(true)
+    setCsoError(false)
     try {
       const res = await fetch(`/api/patients/${patientId}/cso-history`)
       if (res.ok) {
         const data = await res.json()
         setCsoHistory(data)
+      } else {
+        setCsoError(true)
       }
-    } catch { /* silent */ }
+    } catch {
+      setCsoError(true)
+    }
     finally { setCsoLoading(false) }
   }, [])
 
@@ -550,6 +557,10 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </>
+              ) : csoError ? (
+                <div className="bg-red-50 rounded-xl p-6 text-center border border-red-100">
+                  <p className="text-sm text-red-500">Erro ao carregar evolução clínica. Tente recarregar a página.</p>
+                </div>
               ) : csoHistory ? (
                 <div className="bg-slate-50 rounded-xl p-8 text-center border border-slate-100">
                   <p className="text-sm text-slate-400 italic">Este paciente precisa de pelo menos 2 sessões finalizadas para exibir a evolução.</p>

@@ -117,6 +117,7 @@ export async function POST(
 
     // 8. Chamar CSO Engine
     let csoResult = null
+    const pipelineWarnings: string[] = []
     try {
       csoResult = await processEvent({
         id: eventInsert.rows[0].id,
@@ -130,6 +131,7 @@ export async function POST(
       })
     } catch (err) {
       console.error('[PIPELINE] Erro no CSO Engine:', err)
+      pipelineWarnings.push('Motor CSO não processou o evento. Os indicadores podem estar desatualizados.')
     }
 
     // 9. Chamar Suggestion Engine (se CSO foi gerado)
@@ -139,6 +141,7 @@ export async function POST(
         suggestionResult = await generateSuggestions(csoResult)
       } catch (err) {
         console.error('[PIPELINE] Erro no Suggestion Engine:', err)
+        pipelineWarnings.push('Motor de sugestões falhou. Nenhuma sugestão foi gerada neste ciclo.')
       }
     }
 
@@ -158,7 +161,8 @@ export async function POST(
         cso_updated: csoResult !== null,
         suggestion_generated: suggestionResult !== null,
         flex_trend: flexTrend,
-        micro_events: { confrontations, avoidances, adjustments, recoveries }
+        micro_events: { confrontations, avoidances, adjustments, recoveries },
+        warnings: pipelineWarnings.length > 0 ? pipelineWarnings : undefined
       }
     })
 

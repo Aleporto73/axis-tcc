@@ -98,8 +98,8 @@ export default function SessionReport({ sessionId, onClose }: Props) {
             <FileText className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-neutral-900">Relatorio da Sessao #{data.session_number}</h2>
-            <p className="text-sm text-neutral-500">Registro tecnico do processo observado</p>
+            <h2 className="text-xl font-semibold text-neutral-900">Relatório da Sessão #{data.session_number}</h2>
+            <p className="text-sm text-neutral-500">Registro técnico do processo observado</p>
           </div>
         </div>
         <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-lg">
@@ -120,7 +120,7 @@ export default function SessionReport({ sessionId, onClose }: Props) {
         <div className="bg-white rounded-lg p-4 border border-neutral-200">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-indigo-500" />
-            <span className="text-xs font-medium text-neutral-500 uppercase">Duracao</span>
+            <span className="text-xs font-medium text-neutral-500 uppercase">Duração</span>
           </div>
           <p className="text-lg font-semibold text-neutral-900">
             {data.duration ? `${data.duration} min` : '-'}
@@ -153,7 +153,7 @@ export default function SessionReport({ sessionId, onClose }: Props) {
           <h3 className="text-sm font-semibold text-neutral-700 mb-4 uppercase tracking-wide">Indicadores de Processo (CSO)</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-xs text-neutral-500 mb-1">Ativacao</p>
+              <p className="text-xs text-neutral-500 mb-1">Ativação</p>
               <p className="text-lg font-semibold text-neutral-900">
                 {data.cso.activation_level !== null ? data.cso.activation_level.toFixed(1) : '-'}
               </p>
@@ -171,9 +171,9 @@ export default function SessionReport({ sessionId, onClose }: Props) {
               </p>
             </div>
             <div>
-              <p className="text-xs text-neutral-500 mb-1">Tendencia</p>
+              <p className="text-xs text-neutral-500 mb-1">Tendência</p>
               <p className="text-lg font-semibold text-neutral-900">
-                {data.cso.flex_trend === 'improving' ? '↑ Melhora' : data.cso.flex_trend === 'declining' ? '↓ Declinio' : '→ Estavel'}
+                {data.cso.flex_trend === 'improving' ? '↑ Melhora' : data.cso.flex_trend === 'declining' ? '↓ Declínio' : '→ Estável'}
               </p>
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function SessionReport({ sessionId, onClose }: Props) {
       {!data.has_transcription && (
         <div className="bg-amber-50 rounded-lg p-4 border border-amber-200 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600" />
-          <p className="text-sm text-amber-700">Nenhuma transcricao disponivel para esta sessao.</p>
+          <p className="text-sm text-amber-700">Nenhuma transcrição disponível para esta sessão.</p>
         </div>
       )}
 

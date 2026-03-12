@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '../components/Sidebar'
+import Toast from '../components/Toast'
 
 export default function PacientesPage() {
   const router = useRouter()
@@ -15,6 +16,7 @@ export default function PacientesPage() {
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', birth_date: '', notes: '' })
   const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const loadPatients = async () => {
     try {
@@ -41,9 +43,11 @@ export default function PacientesPage() {
       if (res.ok) {
         setShowModal(false)
         setFormData({ name: '', email: '', phone: '', birth_date: '', notes: '' })
+        setToast({ message: 'Paciente cadastrado com sucesso', type: 'success' })
         loadPatients()
       } else {
-        alert('Erro ao cadastrar paciente')
+        const data = await res.json().catch(() => ({ error: 'Erro ao cadastrar paciente' }))
+        setToast({ message: data.error || 'Erro ao cadastrar paciente', type: 'error' })
       }
     } catch (error) {
       console.error('Erro:', error)
@@ -181,6 +185,9 @@ export default function PacientesPage() {
           )}
         </div>
       </main>
+
+      {/* Toast */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Modal */}
       {showModal && (
