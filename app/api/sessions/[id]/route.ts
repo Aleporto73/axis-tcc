@@ -67,8 +67,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Sessao nao encontrada' }, { status: 404 })
     }
     await pool.query(
-      'DELETE FROM scheduled_reminders WHERE session_id = $1 AND sent = false',
-      [id]
+      'DELETE FROM scheduled_reminders WHERE session_id = $1 AND tenant_id = $2 AND sent = false',
+      [id, tenantId]
     )
     await pool.query(
       'DELETE FROM sessions WHERE id = $1 AND tenant_id = $2',

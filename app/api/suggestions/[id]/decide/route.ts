@@ -46,8 +46,8 @@ export async function POST(
     const patientId = checkResult.rows[0].patient_id
 
     const existingDecision = await pool.query(
-      'SELECT id FROM suggestion_decisions WHERE suggestion_id = $1',
-      [suggestionId]
+      'SELECT id FROM suggestion_decisions WHERE suggestion_id = $1 AND tenant_id = $2',
+      [suggestionId, tenantId]
     )
     if (existingDecision.rows.length > 0) {
       return NextResponse.json({ error: 'Sugestao ja decidida' }, { status: 409 })

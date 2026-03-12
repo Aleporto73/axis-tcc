@@ -43,19 +43,19 @@ export async function POST(
 
     // 3. Finalizar sessao
     await pool.query(
-      `UPDATE sessions SET status = 'finalizada', ended_at = NOW(), duration_minutes = $1 WHERE id = $2`,
-      [durationMinutes, id]
+      `UPDATE sessions SET status = 'finalizada', ended_at = NOW(), duration_minutes = $1 WHERE id = $2 AND tenant_id = $3`,
+      [durationMinutes, id, tenantId]
     )
 
     // 4. Buscar transcricao e analise TCC (se existir)
     const transcriptResult = await pool.query(
-      'SELECT text FROM transcripts WHERE session_id = $1 ORDER BY created_at DESC LIMIT 1',
-      [id]
+      'SELECT text FROM transcripts WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at DESC LIMIT 1',
+      [id, tenantId]
     )
 
     const analysisResult = await pool.query(
-      'SELECT facts, thoughts, emotions FROM tcc_analyses WHERE session_id = $1 ORDER BY created_at DESC LIMIT 1',
-      [id]
+      'SELECT facts, thoughts, emotions FROM tcc_analyses WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at DESC LIMIT 1',
+      [id, tenantId]
     )
 
     // 5. Buscar micro-eventos da sessao

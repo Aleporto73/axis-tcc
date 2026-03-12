@@ -102,26 +102,33 @@ ${text}`
     }
 
     if (session_id && patient_id) {
-      await pool.query(
-        `INSERT INTO tcc_analyses (tenant_id, patient_id, session_id, facts, thoughts, emotions, behaviors, raw_transcription)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          tenantId,
-          patient_id,
-          session_id,
-          JSON.stringify(analysis.fatos || []),
-          JSON.stringify(analysis.pensamentos || []),
-          JSON.stringify(analysis.emocoes || []),
-          JSON.stringify(analysis.comportamentos || []),
-          text
-        ]
+      // Validar que session e patient pertencem a este tenant
+      const sessionCheck = await pool.query(
+        'SELECT id FROM sessions WHERE id = $1 AND patient_id = $2 AND tenant_id = $3',
+        [session_id, patient_id, tenantId]
       )
+      if (sessionCheck.rows.length > 0) {
+        await pool.query(
+          `INSERT INTO tcc_analyses (tenant_id, patient_id, session_id, facts, thoughts, emotions, behaviors, raw_transcription)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            tenantId,
+            patient_id,
+            session_id,
+            JSON.stringify(analysis.fatos || []),
+            JSON.stringify(analysis.pensamentos || []),
+            JSON.stringify(analysis.emocoes || []),
+            JSON.stringify(analysis.comportamentos || []),
+            text
+          ]
+        )
+      }
     }
 
     if (transcript_id) {
       await pool.query(
-        'UPDATE transcripts SET processed = true WHERE id = $1',
-        [transcript_id]
+        'UPDATE transcripts SET processed = true WHERE id = $1 AND tenant_id = $2',
+        [transcript_id, tenantId]
       )
     }
 
