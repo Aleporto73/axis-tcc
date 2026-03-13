@@ -131,6 +131,16 @@ export default function SessaoConduzirPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Resumo para responsáveis (padrão ABA)
+  const [showSummaryModal, setShowSummaryModal] = useState(false)
+  const [summaryText, setSummaryText] = useState('')
+  const [summaryEmail, setSummaryEmail] = useState('')
+  const [summaryGuardians, setSummaryGuardians] = useState<{id:string;name:string;email:string|null}[]>([])
+  const [summaryCustomEmail, setSummaryCustomEmail] = useState(false)
+  const [summarySaving, setSummarySaving] = useState(false)
+  const [summaryStatus, setSummaryStatus] = useState<'idle'|'sent'|'error'>('idle')
+  const [summaryError, setSummaryError] = useState<string|null>(null)
+
   const [form, setForm] = useState({
     protocol_id: '',
     task_block_number: '',
@@ -184,6 +194,83 @@ export default function SessaoConduzirPage() {
       setError('Falha de conexão')
     }
     setActionLoading(false)
+  }
+
+  // ── Resumo para responsáveis ──
+  const generateSummaryText = () => {
+    if (!session || observations.length === 0) return ''
+    const name = session.patient_name || 'o paciente'
+    const ctx = contextLabels[session.session_context] || session.session_context
+    const dateStr = new Date(session.scheduled_at).toLocaleDateString('pt-BR')
+    const parts: string[] = [`Na sessão ${ctx.toLowerCase()} de ${dateStr}, trabalhamos com ${name} nos seguintes alvos:`]
+    for (const obs of observations) {
+      const line: string[] = []
+      if (obs.protocol_code) line.push(obs.protocol_code)
+      if (obs.task_description) line.push(obs.task_description)
+      if (obs.sas_score != null) line.push(`atenção: ${obs.sas_score}/10`)
+      if (obs.pis_level) line.push(`dica: ${obs.pis_level}`)
+      if (obs.bss_level) line.push(`estabilidade: ${obs.bss_level}`)
+      parts.push('• ' + (line.length > 0 ? line.join(', ') : 'Observação registrada') + '.')
+    }
+    return parts.join('\n')
+  }
+
+  const openSummaryModal = async () => {
+    if (!session) return
+    setSummaryText(generateSummaryText())
+    setSummaryEmail('')
+    setSummaryCustomEmail(false)
+    setSummaryStatus('idle')
+    setSummaryError(null)
+    try {
+      const res = await fetch(`/api/tdah/guardians?patient_id=${session.patient_id}`)
+      if (res.ok) {
+        const d = await res.json()
+        const gs = d.guardians || []
+        setSummaryGuardians(gs)
+        const withEmail = gs.filter((g: any) => g.email)
+        if (withEmail.length > 0) setSummaryEmail(withEmail[0].email)
+      }
+    } catch { /* silent */ }
+    setShowSummaryModal(true)
+  }
+
+  const sendSummary = async () => {
+    if (!summaryText.trim()) { setSummaryError('Escreva o resumo antes de enviar.'); return }
+    if (!summaryEmail.trim()) { setSummaryError('Informe o email do destinatário.'); return }
+    setSummarySaving(true)
+    setSummaryError(null)
+    try {
+      // 1. Cria rascunho
+      const postRes = await fetch(`/api/tdah/sessions/${id}/summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: summaryText })
+      })
+      const postData = await postRes.json()
+      if (!postData.summary_id) throw new Error(postData.error || 'Erro ao criar resumo')
+      const summary_id = postData.summary_id
+      // 2. Aprova
+      const approveRes = await fetch(`/api/tdah/sessions/${id}/summary`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ summary_id, action: 'approve' })
+      })
+      if (!approveRes.ok) throw new Error('Erro ao aprovar resumo')
+      // 3. Envia
+      const sendRes = await fetch(`/api/tdah/sessions/${id}/summary`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ summary_id, action: 'send', recipient_email: summaryEmail })
+      })
+      const sendData = await sendRes.json()
+      if (!sendRes.ok) throw new Error(sendData.error || 'Erro ao enviar email')
+      setSummaryStatus('sent')
+    } catch (err: any) {
+      setSummaryError(err.message || 'Erro ao enviar')
+      setSummaryStatus('error')
+    }
+    setSummarySaving(false)
   }
 
   const resetForm = () => setForm({
@@ -323,6 +410,15 @@ export default function SessaoConduzirPage() {
                 {actionLoading ? '...' : 'Fechar Sessão'}
               </button>
             </>
+          )}
+          {isClosed && (
+            <button
+              onClick={openSummaryModal}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-green-300 text-green-700 text-xs font-medium rounded-lg hover:bg-green-50 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              Enviar Resumo
+            </button>
           )}
         </div>
       </div>
@@ -586,6 +682,96 @@ export default function SessaoConduzirPage() {
                 style={{ backgroundColor: TDAH_COLOR }}>
                 {saving ? 'Salvando...' : 'Registrar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Enviar Resumo aos Pais */}
+      {showSummaryModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => { if (!summarySaving) setShowSummaryModal(false) }}>
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-base font-medium text-slate-800">Enviar Resumo aos Pais</h3>
+              <button onClick={() => setShowSummaryModal(false)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              {summaryStatus === 'sent' ? (
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">Resumo enviado com sucesso!</p>
+                  <p className="text-xs text-slate-400 mt-1">Email enviado para {summaryEmail}</p>
+                  <button onClick={() => setShowSummaryModal(false)} className="mt-4 px-4 py-2 text-sm text-slate-500 hover:text-slate-700">Fechar</button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Para</label>
+                    {summaryGuardians.filter(g => g.email).length > 0 && (
+                      <select
+                        value={summaryCustomEmail ? '__custom__' : summaryEmail}
+                        onChange={e => {
+                          if (e.target.value === '__custom__') {
+                            setSummaryCustomEmail(true)
+                            setSummaryEmail('')
+                          } else {
+                            setSummaryCustomEmail(false)
+                            setSummaryEmail(e.target.value)
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
+                        style={{ outlineColor: TDAH_COLOR }}
+                      >
+                        {summaryGuardians.filter(g => g.email).map(g => (
+                          <option key={g.id} value={g.email!}>Responsável de {session?.patient_name} — {g.email}</option>
+                        ))}
+                        <option value="__custom__">Outro email...</option>
+                      </select>
+                    )}
+                    {(summaryGuardians.filter(g => g.email).length === 0 || summaryCustomEmail) && (
+                      <input
+                        type="email"
+                        value={summaryEmail}
+                        onChange={e => setSummaryEmail(e.target.value)}
+                        className={`w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none ${summaryCustomEmail ? 'mt-2' : ''}`}
+                        style={{ outlineColor: TDAH_COLOR }}
+                        placeholder="email@exemplo.com"
+                        autoFocus={summaryCustomEmail}
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">
+                      Resumo da sessão <span className="text-slate-400">(o que os pais verão)</span>
+                    </label>
+                    <textarea
+                      value={summaryText}
+                      onChange={e => setSummaryText(e.target.value)}
+                      rows={6}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none resize-none"
+                      style={{ outlineColor: TDAH_COLOR }}
+                      placeholder={`Hoje trabalhamos em... ${session?.patient_name || ''} demonstrou... Os próximos passos são...`}
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Não inclua scores, percentuais ou notas clínicas. Este texto será enviado diretamente aos pais.</p>
+                  </div>
+                  {summaryError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{summaryError}</p>}
+                  <div className="flex justify-end gap-3 pt-1">
+                    <button onClick={() => setShowSummaryModal(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">Cancelar</button>
+                    <button
+                      onClick={sendSummary}
+                      disabled={summarySaving}
+                      className="px-5 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                      style={{ backgroundColor: TDAH_COLOR }}
+                    >
+                      {summarySaving ? 'Enviando...' : 'Aprovar e Enviar'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
