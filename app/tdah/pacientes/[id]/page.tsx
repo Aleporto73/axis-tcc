@@ -899,7 +899,7 @@ export default function PacienteDetalhePage() {
         ) : (
           <div className="space-y-2">
             {protocols.map(p => (
-              <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+              <Link key={p.id} href={`/tdah/protocolos/${p.id}`} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all cursor-pointer">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: TDAH_LIGHT, color: TDAH_COLOR }}>
                     {p.block}
@@ -923,7 +923,7 @@ export default function PacienteDetalhePage() {
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${protocolStatusColors[p.status] || 'bg-slate-100 text-slate-500'}`}>
                   {protocolStatusLabels[p.status] || p.status}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         )}
