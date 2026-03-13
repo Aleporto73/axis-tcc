@@ -53,7 +53,7 @@ const PRODUCTS = [
     id: 'tdah',
     name: 'AXIS TDAH',
     description: 'Sistema de Apoio à Intervenção Comportamental em TDAH',
-    logo: '/axistdah.png',
+    logo: '/axisTDAH.png',
     hrefActive: '/tdah/dashboard',
     hrefInactive: '/produto/tdah',
     accent: '#0d7377',
