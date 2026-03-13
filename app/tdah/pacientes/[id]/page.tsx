@@ -270,6 +270,13 @@ export default function PacienteDetalhePage() {
   const [togglingAudhd, setTogglingAudhd] = useState(false)
   const [audhdReason, setAudhdReason] = useState('')
   const [showAudhdConfirm, setShowAudhdConfirm] = useState<string | null>(null)
+  const [showEdit, setShowEdit] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editForm, setEditForm] = useState({
+    name: '', birth_date: '', gender: '', diagnosis: '', cid_code: '',
+    support_level: '', school_name: '', school_contact: '',
+    teacher_name: '', teacher_email: '', clinical_notes: '',
+  })
 
   const fetchPatient = useCallback(() => {
     if (!id) return
@@ -322,6 +329,60 @@ export default function PacienteDetalhePage() {
       }
     } catch { /* silent */ }
     setActivating(null)
+  }
+
+  const openEdit = () => {
+    if (!patient) return
+    setEditForm({
+      name: patient.name || '',
+      birth_date: patient.birth_date ? patient.birth_date.split('T')[0] : '',
+      gender: patient.gender || '',
+      diagnosis: patient.diagnosis || '',
+      cid_code: patient.cid_code || '',
+      support_level: patient.support_level != null ? String(patient.support_level) : '',
+      school_name: patient.school_name || '',
+      school_contact: patient.school_contact || '',
+      teacher_name: patient.teacher_name || '',
+      teacher_email: patient.teacher_email || '',
+      clinical_notes: patient.clinical_notes || '',
+    })
+    setShowEdit(true)
+  }
+
+  const saveEdit = async () => {
+    setSaving(true)
+    try {
+      const payload: Record<string, any> = {}
+      // Só envia campos que mudaram
+      if (editForm.name.trim() !== (patient?.name || '')) payload.name = editForm.name.trim()
+      if (editForm.birth_date !== (patient?.birth_date ? patient.birth_date.split('T')[0] : '')) payload.birth_date = editForm.birth_date || null
+      if (editForm.gender !== (patient?.gender || '')) payload.gender = editForm.gender || null
+      if (editForm.diagnosis !== (patient?.diagnosis || '')) payload.diagnosis = editForm.diagnosis || null
+      if (editForm.cid_code !== (patient?.cid_code || '')) payload.cid_code = editForm.cid_code || null
+      if (editForm.support_level !== (patient?.support_level != null ? String(patient.support_level) : '')) payload.support_level = editForm.support_level ? Number(editForm.support_level) : null
+      if (editForm.school_name !== (patient?.school_name || '')) payload.school_name = editForm.school_name || null
+      if (editForm.school_contact !== (patient?.school_contact || '')) payload.school_contact = editForm.school_contact || null
+      if (editForm.teacher_name !== (patient?.teacher_name || '')) payload.teacher_name = editForm.teacher_name || null
+      if (editForm.teacher_email !== (patient?.teacher_email || '')) payload.teacher_email = editForm.teacher_email || null
+      if (editForm.clinical_notes !== (patient?.clinical_notes || '')) payload.clinical_notes = editForm.clinical_notes || null
+
+      if (Object.keys(payload).length === 0) {
+        setShowEdit(false)
+        setSaving(false)
+        return
+      }
+
+      const res = await fetch(`/api/tdah/patients/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        fetchPatient()
+        setShowEdit(false)
+      }
+    } catch { /* silent */ }
+    setSaving(false)
   }
 
   const toggleAudhd = async (newStatus: string) => {
@@ -420,15 +481,26 @@ export default function PacienteDetalhePage() {
             </div>
           </div>
         </div>
-        <button
-          onClick={() => router.push(`/tdah/sessoes?novo=true&paciente=${patient.id}`)}
-          className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
-          style={{ backgroundColor: TDAH_COLOR }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
-        >
-          + Nova Sessão
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={openEdit}
+            className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors"
+            style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+          >
+            Editar
+          </button>
+          <button
+            onClick={() => router.push(`/tdah/sessoes?novo=true&paciente=${patient.id}`)}
+            className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
+            style={{ backgroundColor: TDAH_COLOR }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
+          >
+            + Nova Sessão
+          </button>
+        </div>
       </div>
 
       {/* Metrics row */}
@@ -635,6 +707,128 @@ export default function PacienteDetalhePage() {
                 style={{ backgroundColor: '#7c3aed' }}
               >
                 {togglingAudhd ? 'Salvando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Editar paciente */}
+      {showEdit && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-xl">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <div>
+                <h2 className="font-serif text-lg font-light text-slate-800">Editar Paciente</h2>
+                <p className="text-xs text-slate-400 mt-1">{patient.name}</p>
+              </div>
+              <button onClick={() => setShowEdit(false)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-6 space-y-4">
+              {/* Nome */}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Nome *</label>
+                <input type="text" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]" />
+              </div>
+
+              {/* Nascimento + Gênero */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Data de nascimento</label>
+                  <input type="date" value={editForm.birth_date} onChange={e => setEditForm(f => ({ ...f, birth_date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Gênero</label>
+                  <select value={editForm.gender} onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377] bg-white">
+                    <option value="">—</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Feminino</option>
+                    <option value="O">Outro</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Diagnóstico + CID */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Diagnóstico</label>
+                  <input type="text" value={editForm.diagnosis} onChange={e => setEditForm(f => ({ ...f, diagnosis: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]"
+                    placeholder="Ex: TDAH combinado" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">CID</label>
+                  <input type="text" value={editForm.cid_code} onChange={e => setEditForm(f => ({ ...f, cid_code: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]"
+                    placeholder="F90.0" />
+                </div>
+              </div>
+
+              {/* Nível de suporte */}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Nível de suporte</label>
+                <select value={editForm.support_level} onChange={e => setEditForm(f => ({ ...f, support_level: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377] bg-white">
+                  <option value="">—</option>
+                  <option value="1">Nível 1</option>
+                  <option value="2">Nível 2</option>
+                  <option value="3">Nível 3</option>
+                </select>
+              </div>
+
+              {/* Separador: Dados Escolares */}
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Dados Escolares</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Escola</label>
+                <input type="text" value={editForm.school_name} onChange={e => setEditForm(f => ({ ...f, school_name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Contato da escola</label>
+                <input type="text" value={editForm.school_contact} onChange={e => setEditForm(f => ({ ...f, school_contact: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]"
+                  placeholder="Telefone ou email" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Professor(a)</label>
+                  <input type="text" value={editForm.teacher_name} onChange={e => setEditForm(f => ({ ...f, teacher_name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Email professor</label>
+                  <input type="email" value={editForm.teacher_email} onChange={e => setEditForm(f => ({ ...f, teacher_email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]" />
+                </div>
+              </div>
+
+              {/* Observações clínicas */}
+              <div className="pt-2 border-t border-slate-100">
+                <label className="block text-xs font-medium text-slate-600 mb-1">Observações clínicas</label>
+                <textarea value={editForm.clinical_notes} onChange={e => setEditForm(f => ({ ...f, clinical_notes: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377] resize-none"
+                  placeholder="Notas clínicas gerais do paciente" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+              <button onClick={() => setShowEdit(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={saveEdit} disabled={saving || !editForm.name.trim()}
+                className="px-5 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                style={{ backgroundColor: TDAH_COLOR }}>
+                {saving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
           </div>
