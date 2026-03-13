@@ -518,6 +518,28 @@ export default function PacienteDetalhePage() {
         </div>
       </div>
 
+      {/* DRC — Daily Report Card (Bible §17) */}
+      <div className="bg-white rounded-xl border border-slate-100 p-4 mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+            🏫
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-700">Daily Report Card</p>
+            <p className="text-[10px] text-slate-400">Acompanhamento escolar diário com metas objetivas</p>
+          </div>
+        </div>
+        <Link
+          href={`/tdah/drc?paciente=${patient.id}`}
+          className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+          style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+        >
+          Ver DRCs
+        </Link>
+      </div>
+
       {/* Layer AuDHD — Bible §9 */}
       <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6" style={{ borderLeftColor: '#7c3aed', borderLeftWidth: '3px' }}>
         <div className="flex items-start justify-between mb-3">

@@ -76,7 +76,7 @@ export default function SidebarTDAH() {
     { href: '/tdah', label: 'Painel', icon: icons.painel, roles: ['admin', 'supervisor', 'terapeuta'] },
     { href: '/tdah/pacientes', label: 'Pacientes', icon: icons.pacientes, roles: ['admin', 'supervisor', 'terapeuta'] },
     { href: '/tdah/sessoes', label: 'Sessões', icon: icons.sessoes, roles: ['admin', 'supervisor', 'terapeuta'] },
-    { href: '/tdah/protocolos', label: 'Protocolos', icon: icons.protocolos, roles: ['admin', 'supervisor'] },
+    { href: '/tdah/drc', label: 'DRC', icon: icons.protocolos, roles: ['admin', 'supervisor', 'terapeuta'] },
     { href: '/tdah/relatorios', label: 'Relatórios', icon: icons.relatorios, roles: ['admin', 'supervisor'] },
     { href: '/tdah/equipe', label: 'Equipe', icon: icons.equipe, roles: ['admin'] },
   ]

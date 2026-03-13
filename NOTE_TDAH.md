@@ -50,6 +50,9 @@
 | 13/03/2026 | Form observação com campos AuDHD condicionais | `app/tdah/sessoes/[id]/page.tsx` — SEN/TRF/RIG se layer ativa |
 | 13/03/2026 | Dashboard TDAH API (KPIs reais) | `app/api/tdah/dashboard/route.ts` |
 | 13/03/2026 | Dashboard TDAH com métricas reais | `app/tdah/dashboard/page.tsx` — tricontextual, CSO, AuDHD |
+| 13/03/2026 | API DRC (GET + POST + PATCH + review) | `app/api/tdah/drc/route.ts`, `app/api/tdah/drc/[id]/route.ts` |
+| 13/03/2026 | Página DRC com timeline agrupada | `app/tdah/drc/page.tsx` — metas, toggle, review inline |
+| 13/03/2026 | DRC na sidebar + link na ficha | `SidebarTDAH.tsx`, `pacientes/[id]/page.tsx` |
 
 ### 🔄 EM ANDAMENTO
 
@@ -62,8 +65,8 @@
 | # | Item | Dependência |
 |---|------|-------------|
 | 1 | Página produto TDAH (`/produto/tdah`) | - |
-| 2 | DRC (Daily Report Card) — contexto escolar | API + UI |
-| 3 | Relatórios TDAH (PDF/imprimível) | Snapshots + protocolos |
+| 2 | Relatórios TDAH (PDF/imprimível) | Snapshots + protocolos |
+| 3 | Free tier gate (1 paciente ativo) | Mesma regra do ABA |
 | 4 | Edição de dados do paciente | API PATCH paciente |
 | 5 | Portal família (se decidido) | Decisão pendente Alê |
 
@@ -189,6 +192,18 @@
 - KPIs avançados: avg_session_duration, protocols_regression, total_sessions_completed
 - Quick stats row + atalhos rápidos (novo paciente, agendar sessão, etc.)
 - Substituiu placeholder por dashboard funcional completo
+
+### 13/03/2026 — Sessão 8c
+- Fase 6c: Daily Report Card (DRC) completo
+- API DRC: GET (lista por paciente com filtros data), POST (com limite Bible §17: máx 3 metas/dia)
+- API DRC [id]: GET detalhe, PATCH (atualizar dados + ação review clínico)
+- Validações: filled_by enum, score 0-100, protocolo pertence ao paciente
+- Página DRC: seletor de paciente, timeline agrupada por data, toggle goal_met (3 estados)
+- Review inline: clínico revisa DRC com notas (Bible §14.2 item 4)
+- Modal criação: meta, data, protocolo vinculado, score, quem preencheu, notas professor
+- DRC adicionado na sidebar TDAH (acessível para todos os roles)
+- Link "Ver DRCs" na ficha do paciente com ícone escolar
+- Decisão registrada: free tier TDAH = 1 paciente ativo (mesma regra ABA)
 
 ---
 
