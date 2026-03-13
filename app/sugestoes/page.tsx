@@ -36,6 +36,7 @@ export default function SugestoesPage() {
       }
     } catch (error) {
       console.error('Erro ao carregar sugestões:', error)
+      alert('Erro ao carregar sugestões. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -54,6 +55,7 @@ export default function SugestoesPage() {
       }
     } catch (error) {
       console.error('Erro ao processar decisão:', error)
+      alert('Erro ao processar decisão. Tente novamente.')
     } finally {
       setProcessing(null)
     }
@@ -74,7 +76,7 @@ export default function SugestoesPage() {
       <div className="min-h-screen bg-white">
         <Sidebar />
         <main className="md:ml-20 min-h-screen flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-tcc-accent border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-tcc-accent border-t-transparent rounded-full animate-spin" role="status" aria-label="Carregando"></div>
         </main>
       </div>
     )

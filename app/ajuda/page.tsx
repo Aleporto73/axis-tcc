@@ -18,9 +18,9 @@ import {
 import Sidebar from '../components/Sidebar'
 
 /* ─── brand TCC ─── */
-const brand = '#1a1f4e'
-const brandAccent = '#9a9ab8'
-const brandLight = '#eeeef4'
+const brand = '#1a1f4e' // tcc-700
+const brandAccent = '#9a9ab8' // tcc-300
+const brandLight = '#eeeef4' // ~tcc-100
 
 /* ─── types ─── */
 interface HelpItem {
@@ -413,10 +413,7 @@ function AccordionItem({
           <ul className="space-y-3">
             {item.content.map((line, i) => (
               <li key={i} className="flex items-start gap-2.5 text-sm text-slate-600 leading-relaxed">
-                <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
-                  style={{ backgroundColor: brandAccent }}
-                />
+                <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 bg-tcc-300" />
                 <Highlight text={line} term={searchTerm} />
               </li>
             ))}
@@ -493,11 +490,8 @@ function SectionAccordion({
         onClick={() => setIsOpen((p) => !p)}
         className="w-full flex items-center gap-4 p-5 md:p-6 text-left"
       >
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ backgroundColor: brandLight }}
-        >
-          <Icon className="w-5 h-5" style={{ color: brand }} />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-tcc-100">
+          <Icon className="w-5 h-5 text-tcc-700" />
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-base font-semibold text-slate-800">
@@ -541,8 +535,7 @@ function SectionAccordion({
                   e.preventDefault()
                   document.getElementById('chat-ana')?.scrollIntoView({ behavior: 'smooth' })
                 }}
-                className="text-sm italic transition-colors"
-                style={{ color: brandAccent }}
+                className="text-sm italic transition-colors text-tcc-300"
               >
                 Não encontrou? Pergunte para Ana ↓
               </a>
@@ -640,7 +633,7 @@ export default function AjudaPage() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: brand }}>
+          <h1 className="text-2xl md:text-3xl font-bold text-tcc-700">
             Central de Ajuda
           </h1>
           <p className="mt-2 text-base text-slate-500">
@@ -649,15 +642,9 @@ export default function AjudaPage() {
         </div>
 
         {/* ─── Card Ana (assistente virtual) ─── */}
-        <div
-          className="mb-8 rounded-2xl bg-white p-5 md:p-6 flex items-center gap-4 shadow-sm"
-          style={{ border: `1.5px solid ${brand}` }}
-        >
-          <div
-            className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shrink-0"
-            style={{ backgroundColor: brandLight }}
-          >
-            <Bot className="w-6 h-6 md:w-7 md:h-7" style={{ color: brand }} />
+        <div className="mb-8 rounded-2xl bg-white p-5 md:p-6 flex items-center gap-4 shadow-sm border-[1.5px] border-tcc-700">
+          <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shrink-0 bg-tcc-100">
+            <Bot className="w-6 h-6 md:w-7 md:h-7 text-tcc-700" />
           </div>
           <div className="min-w-0">
             <h2 className="text-base md:text-lg font-semibold text-slate-800">
@@ -712,8 +699,7 @@ export default function AjudaPage() {
             </p>
             <button
               onClick={() => setSearch('')}
-              className="mt-3 text-sm font-medium transition-colors"
-              style={{ color: brand }}
+              className="mt-3 text-sm font-medium transition-colors text-tcc-700"
             >
               Limpar busca
             </button>
@@ -724,11 +710,8 @@ export default function AjudaPage() {
         <div id="chat-ana" className="mt-14 bg-white rounded-2xl border border-slate-200 shadow-sm scroll-mt-8 flex flex-col">
           {/* Header */}
           <div className="flex items-center gap-3 p-5 md:p-6 pb-0 md:pb-0">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: brandLight }}
-            >
-              <MessageCircle style={{ color: brand, width: 18, height: 18 }} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-tcc-100">
+              <MessageCircle className="text-tcc-700" style={{ width: 18, height: 18 }} />
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-700">
@@ -757,7 +740,7 @@ export default function AjudaPage() {
                     style={msg.role === 'user' ? { backgroundColor: brand } : undefined}
                   >
                     {msg.role === 'ana' && (
-                      <span className="block text-xs font-semibold mb-1" style={{ color: brand }}>
+                      <span className="block text-xs font-semibold mb-1 text-tcc-700">
                         Ana
                       </span>
                     )}
@@ -770,7 +753,7 @@ export default function AjudaPage() {
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5">
-                    <span className="block text-xs font-semibold mb-1" style={{ color: brand }}>
+                    <span className="block text-xs font-semibold mb-1 text-tcc-700">
                       Ana
                     </span>
                     <span className="flex items-center gap-1 text-sm text-slate-400">
@@ -811,8 +794,7 @@ export default function AjudaPage() {
               <button
                 onClick={handleSend}
                 disabled={isLoading || !chatInput.trim()}
-                className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white transition-colors hover:opacity-90 disabled:opacity-40"
-                style={{ backgroundColor: brand }}
+                className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-white transition-colors hover:opacity-90 disabled:opacity-40 bg-tcc-700"
                 aria-label="Enviar mensagem"
               >
                 <Send style={{ width: 18, height: 18 }} />

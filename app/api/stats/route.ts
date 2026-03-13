@@ -103,6 +103,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ stats })
   } catch (error) {
     console.error('Erro ao buscar stats:', error)
-    return NextResponse.json({ stats: { patients: 0, suggestions: 0, sessions_today: 0, sessions_month: 0, completion_rate: 0, total_sessions: 0, in_progress: 0, weekly: [], upcoming: [] } })
+    return NextResponse.json({ error: 'Erro ao buscar estatísticas' }, { status: 500 })
   }
 }

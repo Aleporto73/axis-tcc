@@ -71,13 +71,10 @@ export default function HubPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: '#fafafa' }}>
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50">
         <div className="text-center">
-          <div
-            className="h-10 w-10 mx-auto mb-4 rounded-full border-2 animate-spin"
-            style={{ borderColor: '#e5e5e5', borderTopColor: '#1a1f4e' }}
-          />
-          <p className="text-sm" style={{ color: '#737373' }}>Carregando módulos...</p>
+          <div className="h-10 w-10 mx-auto mb-4 rounded-full border-2 border-neutral-200 border-t-tcc-700 animate-spin" role="status" aria-label="Carregando" />
+          <p className="text-sm text-neutral-500">Carregando módulos...</p>
         </div>
       </div>
     )
@@ -87,9 +84,9 @@ export default function HubPage() {
     licenses.some(l => l.product_type === productId)
 
   return (
-    <div className="min-h-screen" style={{ background: '#fafafa' }}>
+    <div className="min-h-screen bg-neutral-50">
       {/* Header */}
-      <header className="bg-white" style={{ borderBottom: '1px solid #e8e8e8' }}>
+      <header className="bg-white border-b border-neutral-200">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
           <Image
             src="/axis.png"
@@ -100,8 +97,8 @@ export default function HubPage() {
             style={{ height: '40px' }}
             priority
           />
-          <div style={{ width: '1px', height: '28px', background: '#e0e0e0' }} />
-          <p className="text-sm font-medium" style={{ color: '#737373' }}>
+          <div className="w-px h-7 bg-neutral-300" />
+          <p className="text-sm font-medium text-neutral-500">
             Seus módulos
           </p>
         </div>
@@ -150,13 +147,7 @@ export default function HubPage() {
                       }}
                     />
                     {licensed && (
-                      <span
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                        style={{
-                          background: '#dcfce7',
-                          color: '#166534',
-                        }}
-                      >
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-800">
                         Ativo
                       </span>
                     )}

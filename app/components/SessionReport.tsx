@@ -76,7 +76,7 @@ export default function SessionReport({ sessionId, onClose }: Props) {
     return (
       <div className="bg-white rounded-lg p-8 shadow-sm border border-blue-200 mt-6">
         <div className="flex items-center justify-center py-8">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" role="status" aria-label="Carregando relatório"></div>
         </div>
       </div>
     )

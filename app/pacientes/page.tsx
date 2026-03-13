@@ -38,6 +38,7 @@ export default function PacientesPage() {
       setPatients(data.patients)
     } catch (error) {
       console.error('Erro ao carregar pacientes:', error)
+      setToast({ message: 'Erro ao carregar pacientes', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -66,6 +67,7 @@ export default function PacientesPage() {
       }
     } catch (error) {
       console.error('Erro:', error)
+      setToast({ message: 'Erro ao cadastrar paciente', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -86,7 +88,7 @@ export default function PacientesPage() {
       <div className="min-h-screen bg-white">
         <Sidebar />
         <main className="md:ml-20 min-h-screen flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-tcc-accent border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-tcc-accent border-t-transparent rounded-full animate-spin" role="status" aria-label="Carregando"></div>
         </main>
       </div>
     )

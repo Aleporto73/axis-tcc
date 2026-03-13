@@ -105,6 +105,7 @@ export default function PatientDetailPage() {
       }
     } catch (error) {
       console.error('Erro:', error)
+      alert('Erro ao carregar dados do paciente')
     } finally {
       setLoading(false)
     }
@@ -160,6 +161,7 @@ export default function PatientDetailPage() {
       }
     } catch (error) {
       console.error('Erro:', error)
+      alert('Erro ao salvar alterações')
     } finally {
       setSaving(false)
     }
@@ -174,6 +176,7 @@ export default function PatientDetailPage() {
       }
     } catch (error) {
       console.error('Erro:', error)
+      alert('Erro ao excluir paciente')
     } finally {
       setDeleting(false)
     }
@@ -190,6 +193,7 @@ export default function PatientDetailPage() {
       }
     } catch (error) {
       console.error('Erro:', error)
+      alert('Erro ao gerar link de lembretes')
     } finally {
       setPushLoading(false)
     }
@@ -294,6 +298,7 @@ export default function PatientDetailPage() {
       }
     } catch (error) {
       console.error('Erro ao salvar:', error)
+      alert('Erro ao salvar registro clínico')
     } finally {
       setSavingClinical(false)
     }
@@ -330,7 +335,7 @@ export default function PatientDetailPage() {
       <div className="min-h-screen bg-white">
         <Sidebar />
         <main className="md:ml-20 min-h-screen flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" role="status" aria-label="Carregando"></div>
         </main>
       </div>
     )
@@ -374,7 +379,7 @@ export default function PatientDetailPage() {
                   </button>
                 )}
                 <button onClick={handlePushLink} disabled={pushLoading} className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 border border-amber-300 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium disabled:opacity-50">
-                  {pushLoading ? <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>}
+                  {pushLoading ? <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" role="status" aria-label="Gerando link"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>}
                   Lembretes
                 </button>
                 <button onClick={openEdit} className="flex items-center gap-2 px-4 py-2 bg-sky-50 text-sky-600 border border-sky-300 rounded-lg hover:bg-sky-100 transition-colors text-sm font-medium">
@@ -610,7 +615,7 @@ export default function PatientDetailPage() {
                       <div className="flex gap-3">
                         <button onClick={() => setAudioBlob(null)} className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-600">Escolher outro</button>
                         <button onClick={processAudio} disabled={transcribing || analyzing} className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 disabled:opacity-50 text-sm font-medium flex items-center gap-2">
-                          {(transcribing || analyzing) && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                          {(transcribing || analyzing) && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Processando"></div>}
                           {transcribing ? 'Transcrevendo...' : analyzing ? 'Analisando...' : 'Processar'}
                         </button>
                       </div>

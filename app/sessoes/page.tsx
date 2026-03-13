@@ -65,6 +65,7 @@ export default function SessoesPage() {
       }
     } catch (error) {
       console.error('Erro:', error)
+      alert('Erro ao carregar sessões')
     } finally {
       setLoading(false)
     }
@@ -106,6 +107,7 @@ export default function SessoesPage() {
       }
     } catch (error) {
       console.error('Erro:', error)
+      alert('Erro ao criar sessão')
     } finally {
       setCreating(false)
     }
@@ -245,7 +247,7 @@ export default function SessoesPage() {
       <div className="min-h-screen bg-white">
         <Sidebar />
         <main className="md:ml-20 min-h-screen flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-tcc-accent border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-tcc-accent border-t-transparent rounded-full animate-spin" role="status" aria-label="Carregando"></div>
         </main>
       </div>
     )
@@ -443,7 +445,7 @@ export default function SessoesPage() {
             <div className="flex justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50 rounded-b-xl">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg text-sm">Cancelar</button>
               <button onClick={handleCreateSession} disabled={creating || !selectedPatient} className="px-5 py-2 bg-tcc-accent text-white rounded-lg hover:bg-tcc-accent/90 disabled:opacity-50 text-sm font-medium flex items-center gap-2">
-                {creating ? (<><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>Criando...</>) : sessionMode === 'now' ? 'Iniciar Sessão' : 'Agendar Sessão'}
+                {creating ? (<><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Criando sessão"></div>Criando...</>) : sessionMode === 'now' ? 'Iniciar Sessão' : 'Agendar Sessão'}
               </button>
             </div>
           </div>

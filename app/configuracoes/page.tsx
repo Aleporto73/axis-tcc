@@ -3,7 +3,17 @@
 import { useAuth } from '@clerk/nextjs'
 import { useState, useEffect, useCallback } from 'react'
 import Sidebar from '../components/Sidebar'
-import { User, Bell, Shield, Database, Calendar, Check } from 'lucide-react'
+import { User, Bell, Shield, Database, Calendar, Check, X, RefreshCw, Unlink } from 'lucide-react'
+
+interface GoogleStatus {
+  connected: boolean
+  calendar_id?: string
+  sync_enabled?: boolean
+  token_expired?: boolean
+  connected_at?: string
+  last_sync_at?: string | null
+  webhook_active?: boolean
+}
 
 export default function ConfiguracoesPage() {
   const { isLoaded } = useAuth()
@@ -12,10 +22,63 @@ export default function ConfiguracoesPage() {
   const [profileLoading, setProfileLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  // Google Calendar state
+  const [googleStatus, setGoogleStatus] = useState<GoogleStatus>({ connected: false })
+  const [googleLoading, setGoogleLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
     fetchProfile()
+    fetchGoogleStatus()
   }, [])
+
+  const fetchGoogleStatus = async () => {
+    try {
+      const res = await fetch('/api/google/status')
+      if (res.ok) {
+        const data = await res.json()
+        setGoogleStatus(data)
+      }
+    } catch (err) {
+      console.error('Erro ao buscar status Google:', err)
+    }
+    setGoogleLoading(false)
+  }
+
+  const handleGoogleConnect = () => {
+    window.location.href = '/api/google'
+  }
+
+  const handleGoogleDisconnect = async () => {
+    if (!confirm('Deseja desconectar o Google Calendar?')) return
+    try {
+      const res = await fetch('/api/google/disconnect', { method: 'POST' })
+      if (res.ok) {
+        setGoogleStatus({ connected: false })
+      } else {
+        alert('Erro ao desconectar Google Calendar')
+      }
+    } catch (err) {
+      console.error('Erro ao desconectar Google:', err)
+      alert('Erro ao desconectar Google Calendar')
+    }
+  }
+
+  const handleGoogleSync = async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch('/api/google/sync', { method: 'POST' })
+      if (res.ok) {
+        await fetchGoogleStatus()
+      } else {
+        alert('Erro ao sincronizar com Google Calendar')
+      }
+    } catch (err) {
+      console.error('Erro ao sincronizar Google:', err)
+      alert('Erro ao sincronizar')
+    }
+    setSyncing(false)
+  }
 
   const fetchProfile = async () => {
     try {
@@ -91,8 +154,8 @@ export default function ConfiguracoesPage() {
           </div>
 
           <div className="space-y-6">
-            {/* Google Calendar — Em breve */}
-            <div className="bg-white rounded-lg border border-neutral-200 p-6 opacity-80">
+            {/* Google Calendar */}
+            <div className="bg-white rounded-lg border border-neutral-200 p-6">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-blue-600" />
@@ -100,17 +163,68 @@ export default function ConfiguracoesPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <h2 className="text-lg font-semibold text-neutral-900">Google Calendar</h2>
-                    <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full text-xs font-medium">Em breve</span>
+                    {googleStatus.connected && (
+                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium">Conectado</span>
+                    )}
                   </div>
                   <p className="text-sm text-neutral-500">Sincronize sua agenda automaticamente</p>
                 </div>
               </div>
-              <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
-                <p className="text-sm text-blue-800">
-                  A integração com o Google Calendar está aguardando a aprovação de verificação do Google.
-                  Assim que aprovada, você poderá sincronizar suas sessões diretamente com sua agenda.
-                </p>
-              </div>
+
+              {googleLoading ? (
+                <div className="h-12 bg-neutral-100 rounded-lg animate-pulse" />
+              ) : googleStatus.connected ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-emerald-600">
+                    <Check className="w-5 h-5" />
+                    <span className="text-sm font-medium">Google Calendar conectado</span>
+                  </div>
+                  {googleStatus.last_sync_at && (
+                    <p className="text-xs text-neutral-500">
+                      Última sincronização: {new Date(googleStatus.last_sync_at).toLocaleString('pt-BR')}
+                    </p>
+                  )}
+                  {googleStatus.token_expired && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-amber-800">Token expirado — reconecte para continuar sincronizando.</p>
+                    </div>
+                  )}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleGoogleSync}
+                      disabled={syncing}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                      {syncing ? 'Sincronizando...' : 'Sincronizar Agora'}
+                    </button>
+                    <button
+                      onClick={handleGoogleDisconnect}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-red-200 text-red-600 rounded-lg font-medium hover:bg-red-50"
+                    >
+                      <Unlink className="w-4 h-4" />
+                      Desconectar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-neutral-400">
+                    <X className="w-5 h-5" />
+                    <span className="text-sm">Não conectado</span>
+                  </div>
+                  <p className="text-sm text-neutral-600">
+                    Conecte seu Google Calendar para sincronizar suas sessões diretamente com sua agenda.
+                  </p>
+                  <button
+                    onClick={handleGoogleConnect}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Conectar Google Calendar
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Perfil */}

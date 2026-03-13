@@ -65,7 +65,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       const res = await fetch(`/api/sessions/${id}`)
       if (res.ok) { const data = await res.json(); setSession(data.session); if (data.transcript) setTranscript(data.transcript) }
       else router.push('/sessoes')
-    } catch (e) { console.error(e) } finally { setLoading(false) }
+    } catch (e) { console.error(e); alert('Erro ao carregar sessão') } finally { setLoading(false) }
   }
 
   const handleFinish = async () => {
@@ -73,7 +73,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       setFinishing(true)
       const res = await fetch(`/api/sessions/${id}/finish`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes }) })
       if (res.ok) { const data = await res.json(); if (data.pipeline) setPipelineResult(data.pipeline); loadSession() }
-    } catch (e) { console.error(e) } finally { setFinishing(false) }
+    } catch (e) { console.error(e); alert('Erro ao finalizar sessão') } finally { setFinishing(false) }
   }
 
   const sendAudio = async (fd: FormData) => {
@@ -195,7 +195,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       setAnalyzing(true)
       const res = await fetch('/api/analyze-tcc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transcript_id: transcript.id, text: transcript.text, session_id: session.id, patient_id: session.patient_id }) })
       if (res.ok) { const data = await res.json(); setAnalysis(data.analysis) }
-    } catch (e) { console.error(e) } finally { setAnalyzing(false) }
+    } catch (e) { console.error(e); alert('Erro ao analisar TCC') } finally { setAnalyzing(false) }
   }
 
   const openMicroModal = (type: string) => { setMicroType(type); setMicroIntensity(0.5); setMicroNote(''); setShowMicroModal(true) }
@@ -206,7 +206,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       setSavingMicro(true)
       const res = await fetch('/api/events/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patient_id: session.patient_id, event_type: microType, payload: { intensity: microIntensity, note: microNote, context: 'session' }, related_entity_id: session.id }) })
       if (res.ok) { setMicroEvents(prev => [...prev, { type: microType, intensity: microIntensity, note: microNote, created_at: new Date().toISOString() }]); setShowMicroModal(false) }
-    } catch (e) { console.error(e) } finally { setSavingMicro(false) }
+    } catch (e) { console.error(e); alert('Erro ao salvar evento') } finally { setSavingMicro(false) }
   }
 
   const microLabel = (type: string) => { switch (type) { case 'AVOIDANCE_OBSERVED': return 'Evitou'; case 'CONFRONTATION_OBSERVED': return 'Enfrentou'; case 'ADJUSTMENT_OBSERVED': return 'Ajustou'; case 'RECOVERY_OBSERVED': return 'Recuperou'; default: return type } }
@@ -235,7 +235,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
     <div className="min-h-screen bg-white">
       <Sidebar />
       <main className="md:ml-20 min-h-screen flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" role="status" aria-label="Carregando"></div>
       </main>
     </div>
   )
@@ -395,7 +395,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                       </button>
                     )}
                     <label className={`flex items-center gap-2 px-5 py-2.5 bg-sky-50 text-sky-600 border border-sky-200 rounded-lg cursor-pointer hover:bg-sky-100 transition-colors text-sm font-medium ${uploading ? 'opacity-50' : ''}`}>
-                      {uploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
+                      {uploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Enviando"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
                       {uploading ? 'Enviando...' : 'Upload'}
                       <input type="file" accept="audio/*" onChange={handleUpload} disabled={uploading} className="hidden" />
                     </label>
@@ -469,12 +469,12 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                   placeholder="Observações finais..." 
                   className="w-full px-4 py-3 border border-slate-200 rounded-lg mb-4 h-32 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" 
                 />
-                <button 
-                  onClick={handleFinish} 
-                  disabled={finishing} 
+                <button
+                  onClick={handleFinish}
+                  disabled={finishing}
                   className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-100 disabled:opacity-50 transition-colors text-sm font-medium"
                 >
-                  {finishing ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                  {finishing ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Finalizando"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
                   {finishing ? 'Finalizando...' : 'Finalizar Sessão'}
                 </button>
               </section>

@@ -40,35 +40,35 @@ export default function HomePage() {
       </SignedIn>
 
       <SignedOut>
-    <div className="min-h-screen bg-[#fafafa] text-[#1a1f4e] overflow-x-hidden">
+    <div className="min-h-screen bg-neutral-50 text-tcc-700 overflow-x-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa]/90 backdrop-blur-md border-b border-slate-200/60">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-neutral-50/90 backdrop-blur-md border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-[#1a1f4e] tracking-tight">AXIS Clínico</span>
+            <span className="text-xl font-bold text-tcc-700 tracking-tight">AXIS</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="#produtos" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
+            <Link href="#produtos" className="text-sm font-medium text-slate-600 hover:text-tcc-700 transition-colors">
               Produtos
             </Link>
-            <Link href="#governanca" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
+            <Link href="#governanca" className="text-sm font-medium text-slate-600 hover:text-tcc-700 transition-colors">
               Governança
             </Link>
-            <Link href="#base" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
+            <Link href="#base" className="text-sm font-medium text-slate-600 hover:text-tcc-700 transition-colors">
               Base científica
             </Link>
-            <Link href="#contato" className="text-sm font-medium text-slate-600 hover:text-[#1a1f4e] transition-colors">
+            <Link href="#contato" className="text-sm font-medium text-slate-600 hover:text-tcc-700 transition-colors">
               Contato
             </Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link
               href="/sign-in"
-              className="px-5 py-2.5 bg-[#1a1f4e] text-white text-sm font-medium rounded-lg hover:bg-[#2a2f5e] transition-all duration-300 shadow-lg shadow-[#1a1f4e]/20"
+              className="px-5 py-2.5 bg-tcc-700 text-white text-sm font-medium rounded-lg hover:bg-tcc-600 transition-all duration-300 shadow-lg shadow-tcc-700/20"
             >
               Entrar
             </Link>
@@ -80,13 +80,13 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-slate-100/60 to-transparent pointer-events-none" />
         <div className="max-w-5xl mx-auto text-center relative">
           <div className={`transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <span className="inline-block px-4 py-2 bg-[#1a1f4e]/5 text-[#1a1f4e] text-sm font-medium rounded-full mb-8">
+            <span className="inline-block px-4 py-2 bg-tcc-700/5 text-tcc-700 text-sm font-medium rounded-full mb-8">
               Psiform Tecnologia
             </span>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.08] mb-8">
               Infraestrutura clínica
               <br />
-              <span className="font-semibold bg-gradient-to-r from-[#1a1f4e] to-[#4a4f7e] bg-clip-text text-transparent">
+              <span className="font-semibold bg-gradient-to-r from-tcc-700 to-tcc-500 bg-clip-text text-transparent">
                 para práticas estruturadas
               </span>
             </h1>
@@ -98,13 +98,13 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="#produtos"
-                className="px-8 py-4 bg-[#1a1f4e] text-white font-medium rounded-xl hover:bg-[#2a2f5e] transition-all duration-300 shadow-lg shadow-[#1a1f4e]/20"
+                className="px-8 py-4 bg-tcc-700 text-white font-medium rounded-xl hover:bg-tcc-600 transition-all duration-300 shadow-lg shadow-tcc-700/20"
               >
                 Conhecer sistemas
               </Link>
               <Link
                 href="#governanca"
-                className="px-8 py-4 bg-white text-[#1a1f4e] font-medium rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-300"
+                className="px-8 py-4 bg-white text-tcc-700 font-medium rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-300"
               >
                 Ver governança
               </Link>
@@ -130,15 +130,15 @@ export default function HomePage() {
             {/* AXIS TCC Card */}
             <Link
               href="/produto/tcc"
-              className="group relative bg-white rounded-2xl p-10 md:p-12 border border-slate-200/80 shadow-md shadow-slate-200/50 hover:border-[#9a9ab8] hover:shadow-2xl hover:shadow-[#1a1f4e]/12 hover:scale-[1.02] transition-all duration-500 overflow-hidden"
+              className="group relative bg-white rounded-2xl p-10 md:p-12 border border-slate-200/80 shadow-md shadow-slate-200/50 hover:border-tcc-300 hover:shadow-2xl hover:shadow-tcc-700/12 hover:scale-[1.02] transition-all duration-500 overflow-hidden"
             >
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a1f4e] to-[#9a9ab8] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-tcc-700 to-tcc-300 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
               <div className="flex flex-col h-full">
                 <img src="/logo-axis-tcc.jpg" alt="AXIS TCC" className="h-16 object-contain object-left mb-6" />
-                <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-[#1a1f4e]/5 text-[#1a1f4e] mb-6">
+                <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-tcc-700/5 text-tcc-700 mb-6">
                   Para psicólogos
                 </span>
-                <h3 className="text-2xl font-semibold mb-4 text-[#1a1f4e]">
+                <h3 className="text-2xl font-semibold mb-4 text-tcc-700">
                   Terapia Cognitivo-Comportamental
                 </h3>
                 <p className="text-slate-600 mb-8 flex-grow leading-relaxed">
@@ -147,20 +147,20 @@ export default function HomePage() {
                 </p>
                 <ul className="space-y-3 mb-8 text-sm text-slate-600">
                   <li className="flex items-center gap-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#9a9ab8]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-tcc-300" />
                     Transcrição integrada ao fluxo clínico
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#9a9ab8]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-tcc-300" />
                     Indicadores evolutivos descritivos (não diagnósticos)
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#9a9ab8]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-tcc-300" />
                     Relatórios institucionais com histórico preservado
                   </li>
                 </ul>
                 <div className="flex items-center justify-end">
-                  <span className="inline-flex items-center gap-2 text-[#1a1f4e] font-medium group-hover:gap-3 transition-all">
+                  <span className="inline-flex items-center gap-2 text-tcc-700 font-medium group-hover:gap-3 transition-all">
                     Conhecer
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -172,15 +172,15 @@ export default function HomePage() {
             {/* AXIS ABA Card */}
             <Link
               href="/produto/aba"
-              className="group relative bg-white rounded-2xl p-10 md:p-12 border border-slate-200/80 shadow-md shadow-slate-200/50 hover:border-[#c4785a] hover:shadow-2xl hover:shadow-[#c4785a]/12 hover:scale-[1.02] transition-all duration-500 overflow-hidden"
+              className="group relative bg-white rounded-2xl p-10 md:p-12 border border-slate-200/80 shadow-md shadow-slate-200/50 hover:border-aba-500 hover:shadow-2xl hover:shadow-aba-500/12 hover:scale-[1.02] transition-all duration-500 overflow-hidden"
             >
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1a1f4e] to-[#c4785a] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-tcc-700 to-aba-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
               <div className="flex flex-col h-full">
                 <img src="/logo-axis-aba.jpg" alt="AXIS ABA" className="h-16 object-contain object-left mb-6" />
-                <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-[#c4785a]/8 text-[#c4785a] mb-6">
+                <span className="inline-block self-start px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full bg-aba-500/10 text-aba-500 mb-6">
                   Para clínicas
                 </span>
-                <h3 className="text-2xl font-semibold mb-4 text-[#1a1f4e]">
+                <h3 className="text-2xl font-semibold mb-4 text-tcc-700">
                   Análise do Comportamento Aplicada
                 </h3>
                 <p className="text-slate-600 mb-8 flex-grow leading-relaxed">
@@ -189,20 +189,20 @@ export default function HomePage() {
                 </p>
                 <ul className="space-y-3 mb-8 text-sm text-slate-600">
                   <li className="flex items-center gap-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#c4785a]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-aba-500" />
                     Ciclo protocolar completo e versionado
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#c4785a]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-aba-500" />
                     Generalização 3×2 e Manutenção 2-6-12
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#c4785a]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-aba-500" />
                     Snapshot imutável com engine lock
                   </li>
                 </ul>
                 <div className="flex items-center justify-end">
-                  <span className="inline-flex items-center gap-2 text-[#1a1f4e] font-medium group-hover:gap-3 transition-all">
+                  <span className="inline-flex items-center gap-2 text-tcc-700 font-medium group-hover:gap-3 transition-all">
                     Conhecer
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -226,25 +226,25 @@ export default function HomePage() {
           </p>
           <div className="grid md:grid-cols-2 gap-10 text-left">
             <div className="bg-white rounded-2xl border border-slate-200 p-8">
-              <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">Versionamento metodológico</h3>
+              <h3 className="text-lg font-semibold mb-3 text-tcc-700">Versionamento metodológico</h3>
               <p className="text-slate-600 leading-relaxed">
                 Cada cálculo é vinculado a uma versão formal do motor. Dados históricos não são reprocessados retroativamente.
               </p>
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-8">
-              <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">Snapshot imutável</h3>
+              <h3 className="text-lg font-semibold mb-3 text-tcc-700">Snapshot imutável</h3>
               <p className="text-slate-600 leading-relaxed">
                 Sessões finalizadas tornam-se registros append-only. O passado clínico não pode ser sobrescrito.
               </p>
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-8">
-              <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">Trilha de auditoria</h3>
+              <h3 className="text-lg font-semibold mb-3 text-tcc-700">Trilha de auditoria</h3>
               <p className="text-slate-600 leading-relaxed">
                 Ações relevantes possuem rastreabilidade e trilha de alterações. Estrutura desenhada para governança organizacional.
               </p>
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-8">
-              <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">LGPD aplicada</h3>
+              <h3 className="text-lg font-semibold mb-3 text-tcc-700">LGPD aplicada</h3>
               <p className="text-slate-600 leading-relaxed">
                 Separação formal entre Operador e Controlador, retenção definida e consentimento explícito versionado.
               </p>
@@ -271,7 +271,7 @@ export default function HomePage() {
           </div>
           <div className="grid md:grid-cols-2 gap-10">
             <div className="bg-slate-50 rounded-2xl border border-slate-200 p-8">
-              <h3 className="text-lg font-semibold mb-4 text-[#1a1f4e]">Fundamentação científica</h3>
+              <h3 className="text-lg font-semibold mb-4 text-tcc-700">Fundamentação científica</h3>
               <ul className="space-y-3 text-sm text-slate-700 leading-relaxed">
                 <li>• FPG/UNC — Práticas Baseadas em Evidência (ABA)</li>
                 <li>• Diretrizes SBNI — Brasil</li>
@@ -280,7 +280,7 @@ export default function HomePage() {
               </ul>
             </div>
             <div className="bg-slate-50 rounded-2xl border border-slate-200 p-8">
-              <h3 className="text-lg font-semibold mb-4 text-[#1a1f4e]">Compatibilidade regulatória</h3>
+              <h3 className="text-lg font-semibold mb-4 text-tcc-700">Compatibilidade regulatória</h3>
               <ul className="space-y-3 text-sm text-slate-700 leading-relaxed">
                 <li>• LGPD aplicada com separação Operador / Controlador</li>
                 <li>• Estrutura documental compatível com auditoria</li>
@@ -298,7 +298,7 @@ export default function HomePage() {
         </div>
       </section>
       {/* Philosophy Section */}
-      <section className="py-16 px-6 bg-[#1a1f4e] text-white relative overflow-hidden">
+      <section className="py-16 px-6 bg-tcc-700 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div
             className="absolute inset-0"
@@ -366,13 +366,13 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/produto/tcc"
-              className="px-8 py-4 bg-[#1a1f4e] text-white font-medium rounded-xl hover:bg-[#2a2f5e] transition-all duration-300 shadow-lg shadow-[#1a1f4e]/20"
+              className="px-8 py-4 bg-tcc-700 text-white font-medium rounded-xl hover:bg-tcc-600 transition-all duration-300 shadow-lg shadow-tcc-700/20"
             >
               Experimentar TCC
             </Link>
             <Link
               href="/produto/aba"
-              className="px-8 py-4 bg-white text-[#1a1f4e] font-medium rounded-xl border-2 border-[#1a1f4e] hover:bg-[#1a1f4e] hover:text-white transition-all duration-300"
+              className="px-8 py-4 bg-white text-tcc-700 font-medium rounded-xl border-2 border-tcc-700 hover:bg-tcc-700 hover:text-white transition-all duration-300"
             >
               Experimentar ABA
             </Link>
@@ -382,20 +382,19 @@ export default function HomePage() {
       {/* Contact Section */}
       <section id="contato" className="py-16 px-6 bg-slate-50 border-t border-slate-200">
         <div className="max-w-4xl mx-auto text-center">
-          <h3 className="text-lg font-semibold mb-3 text-[#1a1f4e]">Psiform Tecnologia</h3>
+          <h3 className="text-lg font-semibold mb-3 text-tcc-700">Psiform Tecnologia</h3>
           <p className="text-slate-600 mb-6">Desenvolvimento de soluções para saúde mental</p>
           <div className="flex items-center justify-center gap-6 text-sm text-slate-500">
-            <a href="mailto:contato@psiform.com.br" className="hover:text-[#1a1f4e] transition-colors">
+            <a href="mailto:contato@psiform.com.br" className="hover:text-tcc-700 transition-colors">
               contato@psiform.com.br
             </a>
           </div>
         </div>
       </section>
       {/* Footer */}
-      <footer className="py-8 px-6 bg-[#1a1f4e] text-white/60">
+      <footer className="py-8 px-6 bg-tcc-700 text-white/60">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-sm">© 2026 AXIS. Psiform Tecnologia.</span>
-          <div className="flex gap-4 text-xs"><a href="/privacidade" className="hover:text-white underline">Política de Privacidade</a><a href="/termos" className="hover:text-white underline">Termos de Serviço</a></div>
           <p className="text-xs text-center md:text-right max-w-md">
             Este sistema é uma ferramenta de apoio e organização. Não substitui o julgamento clínico do profissional.
           </p>

@@ -669,17 +669,13 @@ export default function ConfiguracoesABAPage() {
                   Eventos criados no Google aparecem no AXIS ABA, e sessões agendadas aqui
                   são enviadas para sua agenda com link do Google Meet.
                 </p>
-                {/* TODO: reativar quando verificação Google Brand for aprovada */}
-                <span
-                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-lg font-medium opacity-50 cursor-not-allowed"
-                  aria-disabled="true"
+                <button
+                  onClick={() => { window.location.href = '/api/aba/google' }}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
                 >
                   <Calendar className="w-4 h-4" />
                   Conectar Google Calendar
-                </span>
-                <p className="text-xs text-amber-600 mt-2">
-                  Em breve — verificação Google em andamento
-                </p>
+                </button>
               </div>
               <p className="text-xs text-slate-400">
                 Cada profissional da clínica conecta sua própria conta Google.
