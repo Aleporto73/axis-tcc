@@ -645,20 +645,31 @@ CREATE TABLE IF NOT EXISTS tdah_plan_goals (
 CREATE INDEX IF NOT EXISTS idx_tdah_plan_goals_plan ON tdah_plan_goals(plan_id);
 
 -- ─────────────────────────────────────────────────────
--- §16. Seed engine_versions — CSO-TDAH v1.0.0
+-- §16. Evolução engine_versions + Seed CSO-TDAH v1.0.0
 -- Bible §6, §28
--- Pesos configuráveis (decisão 13/03/2026)
+-- Schema real: id(serial), version, description, effective_date, is_current, is_active
+-- Adicionamos engine_name e weights para suportar múltiplos motores
 -- ─────────────────────────────────────────────────────
 
-INSERT INTO engine_versions (engine_name, version, description, weights, is_active)
+-- Adicionar colunas que faltam para suportar TDAH (idempotente)
+ALTER TABLE engine_versions ADD COLUMN IF NOT EXISTS engine_name VARCHAR(20);
+ALTER TABLE engine_versions ADD COLUMN IF NOT EXISTS weights JSONB;
+
+-- Preencher engine_name nas versões existentes (TCC e ABA)
+UPDATE engine_versions SET engine_name = 'CSO-TCC' WHERE engine_name IS NULL AND version LIKE '%3.%';
+UPDATE engine_versions SET engine_name = 'CSO-ABA' WHERE engine_name IS NULL AND version LIKE '%2.%';
+
+-- Seed CSO-TDAH v1.0.0
+INSERT INTO engine_versions (version, description, effective_date, is_active, engine_name, weights)
 VALUES (
-  'CSO-TDAH',
-  'v1.0.0',
+  'CSO-TDAH-v1.0.0',
   'Motor CSO-TDAH v1.0 — 3 blocos (Base 50% + Executiva 30% + AuDHD 20%) — Bible v2.5',
-  '{"core": 0.50, "executive": 0.30, "audhd": 0.20, "metrics": {"base": ["sas_tdah", "pis_tdah", "bss_tdah", "tcm_tdah"], "executive": ["exr", "ctx"], "audhd": ["sen", "trf"]}}'::jsonb,
-  true
+  CURRENT_DATE,
+  true,
+  'CSO-TDAH',
+  '{"core": 0.50, "executive": 0.30, "audhd": 0.20, "metrics": {"base": ["sas_tdah", "pis_tdah", "bss_tdah", "tcm_tdah"], "executive": ["exr", "ctx"], "audhd": ["sen", "trf"]}}'::jsonb
 )
-ON CONFLICT (engine_name, version) DO NOTHING;
+ON CONFLICT (version) DO NOTHING;
 
 -- ─────────────────────────────────────────────────────
 -- §17. Seed tdah_protocol_library — 12 Protocolos P1
