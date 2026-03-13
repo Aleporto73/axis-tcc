@@ -12,6 +12,15 @@ import Link from 'next/link'
 const TDAH_COLOR = '#0d7377'
 const TDAH_LIGHT = 'rgba(13, 115, 119, 0.08)'
 
+interface Alert {
+  type: string
+  severity: 'high' | 'medium' | 'low'
+  patient_id: string
+  patient_name: string
+  message: string
+  detail?: string
+}
+
 interface DashboardData {
   total_patients: number
   audhd_active: number
@@ -42,24 +51,23 @@ const bandColor = (score: number | null) => {
 
 export default function TDAHDashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
+  const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/tdah/dashboard')
-      .then(r => {
-        if (!r.ok) throw new Error('Falha ao carregar dashboard')
-        return r.json()
-      })
-      .then(d => {
-        if (d.error) { setError(d.error); setLoading(false); return }
-        setData(d)
-        setLoading(false)
-      })
-      .catch(() => {
-        setError('Falha de conexão com o servidor.')
-        setLoading(false)
-      })
+    Promise.all([
+      fetch('/api/tdah/dashboard').then(r => r.json()),
+      fetch('/api/tdah/alerts').then(r => r.json()).catch(() => ({ alerts: [] })),
+    ]).then(([dashData, alertData]) => {
+      if (dashData.error) { setError(dashData.error); setLoading(false); return }
+      setData(dashData)
+      setAlerts(alertData.alerts || [])
+      setLoading(false)
+    }).catch(() => {
+      setError('Falha de conexão com o servidor.')
+      setLoading(false)
+    })
   }, [])
 
   if (error) {
@@ -141,6 +149,53 @@ export default function TDAHDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Alertas Clínicos */}
+      {alerts.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2">
+              Alertas Clínicos
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600">{alerts.length}</span>
+            </h2>
+          </div>
+          <div className="space-y-2">
+            {alerts.slice(0, 8).map((alert, i) => {
+              const severityStyles = {
+                high: 'border-l-red-500 bg-red-50/30',
+                medium: 'border-l-amber-500 bg-amber-50/30',
+                low: 'border-l-blue-400 bg-blue-50/20',
+              }
+              const severityIcons = { high: '🔴', medium: '🟡', low: '🔵' }
+              return (
+                <Link
+                  key={`${alert.type}-${alert.patient_id}-${i}`}
+                  href={`/tdah/pacientes/${alert.patient_id}`}
+                  className={`flex items-start gap-3 p-3 rounded-lg border-l-3 hover:shadow-sm transition-all ${severityStyles[alert.severity]}`}
+                  style={{ borderLeftWidth: '3px' }}
+                >
+                  <span className="text-sm mt-0.5">{severityIcons[alert.severity]}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-slate-700">{alert.patient_name}</span>
+                      <span className="text-[10px] text-slate-400">·</span>
+                      <span className="text-xs text-slate-600">{alert.message}</span>
+                    </div>
+                    {alert.detail && (
+                      <p className="text-[10px] text-slate-400 mt-0.5 truncate">{alert.detail}</p>
+                    )}
+                  </div>
+                </Link>
+              )
+            })}
+            {alerts.length > 8 && (
+              <p className="text-[10px] text-slate-400 text-center pt-2">
+                +{alerts.length - 8} alertas adicionais
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Row 2 — CSO + Contextos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
