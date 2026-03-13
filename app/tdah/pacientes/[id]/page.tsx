@@ -5,9 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 // =====================================================
-// AXIS TDAH - Ficha do Paciente (Fase 2)
-// Exibe dados do paciente, sessões recentes, status.
-// Fase 3 expandirá: gráficos CSO, protocolos, AuDHD.
+// AXIS TDAH - Ficha do Paciente (Fase 3)
+// Exibe dados, sessões recentes, protocolos ativos.
+// Gráficos CSO e AuDHD layer em fase futura.
 // =====================================================
 
 const TDAH_COLOR = '#0d7377'
@@ -45,6 +45,29 @@ interface Session {
   session_notes: string | null
 }
 
+interface Protocol {
+  id: string
+  code: string
+  title: string
+  block: string
+  status: string
+  requires_audhd_layer: boolean
+  started_at: string | null
+  mastered_at: string | null
+  library_domain: string | null
+}
+
+interface LibraryProtocol {
+  id: string
+  code: string
+  title: string
+  block: string
+  priority: string
+  domain: string | null
+  requires_audhd_layer: boolean
+  description: string | null
+}
+
 const statusLabels: Record<string, string> = {
   scheduled: 'Agendada',
   in_progress: 'Em andamento',
@@ -63,6 +86,31 @@ const contextLabels: Record<string, string> = {
   clinical: 'Clínico',
   home: 'Domiciliar',
   school: 'Escolar',
+}
+
+const protocolStatusLabels: Record<string, string> = {
+  draft: 'Rascunho', active: 'Ativo', mastered: 'Dominado',
+  generalization: 'Generalização', maintenance: 'Manutenção',
+  maintained: 'Mantido', regression: 'Regressão',
+  suspended: 'Suspenso', discontinued: 'Descontinuado', archived: 'Arquivado',
+}
+
+const protocolStatusColors: Record<string, string> = {
+  draft: 'bg-slate-100 text-slate-500',
+  active: 'bg-green-50 text-green-600',
+  mastered: 'bg-emerald-50 text-emerald-700',
+  generalization: 'bg-blue-50 text-blue-600',
+  maintenance: 'bg-indigo-50 text-indigo-600',
+  maintained: 'bg-violet-50 text-violet-600',
+  regression: 'bg-red-50 text-red-600',
+  suspended: 'bg-amber-50 text-amber-600',
+  discontinued: 'bg-slate-100 text-slate-400',
+  archived: 'bg-slate-50 text-slate-400',
+}
+
+const blockLabels: Record<string, string> = {
+  A: 'Base', B: 'Executivo', C: 'AuDHD',
+  D: 'Acadêmico', E: 'Social', F: 'Emocional', G: 'Autonomia',
 }
 
 function calcAge(birth: string): string {
@@ -87,8 +135,13 @@ export default function PacienteDetalhePage() {
   const router = useRouter()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [sessions, setSessions] = useState<Session[]>([])
+  const [protocols, setProtocols] = useState<Protocol[]>([])
+  const [library, setLibrary] = useState<LibraryProtocol[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingSessions, setLoadingSessions] = useState(true)
+  const [loadingProtocols, setLoadingProtocols] = useState(true)
+  const [showLibrary, setShowLibrary] = useState(false)
+  const [activating, setActivating] = useState<string | null>(null)
 
   const fetchPatient = useCallback(() => {
     if (!id) return
@@ -111,8 +164,41 @@ export default function PacienteDetalhePage() {
       .catch(() => setLoadingSessions(false))
   }, [id])
 
+  const fetchProtocols = useCallback(() => {
+    if (!id) return
+    setLoadingProtocols(true)
+    fetch(`/api/tdah/protocols?patient_id=${id}`)
+      .then(r => r.json())
+      .then(d => { setProtocols(d.protocols || []); setLoadingProtocols(false) })
+      .catch(() => setLoadingProtocols(false))
+  }, [id])
+
+  const fetchLibrary = useCallback(() => {
+    fetch('/api/tdah/protocol-library')
+      .then(r => r.json())
+      .then(d => setLibrary(d.protocols || []))
+      .catch(() => {})
+  }, [])
+
+  const activateProtocol = async (libraryId: string) => {
+    setActivating(libraryId)
+    try {
+      const res = await fetch('/api/tdah/protocols', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient_id: id, library_protocol_id: libraryId }),
+      })
+      if (res.ok) {
+        fetchProtocols()
+        fetchPatient()
+      }
+    } catch { /* silent */ }
+    setActivating(null)
+  }
+
   useEffect(() => { fetchPatient() }, [fetchPatient])
   useEffect(() => { fetchSessions() }, [fetchSessions])
+  useEffect(() => { fetchProtocols() }, [fetchProtocols])
 
   if (loading) {
     return (
@@ -314,12 +400,134 @@ export default function PacienteDetalhePage() {
         )}
       </div>
 
-      {/* Placeholder: Protocolos e CSO virão na Fase 3 */}
+      {/* Protocolos ativos */}
+      <div className="mt-6 bg-white rounded-xl border border-slate-100 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Protocolos</h2>
+          <button
+            onClick={() => { fetchLibrary(); setShowLibrary(true) }}
+            className="text-xs font-medium px-3 py-1 rounded-lg border transition-colors"
+            style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+          >
+            + Ativar Protocolo
+          </button>
+        </div>
+
+        {loadingProtocols ? (
+          <div className="space-y-2">
+            {[1, 2].map(i => <div key={i} className="animate-pulse bg-slate-50 rounded-lg h-14" />)}
+          </div>
+        ) : protocols.length === 0 ? (
+          <p className="text-xs text-slate-400 py-6 text-center">Nenhum protocolo ativo</p>
+        ) : (
+          <div className="space-y-2">
+            {protocols.map(p => (
+              <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: TDAH_LIGHT, color: TDAH_COLOR }}>
+                    {p.block}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">{p.code} — {p.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-slate-400">{blockLabels[p.block] || p.block}</span>
+                      {p.requires_audhd_layer && (
+                        <span className="text-[10px] px-1 py-0.5 rounded bg-purple-50 text-purple-600">AuDHD</span>
+                      )}
+                      {p.library_domain && (
+                        <>
+                          <span className="text-slate-200">·</span>
+                          <span className="text-[10px] text-slate-400">{p.library_domain}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${protocolStatusColors[p.status] || 'bg-slate-100 text-slate-500'}`}>
+                  {protocolStatusLabels[p.status] || p.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Placeholder: CSO graphs future */}
       <div className="mt-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 p-6 text-center">
         <p className="text-xs text-slate-400">
-          Protocolos ativos, gráficos CSO-TDAH e layer AuDHD serão exibidos aqui na Fase 3.
+          Gráficos CSO-TDAH e layer AuDHD serão exibidos aqui em fase futura.
         </p>
       </div>
+
+      {/* Modal: Biblioteca de Protocolos */}
+      {showLibrary && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-xl">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+              <div>
+                <h2 className="font-serif text-lg font-light text-slate-800">Biblioteca de Protocolos</h2>
+                <p className="text-xs text-slate-400 mt-1">{library.length} protocolos disponíveis</p>
+              </div>
+              <button onClick={() => setShowLibrary(false)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-6">
+              {library.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-8">Carregando...</p>
+              ) : (
+                <div className="space-y-2">
+                  {library.map(lp => {
+                    const alreadyActive = protocols.some(
+                      p => p.code === lp.code && !['archived', 'discontinued'].includes(p.status)
+                    )
+                    return (
+                      <div key={lp.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${alreadyActive ? 'border-green-200 bg-green-50/50' : 'border-slate-100 hover:border-slate-200'}`}>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold shrink-0" style={{ backgroundColor: TDAH_LIGHT, color: TDAH_COLOR }}>
+                            {lp.block}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-700 truncate">{lp.code} — {lp.title}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] text-slate-400">{blockLabels[lp.block] || lp.block}</span>
+                              <span className="text-[10px] text-slate-300">{lp.priority}</span>
+                              {lp.requires_audhd_layer && (
+                                <span className="text-[10px] px-1 py-0.5 rounded bg-purple-50 text-purple-600">AuDHD</span>
+                              )}
+                            </div>
+                            {lp.description && (
+                              <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{lp.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="shrink-0 ml-3">
+                          {alreadyActive ? (
+                            <span className="text-[10px] text-green-600 font-medium">Ativo</span>
+                          ) : (
+                            <button
+                              onClick={() => activateProtocol(lp.id)}
+                              disabled={activating === lp.id}
+                              className="px-3 py-1 text-xs text-white rounded-lg transition-colors disabled:opacity-50"
+                              style={{ backgroundColor: TDAH_COLOR }}
+                              onMouseEnter={e => { if (activating !== lp.id) e.currentTarget.style.backgroundColor = '#0a5c5f' }}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
+                            >
+                              {activating === lp.id ? '...' : 'Ativar'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

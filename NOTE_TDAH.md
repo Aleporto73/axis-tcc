@@ -35,6 +35,10 @@
 | 13/03/2026 | Página lista pacientes TDAH | `app/tdah/pacientes/page.tsx` |
 | 13/03/2026 | Página detalhe paciente TDAH | `app/tdah/pacientes/[id]/page.tsx` |
 | 13/03/2026 | Página sessões TDAH (tricontextual) | `app/tdah/sessoes/page.tsx` |
+| 13/03/2026 | API protocol library (GET) | `app/api/tdah/protocol-library/route.ts` |
+| 13/03/2026 | API protocolos paciente (GET/POST) | `app/api/tdah/protocols/route.ts` |
+| 13/03/2026 | API protocolo por ID (GET/PATCH) | `app/api/tdah/protocols/[id]/route.ts` |
+| 13/03/2026 | Seção protocolos na ficha do paciente | `app/tdah/pacientes/[id]/page.tsx` — com modal biblioteca |
 
 ### 🔄 EM ANDAMENTO
 
@@ -42,15 +46,15 @@
 |------|--------|----------|
 | - | - | - |
 
-### ❌ PRÓXIMOS (Fase 3)
+### ❌ PRÓXIMOS (Fase 4)
 
 | # | Item | Dependência |
 |---|------|-------------|
 | 1 | Página produto TDAH (`/produto/tdah`) | - |
 | 2 | Gráficos CSO-TDAH na ficha do paciente | Motor CSO + API scores |
-| 3 | Gestão de protocolos (ativar/desativar) | API protocolos |
-| 4 | Layer AuDHD na ficha do paciente | Motor CSO bloco C |
-| 5 | Relatórios TDAH | Sessões + protocolos |
+| 3 | Layer AuDHD na ficha do paciente | Motor CSO bloco C |
+| 4 | Relatórios TDAH | Sessões + protocolos |
+| 5 | Registro de trials/observações nas sessões | API observations |
 
 ---
 
@@ -117,6 +121,15 @@
 - Página sessões: tricontextual (clínico/domiciliar/escolar), filtros status + contexto, modal agendamento com seletor visual de contexto
 - Todas as páginas usam cor #0d7377, padrão visual consistente com ABA
 - Diferenças TDAH: terapeuta filtra por created_by (sem tabela vínculo), sessão tricontextual, campos escola/professor
+
+### 13/03/2026 — Sessão 5
+- Fase 3: Gestão de protocolos TDAH
+- API protocol-library: GET com filtros block/priority/audhd
+- API protocols: GET (lista por paciente com role filter) + POST (ativar da library com validação de duplicata)
+- API protocol [id]: GET + PATCH com ciclo de vida (VALID_TRANSITIONS Bible §12)
+- PATCH: timestamps automáticos (started_at, mastered_at, archived_at) conforme status
+- Ficha do paciente atualizada: seção protocolos ativos + modal biblioteca com 46 protocolos
+- Modal mostra código, bloco, priority, badge AuDHD, botão ativar (com proteção de duplicata)
 
 ---
 
