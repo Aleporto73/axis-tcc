@@ -65,6 +65,13 @@
 | 13/03/2026 | Migration 024 — session_summaries multi-módulo | `scripts/migrations/024_*`, `scripts/run-migration-024.ts` |
 | 13/03/2026 | Fase 7g — Página de Configurações TDAH | `app/tdah/configuracoes/page.tsx` |
 | 13/03/2026 | Fase 7h — Central de Ajuda TDAH | `app/tdah/ajuda/page.tsx` |
+| 13/03/2026 | Fase 8a — Gestão de equipe TDAH | `app/api/tdah/team/route.ts`, `app/tdah/equipe/page.tsx` |
+| 13/03/2026 | Fase 8b — Onboarding TDAH (overlay 2 telas) | `app/components/OnboardingTDAH.tsx`, layout |
+| 13/03/2026 | Fase 8c — Página de Preços TDAH | `app/tdah/precos/page.tsx` |
+| 13/03/2026 | Fase 8d — Seletor de Clínica TDAH | `app/tdah/selecionar-clinica/page.tsx` |
+| 13/03/2026 | Fase 9a — Free tier gate (UpgradeModalTDAH) | `app/components/UpgradeModalTDAH.tsx` |
+| 13/03/2026 | Fase 9b — LGPD Export TDAH (JSON) | `app/api/tdah/lgpd/export/route.ts` |
+| 13/03/2026 | Fase 9b — LGPD Delete/Anonimização TDAH | `app/api/tdah/lgpd/delete/route.ts` |
 
 ### 🔄 EM ANDAMENTO
 
@@ -76,9 +83,8 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Free tier gate (1 paciente ativo) | Mesma regra do ABA |
-| 2 | Portal família (se decidido) | Decisão pendente Alê |
-| 3 | Pricing TDAH (Hotmart) | Decisão pendente Alê |
+| 1 | Portal família (se decidido) | Decisão pendente Alê |
+| 2 | Pricing TDAH (Hotmart link + valores) | Alê cadastrando na Hotmart |
 
 ---
 
@@ -266,6 +272,28 @@
 - Fase 7h: Central de Ajuda TDAH
 - 6 seções FAQ: Primeiros Passos, Sessões, Protocolos, AuDHD, DRC, Privacidade
 - Accordion UI com busca, contato suporte
+
+### 13/03/2026 — Sessão 10
+- Fase 8a: Gestão de equipe TDAH
+- API /api/tdah/team GET/POST: lista membros com contadores TDAH (patient_count via created_by, session_count via tdah_sessions)
+- API /api/tdah/team/[id] PATCH/DELETE: alterar role, desativar (sem vínculos learner_therapists)
+- Página equipe: lista, convite, role change, desativação. Sem seção vínculos (TDAH usa created_by)
+- Fase 8b: Onboarding TDAH
+- OnboardingTDAH overlay: Termo LGPD + escolha (Clínica ou Paciente)
+- LGPD adaptado: menção CSO-TDAH, sessões tricontextuais, scores
+- Reutiliza APIs /api/aba/onboarding (profiles compartilhados)
+- Fase 8c: Página de preços TDAH
+- Free (1 paciente) + Clínica (em breve, Hotmart pendente) + Enterprise
+- Fase 8d: Seletor de clínica TDAH (multi-tenant)
+- Reutiliza /api/aba/tenant-select, redireciona para /tdah
+- Fase 9a: Free tier gate
+- UpgradeModalTDAH: modal específico ao atingir limite de pacientes
+- Substituiu UpgradeModal genérico (ABA) na página de pacientes
+- Fase 9b: LGPD compliance TDAH
+- Export: /api/tdah/lgpd/export — JSON completo (patients, sessions, observations, snapshots, DRC, AuDHD log)
+- Delete: /api/tdah/lgpd/delete — GET status, POST agendar (90d), DELETE anonimizar, PATCH cancelar
+- Preserva tdah_snapshots (Bible §7 — imutável) e audit_logs (5 anos)
+- Anonimiza PII em todas as tabelas TDAH
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH
