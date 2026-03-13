@@ -25,6 +25,10 @@
 | 13/03/2026 | Migration 023 aplicada na VPS | 46 protocolos (42 P1 + 4 P1.1) confirmados |
 | 13/03/2026 | Skill clone ABA→TDAH | `skills/skill_axis_clone_aba_tdah.md` |
 | 13/03/2026 | Hub card TDAH | `app/hub/page.tsx` — cor #0d7377, grid 3 colunas |
+| 13/03/2026 | License gate TDAH (layout) | `app/tdah/layout.tsx` — product_type 'tdah' |
+| 13/03/2026 | Sidebar TDAH | `app/components/SidebarTDAH.tsx` — cor #0d7377, role-aware |
+| 13/03/2026 | Dashboard TDAH (placeholder) | `app/tdah/dashboard/page.tsx` |
+| 13/03/2026 | Redirect /tdah → /tdah/dashboard | `app/tdah/page.tsx` |
 
 ### 🔄 EM ANDAMENTO
 
@@ -32,12 +36,15 @@
 |------|--------|----------|
 | - | - | - |
 
-### ❌ PRÓXIMOS (Fase 1)
+### ❌ PRÓXIMOS (Fase 2)
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | License gate TDAH (layout + sidebar) | Logo TDAH (pendente Alê) |
-| 2 | Página produto TDAH (`/produto/tdah`) | - |
+| 1 | Página produto TDAH (`/produto/tdah`) | - |
+| 2 | API pacientes TDAH | - |
+| 3 | Página pacientes TDAH | API pacientes |
+| 4 | API sessões TDAH | - |
+| 5 | Página sessões TDAH | API sessões |
 
 ---
 
