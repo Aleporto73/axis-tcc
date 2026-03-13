@@ -15,6 +15,9 @@
 | 13/03/2026 | Motor CSO-TDAH v1.0 | `src/engines/cso-tdah.ts` |
 | 13/03/2026 | Testes do motor (71 verdes) | `src/engines/__tests__/cso-tdah.test.ts` |
 | 13/03/2026 | PLANO_TDAH.md | raiz |
+| 13/03/2026 | Migration 022 (schema completo) | `scripts/migrations/022_full_tdah_setup.sql` |
+| 13/03/2026 | Seed engine_versions CSO-TDAH v1.0.0 | dentro da migration 022 |
+| 13/03/2026 | Seed protocol_library (12 P1 + 2 P1.1) | dentro da migration 022 |
 
 ### 🔄 EM ANDAMENTO
 
@@ -26,11 +29,8 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Migration 022 (schema TDAH) | - |
-| 2 | Seed engine_versions (CSO-TDAH v1.0.0) | Migration 022 |
-| 3 | Seed protocol_library TDAH (12 P1) | Migration 022 |
-| 4 | Hub card TDAH | - |
-| 5 | License gate TDAH | Migration 022 |
+| 1 | Hub card TDAH | - |
+| 2 | License gate TDAH | Migration 022 aplicada |
 
 ---
 
@@ -65,6 +65,14 @@
 - Criado PLANO_TDAH.md com arquitetura completa
 - Decisões: multi-terapeuta, cor verde, 3 blocos, pesos configuráveis
 - Push feito
+
+### 13/03/2026 — Sessão 2
+- Criada migration 022_full_tdah_setup.sql (726 linhas)
+- 5 ENUMs, 14 tabelas, 25 índices, 2 constraints nomeadas
+- Seed engine_versions: CSO-TDAH v1.0.0 com pesos JSONB
+- Seed protocol_library: 12 P1 + 2 P1.1 candidatos (Bible Anexo B)
+- 6 melhorias sobre comando do 4.5: IF NOT EXISTS, sem RLS policy, schema engine_versions correto, colunas úteis extras, seeds completos, tdah_guardians separada
+- Aguardando push + aplicação no VPS
 
 ---
 
