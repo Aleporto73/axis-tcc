@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import pool from '@/src/database/db'
 import SidebarTDAH from '../components/SidebarTDAH'
+import OnboardingTDAH from '../components/OnboardingTDAH'
 import { RoleProvider } from '../components/RoleProvider'
 import ErrorBoundary from '../components/ErrorBoundary'
 
@@ -86,6 +87,7 @@ export default async function TDAHLayout({ children }: { children: React.ReactNo
     <RoleProvider>
       <div className="min-h-screen bg-white">
         <SidebarTDAH />
+        <OnboardingTDAH />
         <main className="md:ml-20 min-h-screen pb-20 md:pb-8">
           <ErrorBoundary>
             {children}
