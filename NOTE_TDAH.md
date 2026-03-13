@@ -22,12 +22,14 @@
 | 13/03/2026 | Fix engine_versions schema real | ALTER TABLE ADD COLUMN engine_name, weights |
 | 13/03/2026 | Migration 023 — 45 protocolos completos | `scripts/migrations/023_seed_tdah_protocols_full.sql` |
 | 13/03/2026 | Fix 023 block VARCHAR(10) | Nomes longos → códigos A-G |
+| 13/03/2026 | Migration 023 aplicada na VPS | 46 protocolos (42 P1 + 4 P1.1) confirmados |
+| 13/03/2026 | Skill clone ABA→TDAH | `skills/skill_axis_clone_aba_tdah.md` |
 
 ### 🔄 EM ANDAMENTO
 
 | Item | Status | Bloqueio |
 |------|--------|----------|
-| Migration 023 aplicar na VPS | Push feito, aguardando rodar no Docker | - |
+| - | - | - |
 
 ### ❌ PRÓXIMOS (Fase 1)
 
@@ -88,6 +90,8 @@
 - Fix líder: 3 colunas novas (bible_version, system_fields, is_active) adicionadas via ALTER TABLE
 - Problemas do 4.5 nesta sessão: schema engine_versions errado, block com nomes longos em vez de códigos
 - Aguardando aplicação da 023 na VPS
+- Migration 023 aplicada com sucesso: 46 protocolos no banco (42 P1 + 4 P1.1)
+- Criada skill `skills/skill_axis_clone_aba_tdah.md` — guia de conversão ABA→TDAH
 
 ---
 
