@@ -54,6 +54,8 @@
 | 13/03/2026 | Página DRC com timeline agrupada | `app/tdah/drc/page.tsx` — metas, toggle, review inline |
 | 13/03/2026 | DRC na sidebar + link na ficha | `SidebarTDAH.tsx`, `pacientes/[id]/page.tsx` |
 | 13/03/2026 | Página produto TDAH (landing page) | `app/produto/tdah/page.tsx` + layout SEO |
+| 13/03/2026 | API relatórios TDAH (dados agregados) | `app/api/tdah/reports/route.ts` |
+| 13/03/2026 | Página relatórios TDAH (imprimível) | `app/tdah/relatorios/page.tsx` |
 
 ### 🔄 EM ANDAMENTO
 
@@ -65,8 +67,8 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Relatórios TDAH (PDF/imprimível) | Snapshots + protocolos |
-| 2 | Edição de dados do paciente | API PATCH paciente |
+| 1 | Edição de dados do paciente | API PATCH paciente |
+| 2 | Alertas clínicos TDAH | Scores críticos, regressões |
 | 3 | Free tier gate (1 paciente ativo) | Mesma regra do ABA |
 | 4 | Portal família (se decidido) | Decisão pendente Alê |
 | 5 | Pricing TDAH (Hotmart) | Decisão pendente Alê |
@@ -219,6 +221,16 @@
 - Tabela de planos: Free (1 paciente) + Clínica (em breve)
 - CTA final + footer com links institucionais
 - Usa imagem axisTDAH.transparente.png do public/
+
+### 13/03/2026 — Sessão 8e
+- Fase 6e: Relatórios TDAH
+- API reports: agrega dados completos (paciente, protocolos, sessões, scores, DRCs) por período
+- Resumos calculados: score_summary (delta, primeiro/último), session_summary (por contexto), drc_summary (taxa sucesso)
+- Role filter: terapeuta vê só seus pacientes
+- Página relatórios: seletor paciente + período, gera relatório imprimível
+- Layout print-friendly: header AXIS TDAH, tabela scores, protocolos, sessões, DRC
+- Botão "Imprimir / PDF" usa window.print()
+- Footer com engine version + disclaimer clínico
 
 ---
 
