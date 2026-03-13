@@ -1,11 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-
 // =====================================================
 // AXIS TDAH - Modal de Upgrade (Free Tier Gate)
 // Exibido quando o limite de pacientes é atingido.
-// Link Hotmart pendente (placeholder até definição Alê).
+// Hotmart product_id: 7380571
 // =====================================================
 
 const TDAH_COLOR = '#0d7377'
@@ -40,22 +38,28 @@ export default function UpgradeModalTDAH({ open, onClose }: UpgradeModalTDAHProp
             Seu plano atual permite 1 paciente
           </h2>
           <p className="mt-2 text-sm text-slate-500">
-            Para adicionar mais pacientes, faça upgrade do plano TDAH
+            Para adicionar mais pacientes, faça upgrade para um plano pago
           </p>
         </div>
 
-        {/* Plan Card */}
+        {/* Plan Card — Founders (melhor custo-benefício) */}
         <div className="rounded-xl border-2 p-5" style={{ borderColor: TDAH_COLOR }}>
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-slate-900">AXIS TDAH Clínica</h3>
+            <h3 className="text-base font-semibold text-slate-900">AXIS TDAH Founders</h3>
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: TDAH_COLOR }}>
-              Em breve
+              Recomendado
             </span>
           </div>
 
+          <p className="mt-1 text-sm text-slate-500">
+            <span className="text-2xl font-bold text-slate-900">R$97</span>
+            <span className="text-xs text-slate-400">/mês</span>
+            <span className="ml-2 text-xs text-slate-400">· até 50 pacientes</span>
+          </p>
+
           <ul className="mt-4 space-y-2">
             {[
-              'Pacientes ilimitados',
+              'Até 50 pacientes ativos',
               'Multi-terapeuta',
               'Layer AuDHD completa',
               'DRC escolar',
@@ -69,20 +73,30 @@ export default function UpgradeModalTDAH({ open, onClose }: UpgradeModalTDAHProp
             ))}
           </ul>
 
-          {/* TODO: substituir por link Hotmart quando disponível */}
-          <Link
-            href="/tdah/precos"
+          <a
+            href="https://pay.hotmart.com/F104897641O?off=xqzgdn1i"
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-5 block w-full py-2 rounded-lg text-white text-sm font-medium text-center transition-opacity hover:opacity-90"
             style={{ backgroundColor: TDAH_COLOR }}
           >
-            Ver planos
-          </Link>
+            Assinar Founders — R$97/mês
+          </a>
         </div>
+
+        {/* Other plans link */}
+        <a
+          href="/tdah/precos"
+          className="mt-4 block w-full text-center py-2 text-sm font-medium transition-colors hover:underline"
+          style={{ color: TDAH_COLOR }}
+        >
+          Ver todos os planos (Clínica 100, Clínica 250)
+        </a>
 
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full text-center py-2.5 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+          className="mt-4 w-full text-center py-2.5 text-sm text-slate-400 hover:text-slate-600 transition-colors"
         >
           Continuar no plano atual
         </button>

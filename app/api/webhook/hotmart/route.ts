@@ -8,16 +8,19 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 const EMAIL_FROM_MAP: Record<string, string> = {
   tcc: process.env.RESEND_FROM_TCC || 'AXIS TCC <noreply@axisclinico.com>',
   aba: process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
+  tdah: process.env.RESEND_FROM_TDAH || 'AXIS TDAH <noreply@axisclinico.com>',
 }
 
 const PRODUCT_LABEL: Record<string, string> = {
   tcc: 'AXIS TCC',
   aba: 'AXIS ABA',
+  tdah: 'AXIS TDAH',
 }
 
 const DASHBOARD_PATH: Record<string, string> = {
   tcc: '/dashboard',
   aba: '/aba/dashboard',
+  tdah: '/tdah/dashboard',
 }
 
 // =====================================================
@@ -53,15 +56,21 @@ const PRODUCT_MAP: Record<string, string> = {
   '7299808': 'tcc',
   '7285432': 'aba',
   '7291024': 'aba',
+  '7380571': 'tdah',
 }
 
 // ─── Mapa de ofertas Hotmart → plano AXIS ───
 
 const OFFER_TO_PLAN: Record<string, { plan_tier: string; max_patients: number }> = {
+  // ABA offers
   'u2t04kz5': { plan_tier: 'founders', max_patients: 100 },
   '5hz0et4m': { plan_tier: 'founders', max_patients: 100 },
   'iwqieqxc': { plan_tier: 'clinica_100', max_patients: 100 },
   'gona25or': { plan_tier: 'clinica_250', max_patients: 250 },
+  // TDAH offers (product_id 7380571)
+  'xqzgdn1i': { plan_tier: 'founders', max_patients: 50 },
+  'cr3rh0u9': { plan_tier: 'clinica_100', max_patients: 100 },
+  'hxzwuwfh': { plan_tier: 'clinica_250', max_patients: 250 },
 }
 
 const DEFAULT_PAID_PLAN = { plan_tier: 'founders', max_patients: 100 }

@@ -83,8 +83,14 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Portal família (se decidido) | Decisão pendente Alê |
-| 2 | Pricing TDAH (Hotmart link + valores) | Alê cadastrando na Hotmart |
+| 1 | Portal família | Aprovado — implementar (ver ABA como referência) |
+| 2 | Módulo escola completo (perfil professor, integração) | Aprovado — implementar |
+| 3 | API /tdah/events | Nenhum |
+| 4 | API /tdah/clinical-state | Nenhum |
+| 5 | Plano TDAH (tdah_plans) — API + páginas | Nenhum |
+| 6 | Módulo casa (rotina, treino parental, economia fichas) | Nenhum |
+| 7 | Testes E2E | Após desenvolvimento |
+| 8 | Deploy beta | Após testes |
 
 ---
 
@@ -103,11 +109,11 @@
 
 | # | Decisão | Impacto | Quem decide |
 |---|---------|---------|-------------|
-| 1 | Logo TDAH (axistdah.png) | Hub, landing | Alê |
-| 2 | Pricing TDAH (R$?/mês) | Webhook, modal | Alê |
-| 3 | Hotmart product_id TDAH | Webhook | Alê |
-| 4 | v1.0 com ou sem módulo escola? | Escopo beta | Alê |
-| 5 | v1.0 com ou sem portal família? | Escopo beta | Alê |
+| ~~1~~ | ~~Logo TDAH~~ | ✅ DECIDIDO | axistdah.png já em public/ |
+| ~~2~~ | ~~Pricing TDAH~~ | ✅ DECIDIDO | Founders R$97, Clínica100 R$247, Clínica250 R$497 |
+| ~~3~~ | ~~Hotmart product_id TDAH~~ | ✅ DECIDIDO | 7380571 |
+| ~~4~~ | ~~v1.0 com módulo escola?~~ | ✅ SIM | Aprovado por Alê |
+| ~~5~~ | ~~v1.0 com portal família?~~ | ✅ SIM | Aprovado por Alê (ver ABA como ref) |
 
 ---
 
@@ -294,6 +300,25 @@
 - Delete: /api/tdah/lgpd/delete — GET status, POST agendar (90d), DELETE anonimizar, PATCH cancelar
 - Preserva tdah_snapshots (Bible §7 — imutável) e audit_logs (5 anos)
 - Anonimiza PII em todas as tabelas TDAH
+
+### 13/03/2026 — Sessão 11
+- Decisões respondidas por Alê:
+  - Logo TDAH: axistdah.png já existe em public/
+  - Módulo escola: SIM (perfil professor + integração escola-casa)
+  - Portal família: SIM (ver ABA como referência)
+  - Hotmart product_id: 7380571
+  - Planos: Founders R$97 (50 pac), Clínica 100 R$247, Clínica 250 R$497
+- Fase 10a: Pricing TDAH com planos reais
+  - 5 cards: Free, Founders, Clínica 100, Clínica 250, Enterprise
+  - Links Hotmart reais com offer codes
+- Fase 10b: UpgradeModalTDAH com link Hotmart
+  - Mostra plano Founders como recomendado (R$97/mês)
+  - Link direto para Hotmart checkout
+  - Link secundário para /tdah/precos (outros planos)
+- Fase 10c: Webhook Hotmart — product_id TDAH
+  - PRODUCT_MAP: 7380571 → 'tdah'
+  - OFFER_TO_PLAN: xqzgdn1i (founders 50), cr3rh0u9 (clinica_100), hxzwuwfh (clinica_250)
+  - EMAIL_FROM_MAP, PRODUCT_LABEL, DASHBOARD_PATH atualizados com 'tdah'
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH
