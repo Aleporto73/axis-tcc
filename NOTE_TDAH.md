@@ -24,6 +24,7 @@
 | 13/03/2026 | Fix 023 block VARCHAR(10) | Nomes longos → códigos A-G |
 | 13/03/2026 | Migration 023 aplicada na VPS | 46 protocolos (42 P1 + 4 P1.1) confirmados |
 | 13/03/2026 | Skill clone ABA→TDAH | `skills/skill_axis_clone_aba_tdah.md` |
+| 13/03/2026 | Hub card TDAH | `app/hub/page.tsx` — cor #0d7377, grid 3 colunas |
 
 ### 🔄 EM ANDAMENTO
 
@@ -35,8 +36,8 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Hub card TDAH | - |
-| 2 | License gate TDAH | Migration 022 aplicada |
+| 1 | License gate TDAH (layout + sidebar) | Logo TDAH (pendente Alê) |
+| 2 | Página produto TDAH (`/produto/tdah`) | - |
 
 ---
 

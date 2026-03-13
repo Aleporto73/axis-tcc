@@ -49,6 +49,24 @@ const PRODUCTS = [
     btnInactiveBg: 'rgba(196, 120, 90, 0.10)',
     btnInactiveText: '#1a1f4e',
   },
+  {
+    id: 'tdah',
+    name: 'AXIS TDAH',
+    description: 'Sistema de Apoio à Intervenção Comportamental em TDAH',
+    logo: '/axistdah.png',
+    hrefActive: '/tdah/dashboard',
+    hrefInactive: '/produto/tdah',
+    accent: '#0d7377',
+    accentLight: '#34b3b8',
+    bgActive: 'rgba(13, 115, 119, 0.04)',
+    bgInactive: 'rgba(13, 115, 119, 0.02)',
+    borderActive: 'rgba(13, 115, 119, 0.22)',
+    borderInactive: 'rgba(13, 115, 119, 0.08)',
+    btnBg: '#0d7377',
+    btnHover: '#0a5c5f',
+    btnInactiveBg: 'rgba(13, 115, 119, 0.10)',
+    btnInactiveText: '#0d7377',
+  },
 ]
 
 export default function HubPage() {
@@ -106,7 +124,7 @@ export default function HubPage() {
 
       {/* Cards */}
       <main className="max-w-4xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {PRODUCTS.map(product => {
             const licensed = hasLicense(product.id)
             return (
