@@ -18,12 +18,16 @@
 | 13/03/2026 | Migration 022 (schema completo) | `scripts/migrations/022_full_tdah_setup.sql` |
 | 13/03/2026 | Seed engine_versions CSO-TDAH v1.0.0 | dentro da migration 022 |
 | 13/03/2026 | Seed protocol_library (12 P1 + 2 P1.1) | dentro da migration 022 |
+| 13/03/2026 | Migration 022 aplicada na VPS (Docker) | 14 tabelas + enums + indexes OK |
+| 13/03/2026 | Fix engine_versions schema real | ALTER TABLE ADD COLUMN engine_name, weights |
+| 13/03/2026 | Migration 023 — 45 protocolos completos | `scripts/migrations/023_seed_tdah_protocols_full.sql` |
+| 13/03/2026 | Fix 023 block VARCHAR(10) | Nomes longos → códigos A-G |
 
 ### 🔄 EM ANDAMENTO
 
 | Item | Status | Bloqueio |
 |------|--------|----------|
-| - | - | - |
+| Migration 023 aplicar na VPS | Push feito, aguardando rodar no Docker | - |
 
 ### ❌ PRÓXIMOS (Fase 1)
 
@@ -73,6 +77,17 @@
 - Seed protocol_library: 12 P1 + 2 P1.1 candidatos (Bible Anexo B)
 - 6 melhorias sobre comando do 4.5: IF NOT EXISTS, sem RLS policy, schema engine_versions correto, colunas úteis extras, seeds completos, tdah_guardians separada
 - Aguardando push + aplicação no VPS
+
+### 13/03/2026 — Sessão 3
+- Migration 022 aplicada com sucesso na VPS via Docker (axis-postgres)
+- Descoberto: schema real `engine_versions` diferente da migration 004 (sem engine_name, sem weights, tem effective_date e is_current)
+- Fix: ALTER TABLE ADD COLUMN IF NOT EXISTS para engine_name e weights
+- Seed CSO-TDAH v1.0.0 inserido com pesos JSONB
+- Migration 023 recebida do 4.5: 45 protocolos completos da BIBLE v2.5
+- Fix líder: block VARCHAR(10) não aceita nomes longos — mapeado para códigos A-G
+- Fix líder: 3 colunas novas (bible_version, system_fields, is_active) adicionadas via ALTER TABLE
+- Problemas do 4.5 nesta sessão: schema engine_versions errado, block com nomes longos em vez de códigos
+- Aguardando aplicação da 023 na VPS
 
 ---
 
