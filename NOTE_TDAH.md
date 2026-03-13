@@ -53,6 +53,7 @@
 | 13/03/2026 | API DRC (GET + POST + PATCH + review) | `app/api/tdah/drc/route.ts`, `app/api/tdah/drc/[id]/route.ts` |
 | 13/03/2026 | Página DRC com timeline agrupada | `app/tdah/drc/page.tsx` — metas, toggle, review inline |
 | 13/03/2026 | DRC na sidebar + link na ficha | `SidebarTDAH.tsx`, `pacientes/[id]/page.tsx` |
+| 13/03/2026 | Página produto TDAH (landing page) | `app/produto/tdah/page.tsx` + layout SEO |
 
 ### 🔄 EM ANDAMENTO
 
@@ -64,11 +65,11 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Página produto TDAH (`/produto/tdah`) | - |
-| 2 | Relatórios TDAH (PDF/imprimível) | Snapshots + protocolos |
+| 1 | Relatórios TDAH (PDF/imprimível) | Snapshots + protocolos |
+| 2 | Edição de dados do paciente | API PATCH paciente |
 | 3 | Free tier gate (1 paciente ativo) | Mesma regra do ABA |
-| 4 | Edição de dados do paciente | API PATCH paciente |
-| 5 | Portal família (se decidido) | Decisão pendente Alê |
+| 4 | Portal família (se decidido) | Decisão pendente Alê |
+| 5 | Pricing TDAH (Hotmart) | Decisão pendente Alê |
 
 ---
 
@@ -204,6 +205,20 @@
 - DRC adicionado na sidebar TDAH (acessível para todos os roles)
 - Link "Ver DRCs" na ficha do paciente com ícone escolar
 - Decisão registrada: free tier TDAH = 1 paciente ativo (mesma regra ABA)
+
+### 13/03/2026 — Sessão 8d
+- Fase 6d: Página produto TDAH (landing page /produto/tdah)
+- Layout SEO: metadata, Open Graph, JSON-LD, keywords TDAH
+- Redirect: se logado com licença TDAH ativa → /tdah/dashboard
+- Hero: "TDAH não é só clínica. É escola, casa e contexto."
+- Bloco tricontextual: 3 cards (Clínico, Domiciliar, Escolar) com ícones
+- Fluxo operacional: 5 passos (Cadastro → Protocolo → Sessão → Motor → DRC)
+- DRC mockup: 3 metas com barra de progresso, nota da professora, badge revisado
+- Layer AuDHD: 3 modos (Off, Core, Completa) explicados
+- Ana (chatbot) mockup com pergunta sobre AuDHD
+- Tabela de planos: Free (1 paciente) + Clínica (em breve)
+- CTA final + footer com links institucionais
+- Usa imagem axisTDAH.transparente.png do public/
 
 ---
 
