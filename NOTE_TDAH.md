@@ -56,6 +56,15 @@
 | 13/03/2026 | Página produto TDAH (landing page) | `app/produto/tdah/page.tsx` + layout SEO |
 | 13/03/2026 | API relatórios TDAH (dados agregados) | `app/api/tdah/reports/route.ts` |
 | 13/03/2026 | Página relatórios TDAH (imprimível) | `app/tdah/relatorios/page.tsx` |
+| 13/03/2026 | Fase 7a — Edição paciente (modal + API expandida) | `app/api/tdah/patients/[id]/route.ts`, ficha paciente |
+| 13/03/2026 | Fase 7b — API alertas clínicos TDAH | `app/api/tdah/alerts/route.ts` |
+| 13/03/2026 | Fase 7c — Página alertas + sidebar alerta | `app/tdah/alertas/page.tsx`, `SidebarTDAH.tsx` |
+| 13/03/2026 | Fase 7d — Página detalhe protocolo (transições) | `app/tdah/protocolos/[id]/page.tsx` |
+| 13/03/2026 | Fase 7e — Guardians API + UI | `app/api/tdah/guardians/route.ts`, `[id]/route.ts` |
+| 13/03/2026 | Fase 7f — Enviar resumo sessão (email) | `app/api/tdah/sessions/[id]/summary/route.ts`, template email |
+| 13/03/2026 | Migration 024 — session_summaries multi-módulo | `scripts/migrations/024_*`, `scripts/run-migration-024.ts` |
+| 13/03/2026 | Fase 7g — Página de Configurações TDAH | `app/tdah/configuracoes/page.tsx` |
+| 13/03/2026 | Fase 7h — Central de Ajuda TDAH | `app/tdah/ajuda/page.tsx` |
 
 ### 🔄 EM ANDAMENTO
 
@@ -63,15 +72,13 @@
 |------|--------|----------|
 | - | - | - |
 
-### ❌ PRÓXIMOS (Fase 6)
+### ❌ PRÓXIMOS
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Edição de dados do paciente | API PATCH paciente |
-| 2 | Alertas clínicos TDAH | Scores críticos, regressões |
-| 3 | Free tier gate (1 paciente ativo) | Mesma regra do ABA |
-| 4 | Portal família (se decidido) | Decisão pendente Alê |
-| 5 | Pricing TDAH (Hotmart) | Decisão pendente Alê |
+| 1 | Free tier gate (1 paciente ativo) | Mesma regra do ABA |
+| 2 | Portal família (se decidido) | Decisão pendente Alê |
+| 3 | Pricing TDAH (Hotmart) | Decisão pendente Alê |
 
 ---
 
@@ -221,6 +228,44 @@
 - Tabela de planos: Free (1 paciente) + Clínica (em breve)
 - CTA final + footer com links institucionais
 - Usa imagem axisTDAH.transparente.png do public/
+
+### 13/03/2026 — Sessão 9
+- Fase 7a: Edição de dados do paciente
+- API PATCH paciente expandida: campos editáveis (nome, nascimento, gênero, diagnóstico, CID, suporte, escola, notas clínicas, status)
+- Validações: nome obrigatório, gênero M/F/O, support_level 1-3, status change admin/supervisor only
+- Role check: terapeuta só edita seus pacientes (created_by)
+- Modal de edição na ficha do paciente (só envia campos alterados)
+- Fase 7b: Alertas clínicos TDAH
+- API alerts: 5 tipos (critical_score, regression, no_session, drc_pending, score_drop)
+- Severidade (high/medium/low) com sort automático
+- Dashboard atualizado com seção de alertas
+- Fase 7c: Página Alertas dedicada
+- Filtros por severidade, cards resumo, links para ficha do paciente
+- Sidebar atualizada com ícone de alertas (sino)
+- Relatórios agora acessível por terapeuta também
+- Fase 7d: Página detalhe protocolo
+- Ciclo de vida completo com VALID_TRANSITIONS (Bible §12)
+- Botões de transição com confirmação e warnings
+- Timestamps automáticos por status
+- Observações vinculadas ao protocolo
+- Notas AuDHD com borda roxa
+- Fase 7e: Gestão de responsáveis (guardians)
+- APIs: GET/POST guardians + PATCH/DELETE guardian por ID
+- is_primary support, soft delete
+- Seção guardians na ficha do paciente com modal criação
+- Fase 7f: Enviar Resumo da Sessão aos Pais
+- Migration 024: session_summaries multi-módulo (DROP FK, ADD source_module)
+- Script run-migration-024.ts com pattern Pool do projeto
+- Template email TDAH (teal header, contexto, LGPD)
+- API summary: POST draft → PUT approve → PUT send (Resend)
+- Modal envio na sessão: seletor guardians, textarea, fluxo 3 etapas
+- Fase 7g: Página de Configurações TDAH
+- Perfil (nome + CRP), Notificações (toggles), Clínica (admin), Plano (tier), Privacidade
+- Reusa APIs ABA (/api/aba/me, /api/aba/settings, /api/aba/plan)
+- Role-aware visibility
+- Fase 7h: Central de Ajuda TDAH
+- 6 seções FAQ: Primeiros Passos, Sessões, Protocolos, AuDHD, DRC, Privacidade
+- Accordion UI com busca, contato suporte
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH
