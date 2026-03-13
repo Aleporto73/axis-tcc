@@ -158,6 +158,9 @@ export default function TDAHDashboard() {
               Alertas Clínicos
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-600">{alerts.length}</span>
             </h2>
+            <Link href="/tdah/alertas" className="text-xs font-medium" style={{ color: TDAH_COLOR }}>
+              Ver todos &rarr;
+            </Link>
           </div>
           <div className="space-y-2">
             {alerts.slice(0, 8).map((alert, i) => {
