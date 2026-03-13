@@ -48,6 +48,8 @@
 | 13/03/2026 | Sessões clicáveis (Link → condução) | `app/tdah/sessoes/page.tsx`, ficha paciente |
 | 13/03/2026 | Layer AuDHD toggle (API PATCH + UI + audit log) | `app/api/tdah/patients/[id]/route.ts`, ficha paciente |
 | 13/03/2026 | Form observação com campos AuDHD condicionais | `app/tdah/sessoes/[id]/page.tsx` — SEN/TRF/RIG se layer ativa |
+| 13/03/2026 | Dashboard TDAH API (KPIs reais) | `app/api/tdah/dashboard/route.ts` |
+| 13/03/2026 | Dashboard TDAH com métricas reais | `app/tdah/dashboard/page.tsx` — tricontextual, CSO, AuDHD |
 
 ### 🔄 EM ANDAMENTO
 
@@ -62,8 +64,8 @@
 | 1 | Página produto TDAH (`/produto/tdah`) | - |
 | 2 | DRC (Daily Report Card) — contexto escolar | API + UI |
 | 3 | Relatórios TDAH (PDF/imprimível) | Snapshots + protocolos |
-| 4 | Dashboard TDAH (métricas reais) | Scores + sessões |
-| 5 | Edição de dados do paciente | API PATCH paciente |
+| 4 | Edição de dados do paciente | API PATCH paciente |
+| 5 | Portal família (se decidido) | Decisão pendente Alê |
 
 ---
 
@@ -177,6 +179,16 @@
 - Badge "AuDHD Core/Full" no header da sessão
 - Badge TRF adicionado na timeline de observações
 - API session GET agora inclui audhd_layer_status do paciente
+
+### 13/03/2026 — Sessão 8b
+- Fase 6b: Dashboard TDAH com métricas reais
+- API dashboard: KPIs agregados com role filter (terapeuta vê só seus pacientes)
+- Métricas: total_patients, audhd_active, sessions_month/today, active/mastered_protocols
+- CSO-TDAH médio: avg_cso (último snapshot por paciente), patients_critical (banda crítica)
+- Distribuição tricontextual: barras clínico/domiciliar/escolar com % (30 dias)
+- KPIs avançados: avg_session_duration, protocols_regression, total_sessions_completed
+- Quick stats row + atalhos rápidos (novo paciente, agendar sessão, etc.)
+- Substituiu placeholder por dashboard funcional completo
 
 ---
 
