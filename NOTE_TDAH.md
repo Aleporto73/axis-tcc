@@ -49,15 +49,15 @@
 |------|--------|----------|
 | - | - | - |
 
-### ❌ PRÓXIMOS (Fase 5)
+### ❌ PRÓXIMOS (Fase 6)
 
 | # | Item | Dependência |
 |---|------|-------------|
 | 1 | Página produto TDAH (`/produto/tdah`) | - |
-| 2 | Gráficos CSO-TDAH na ficha do paciente | Motor CSO + API scores |
-| 3 | Layer AuDHD na ficha do paciente | Motor CSO bloco C |
-| 4 | Relatórios TDAH | Sessões + protocolos |
-| 5 | DRC (Daily Report Card) — contexto escolar | API + UI |
+| 2 | Layer AuDHD ativação/desativação na ficha | Motor CSO bloco C |
+| 3 | DRC (Daily Report Card) — contexto escolar | API + UI |
+| 4 | Relatórios TDAH (PDF/imprimível) | Snapshots + protocolos |
+| 5 | Link sessão → condução na lista de sessões | UI |
 
 ---
 
@@ -145,6 +145,18 @@
 - Página condução de sessão: breadcrumb, status badges, botões abrir/fechar
 - Modal registro de observação: protocolo selector, tarefa, camada base (SAS/PIS/BSS), executiva (EXR), notas
 - Timeline de observações com badges coloridos por métrica
+
+### 13/03/2026 — Sessão 7
+- Fase 5: Motor CSO-TDAH integrado ao pipeline
+- Adapter: `src/engines/cso-tdah-adapter.ts` — converte observações do banco → CsoTdahInput
+- API scores: GET por paciente (lê tdah_snapshots com role filter)
+- PATCH close sessão agora gera snapshot CSO-TDAH automático (append-only)
+- Busca pesos do engine_versions, audhd_layer_status do paciente, observações da sessão
+- Salva snapshot completo: scores, métricas, flags, source_contexts (tudo JSONB)
+- Snapshot é non-blocking: se falhar, sessão já foi fechada (log de erro apenas)
+- Gráfico SVG na ficha do paciente: linha final_score + core_score (dashed), zonas de banda
+- Tabela de scores com badges por bloco (Base/Exec/AuDHD) e band badge
+- Pipeline completo: Obs → Adapter → Motor → Snapshot → Gráfico
 
 ---
 

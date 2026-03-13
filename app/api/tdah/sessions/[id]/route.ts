@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import { computeFullCsoTdah, CSO_TDAH_ENGINE_VERSION } from '@/src/engines/cso-tdah'
+import { observationsToInput } from '@/src/engines/cso-tdah-adapter'
+import type { AudhdLayerStatus, CsoTdahWeights } from '@/src/engines/cso-tdah'
 
 // =====================================================
 // AXIS TDAH - API: Sessão por ID
 // GET — Sessão com observações e protocolos do paciente
 // PATCH — Abrir/fechar sessão, atualizar notas
+// CLOSE gera snapshot CSO-TDAH automático (append-only)
 // Bible §11: sessão fechada é imutável
 // =====================================================
 
@@ -129,11 +133,83 @@ export async function PATCH(
         )
         const duration = Math.round(durationRes.rows[0]?.duration || 0)
 
-        return await ctx.client.query(
+        // Fechar sessão
+        const closedSession = await ctx.client.query(
           `UPDATE tdah_sessions SET status = 'completed', ended_at = NOW(), duration_minutes = $3, updated_at = NOW()
            WHERE id = $1 AND tenant_id = $2 RETURNING *`,
           [id, ctx.tenantId, duration]
         )
+
+        // ── Gerar snapshot CSO-TDAH (Bible §10, Anexo G) ──
+        try {
+          // Buscar observações da sessão
+          const obsRes = await ctx.client.query(
+            `SELECT * FROM tdah_observations WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at`,
+            [id, ctx.tenantId]
+          )
+
+          if (obsRes.rows.length > 0) {
+            // Buscar AuDHD layer status do paciente
+            const patientRes = await ctx.client.query(
+              `SELECT audhd_layer_status FROM tdah_patients WHERE id = $1`,
+              [sess.patient_id]
+            )
+            const audhdStatus = (patientRes.rows[0]?.audhd_layer_status || 'off') as AudhdLayerStatus
+
+            // Buscar pesos do engine (se configurados)
+            const engineRes = await ctx.client.query(
+              `SELECT weights FROM engine_versions WHERE engine_name = 'CSO-TDAH' AND is_current = true`
+            )
+            const dbWeights = engineRes.rows[0]?.weights as CsoTdahWeights | null
+
+            // Converter observações → input do motor
+            const input = observationsToInput(obsRes.rows, {
+              audhdLayerStatus: audhdStatus,
+              sessionContext: closedSession.rows[0].session_context,
+              weights: dbWeights || undefined,
+            })
+
+            // Computar CSO-TDAH
+            const cso = computeFullCsoTdah(input)
+
+            // Salvar snapshot (append-only, imutável)
+            await ctx.client.query(
+              `INSERT INTO tdah_snapshots (
+                tenant_id, patient_id, session_id, snapshot_type,
+                engine_name, engine_version,
+                audhd_layer_status, core_score, executive_score,
+                audhd_layer_score, final_score, final_band, confidence_flag,
+                missing_data_primary_flag, missing_data_flags_json,
+                source_contexts_json, core_metrics_json, executive_metrics_json,
+                audhd_metrics_json, audhd_flags_json
+              ) VALUES ($1, $2, $3, 'session_close',
+                $4, $5, $6::audhd_layer_status_enum, $7, $8, $9, $10,
+                $11::tdah_final_band_enum, $12::tdah_confidence_enum,
+                $13, $14, $15, $16, $17, $18, $19)`,
+              [
+                ctx.tenantId, sess.patient_id, id,
+                cso.engine_name, cso.engine_version,
+                cso.audhd_layer_status,
+                cso.core_score, cso.executive_score,
+                cso.audhd_layer_score, cso.final_score,
+                cso.final_band, cso.confidence_flag,
+                cso.missing_data_primary_flag,
+                JSON.stringify(cso.missing_data_flags),
+                JSON.stringify(cso.source_contexts),
+                JSON.stringify(cso.base_metrics),
+                JSON.stringify(cso.executive_metrics),
+                cso.audhd_metrics ? JSON.stringify(cso.audhd_metrics) : null,
+                cso.audhd_flags ? JSON.stringify(cso.audhd_flags) : null,
+              ]
+            )
+          }
+        } catch (snapshotErr) {
+          // Snapshot é non-blocking — sessão já foi fechada
+          // Log para debug mas não falha a resposta
+          console.error('[CSO-TDAH] Erro ao gerar snapshot:', snapshotErr)
+        }
+
+        return closedSession
       }
 
       if (action === 'cancel') {

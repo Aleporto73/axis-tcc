@@ -68,6 +68,19 @@ interface LibraryProtocol {
   description: string | null
 }
 
+interface CsoScore {
+  id: string
+  session_number: number | null
+  session_context: string | null
+  core_score: number | null
+  executive_score: number | null
+  audhd_layer_score: number | null
+  final_score: number | null
+  final_band: string
+  confidence_flag: string
+  snapshot_at: string
+}
+
 const statusLabels: Record<string, string> = {
   scheduled: 'Agendada',
   in_progress: 'Em andamento',
@@ -130,6 +143,114 @@ function formatDatetime(iso: string): string {
     ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+const bandColors: Record<string, string> = {
+  excelente: 'bg-emerald-50 text-emerald-700',
+  bom: 'bg-green-50 text-green-600',
+  atencao: 'bg-amber-50 text-amber-600',
+  critico: 'bg-red-50 text-red-600',
+  sem_dados: 'bg-slate-100 text-slate-400',
+}
+
+const bandLabels: Record<string, string> = {
+  excelente: 'Excelente',
+  bom: 'Bom',
+  atencao: 'Atenção',
+  critico: 'Crítico',
+  sem_dados: 'Sem dados',
+}
+
+function BandBadge({ band }: { band: string }) {
+  return (
+    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${bandColors[band] || 'bg-slate-100 text-slate-400'}`}>
+      {bandLabels[band] || band}
+    </span>
+  )
+}
+
+function CsoChart({ scores }: { scores: CsoScore[] }) {
+  // Reverse to chronological order (API returns DESC)
+  const data = [...scores].reverse().filter(s => s.final_score != null)
+  if (data.length === 0) {
+    return <p className="text-xs text-slate-400 text-center py-16">Sem dados suficientes para gráfico</p>
+  }
+
+  const W = 600
+  const H = 160
+  const PAD_X = 40
+  const PAD_Y = 20
+  const chartW = W - PAD_X * 2
+  const chartH = H - PAD_Y * 2
+
+  const maxScore = 100
+  const xStep = data.length > 1 ? chartW / (data.length - 1) : chartW / 2
+
+  const toPoint = (idx: number, value: number) => ({
+    x: PAD_X + (data.length > 1 ? idx * xStep : chartW / 2),
+    y: PAD_Y + chartH - (value / maxScore) * chartH,
+  })
+
+  // Final score line
+  const finalPoints = data.map((s, i) => toPoint(i, Number(s.final_score)))
+  const finalPath = finalPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+
+  // Core score line
+  const corePoints = data.filter(s => s.core_score != null).map((s, i) => {
+    const idx = data.indexOf(s)
+    return toPoint(idx, Number(s.core_score))
+  })
+  const corePath = corePoints.length > 1 ? corePoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ') : ''
+
+  // Band zones
+  const zones = [
+    { y: 0, h: 30, color: 'rgba(239, 68, 68, 0.04)' },   // critico
+    { y: 30, h: 20, color: 'rgba(245, 158, 11, 0.04)' },  // atencao
+    { y: 50, h: 20, color: 'rgba(34, 197, 94, 0.04)' },   // bom
+    { y: 70, h: 30, color: 'rgba(16, 185, 129, 0.04)' },  // excelente
+  ]
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+      {/* Band zones */}
+      {zones.map((z, i) => (
+        <rect key={i}
+          x={PAD_X} y={PAD_Y + chartH - ((z.y + z.h) / 100) * chartH}
+          width={chartW} height={(z.h / 100) * chartH}
+          fill={z.color} />
+      ))}
+
+      {/* Grid lines */}
+      {[0, 25, 50, 75, 100].map(v => {
+        const y = PAD_Y + chartH - (v / 100) * chartH
+        return (
+          <g key={v}>
+            <line x1={PAD_X} y1={y} x2={PAD_X + chartW} y2={y} stroke="#e2e8f0" strokeWidth={0.5} />
+            <text x={PAD_X - 6} y={y + 3} textAnchor="end" fill="#94a3b8" fontSize={9}>{v}</text>
+          </g>
+        )
+      })}
+
+      {/* Core line (dashed, lighter) */}
+      {corePath && (
+        <path d={corePath} fill="none" stroke="#0d737766" strokeWidth={1.5} strokeDasharray="4,3" />
+      )}
+
+      {/* Final score line */}
+      <path d={finalPath} fill="none" stroke={TDAH_COLOR} strokeWidth={2.5} strokeLinejoin="round" />
+
+      {/* Dots */}
+      {finalPoints.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={3.5} fill="white" stroke={TDAH_COLOR} strokeWidth={2} />
+      ))}
+
+      {/* Legend */}
+      <line x1={PAD_X} y1={H - 4} x2={PAD_X + 15} y2={H - 4} stroke={TDAH_COLOR} strokeWidth={2} />
+      <text x={PAD_X + 18} y={H - 1} fill="#64748b" fontSize={8}>Final</text>
+      <line x1={PAD_X + 50} y1={H - 4} x2={PAD_X + 65} y2={H - 4} stroke="#0d737766" strokeWidth={1.5} strokeDasharray="4,3" />
+      <text x={PAD_X + 68} y={H - 1} fill="#64748b" fontSize={8}>Base</text>
+    </svg>
+  )
+}
+
 export default function PacienteDetalhePage() {
   const { id } = useParams()
   const router = useRouter()
@@ -137,9 +258,11 @@ export default function PacienteDetalhePage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [protocols, setProtocols] = useState<Protocol[]>([])
   const [library, setLibrary] = useState<LibraryProtocol[]>([])
+  const [scores, setScores] = useState<CsoScore[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingSessions, setLoadingSessions] = useState(true)
   const [loadingProtocols, setLoadingProtocols] = useState(true)
+  const [loadingScores, setLoadingScores] = useState(true)
   const [showLibrary, setShowLibrary] = useState(false)
   const [activating, setActivating] = useState<string | null>(null)
 
@@ -196,9 +319,19 @@ export default function PacienteDetalhePage() {
     setActivating(null)
   }
 
+  const fetchScores = useCallback(() => {
+    if (!id) return
+    setLoadingScores(true)
+    fetch(`/api/tdah/scores?patient_id=${id}&limit=20`)
+      .then(r => r.json())
+      .then(d => { setScores(d.scores || []); setLoadingScores(false) })
+      .catch(() => setLoadingScores(false))
+  }, [id])
+
   useEffect(() => { fetchPatient() }, [fetchPatient])
   useEffect(() => { fetchSessions() }, [fetchSessions])
   useEffect(() => { fetchProtocols() }, [fetchProtocols])
+  useEffect(() => { fetchScores() }, [fetchScores])
 
   if (loading) {
     return (
@@ -454,11 +587,58 @@ export default function PacienteDetalhePage() {
         )}
       </div>
 
-      {/* Placeholder: CSO graphs future */}
-      <div className="mt-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 p-6 text-center">
-        <p className="text-xs text-slate-400">
-          Gráficos CSO-TDAH e layer AuDHD serão exibidos aqui em fase futura.
-        </p>
+      {/* Gráfico CSO-TDAH */}
+      <div className="mt-6 bg-white rounded-xl border border-slate-100 p-5">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Evolução CSO-TDAH</h2>
+
+        {loadingScores ? (
+          <div className="animate-pulse bg-slate-50 rounded-lg h-48" />
+        ) : scores.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-xs text-slate-400">Nenhum score CSO registrado ainda.</p>
+            <p className="text-[10px] text-slate-300 mt-1">Scores são gerados automaticamente ao fechar sessões.</p>
+          </div>
+        ) : (
+          <>
+            {/* Mini chart: SVG line chart */}
+            <div className="relative h-48 mb-4">
+              <CsoChart scores={scores} />
+            </div>
+
+            {/* Score history table */}
+            <div className="space-y-1.5">
+              {scores.slice(0, 8).map(s => (
+                <div key={s.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-slate-400 w-16">
+                      {new Date(s.snapshot_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </span>
+                    {s.session_number && (
+                      <span className="text-[10px] text-slate-400">#{s.session_number}</span>
+                    )}
+                    <div className="flex items-center gap-2">
+                      {s.core_score != null && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-teal-50 text-teal-700">Base: {Number(s.core_score).toFixed(0)}</span>
+                      )}
+                      {s.executive_score != null && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">Exec: {Number(s.executive_score).toFixed(0)}</span>
+                      )}
+                      {s.audhd_layer_score != null && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700">AuDHD: {Number(s.audhd_layer_score).toFixed(0)}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold" style={{ color: TDAH_COLOR }}>
+                      {s.final_score != null ? Number(s.final_score).toFixed(0) : '—'}
+                    </span>
+                    <BandBadge band={s.final_band} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal: Biblioteca de Protocolos */}
