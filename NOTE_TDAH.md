@@ -39,6 +39,9 @@
 | 13/03/2026 | API protocolos paciente (GET/POST) | `app/api/tdah/protocols/route.ts` |
 | 13/03/2026 | API protocolo por ID (GET/PATCH) | `app/api/tdah/protocols/[id]/route.ts` |
 | 13/03/2026 | Seção protocolos na ficha do paciente | `app/tdah/pacientes/[id]/page.tsx` — com modal biblioteca |
+| 13/03/2026 | API sessão por ID (GET/PATCH open/close/cancel) | `app/api/tdah/sessions/[id]/route.ts` |
+| 13/03/2026 | API observations (POST com validação Bible §7-§9) | `app/api/tdah/observations/route.ts` |
+| 13/03/2026 | Página condução de sessão | `app/tdah/sessoes/[id]/page.tsx` — abrir, registrar, fechar |
 
 ### 🔄 EM ANDAMENTO
 
@@ -46,7 +49,7 @@
 |------|--------|----------|
 | - | - | - |
 
-### ❌ PRÓXIMOS (Fase 4)
+### ❌ PRÓXIMOS (Fase 5)
 
 | # | Item | Dependência |
 |---|------|-------------|
@@ -54,7 +57,7 @@
 | 2 | Gráficos CSO-TDAH na ficha do paciente | Motor CSO + API scores |
 | 3 | Layer AuDHD na ficha do paciente | Motor CSO bloco C |
 | 4 | Relatórios TDAH | Sessões + protocolos |
-| 5 | Registro de trials/observações nas sessões | API observations |
+| 5 | DRC (Daily Report Card) — contexto escolar | API + UI |
 
 ---
 
@@ -130,6 +133,18 @@
 - PATCH: timestamps automáticos (started_at, mastered_at, archived_at) conforme status
 - Ficha do paciente atualizada: seção protocolos ativos + modal biblioteca com 46 protocolos
 - Modal mostra código, bloco, priority, badge AuDHD, botão ativar (com proteção de duplicata)
+
+### 13/03/2026 — Sessão 6
+- Fase 4: Condução de sessão e registro de observações
+- API session [id]: GET (sessão + observações + protocolos ativos), PATCH (open/close/cancel + notes)
+- PATCH close: calcula duration_minutes automático a partir de started_at
+- Bible §11 enforced: sessão fechada é imutável (rejeita PATCH com action)
+- API observations: POST com validação completa de todos os enums (PIS, BSS, EXR, SEN, TRF, RIG)
+- Verifica sessão in_progress antes de aceitar observação
+- Verifica protocolo ativo do paciente se protocol_id informado
+- Página condução de sessão: breadcrumb, status badges, botões abrir/fechar
+- Modal registro de observação: protocolo selector, tarefa, camada base (SAS/PIS/BSS), executiva (EXR), notas
+- Timeline de observações com badges coloridos por métrica
 
 ---
 
