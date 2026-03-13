@@ -26,6 +26,7 @@ interface SessionData {
   ended_at: string | null
   duration_minutes: number | null
   session_notes: string | null
+  audhd_layer_status: string | null
 }
 
 interface Observation {
@@ -83,6 +84,32 @@ const EXR_OPTIONS = [
   { value: 'nao_realiza', label: 'Não realiza' },
 ]
 
+const SEN_OPTIONS = [
+  { value: 'sem_impacto', label: 'Sem impacto' },
+  { value: 'impacto_moderado', label: 'Impacto moderado' },
+  { value: 'impacto_significativo', label: 'Impacto significativo' },
+]
+
+const TRF_OPTIONS = [
+  { value: 'transicao_fluida', label: 'Transição fluida' },
+  { value: 'com_resistencia', label: 'Com resistência' },
+  { value: 'com_ruptura', label: 'Com ruptura' },
+]
+
+const RIG_STATE_OPTIONS = [
+  { value: 'balanced', label: 'Equilibrado' },
+  { value: 'rigidity_leaning', label: 'Tendência rigidez' },
+  { value: 'impulsivity_leaning', label: 'Tendência impulsividade' },
+  { value: 'dual_risk', label: 'Risco duplo' },
+]
+
+const RIG_SEVERITY_OPTIONS = [
+  { value: 'none', label: 'Nenhuma' },
+  { value: 'mild', label: 'Leve' },
+  { value: 'moderate', label: 'Moderada' },
+  { value: 'high', label: 'Alta' },
+]
+
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
@@ -112,6 +139,10 @@ export default function SessaoConduzirPage() {
     pis_level: '',
     bss_level: '',
     exr_level: '',
+    sen_level: '',
+    trf_level: '',
+    rig_state: '',
+    rig_severity: '',
     observation_notes: '',
   })
 
@@ -158,6 +189,7 @@ export default function SessaoConduzirPage() {
   const resetForm = () => setForm({
     protocol_id: '', task_block_number: '', task_description: '',
     sas_score: '', pis_level: '', bss_level: '', exr_level: '',
+    sen_level: '', trf_level: '', rig_state: '', rig_severity: '',
     observation_notes: '',
   })
 
@@ -177,6 +209,10 @@ export default function SessaoConduzirPage() {
           pis_level: form.pis_level || null,
           bss_level: form.bss_level || null,
           exr_level: form.exr_level || null,
+          sen_level: form.sen_level || null,
+          trf_level: form.trf_level || null,
+          rig_state: form.rig_state || null,
+          rig_severity: form.rig_severity || null,
           observation_notes: form.observation_notes.trim() || null,
         }),
       })
@@ -219,6 +255,8 @@ export default function SessaoConduzirPage() {
   const isOpen = session.status === 'in_progress'
   const isClosed = session.status === 'completed'
   const isScheduled = session.status === 'scheduled'
+  const audhdActive = session.audhd_layer_status && session.audhd_layer_status !== 'off'
+  const audhdFull = session.audhd_layer_status === 'active_full'
 
   return (
     <div className="px-4 md:px-8 lg:px-12 xl:px-16 py-6 max-w-4xl mx-auto">
@@ -242,6 +280,11 @@ export default function SessaoConduzirPage() {
             <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${contextColors[session.session_context]}`}>
               {contextLabels[session.session_context]}
             </span>
+            {audhdActive && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-600">
+                AuDHD {audhdFull ? 'Full' : 'Core'}
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-400 mt-1">
             {formatDatetime(session.scheduled_at)}
@@ -344,6 +387,11 @@ export default function SessaoConduzirPage() {
                   {obs.sen_level && (
                     <span className="text-[11px] px-2 py-0.5 rounded bg-purple-50 text-purple-700">
                       SEN: {obs.sen_level}
+                    </span>
+                  )}
+                  {obs.trf_level && (
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-fuchsia-50 text-fuchsia-700">
+                      TRF: {obs.trf_level}
                     </span>
                   )}
                   {obs.rig_state && (
@@ -466,6 +514,59 @@ export default function SessaoConduzirPage() {
                   </select>
                 </div>
               </div>
+
+              {/* Camada AuDHD — só aparece se layer ativa (Bible §9) */}
+              {audhdActive && (
+                <div className="pt-2 border-t border-slate-100">
+                  <p className="text-xs font-medium text-purple-500 mb-3 uppercase tracking-wide">Layer AuDHD (§9)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">SEN</label>
+                      <select value={form.sen_level} onChange={e => setForm({ ...form, sen_level: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
+                        onFocus={e => (e.currentTarget.style.borderColor = '#7c3aed')}
+                        onBlur={e => (e.currentTarget.style.borderColor = '')}>
+                        <option value="">—</option>
+                        {SEN_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">TRF</label>
+                      <select value={form.trf_level} onChange={e => setForm({ ...form, trf_level: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
+                        onFocus={e => (e.currentTarget.style.borderColor = '#7c3aed')}
+                        onBlur={e => (e.currentTarget.style.borderColor = '')}>
+                        <option value="">—</option>
+                        {TRF_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {audhdFull && (
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">RIG estado</label>
+                        <select value={form.rig_state} onChange={e => setForm({ ...form, rig_state: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
+                          onFocus={e => (e.currentTarget.style.borderColor = '#7c3aed')}
+                          onBlur={e => (e.currentTarget.style.borderColor = '')}>
+                          <option value="">—</option>
+                          {RIG_STATE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">RIG severidade</label>
+                        <select value={form.rig_severity} onChange={e => setForm({ ...form, rig_severity: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
+                          onFocus={e => (e.currentTarget.style.borderColor = '#7c3aed')}
+                          onBlur={e => (e.currentTarget.style.borderColor = '')}>
+                          <option value="">—</option>
+                          {RIG_SEVERITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Notas */}
               <div>

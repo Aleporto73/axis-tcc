@@ -42,6 +42,12 @@
 | 13/03/2026 | API sessão por ID (GET/PATCH open/close/cancel) | `app/api/tdah/sessions/[id]/route.ts` |
 | 13/03/2026 | API observations (POST com validação Bible §7-§9) | `app/api/tdah/observations/route.ts` |
 | 13/03/2026 | Página condução de sessão | `app/tdah/sessoes/[id]/page.tsx` — abrir, registrar, fechar |
+| 13/03/2026 | CSO-TDAH adapter + snapshot automático | `src/engines/cso-tdah-adapter.ts`, API session close |
+| 13/03/2026 | API scores CSO-TDAH (GET) | `app/api/tdah/scores/route.ts` |
+| 13/03/2026 | Gráfico SVG evolução CSO na ficha | `app/tdah/pacientes/[id]/page.tsx` |
+| 13/03/2026 | Sessões clicáveis (Link → condução) | `app/tdah/sessoes/page.tsx`, ficha paciente |
+| 13/03/2026 | Layer AuDHD toggle (API PATCH + UI + audit log) | `app/api/tdah/patients/[id]/route.ts`, ficha paciente |
+| 13/03/2026 | Form observação com campos AuDHD condicionais | `app/tdah/sessoes/[id]/page.tsx` — SEN/TRF/RIG se layer ativa |
 
 ### 🔄 EM ANDAMENTO
 
@@ -54,10 +60,10 @@
 | # | Item | Dependência |
 |---|------|-------------|
 | 1 | Página produto TDAH (`/produto/tdah`) | - |
-| 2 | Layer AuDHD ativação/desativação na ficha | Motor CSO bloco C |
-| 3 | DRC (Daily Report Card) — contexto escolar | API + UI |
-| 4 | Relatórios TDAH (PDF/imprimível) | Snapshots + protocolos |
-| 5 | Link sessão → condução na lista de sessões | UI |
+| 2 | DRC (Daily Report Card) — contexto escolar | API + UI |
+| 3 | Relatórios TDAH (PDF/imprimível) | Snapshots + protocolos |
+| 4 | Dashboard TDAH (métricas reais) | Scores + sessões |
+| 5 | Edição de dados do paciente | API PATCH paciente |
 
 ---
 
@@ -157,6 +163,20 @@
 - Gráfico SVG na ficha do paciente: linha final_score + core_score (dashed), zonas de banda
 - Tabela de scores com badges por bloco (Base/Exec/AuDHD) e band badge
 - Pipeline completo: Obs → Adapter → Motor → Snapshot → Gráfico
+
+### 13/03/2026 — Sessão 8
+- Fase 6a: Layer AuDHD completa
+- API PATCH paciente: toggle audhd_layer_status (off / active_core / active_full)
+- Audit log: toda mudança grava em tdah_audhd_log (append-only, Bible §9.3)
+- Registra: previous_status, new_status, changed_by, reason, engine_version
+- Ficha do paciente: card AuDHD com 3 botões de estado + badge
+- Modal de confirmação com campo "motivo clínico" (opcional)
+- Borda roxa (#7c3aed) diferencia visualmente da cor TDAH
+- Condução de sessão: campos SEN + TRF aparecem se layer ≠ off
+- Campos RIG (estado + severidade) só aparecem se layer = active_full
+- Badge "AuDHD Core/Full" no header da sessão
+- Badge TRF adicionado na timeline de observações
+- API session GET agora inclui audhd_layer_status do paciente
 
 ---
 

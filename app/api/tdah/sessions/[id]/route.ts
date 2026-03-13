@@ -23,7 +23,7 @@ export async function GET(
     const result = await withTenant(async (ctx) => {
       // Sessão com paciente
       const session = await ctx.client.query(
-        `SELECT s.*, p.name as patient_name
+        `SELECT s.*, p.name as patient_name, p.audhd_layer_status
          FROM tdah_sessions s
          JOIN tdah_patients p ON p.id = s.patient_id
          WHERE s.id = $1 AND s.tenant_id = $2`,

@@ -28,6 +28,8 @@ interface Patient {
   clinical_notes: string | null
   status: string
   audhd_layer_status: string | null
+  audhd_layer_activated_at: string | null
+  audhd_layer_reason: string | null
   total_sessions: number
   active_protocols: number
   created_at: string
@@ -265,6 +267,9 @@ export default function PacienteDetalhePage() {
   const [loadingScores, setLoadingScores] = useState(true)
   const [showLibrary, setShowLibrary] = useState(false)
   const [activating, setActivating] = useState<string | null>(null)
+  const [togglingAudhd, setTogglingAudhd] = useState(false)
+  const [audhdReason, setAudhdReason] = useState('')
+  const [showAudhdConfirm, setShowAudhdConfirm] = useState<string | null>(null)
 
   const fetchPatient = useCallback(() => {
     if (!id) return
@@ -317,6 +322,26 @@ export default function PacienteDetalhePage() {
       }
     } catch { /* silent */ }
     setActivating(null)
+  }
+
+  const toggleAudhd = async (newStatus: string) => {
+    setTogglingAudhd(true)
+    try {
+      const res = await fetch(`/api/tdah/patients/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audhd_layer_status: newStatus,
+          audhd_layer_reason: audhdReason.trim() || null,
+        }),
+      })
+      if (res.ok) {
+        fetchPatient()
+        setAudhdReason('')
+        setShowAudhdConfirm(null)
+      }
+    } catch { /* silent */ }
+    setTogglingAudhd(false)
   }
 
   const fetchScores = useCallback(() => {
@@ -492,6 +517,107 @@ export default function PacienteDetalhePage() {
           )}
         </div>
       </div>
+
+      {/* Layer AuDHD — Bible §9 */}
+      <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6" style={{ borderLeftColor: '#7c3aed', borderLeftWidth: '3px' }}>
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2">
+              Layer AuDHD
+              <span className="text-[10px] font-normal normal-case text-slate-400">(Bible §9)</span>
+            </h2>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Camada de sobreposição autismo + TDAH. Ativa métricas SEN, TRF, RIG e MSK.
+            </p>
+          </div>
+          {patient.audhd_layer_status && patient.audhd_layer_status !== 'off' && (
+            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-600">
+              {patient.audhd_layer_status === 'active_core' ? 'Core' : 'Completa'}
+            </span>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          {(['off', 'active_core', 'active_full'] as const).map(status => {
+            const labels: Record<string, string> = { off: 'Desativada', active_core: 'Core (SEN + TRF)', active_full: 'Completa (+ RIG + MSK)' }
+            const isActive = patient.audhd_layer_status === status
+            return (
+              <button
+                key={status}
+                onClick={() => {
+                  if (!isActive) {
+                    setShowAudhdConfirm(status)
+                    setAudhdReason('')
+                  }
+                }}
+                disabled={togglingAudhd}
+                className={`flex-1 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border ${
+                  isActive
+                    ? 'border-purple-300 bg-purple-50 text-purple-700'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+                } disabled:opacity-50`}
+              >
+                {isActive && <span className="mr-1">●</span>}
+                {labels[status]}
+              </button>
+            )
+          })}
+        </div>
+
+        {patient.audhd_layer_reason && (
+          <p className="text-[10px] text-slate-400 mt-2 italic">Motivo: {patient.audhd_layer_reason}</p>
+        )}
+        {patient.audhd_layer_activated_at && patient.audhd_layer_status !== 'off' && (
+          <p className="text-[10px] text-slate-300 mt-1">
+            Ativada em {new Date(patient.audhd_layer_activated_at).toLocaleDateString('pt-BR')}
+          </p>
+        )}
+      </div>
+
+      {/* Modal confirmação AuDHD toggle */}
+      {showAudhdConfirm && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+            <div className="p-6 border-b border-slate-100">
+              <h2 className="font-serif text-lg font-light text-slate-800">Alterar Layer AuDHD</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                {showAudhdConfirm === 'off' ? 'Desativar' : showAudhdConfirm === 'active_core' ? 'Ativar modo Core' : 'Ativar modo Completo'}
+                {' '}— esta ação será registrada no log de auditoria.
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Motivo clínico (opcional)</label>
+                <textarea
+                  value={audhdReason}
+                  onChange={e => setAudhdReason(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none resize-none"
+                  onFocus={e => (e.currentTarget.style.borderColor = '#7c3aed')}
+                  onBlur={e => (e.currentTarget.style.borderColor = '')}
+                  placeholder="Ex: Avaliação aponta sobreposição autismo/TDAH"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
+              <button
+                onClick={() => { setShowAudhdConfirm(null); setAudhdReason('') }}
+                className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => toggleAudhd(showAudhdConfirm)}
+                disabled={togglingAudhd}
+                className="px-5 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                style={{ backgroundColor: '#7c3aed' }}
+              >
+                {togglingAudhd ? 'Salvando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sessões recentes */}
       <div className="bg-white rounded-xl border border-slate-100 p-5">
