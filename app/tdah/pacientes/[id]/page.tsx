@@ -511,7 +511,7 @@ export default function PacienteDetalhePage() {
         ) : (
           <div className="space-y-2">
             {sessions.slice(0, 5).map(s => (
-              <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+              <Link key={s.id} href={`/tdah/sessoes/${s.id}`} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all cursor-pointer">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: TDAH_COLOR }}>
                     {s.session_number || '#'}
@@ -527,7 +527,7 @@ export default function PacienteDetalhePage() {
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusColors[s.status] || 'bg-slate-100 text-slate-500'}`}>
                   {statusLabels[s.status] || s.status}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         )}

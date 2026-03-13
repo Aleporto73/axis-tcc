@@ -74,11 +74,12 @@ function formatDatetime(iso: string): string {
 
 function SessionCard({ s, highlight }: { s: Session; highlight?: boolean }) {
   return (
-    <div
-      className={`flex items-center justify-between p-4 rounded-xl border cursor-default transition-all ${
+    <Link
+      href={`/tdah/sessoes/${s.id}`}
+      className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
         highlight
-          ? 'border-slate-200 bg-gradient-to-r from-teal-50/50 to-transparent'
-          : 'border-slate-200 hover:border-slate-300'
+          ? 'border-slate-200 bg-gradient-to-r from-teal-50/50 to-transparent hover:shadow-sm'
+          : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
       }`}
     >
       <div className="flex items-center gap-4">
@@ -87,9 +88,9 @@ function SessionCard({ s, highlight }: { s: Session; highlight?: boolean }) {
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <Link href={`/tdah/pacientes/${s.patient_id}`} className="text-sm font-medium text-slate-800 hover:underline">
+            <span className="text-sm font-medium text-slate-800">
               {s.patient_name}
-            </Link>
+            </span>
             {s.session_number && (
               <span className="text-[10px] text-slate-400">#{s.session_number}</span>
             )}
@@ -107,7 +108,7 @@ function SessionCard({ s, highlight }: { s: Session; highlight?: boolean }) {
       <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${statusColors[s.status] || 'bg-slate-100 text-slate-500'}`}>
         {statusLabels[s.status] || s.status}
       </span>
-    </div>
+    </Link>
   )
 }
 
