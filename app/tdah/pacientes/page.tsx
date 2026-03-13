@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRole } from '@/app/components/RoleProvider'
-import UpgradeModal from '@/app/components/UpgradeModal'
+import UpgradeModalTDAH from '@/app/components/UpgradeModalTDAH'
 
 // =====================================================
 // AXIS TDAH - Página de Pacientes
@@ -248,7 +248,7 @@ export default function PacientesTDAHPage() {
         )}
       </div>
 
-      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+      <UpgradeModalTDAH open={showUpgrade} onClose={() => setShowUpgrade(false)} />
 
       {/* Modal: Novo Paciente */}
       {showModal && (
