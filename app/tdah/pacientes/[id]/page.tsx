@@ -270,6 +270,10 @@ export default function PacienteDetalhePage() {
   const [togglingAudhd, setTogglingAudhd] = useState(false)
   const [audhdReason, setAudhdReason] = useState('')
   const [showAudhdConfirm, setShowAudhdConfirm] = useState<string | null>(null)
+  const [guardians, setGuardians] = useState<{ id: string; name: string; email: string | null; phone: string | null; relationship: string | null; is_primary: boolean }[]>([])
+  const [showGuardianForm, setShowGuardianForm] = useState(false)
+  const [savingGuardian, setSavingGuardian] = useState(false)
+  const [guardianForm, setGuardianForm] = useState({ name: '', email: '', phone: '', relationship: '', is_primary: false })
   const [showEdit, setShowEdit] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -414,10 +418,44 @@ export default function PacienteDetalhePage() {
       .catch(() => setLoadingScores(false))
   }, [id])
 
+  const fetchGuardians = useCallback(() => {
+    if (!id) return
+    fetch(`/api/tdah/guardians?patient_id=${id}`)
+      .then(r => r.json())
+      .then(d => setGuardians(d.guardians || []))
+      .catch(() => {})
+  }, [id])
+
+  const saveGuardian = async () => {
+    if (!guardianForm.name.trim()) return
+    setSavingGuardian(true)
+    try {
+      const res = await fetch('/api/tdah/guardians', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient_id: id, ...guardianForm, name: guardianForm.name.trim() }),
+      })
+      if (res.ok) {
+        fetchGuardians()
+        setShowGuardianForm(false)
+        setGuardianForm({ name: '', email: '', phone: '', relationship: '', is_primary: false })
+      }
+    } catch { /* silent */ }
+    setSavingGuardian(false)
+  }
+
+  const removeGuardian = async (gid: string) => {
+    try {
+      const res = await fetch(`/api/tdah/guardians/${gid}`, { method: 'DELETE' })
+      if (res.ok) fetchGuardians()
+    } catch { /* silent */ }
+  }
+
   useEffect(() => { fetchPatient() }, [fetchPatient])
   useEffect(() => { fetchSessions() }, [fetchSessions])
   useEffect(() => { fetchProtocols() }, [fetchProtocols])
   useEffect(() => { fetchScores() }, [fetchScores])
+  useEffect(() => { fetchGuardians() }, [fetchGuardians])
 
   if (loading) {
     return (
@@ -589,6 +627,124 @@ export default function PacienteDetalhePage() {
           )}
         </div>
       </div>
+
+      {/* Responsáveis (Bible §18, §27) */}
+      <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Responsáveis</h2>
+          <button
+            onClick={() => setShowGuardianForm(true)}
+            className="text-xs font-medium px-3 py-1 rounded-lg border transition-colors"
+            style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+          >
+            + Adicionar
+          </button>
+        </div>
+
+        {guardians.length === 0 ? (
+          <p className="text-xs text-slate-400 py-4 text-center">Nenhum responsável cadastrado</p>
+        ) : (
+          <div className="space-y-2">
+            {guardians.map(g => (
+              <div key={g.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 text-[10px] font-bold text-slate-500">
+                    {g.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-slate-700">{g.name}</p>
+                      {g.is_primary && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-teal-50 text-teal-600">Principal</span>
+                      )}
+                      {g.relationship && (
+                        <span className="text-[10px] text-slate-400">{g.relationship}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      {g.phone && <span className="text-[10px] text-slate-400">{g.phone}</span>}
+                      {g.email && <span className="text-[10px] text-slate-400">{g.email}</span>}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => removeGuardian(g.id)}
+                  className="text-slate-300 hover:text-red-400 transition-colors p-1"
+                  title="Remover"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal: Adicionar responsável */}
+      {showGuardianForm && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+            <div className="p-6 border-b border-slate-100">
+              <h2 className="font-serif text-lg font-light text-slate-800">Novo Responsável</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Nome *</label>
+                <input type="text" value={guardianForm.name} onChange={e => setGuardianForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Telefone</label>
+                  <input type="tel" value={guardianForm.phone} onChange={e => setGuardianForm(f => ({ ...f, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
+                  <input type="email" value={guardianForm.email} onChange={e => setGuardianForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Parentesco</label>
+                  <select value={guardianForm.relationship} onChange={e => setGuardianForm(f => ({ ...f, relationship: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377] bg-white">
+                    <option value="">—</option>
+                    <option value="Mãe">Mãe</option>
+                    <option value="Pai">Pai</option>
+                    <option value="Avó/Avô">Avó/Avô</option>
+                    <option value="Tutor">Tutor</option>
+                    <option value="Outro">Outro</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 cursor-pointer pb-2">
+                    <input type="checkbox" checked={guardianForm.is_primary}
+                      onChange={e => setGuardianForm(f => ({ ...f, is_primary: e.target.checked }))}
+                      className="rounded border-slate-300" />
+                    <span className="text-xs text-slate-600">Responsável principal</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
+              <button onClick={() => setShowGuardianForm(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={saveGuardian} disabled={savingGuardian || !guardianForm.name.trim()}
+                className="px-5 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                style={{ backgroundColor: TDAH_COLOR }}>
+                {savingGuardian ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DRC — Daily Report Card (Bible §17) */}
       <div className="bg-white rounded-xl border border-slate-100 p-4 mb-6 flex items-center justify-between">
