@@ -29,6 +29,12 @@
 | 13/03/2026 | Sidebar TDAH | `app/components/SidebarTDAH.tsx` — cor #0d7377, role-aware |
 | 13/03/2026 | Dashboard TDAH (placeholder) | `app/tdah/dashboard/page.tsx` |
 | 13/03/2026 | Redirect /tdah → /tdah/dashboard | `app/tdah/page.tsx` |
+| 13/03/2026 | API pacientes TDAH (GET + POST) | `app/api/tdah/patients/route.ts` |
+| 13/03/2026 | API paciente por ID (GET) | `app/api/tdah/patients/[id]/route.ts` |
+| 13/03/2026 | API sessões TDAH (GET + POST) | `app/api/tdah/sessions/route.ts` |
+| 13/03/2026 | Página lista pacientes TDAH | `app/tdah/pacientes/page.tsx` |
+| 13/03/2026 | Página detalhe paciente TDAH | `app/tdah/pacientes/[id]/page.tsx` |
+| 13/03/2026 | Página sessões TDAH (tricontextual) | `app/tdah/sessoes/page.tsx` |
 
 ### 🔄 EM ANDAMENTO
 
@@ -36,15 +42,15 @@
 |------|--------|----------|
 | - | - | - |
 
-### ❌ PRÓXIMOS (Fase 2)
+### ❌ PRÓXIMOS (Fase 3)
 
 | # | Item | Dependência |
 |---|------|-------------|
 | 1 | Página produto TDAH (`/produto/tdah`) | - |
-| 2 | API pacientes TDAH | - |
-| 3 | Página pacientes TDAH | API pacientes |
-| 4 | API sessões TDAH | - |
-| 5 | Página sessões TDAH | API sessões |
+| 2 | Gráficos CSO-TDAH na ficha do paciente | Motor CSO + API scores |
+| 3 | Gestão de protocolos (ativar/desativar) | API protocolos |
+| 4 | Layer AuDHD na ficha do paciente | Motor CSO bloco C |
+| 5 | Relatórios TDAH | Sessões + protocolos |
 
 ---
 
@@ -100,6 +106,17 @@
 - Aguardando aplicação da 023 na VPS
 - Migration 023 aplicada com sucesso: 46 protocolos no banco (42 P1 + 4 P1.1)
 - Criada skill `skills/skill_axis_clone_aba_tdah.md` — guia de conversão ABA→TDAH
+
+### 13/03/2026 — Sessão 4
+- Fase 2 completa: APIs + páginas frontend TDAH
+- API pacientes: GET (lista com contadores) + POST (com plan limit + auto-guardian)
+- API paciente por ID: GET com subqueries total_sessions e active_protocols
+- API sessões: GET (filtros patient_id, status, context) + POST (auto session_number)
+- Página pacientes: lista com avatar, idade, escola, modal criação completo (dados clínicos + escolares + responsável)
+- Página detalhe paciente: métricas, dados clínicos/escolares, sessões recentes, placeholder Fase 3
+- Página sessões: tricontextual (clínico/domiciliar/escolar), filtros status + contexto, modal agendamento com seletor visual de contexto
+- Todas as páginas usam cor #0d7377, padrão visual consistente com ABA
+- Diferenças TDAH: terapeuta filtra por created_by (sem tabela vínculo), sessão tricontextual, campos escola/professor
 
 ---
 
