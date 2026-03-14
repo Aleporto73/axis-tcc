@@ -396,7 +396,7 @@ const REPORT_TYPES = [
   {
     key: 'evolucao', title: 'Relatório de Evolução', preview: true,
     desc: 'Progresso terapêutico com gráficos CSO-TDAH, dimensões, protocolos e DRC.',
-    icon: <svg className="w-5 h-5" style={{ color: '#0d7377' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>,
+    icon: <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>,
   },
   {
     key: 'drc', title: 'Relatório DRC Escolar', preview: false,
@@ -587,15 +587,15 @@ export default function DemoTDAHRelatoriosPage() {
                 onClick={() => { if (r.preview) setShowReport(true) }}
                 className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${
                   r.preview
-                    ? 'border-slate-200 hover:border-[#0d7377]/40 hover:shadow-sm cursor-pointer group'
+                    ? 'border-slate-200 hover:border-orange-400 hover:shadow-sm cursor-pointer group'
                     : 'border-slate-200 bg-slate-50/50 cursor-default'
                 }`}
               >
                 <div className="mt-0.5 shrink-0">{r.icon}</div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className={`text-sm font-medium ${r.preview ? 'text-slate-700 group-hover:text-[#0d7377]' : 'text-slate-500'}`}>{r.title}</p>
-                    {r.preview && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[#0d7377]/10 text-[#0d7377] uppercase">Preview</span>}
+                    <p className={`text-sm font-medium ${r.preview ? 'text-slate-700 group-hover:text-orange-600' : 'text-slate-500'}`}>{r.title}</p>
+                    {r.preview && <span className="px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-600 uppercase tracking-wide">Preview</span>}
                     {!r.preview && (
                       <svg className="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -603,7 +603,7 @@ export default function DemoTDAHRelatoriosPage() {
                     )}
                   </div>
                   <p className="text-[11px] text-slate-400 mt-0.5">{r.desc}</p>
-                  {r.preview && <p className="text-[10px] text-[#0d7377] mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">Clique para visualizar →</p>}
+                  {r.preview && <p className="text-[11px] text-orange-500 font-medium mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">Clique para visualizar →</p>}
                 </div>
               </button>
             ))}
