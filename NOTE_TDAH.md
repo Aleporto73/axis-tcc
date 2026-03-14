@@ -79,6 +79,9 @@
 | 13/03/2026 | Fase 11b — API clinical-state TDAH | `app/api/tdah/clinical-state/route.ts` |
 | 13/03/2026 | Fase 11c — API planos TDAH (GET + POST) | `app/api/tdah/plans/route.ts` |
 | 13/03/2026 | Fase 11d — API plano por ID (GET + PATCH) | `app/api/tdah/plans/[id]/route.ts` |
+| 13/03/2026 | Fase 12a — Página Plano TDAH (frontend) | `app/tdah/planos/page.tsx` |
+| 13/03/2026 | Fase 12b — Plano TDAH na sidebar | `SidebarTDAH.tsx` — admin/supervisor |
+| 13/03/2026 | Fase 12c — Registro de eventos na sessão | `app/tdah/sessoes/[id]/page.tsx` — modal + timeline |
 
 ### 🔄 EM ANDAMENTO
 
@@ -92,7 +95,6 @@
 |---|------|-------------|
 | 1 | Portal família | Aprovado — implementar (ver ABA como referência) |
 | 2 | Módulo escola completo (perfil professor, integração) | Aprovado — implementar |
-| 3 | Página Plano TDAH (frontend) | APIs prontas |
 | 6 | Módulo casa (rotina, treino parental, economia fichas) | Nenhum |
 | 7 | Testes E2E | Após desenvolvimento |
 | 8 | Deploy beta | Após testes |
@@ -342,6 +344,19 @@
   - PATCH [id]: atualiza plano + metas, ciclo de vida (draft→active→completed→archived)
   - Goals com status (active/achieved/paused/discontinued) + progress %
   - Audit log para transições de status
+- Fase 12a: Página Plano TDAH (frontend)
+  - Lista planos com progress bar (média %), goals com status badges
+  - Modal criação: paciente selector, título, descrição, metas com 14 domínios + critério de sucesso
+  - Transições de status com botões inline (como PEI do ABA)
+  - Protocolos ativos do paciente como referência
+- Fase 12b: Sidebar TDAH com link Plano
+  - Novo ícone "Plano" entre DRC e Alertas (admin/supervisor only)
+- Fase 12c: Registro de eventos na condução de sessão
+  - Botão "+ Evento" ao lado de "+ Observação"
+  - 8 tipos de evento (transition, sensory, behavioral, abc, task_avoidance, etc.)
+  - Modal com análise ABC condicional (campos A/B/C só para tipo 'abc')
+  - Intensidade (leve/moderada/alta/severa)
+  - Timeline de eventos com badges coloridos por tipo
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH

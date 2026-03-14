@@ -49,6 +49,18 @@ interface Observation {
   created_at: string
 }
 
+interface TDAHEvent {
+  id: string
+  event_type: string
+  antecedent: string | null
+  behavior: string | null
+  consequence: string | null
+  description: string | null
+  intensity: string | null
+  context: string | null
+  occurred_at: string
+}
+
 interface ActiveProtocol {
   id: string
   code: string
@@ -110,6 +122,41 @@ const RIG_SEVERITY_OPTIONS = [
   { value: 'high', label: 'Alta' },
 ]
 
+const EVENT_TYPE_OPTIONS = [
+  { value: 'transition', label: 'Transição' },
+  { value: 'sensory', label: 'Sensorial' },
+  { value: 'behavioral', label: 'Comportamental' },
+  { value: 'abc', label: 'ABC (Antecedente-Comportamento-Consequência)' },
+  { value: 'task_avoidance', label: 'Esquiva de tarefa' },
+  { value: 'task_engagement', label: 'Engajamento na tarefa' },
+  { value: 'self_regulation', label: 'Autorregulação' },
+  { value: 'other', label: 'Outro' },
+]
+
+const INTENSITY_OPTIONS = [
+  { value: 'leve', label: 'Leve' },
+  { value: 'moderada', label: 'Moderada' },
+  { value: 'alta', label: 'Alta' },
+  { value: 'severa', label: 'Severa' },
+]
+
+const eventTypeColors: Record<string, string> = {
+  transition: 'bg-amber-50 text-amber-700',
+  sensory: 'bg-purple-50 text-purple-700',
+  behavioral: 'bg-red-50 text-red-700',
+  abc: 'bg-blue-50 text-blue-700',
+  task_avoidance: 'bg-orange-50 text-orange-700',
+  task_engagement: 'bg-green-50 text-green-700',
+  self_regulation: 'bg-teal-50 text-teal-700',
+  other: 'bg-slate-100 text-slate-600',
+}
+
+const eventTypeLabels: Record<string, string> = {
+  transition: 'Transição', sensory: 'Sensorial', behavioral: 'Comportamental',
+  abc: 'ABC', task_avoidance: 'Esquiva', task_engagement: 'Engajamento',
+  self_regulation: 'Autorregulação', other: 'Outro',
+}
+
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
@@ -125,9 +172,12 @@ export default function SessaoConduzirPage() {
   const [session, setSession] = useState<SessionData | null>(null)
   const [observations, setObservations] = useState<Observation[]>([])
   const [protocols, setProtocols] = useState<ActiveProtocol[]>([])
+  const [events, setEvents] = useState<TDAHEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [showObsForm, setShowObsForm] = useState(false)
+  const [showEventForm, setShowEventForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [savingEvent, setSavingEvent] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -140,6 +190,15 @@ export default function SessaoConduzirPage() {
   const [summarySaving, setSummarySaving] = useState(false)
   const [summaryStatus, setSummaryStatus] = useState<'idle'|'sent'|'error'>('idle')
   const [summaryError, setSummaryError] = useState<string|null>(null)
+
+  const [eventForm, setEventForm] = useState({
+    event_type: 'behavioral',
+    description: '',
+    antecedent: '',
+    behavior: '',
+    consequence: '',
+    intensity: '',
+  })
 
   const [form, setForm] = useState({
     protocol_id: '',
@@ -164,11 +223,19 @@ export default function SessaoConduzirPage() {
         if (!r.ok) throw new Error('not found')
         return r.json()
       })
-      .then(d => {
+      .then(async d => {
         setSession(d.session)
         setObservations(d.observations || [])
         setProtocols(d.protocols || [])
         setLoading(false)
+        // Fetch events separately
+        try {
+          const evRes = await fetch(`/api/tdah/events?session_id=${id}`)
+          if (evRes.ok) {
+            const evData = await evRes.json()
+            setEvents(evData.events || [])
+          }
+        } catch { /* silent */ }
       })
       .catch(() => { setSession(null); setLoading(false) })
   }, [id])
@@ -396,6 +463,12 @@ export default function SessaoConduzirPage() {
           {isOpen && (
             <>
               <button
+                onClick={() => setShowEventForm(true)}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-amber-400 text-amber-600 transition-colors hover:bg-amber-50"
+              >
+                + Evento
+              </button>
+              <button
                 onClick={() => setShowObsForm(true)}
                 className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors"
                 style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
@@ -505,6 +578,40 @@ export default function SessaoConduzirPage() {
           </div>
         )}
       </div>
+
+      {/* Events section */}
+      {events.length > 0 && (
+        <div className="mt-4 bg-white rounded-xl border border-slate-100 p-5">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
+            Eventos ({events.length})
+          </h2>
+          <div className="space-y-2">
+            {events.map(ev => (
+              <div key={ev.id} className="p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
+                <div className="flex items-start justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${eventTypeColors[ev.event_type] || 'bg-slate-100 text-slate-600'}`}>
+                      {eventTypeLabels[ev.event_type] || ev.event_type}
+                    </span>
+                    {ev.intensity && (
+                      <span className="text-[10px] text-slate-400">Intensidade: {ev.intensity}</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-400">{formatTime(ev.occurred_at)}</span>
+                </div>
+                {ev.description && <p className="text-xs text-slate-600">{ev.description}</p>}
+                {ev.event_type === 'abc' && (
+                  <div className="mt-1.5 space-y-1 text-xs">
+                    {ev.antecedent && <p className="text-slate-500"><span className="font-medium text-blue-600">A:</span> {ev.antecedent}</p>}
+                    {ev.behavior && <p className="text-slate-500"><span className="font-medium text-amber-600">B:</span> {ev.behavior}</p>}
+                    {ev.consequence && <p className="text-slate-500"><span className="font-medium text-green-600">C:</span> {ev.consequence}</p>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Session notes */}
       {session.session_notes && (
@@ -681,6 +788,135 @@ export default function SessaoConduzirPage() {
                 className="px-5 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
                 style={{ backgroundColor: TDAH_COLOR }}>
                 {saving ? 'Salvando...' : 'Registrar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Novo Evento */}
+      {showEventForm && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="font-serif text-lg font-light text-slate-800">Novo Evento Clínico</h2>
+              <button onClick={() => { setShowEventForm(false); setError(null) }} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Tipo de evento *</label>
+                <select
+                  value={eventForm.event_type}
+                  onChange={e => setEventForm({ ...eventForm, event_type: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
+                >
+                  {EVENT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Descrição</label>
+                <textarea
+                  value={eventForm.description}
+                  onChange={e => setEventForm({ ...eventForm, description: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none resize-none"
+                  placeholder="Descreva o evento observado..."
+                />
+              </div>
+
+              {/* ABC fields — only if type is 'abc' */}
+              {eventForm.event_type === 'abc' && (
+                <div className="pt-2 border-t border-slate-100 space-y-3">
+                  <p className="text-xs font-medium text-blue-500 uppercase tracking-wide">Análise ABC</p>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Antecedente *</label>
+                    <input
+                      type="text"
+                      value={eventForm.antecedent}
+                      onChange={e => setEventForm({ ...eventForm, antecedent: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none"
+                      placeholder="O que aconteceu antes?"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Comportamento *</label>
+                    <input
+                      type="text"
+                      value={eventForm.behavior}
+                      onChange={e => setEventForm({ ...eventForm, behavior: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none"
+                      placeholder="O que a criança fez?"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Consequência *</label>
+                    <input
+                      type="text"
+                      value={eventForm.consequence}
+                      onChange={e => setEventForm({ ...eventForm, consequence: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none"
+                      placeholder="O que aconteceu depois?"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Intensidade</label>
+                <select
+                  value={eventForm.intensity}
+                  onChange={e => setEventForm({ ...eventForm, intensity: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
+                >
+                  <option value="">— Não informar —</option>
+                  {INTENSITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
+              <button onClick={() => { setShowEventForm(false); setError(null) }} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">Cancelar</button>
+              <button
+                onClick={async () => {
+                  setSavingEvent(true)
+                  setError(null)
+                  try {
+                    const res = await fetch('/api/tdah/events', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        session_id: id,
+                        event_type: eventForm.event_type,
+                        description: eventForm.description.trim() || null,
+                        antecedent: eventForm.antecedent.trim() || null,
+                        behavior: eventForm.behavior.trim() || null,
+                        consequence: eventForm.consequence.trim() || null,
+                        intensity: eventForm.intensity || null,
+                      }),
+                    })
+                    if (!res.ok) {
+                      const err = await res.json()
+                      setError(err.error || 'Erro ao registrar evento')
+                      setSavingEvent(false)
+                      return
+                    }
+                    setEventForm({ event_type: 'behavioral', description: '', antecedent: '', behavior: '', consequence: '', intensity: '' })
+                    setShowEventForm(false)
+                    setSavingEvent(false)
+                    fetchSession()
+                  } catch {
+                    setError('Falha de conexão')
+                    setSavingEvent(false)
+                  }
+                }}
+                disabled={savingEvent}
+                className="px-5 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 hover:bg-amber-600"
+              >
+                {savingEvent ? 'Salvando...' : 'Registrar Evento'}
               </button>
             </div>
           </div>
