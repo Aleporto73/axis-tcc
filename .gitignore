@@ -31,3 +31,10 @@ Thumbs.db
 .env.backup-axistcc
 .env.backup*
 firebase-service-account.json
+
+# Playwright
+e2e/.auth/
+e2e/screenshots/
+playwright-report/
+blob-report/
+test-results/
