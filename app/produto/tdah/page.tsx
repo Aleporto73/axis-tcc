@@ -101,7 +101,7 @@ export default function ProdutoTDAHPage() {
               Utilizar com 1 paciente real
             </Link>
             <Link
-              href="/demo"
+              href="/demo/tdah"
               className="px-7 py-3.5 rounded-lg border border-white/30 text-white/90 text-base font-medium hover:bg-white/10 transition-colors"
             >
               Analisar o sistema por dentro
@@ -460,7 +460,7 @@ export default function ProdutoTDAHPage() {
               Utilizar com 1 paciente real
             </Link>
             <Link
-              href="/demo"
+              href="/demo/tdah"
               className="px-7 py-3.5 rounded-lg border border-white/30 text-white/90 text-base font-medium hover:bg-white/10 transition-colors"
             >
               Analisar o sistema por dentro

@@ -65,6 +65,13 @@
 | 13/03/2026 | Migration 024 — session_summaries multi-módulo | `scripts/migrations/024_*`, `scripts/run-migration-024.ts` |
 | 13/03/2026 | Fase 7g — Página de Configurações TDAH | `app/tdah/configuracoes/page.tsx` |
 | 13/03/2026 | Fase 7h — Central de Ajuda TDAH | `app/tdah/ajuda/page.tsx` |
+| 14/03/2026 | Polimento tooltips — lib + componente | `lib/tooltips-tdah.ts` (55 textos), `components/TooltipTDAH.tsx` |
+| 14/03/2026 | HelpTipTDAH integrado nas páginas | `sessoes/[id]`, `pacientes/[id]`, `dashboard` — 11 pontos |
+| 14/03/2026 | Removidas todas as refs "Bible §XX" visíveis | `sessoes/[id]`, `pacientes/[id]`, `dashboard`, `drc`, `ajuda`, `protocolos/[id]`, `planos` |
+| 14/03/2026 | SKILL_TDAH.md — base de conhecimento da Ana | `docs/SKILL_TDAH.md` (698 linhas, 23 seções) |
+| 14/03/2026 | API Ana TDAH (chat-ana) | `app/api/tdah/chat-ana/route.ts` — GPT-4o-mini + SKILL_TDAH.md + cache |
+| 14/03/2026 | Ajuda TDAH reescrita completa | `app/tdah/ajuda/page.tsx` — 13 seções accordion + chat Ana TDAH teal |
+| 14/03/2026 | Demo TDAH completo (3 pacientes) | `app/demo/tdah/` — dashboard, pacientes, sessões, relatórios, Ana |
 | 13/03/2026 | Fase 8a — Gestão de equipe TDAH | `app/api/tdah/team/route.ts`, `app/tdah/equipe/page.tsx` |
 | 13/03/2026 | Fase 8b — Onboarding TDAH (overlay 2 telas) | `app/components/OnboardingTDAH.tsx`, layout |
 | 13/03/2026 | Fase 8c — Página de Preços TDAH | `app/tdah/precos/page.tsx` |
@@ -112,8 +119,8 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Rodar testes E2E localmente (Playwright) | Credenciais Clerk de teste |
-| 2 | Deploy beta | Após testes |
+| 1 | Push do commit 1621916 (sem credenciais no ambiente) | `git push origin main` — fazer no terminal local |
+| 2 | Deploy beta | Após push |
 
 ---
 
@@ -500,6 +507,31 @@
   - Licenças agora criadas APENAS via Hotmart webhook (compra real)
 - Migrations 025-029 aplicadas na VPS (produção)
 - Build + deploy bem-sucedido (pm2 restart)
+
+### 14/03/2026 — Sessão 17
+- Polimento de tooltips e textos clínicos
+- Criado `lib/tooltips-tdah.ts`: 55 textos educativos organizados por contexto (dashboard, sessão, AuDHD, DRC, protocolos, paciente, relatórios, config) — tom direto, sem jargão, para clínico 40+
+- Criado `components/TooltipTDAH.tsx`: mirror do componente ABA com paleta teal TDAH (`bg-[#E0F2F1]`)
+- `HelpTipTDAH` integrado com 11 inserções em sessão, ficha de paciente e dashboard
+- Removidas TODAS as referências "Bible §XX" visíveis no JSX de 7 arquivos TDAH
+- Criado `docs/SKILL_TDAH.md` (698 linhas, 23 seções): base de conhecimento completa da IA Ana TDAH — cobre fluxo completo, planos/preços, DRC, Layer AuDHD, sessões tricontextuais, 46 protocolos, relatórios, LGPD, 13 FAQ, glossário
+- Criado `app/api/tdah/chat-ana/route.ts`: OpenAI GPT-4o-mini com personalidade TDAH, carrega `SKILL_TDAH.md` em cache, histórico de conversa (últimas 20 msgs), auth Clerk
+- Reescrita completa de `app/tdah/ajuda/page.tsx`: 13 seções accordion com conteúdo TDAH real (primeiros passos, sessões tricontextuais, motor CSO, layer AuDHD, DRC, portal escola/família, módulo casa, protocolos, alertas, relatórios, equipe, privacidade, glossário TDAH com 16 termos), busca com highlight, chat Ana conectado a `/api/tdah/chat-ana`, branding teal #0d7377
+- Mesma arquitetura de accordion do ABA: altura dinâmica (scrollHeight), transições suaves, sem max-height fixo
+- Commit `1621916` com 11 arquivos, +2226 linhas
+
+### 14/03/2026 — Sessão 18
+- Demo TDAH completo seguindo padrão ABA
+- 3 pacientes fictícios com perfil clínico distinto:
+  - Lucas Mendes (8a, AuDHD active_core, evolução positiva, SEN/TRF)
+  - Sofia Almeida (6a, TDAH desatento, regressão pós-mudança escola, DRC escolar ativo)
+  - Pedro Costa (10a, TDAH combinado, platô funcional, economia de fichas + rotina)
+- Dados mock completos: 7 snapshots CSO por paciente, 12 sessões, 10 DRCs, 21 protocolos
+- 5 páginas demo: dashboard, pacientes, sessões, relatórios (com modal), redirect
+- Componentes: DemoNavTDAH, LockButtonTDAH, ContextBadge, AuDHDBadge
+- Relatório com gráfico SVG CSO (final + core dashed), tabela dimensões, narrativa por trajetória
+- Ana TDAH chat simulado no relatório
+- Botão /produto/tdah apontando para /demo/tdah
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH
