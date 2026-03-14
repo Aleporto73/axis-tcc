@@ -91,6 +91,11 @@ export default function SidebarTDAH() {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
       </svg>
     ),
+    casa: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
   }
 
   // Itens de navegação baseados no role
@@ -101,6 +106,7 @@ export default function SidebarTDAH() {
     { href: '/tdah/drc', label: 'DRC', icon: icons.protocolos, roles: ['admin', 'supervisor', 'terapeuta'] },
     { href: '/tdah/escola', label: 'Escola', icon: icons.escola, roles: ['admin', 'supervisor'] },
     { href: '/tdah/familia', label: 'Família', icon: icons.familia, roles: ['admin', 'supervisor'] },
+    { href: '/tdah/casa', label: 'Casa', icon: icons.casa, roles: ['admin', 'supervisor', 'terapeuta'] },
     { href: '/tdah/planos', label: 'Plano', icon: icons.plano, roles: ['admin', 'supervisor'] },
     { href: '/tdah/alertas', label: 'Alertas', icon: icons.alertas, roles: ['admin', 'supervisor', 'terapeuta'] },
     { href: '/tdah/relatorios', label: 'Relatórios', icon: icons.relatorios, roles: ['admin', 'supervisor', 'terapeuta'] },

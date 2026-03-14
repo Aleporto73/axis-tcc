@@ -95,6 +95,12 @@
 | 13/03/2026 | Fase 14d — Página gestão família (admin) | `app/tdah/familia/page.tsx` |
 | 13/03/2026 | Fase 14e — Portal público da família | `app/familia/[token]/page.tsx` + layout |
 | 13/03/2026 | Fase 14f — Middleware + sidebar família | `middleware.ts`, `SidebarTDAH.tsx` |
+| 13/03/2026 | Fase 15a — Migration 027 token economy | `scripts/migrations/027_tdah_token_economy.sql` |
+| 13/03/2026 | Fase 15b — API rotinas domésticas (GET/POST/PATCH) | `app/api/tdah/routines/route.ts`, `[id]/route.ts` |
+| 13/03/2026 | Fase 15c — API economia de fichas (GET/POST/PATCH) | `app/api/tdah/token-economy/route.ts`, `[id]/route.ts` |
+| 13/03/2026 | Fase 15d — API transações fichas (POST) | `app/api/tdah/token-economy/[id]/transactions/route.ts` |
+| 13/03/2026 | Fase 15e — Página módulo casa (rotinas + fichas) | `app/tdah/casa/page.tsx` |
+| 13/03/2026 | Fase 15f — Sidebar casa (todos os roles) | `SidebarTDAH.tsx` |
 
 ### 🔄 EM ANDAMENTO
 
@@ -106,9 +112,8 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 4 | Módulo casa (rotina, treino parental, economia fichas) | Nenhum |
-| 5 | Testes E2E | Após desenvolvimento |
-| 7 | Deploy beta | Após testes |
+| 3 | Testes E2E | Após desenvolvimento |
+| 4 | Deploy beta | Após testes |
 
 ---
 
@@ -434,6 +439,34 @@
   - Resumos de sessão enviados pelo clínico
 - Middleware: /familia(.*)  e /api/familia/(.*) como rotas públicas
 - Sidebar: ícone família (home SVG) entre Escola e Plano (admin/supervisor)
+
+### 13/03/2026 — Sessão 14
+- Fase 15: Módulo Casa completo
+- Migration 027: tdah_token_economy + tdah_token_transactions (2 tabelas)
+  - Token economy: behaviors ganham fichas, reinforcers trocam fichas
+  - Transações append-only: earn/spend/bonus/reset com balance tracking
+- API /api/tdah/routines: GET lista por paciente, POST cria rotina
+  - 6 tipos: morning/afternoon/evening/homework/school_prep/other
+  - Steps JSON: [{order, description, visual_cue}]
+  - Reinforcement plan free-text (Bible §18)
+- API /api/tdah/routines/[id]: GET detalhe, PATCH atualiza (nome, steps, status)
+  - Status transitions: active → paused → active, active/paused → completed
+- API /api/tdah/token-economy: GET lista com stats (earned/spent/transactions), POST cria sistema
+  - Token types: star/point/sticker/coin
+  - target_behaviors JSONB + reinforcers JSONB
+- API /api/tdah/token-economy/[id]: GET detalhe + 50 transações, PATCH config/status
+- API /api/tdah/token-economy/[id]/transactions: POST registra earn/spend/bonus/reset
+  - Validação saldo para spend (insuficiente = 422)
+  - Balance tracking automático (current_balance atualizado)
+- Página /tdah/casa: módulo casa com 2 tabs
+  - Tab Rotinas: lista com steps numerados, pista visual, plano reforço, status badges
+    - Modal criação: tipo visual (6 cards), nome, steps dinâmicos + cue visual, reforço
+    - Botões inline: pausar/reativar/concluir
+  - Tab Fichas: saldo grande + símbolo, stats (ganhas/trocadas), comportamentos + recompensas
+    - Modal criação: nome, tipo ficha (4 opções visuais), behaviors + amounts, reinforcers + costs
+    - Botões "Ganhar Ficha" / "Trocar Ficha" com modal transação
+    - Seletor de comportamento/recompensa com auto-fill de amount
+- Sidebar: ícone casa (clipboard-check SVG) entre Família e Plano (todos os roles)
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH
