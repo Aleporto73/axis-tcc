@@ -112,8 +112,9 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 3 | Testes E2E | Após desenvolvimento |
-| 4 | Deploy beta | Após testes |
+| 1 | Aplicar migrations 025-027 na VPS | Docker exec |
+| 2 | Testes E2E | Após migrations |
+| 3 | Deploy beta | Após testes |
 
 ---
 
@@ -467,6 +468,21 @@
     - Botões "Ganhar Ficha" / "Trocar Ficha" com modal transação
     - Seletor de comportamento/recompensa com auto-fill de amount
 - Sidebar: ícone casa (clipboard-check SVG) entre Família e Plano (todos os roles)
+
+### 13/03/2026 — Sessão 15
+- Fase 16: Bug Scan & Polish
+- TypeScript compilation: **0 erros** em todo o projeto (npx tsc --noEmit)
+- Criado run-migration-027.ts (faltante da Sessão 14)
+- Migration 026 — adicionado closing comment block (cosmético)
+- Bug scan completo: imports, public routes, middleware, sidebar, migrations — tudo limpo
+- **Totais finais módulo TDAH:**
+  - 20 páginas frontend
+  - 37 APIs (34 TDAH internas + 3 portais públicos)
+  - 3 componentes (SidebarTDAH, OnboardingTDAH, UpgradeModalTDAH)
+  - 2 arquivos engine (cso-tdah.ts + adapter)
+  - 6 migrations TDAH (022-027) + 5 runners (022-026 via manual, 024-027 com scripts)
+  - 71 testes do motor CSO-TDAH
+  - Todas as fases 1-15 completas
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH

@@ -49,3 +49,7 @@ CREATE TABLE IF NOT EXISTS tdah_family_access_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_family_access_log_token ON tdah_family_access_log(token_id, created_at DESC);
+
+-- =====================================================
+-- DONE — 026_tdah_family_tokens.sql
+-- =====================================================
