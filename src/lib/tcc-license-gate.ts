@@ -46,7 +46,7 @@ export async function requireTCCLicense(): Promise<void> {
       redirect('/hub')
     }
   } catch (err) {
-    // Tabela pode não existir — permitir acesso (graceful fallback)
-    console.warn('[TCC Gate] user_licenses query failed, allowing access:', err instanceof Error ? err.message : String(err))
+    console.warn('[TCC Gate] user_licenses query failed, blocking access:', err instanceof Error ? err.message : String(err))
+    redirect('/hub')
   }
 }

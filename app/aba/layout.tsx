@@ -75,8 +75,8 @@ export default async function ABALayout({ children }: { children: React.ReactNod
       hasLicense = false
     }
   } catch (err) {
-    console.warn('[ABA Layout] user_licenses query failed, allowing access:', err instanceof Error ? err.message : String(err))
-    hasLicense = true
+    console.warn('[ABA Layout] user_licenses query failed, blocking access:', err instanceof Error ? err.message : String(err))
+    hasLicense = false
   }
 
   if (!hasLicense) {

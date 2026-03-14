@@ -55,14 +55,9 @@ export async function GET(request: NextRequest) {
       licenses = licensesResult.rows
     } catch (dbErr) {
       // Tabela user_licenses pode não existir (pre-migration 006)
-      console.warn('[Licenses API] user_licenses query failed, using fallback:', dbErr instanceof Error ? dbErr.message : String(dbErr))
-      const onboardingResult = await pool.query(
-        'SELECT onboarding_completed_at FROM tenants WHERE id = $1',
-        [tenantId]
-      )
-      if (onboardingResult.rows[0]?.onboarding_completed_at) {
-        licenses = [{ product_type: 'aba', is_active: true, valid_from: new Date().toISOString(), valid_until: null }]
-      }
+      console.warn('[Licenses API] user_licenses query failed:', dbErr instanceof Error ? dbErr.message : String(dbErr))
+      // Sem fallback — se a tabela não existe, retorna vazio
+      licenses = []
     }
 
     return NextResponse.json({ licenses })

@@ -167,20 +167,9 @@ export async function GET() {
         )
       } catch (_) { /* audit non-blocking */ }
 
-      // Criar licenças free automáticas (necessário para o gate em layout.tsx)
-      // Cria ambas (TCC + ABA) — cada layout verifica seu product_type
-      try {
-        await client.query(
-          `INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
-           VALUES ($1, $2, 'tcc', true, NOW(), 'AUTO_FREE_TIER', $3)`,
-          [tenantId, userId, email]
-        )
-        await client.query(
-          `INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
-           VALUES ($1, $2, 'aba', true, NOW(), 'AUTO_FREE_TIER', $3)`,
-          [tenantId, userId, email]
-        )
-      } catch (_) { /* non-blocking — tabela pode não existir ainda */ }
+      // NÃO cria licenças automaticamente
+      // Licenças são criadas APENAS via Hotmart webhook (compra real)
+      // Usuário novo vê "Conhecer →" no hub até comprar
 
       await client.query('COMMIT')
 

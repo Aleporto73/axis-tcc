@@ -74,8 +74,8 @@ export default async function TDAHLayout({ children }: { children: React.ReactNo
       hasLicense = false
     }
   } catch (err) {
-    console.warn('[TDAH Layout] user_licenses query failed, allowing access:', err instanceof Error ? err.message : String(err))
-    hasLicense = true
+    console.warn('[TDAH Layout] user_licenses query failed, blocking access:', err instanceof Error ? err.message : String(err))
+    hasLicense = false
   }
 
   if (!hasLicense) {

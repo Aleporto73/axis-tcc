@@ -102,17 +102,9 @@ export async function POST(req: NextRequest) {
             [tenantId, clerkUserId, userName, email]
           )
 
-          // 3. Licenças FREE — TCC e ABA
-          await client.query(
-            `INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
-             VALUES ($1, $2, 'tcc', true, NOW(), 'CLERK_FREE_TIER', $3)`,
-            [tenantId, clerkUserId, email]
-          )
-          await client.query(
-            `INSERT INTO user_licenses (tenant_id, clerk_user_id, product_type, is_active, valid_from, hotmart_event, buyer_email)
-             VALUES ($1, $2, 'aba', true, NOW(), 'CLERK_FREE_TIER', $3)`,
-            [tenantId, clerkUserId, email]
-          )
+          // 3. NÃO cria licenças automaticamente
+          // Licenças são criadas APENAS via Hotmart webhook (compra real)
+          // Usuário novo vê "Conhecer →" no hub até comprar
 
           // 4. Audit log
           try {
@@ -121,22 +113,22 @@ export async function POST(req: NextRequest) {
                VALUES ($1, $2, 'clerk_webhook', 'FREE_TIER_PROVISIONED', 'tenant', $3, $4, NOW())`,
               [tenantId, clerkUserId, tenantId, JSON.stringify({
                 email, name: userName, source: 'clerk_user_created',
-                licenses: ['tcc', 'aba'], plan_tier: 'free', max_patients: 1,
+                licenses: [], plan_tier: 'free', max_patients: 1,
               })]
             )
           } catch (_) { /* audit non-blocking */ }
 
           await client.query('COMMIT')
 
-          console.log('[CLERK WEBHOOK] FREE tier provisioned:', { email, clerkUserId, tenantId })
+          console.log('[CLERK WEBHOOK] Tenant+profile provisioned (sem licenças):', { email, clerkUserId, tenantId })
 
           return NextResponse.json({
             status: 'provisioned',
-            action: 'free_tier_created',
+            action: 'tenant_created',
             email,
             tenant_id: tenantId,
             profile_id: profileInsert.rows[0].id,
-            licenses: ['tcc', 'aba'],
+            licenses: [],
           })
         } catch (provisionErr) {
           await client.query('ROLLBACK').catch(() => {})
