@@ -89,6 +89,12 @@
 | 13/03/2026 | Fase 13e — Portal público do professor | `app/escola/[token]/page.tsx` + layout |
 | 13/03/2026 | Fase 13f — Middleware rotas públicas escola | `middleware.ts` — /escola, /api/escola |
 | 13/03/2026 | Fase 13g — Sidebar escola (admin/supervisor) | `SidebarTDAH.tsx` — ícone escola |
+| 13/03/2026 | Fase 14a — Migration 026 family tokens | `scripts/migrations/026_tdah_family_tokens.sql` |
+| 13/03/2026 | Fase 14b — API tokens família (GET/POST/DELETE) | `app/api/tdah/familia/tokens/route.ts`, `[id]/route.ts` |
+| 13/03/2026 | Fase 14c — API pública portal família (GET + POST consent) | `app/api/familia/[token]/route.ts` |
+| 13/03/2026 | Fase 14d — Página gestão família (admin) | `app/tdah/familia/page.tsx` |
+| 13/03/2026 | Fase 14e — Portal público da família | `app/familia/[token]/page.tsx` + layout |
+| 13/03/2026 | Fase 14f — Middleware + sidebar família | `middleware.ts`, `SidebarTDAH.tsx` |
 
 ### 🔄 EM ANDAMENTO
 
@@ -100,9 +106,8 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Portal família | Aprovado — implementar (ver ABA como referência) |
-| 5 | Módulo casa (rotina, treino parental, economia fichas) | Nenhum |
-| 6 | Testes E2E | Após desenvolvimento |
+| 4 | Módulo casa (rotina, treino parental, economia fichas) | Nenhum |
+| 5 | Testes E2E | Após desenvolvimento |
 | 7 | Deploy beta | Após testes |
 
 ---
@@ -400,6 +405,35 @@
   - Footer com aviso: dados clínicos não visíveis
 - Middleware atualizado: /escola(.*)  e /api/escola/(.*) como rotas públicas
 - Sidebar TDAH: ícone escola (graduation cap SVG) entre DRC e Plano (admin/supervisor)
+
+### 13/03/2026 — Sessão 13
+- Fase 14: Portal Família completo (padrão ABA como referência)
+- Migration 026: tdah_family_tokens + tdah_family_access_log (2 tabelas)
+  - Token com expiração (default 90 dias), consentimento LGPD, guardian_id linkável
+  - Reuse logic: se guardian_id já tem token ativo, retorna existente
+- API /api/tdah/familia/tokens: GET lista, POST gera (com audit log)
+  - Reutilização de token existente (evita duplicatas por guardian)
+  - Admin/supervisor only
+- API /api/tdah/familia/tokens/[id]: DELETE revoga (soft delete)
+- API /api/familia/[token]: GET público (2 modos: needs_consent / dados completos)
+  - Fluxo LGPD: primeiro acesso mostra termo, POST aceita consentimento
+  - Dados visíveis: protocolos (status simplificado), DRC resumo 30d, sessões futuras, sessões recentes, resumos aprovados, conquistas
+  - Bible visibility: ❌ scores CSO-TDAH, ❌ snapshots, ❌ layer AuDHD, ❌ notas clínicas
+- Página /tdah/familia: gestão tokens de família (admin/supervisor)
+  - Seletor paciente → carrega guardians cadastrados
+  - Auto-fill dados do guardian selecionado
+  - Parentesco dropdown (Mãe, Pai, Avó, Avô, etc.)
+  - Badge LGPD OK / Aguardando consentimento
+  - Expiração configurável (30/90/180/365 dias)
+- Portal /familia/[token]: interface pública para responsáveis
+  - Tela consentimento LGPD com termo detalhado (o que vê e o que NÃO vê)
+  - Visão geral: conquistados, em progresso, DRC sucesso%, score médio
+  - Conquistas recentes com estrela e data
+  - Protocolos com status badges (conquistado/em progresso/em revisão)
+  - Sessões futuras e realizadas (data + contexto tricontextual)
+  - Resumos de sessão enviados pelo clínico
+- Middleware: /familia(.*)  e /api/familia/(.*) como rotas públicas
+- Sidebar: ícone família (home SVG) entre Escola e Plano (admin/supervisor)
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH
