@@ -72,6 +72,13 @@
 | 13/03/2026 | Fase 9a — Free tier gate (UpgradeModalTDAH) | `app/components/UpgradeModalTDAH.tsx` |
 | 13/03/2026 | Fase 9b — LGPD Export TDAH (JSON) | `app/api/tdah/lgpd/export/route.ts` |
 | 13/03/2026 | Fase 9b — LGPD Delete/Anonimização TDAH | `app/api/tdah/lgpd/delete/route.ts` |
+| 13/03/2026 | Fase 10a — Pricing TDAH (Hotmart real) | `app/tdah/precos/page.tsx` |
+| 13/03/2026 | Fase 10b — UpgradeModal com Hotmart | `app/components/UpgradeModalTDAH.tsx` |
+| 13/03/2026 | Fase 10c — Webhook Hotmart product_id TDAH | `app/api/webhook/hotmart/route.ts` |
+| 13/03/2026 | Fase 11a — API eventos TDAH (GET + POST) | `app/api/tdah/events/route.ts` |
+| 13/03/2026 | Fase 11b — API clinical-state TDAH | `app/api/tdah/clinical-state/route.ts` |
+| 13/03/2026 | Fase 11c — API planos TDAH (GET + POST) | `app/api/tdah/plans/route.ts` |
+| 13/03/2026 | Fase 11d — API plano por ID (GET + PATCH) | `app/api/tdah/plans/[id]/route.ts` |
 
 ### 🔄 EM ANDAMENTO
 
@@ -85,9 +92,7 @@
 |---|------|-------------|
 | 1 | Portal família | Aprovado — implementar (ver ABA como referência) |
 | 2 | Módulo escola completo (perfil professor, integração) | Aprovado — implementar |
-| 3 | API /tdah/events | Nenhum |
-| 4 | API /tdah/clinical-state | Nenhum |
-| 5 | Plano TDAH (tdah_plans) — API + páginas | Nenhum |
+| 3 | Página Plano TDAH (frontend) | APIs prontas |
 | 6 | Módulo casa (rotina, treino parental, economia fichas) | Nenhum |
 | 7 | Testes E2E | Após desenvolvimento |
 | 8 | Deploy beta | Após testes |
@@ -319,6 +324,24 @@
   - PRODUCT_MAP: 7380571 → 'tdah'
   - OFFER_TO_PLAN: xqzgdn1i (founders 50), cr3rh0u9 (clinica_100), hxzwuwfh (clinica_250)
   - EMAIL_FROM_MAP, PRODUCT_LABEL, DASHBOARD_PATH atualizados com 'tdah'
+- Fase 11a: API eventos TDAH (/api/tdah/events)
+  - GET: lista eventos por session_id ou patient_id, filtro event_type
+  - POST: registra evento com 8 tipos (transition, sensory, behavioral, abc, etc.)
+  - ABC condicional: obrigatório só se event_type === 'abc'
+  - Contexto tricontextual herdado da sessão
+  - Bible §11: sessão fechada rejeita novos eventos
+- Fase 11b: API clinical-state TDAH (/api/tdah/clinical-state)
+  - GET: estado clínico atual + histórico (20 snapshots)
+  - Delta automático (final/core/executive/audhd scores)
+  - Distribuição contextual (30 dias)
+  - Role filter: terapeuta vê só seus pacientes
+- Fase 11c+11d: API planos TDAH (/api/tdah/plans)
+  - GET: lista planos com goals + protocolos ativos
+  - POST: cria plano com metas (14 domínios clínicos Bible §13)
+  - GET [id]: detalhe com goals + protocolos + último snapshot
+  - PATCH [id]: atualiza plano + metas, ciclo de vida (draft→active→completed→archived)
+  - Goals com status (active/achieved/paused/discontinued) + progress %
+  - Audit log para transições de status
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH
