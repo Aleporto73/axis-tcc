@@ -112,9 +112,8 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Aplicar migrations 025-027 na VPS | Docker exec |
-| 2 | Testes E2E | Após migrations |
-| 3 | Deploy beta | Após testes |
+| 1 | Rodar testes E2E localmente (Playwright) | Credenciais Clerk de teste |
+| 2 | Deploy beta | Após testes |
 
 ---
 
@@ -483,6 +482,24 @@
   - 6 migrations TDAH (022-027) + 5 runners (022-026 via manual, 024-027 com scripts)
   - 71 testes do motor CSO-TDAH
   - Todas as fases 1-15 completas
+
+### 14/03/2026 — Sessão 16
+- Testes E2E com Playwright (9 testes sequenciais)
+  - Config: global-setup (auth Clerk via storageState), helpers (constants + utils)
+  - Fluxo: Hub → Paciente → Protocolo → Sessão → Observação → Fechar (snapshot CSO) → Ficha → DRC → Escola
+  - npm scripts: test:e2e, test:e2e:headed, test:e2e:ui, test:e2e:tdah
+  - tsconfig.json: e2e/ e playwright.config.ts excluídos do build Next.js
+- **Bug crítico corrigido: License Gate**
+  - Problema: Clerk webhook e /api/user/tenant auto-criavam licenças TCC+ABA para qualquer signup
+  - Usuários sem compra Hotmart viam "Ativo" no hub (ex: economizecomprojeto@gmail.com)
+  - Fix: removido auto-provisioning em 2 locais (webhook Clerk + /api/user/tenant)
+  - Fix: removido fallback na API /api/user/licenses (concedia ABA por onboarding)
+  - Fix: layout gates (TCC/ABA/TDAH) — catch blocks agora bloqueiam acesso (eram permissivos)
+  - Migration 028: desativou 14 licenças FREE_TIER indevidas no banco de produção
+  - Migration 029: adicionou 'tdah' ao enum aba_product_type (028 falhou nesse ponto)
+  - Licenças agora criadas APENAS via Hotmart webhook (compra real)
+- Migrations 025-029 aplicadas na VPS (produção)
+- Build + deploy bem-sucedido (pm2 restart)
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH
