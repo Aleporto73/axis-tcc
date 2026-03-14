@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { HelpTipTDAH } from '@/components/TooltipTDAH'
+import type { TooltipTDAHKey } from '@/lib/tooltips-tdah'
 
 // =====================================================
 // AXIS TDAH - Dashboard (Métricas Reais)
@@ -137,13 +139,16 @@ export default function TDAHDashboard() {
       {/* KPI Row 1 — números principais */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {([
-          { label: 'Pacientes ativos', value: data.total_patients, sub: undefined as string | undefined },
-          { label: 'Sessões (30d)', value: data.sessions_month, sub: data.sessions_today > 0 ? `${data.sessions_today} hoje` : undefined },
-          { label: 'Protocolos ativos', value: data.active_protocols, sub: data.mastered_protocols > 0 ? `${data.mastered_protocols} dominados` : undefined },
-          { label: 'AuDHD ativos', value: data.audhd_active, sub: data.total_patients > 0 ? `${Math.round((data.audhd_active / data.total_patients) * 100)}% dos pacientes` : undefined },
+          { label: 'Pacientes ativos', value: data.total_patients, sub: undefined as string | undefined, tip: 'dash_pacientes_ativos' as TooltipTDAHKey },
+          { label: 'Sessões (30d)', value: data.sessions_month, sub: data.sessions_today > 0 ? `${data.sessions_today} hoje` : undefined, tip: 'dash_sessoes_mes' as TooltipTDAHKey },
+          { label: 'Protocolos ativos', value: data.active_protocols, sub: data.mastered_protocols > 0 ? `${data.mastered_protocols} dominados` : undefined, tip: 'dash_protocolos_ativos' as TooltipTDAHKey },
+          { label: 'Camada AuDHD', value: data.audhd_active, sub: data.total_patients > 0 ? `${Math.round((data.audhd_active / data.total_patients) * 100)}% dos pacientes` : undefined, tip: 'dash_audhd_ativos' as TooltipTDAHKey },
         ]).map(card => (
           <div key={card.label} className="bg-white rounded-xl border border-slate-100 p-5" style={{ borderTopColor: TDAH_COLOR, borderTopWidth: '2px' }}>
-            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">{card.label}</p>
+            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              {card.label}
+              <HelpTipTDAH tip={card.tip} />
+            </p>
             <p className="text-3xl font-bold text-slate-800 mt-2">{card.value}</p>
             {card.sub && <p className="text-[11px] text-slate-400 mt-1">{card.sub}</p>}
           </div>
@@ -204,7 +209,10 @@ export default function TDAHDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* CSO-TDAH médio */}
         <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">CSO-TDAH Médio</h2>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-1.5">
+            Evolução Geral dos Pacientes
+            <HelpTipTDAH tip="cso_geral" />
+          </h2>
           <div className="flex items-center gap-6">
             <div className="flex items-center justify-center w-24 h-24 rounded-full border-4" style={{ borderColor: TDAH_COLOR }}>
               <span className={`text-3xl font-bold ${bandColor(data.avg_cso)}`}>
@@ -241,7 +249,10 @@ export default function TDAHDashboard() {
 
         {/* Distribuição tricontextual */}
         <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Sessões por Contexto (30d)</h2>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-1.5">
+            Sessões por Ambiente (30d)
+            <HelpTipTDAH tip="tricontextual" />
+          </h2>
           {totalContextSessions === 0 ? (
             <div className="flex items-center justify-center h-32">
               <p className="text-xs text-slate-400">Nenhuma sessão concluída nos últimos 30 dias</p>
@@ -281,13 +292,16 @@ export default function TDAHDashboard() {
       {/* Row 3 — Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {([
-          { label: 'Total sessões', value: data.total_sessions_completed, warn: false },
-          { label: 'Protocolos dominados', value: data.mastered_protocols, warn: false },
-          { label: 'Em regressão', value: data.protocols_regression, warn: data.protocols_regression > 0 },
-          { label: 'AuDHD layer', value: data.audhd_active, warn: false },
+          { label: 'Total sessões', value: data.total_sessions_completed, warn: false, tip: null },
+          { label: 'Protocolos dominados', value: data.mastered_protocols, warn: false, tip: null },
+          { label: 'Em regressão', value: data.protocols_regression, warn: data.protocols_regression > 0, tip: 'dash_regressao' as TooltipTDAHKey },
+          { label: 'Com AuDHD', value: data.audhd_active, warn: false, tip: 'dash_audhd_ativos' as TooltipTDAHKey },
         ]).map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-100 p-4">
-            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">{s.label}</p>
+            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              {s.label}
+              {s.tip && <HelpTipTDAH tip={s.tip} />}
+            </p>
             <p className={`text-2xl font-bold mt-1 ${s.warn ? 'text-red-600' : 'text-slate-800'}`}>{s.value}</p>
           </div>
         ))}

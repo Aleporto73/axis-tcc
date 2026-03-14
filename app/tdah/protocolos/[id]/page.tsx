@@ -218,7 +218,7 @@ export default function ProtocoloDetalhePage() {
       {/* Status + Transições */}
       <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6">
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
-          Ciclo de Vida <span className="text-[10px] font-normal normal-case text-slate-400">(Bible §12)</span>
+          Ciclo de Vida do Protocolo
         </h2>
 
         <div className="flex items-center gap-3 mb-4">

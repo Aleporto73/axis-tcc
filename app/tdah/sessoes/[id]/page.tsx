@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { HelpTipTDAH } from '@/components/TooltipTDAH'
 
 // =====================================================
 // AXIS TDAH - Condução de Sessão
@@ -670,10 +671,15 @@ export default function SessaoConduzirPage() {
 
               {/* Camada Base */}
               <div className="pt-2 border-t border-slate-100">
-                <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wide">Camada Base (§7)</p>
+                <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wide flex items-center gap-1.5">
+                  Camada Base
+                  <HelpTipTDAH tip="camada_base" />
+                </p>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">SAS (%)</label>
+                    <label className="flex items-center gap-1 text-xs font-medium text-slate-600 mb-1">
+                      SAS (%) <HelpTipTDAH tip="sas" />
+                    </label>
                     <input type="number" value={form.sas_score} onChange={e => setForm({ ...form, sas_score: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none"
                       onFocus={e => (e.currentTarget.style.borderColor = TDAH_COLOR)}
@@ -681,7 +687,9 @@ export default function SessaoConduzirPage() {
                       placeholder="0-100" min="0" max="100" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">PIS</label>
+                    <label className="flex items-center gap-1 text-xs font-medium text-slate-600 mb-1">
+                      PIS <HelpTipTDAH tip="pis" />
+                    </label>
                     <select value={form.pis_level} onChange={e => setForm({ ...form, pis_level: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
                       onFocus={e => (e.currentTarget.style.borderColor = TDAH_COLOR)}
@@ -691,7 +699,9 @@ export default function SessaoConduzirPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">BSS</label>
+                    <label className="flex items-center gap-1 text-xs font-medium text-slate-600 mb-1">
+                      BSS <HelpTipTDAH tip="bss" />
+                    </label>
                     <select value={form.bss_level} onChange={e => setForm({ ...form, bss_level: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
                       onFocus={e => (e.currentTarget.style.borderColor = TDAH_COLOR)}
@@ -705,9 +715,14 @@ export default function SessaoConduzirPage() {
 
               {/* Camada Executiva */}
               <div className="pt-2 border-t border-slate-100">
-                <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wide">Camada Executiva (§8)</p>
+                <p className="text-xs font-medium text-slate-500 mb-3 uppercase tracking-wide flex items-center gap-1.5">
+                  Camada Executiva
+                  <HelpTipTDAH tip="camada_executiva" />
+                </p>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">EXR</label>
+                  <label className="flex items-center gap-1 text-xs font-medium text-slate-600 mb-1">
+                    EXR <HelpTipTDAH tip="exr" />
+                  </label>
                   <select value={form.exr_level} onChange={e => setForm({ ...form, exr_level: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
                     onFocus={e => (e.currentTarget.style.borderColor = TDAH_COLOR)}
@@ -718,13 +733,18 @@ export default function SessaoConduzirPage() {
                 </div>
               </div>
 
-              {/* Camada AuDHD — só aparece se layer ativa (Bible §9) */}
+              {/* Camada AuDHD — aparece quando layer está ativa */}
               {audhdActive && (
                 <div className="pt-2 border-t border-slate-100">
-                  <p className="text-xs font-medium text-purple-500 mb-3 uppercase tracking-wide">Layer AuDHD (§9)</p>
+                  <p className="text-xs font-medium text-purple-500 mb-3 uppercase tracking-wide flex items-center gap-1.5">
+                    Camada AuDHD
+                    <HelpTipTDAH tip="camada_audhd" />
+                  </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">SEN</label>
+                      <label className="flex items-center gap-1 text-xs font-medium text-slate-600 mb-1">
+                        SEN <HelpTipTDAH tip="sen" />
+                      </label>
                       <select value={form.sen_level} onChange={e => setForm({ ...form, sen_level: e.target.value })}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
                         onFocus={e => (e.currentTarget.style.borderColor = '#7c3aed')}
@@ -734,7 +754,9 @@ export default function SessaoConduzirPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">TRF</label>
+                      <label className="flex items-center gap-1 text-xs font-medium text-slate-600 mb-1">
+                        TRF <HelpTipTDAH tip="trf" />
+                      </label>
                       <select value={form.trf_level} onChange={e => setForm({ ...form, trf_level: e.target.value })}
                         className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
                         onFocus={e => (e.currentTarget.style.borderColor = '#7c3aed')}
@@ -747,7 +769,9 @@ export default function SessaoConduzirPage() {
                   {audhdFull && (
                     <div className="grid grid-cols-2 gap-3 mt-3">
                       <div>
-                        <label className="block text-xs font-medium text-slate-600 mb-1">RIG estado</label>
+                        <label className="flex items-center gap-1 text-xs font-medium text-slate-600 mb-1">
+                          RIG estado <HelpTipTDAH tip="rig" />
+                        </label>
                         <select value={form.rig_state} onChange={e => setForm({ ...form, rig_state: e.target.value })}
                           className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none bg-white"
                           onFocus={e => (e.currentTarget.style.borderColor = '#7c3aed')}

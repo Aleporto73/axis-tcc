@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { HelpTipTDAH } from '@/components/TooltipTDAH'
 
 // =====================================================
 // AXIS TDAH - Ficha do Paciente (Fase 3)
@@ -628,7 +629,7 @@ export default function PacienteDetalhePage() {
         </div>
       </div>
 
-      {/* Responsáveis (Bible §18, §27) */}
+      {/* Responsáveis */}
       <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Responsáveis</h2>
@@ -746,15 +747,18 @@ export default function PacienteDetalhePage() {
         </div>
       )}
 
-      {/* DRC — Daily Report Card (Bible §17) */}
+      {/* DRC — Daily Report Card */}
       <div className="bg-white rounded-xl border border-slate-100 p-4 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
             🏫
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-700">Daily Report Card</p>
-            <p className="text-[10px] text-slate-400">Acompanhamento escolar diário com metas objetivas</p>
+            <p className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+              Daily Report Card
+              <HelpTipTDAH tip="drc" />
+            </p>
+            <p className="text-[10px] text-slate-400">O professor preenche, você revisa</p>
           </div>
         </div>
         <Link
@@ -768,16 +772,16 @@ export default function PacienteDetalhePage() {
         </Link>
       </div>
 
-      {/* Layer AuDHD — Bible §9 */}
+      {/* Layer AuDHD */}
       <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6" style={{ borderLeftColor: '#7c3aed', borderLeftWidth: '3px' }}>
         <div className="flex items-start justify-between mb-3">
           <div>
             <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2">
-              Layer AuDHD
-              <span className="text-[10px] font-normal normal-case text-slate-400">(Bible §9)</span>
+              Camada AuDHD
+              <HelpTipTDAH tip="audhd_layer" />
             </h2>
             <p className="text-[11px] text-slate-400 mt-1">
-              Camada de sobreposição autismo + TDAH. Ativa métricas SEN, TRF, RIG e MSK.
+              Para pacientes com TDAH e autismo ao mesmo tempo — você escolhe o nível de detalhe.
             </p>
           </div>
           {patient.audhd_layer_status && patient.audhd_layer_status !== 'off' && (
@@ -789,7 +793,7 @@ export default function PacienteDetalhePage() {
 
         <div className="flex gap-2">
           {(['off', 'active_core', 'active_full'] as const).map(status => {
-            const labels: Record<string, string> = { off: 'Desativada', active_core: 'Core (SEN + TRF)', active_full: 'Completa (+ RIG + MSK)' }
+            const labels: Record<string, string> = { off: 'Desativada', active_core: 'Core — sensorial e transições', active_full: 'Completa — inclui rigidez' }
             const isActive = patient.audhd_layer_status === status
             return (
               <button
@@ -1087,7 +1091,10 @@ export default function PacienteDetalhePage() {
 
       {/* Gráfico CSO-TDAH */}
       <div className="mt-6 bg-white rounded-xl border border-slate-100 p-5">
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Evolução CSO-TDAH</h2>
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-1.5">
+          Evolução do Paciente
+          <HelpTipTDAH tip="cso_geral" />
+        </h2>
 
         {loadingScores ? (
           <div className="animate-pulse bg-slate-50 rounded-lg h-48" />

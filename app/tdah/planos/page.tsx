@@ -229,7 +229,7 @@ export default function PlanosTDAHPage() {
             Plano TDAH
           </h1>
           <p className="text-xs text-slate-300 font-light">
-            Metas clínicas por domínio vinculadas aos protocolos TDAH (Bible §13)
+            Metas clínicas por domínio, vinculadas aos protocolos do paciente
           </p>
         </header>
 
