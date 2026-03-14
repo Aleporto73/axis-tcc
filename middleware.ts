@@ -29,6 +29,9 @@ const isPublicRoute = createRouteMatcher([
   '/api/demo/(.*)',
   '/portal/(.*)',
   '/api/portal/(.*)',
+  // Portal do professor (TDAH escola — acesso via token, sem Clerk)
+  '/escola(.*)',
+  '/api/escola/(.*)',
 ])
 export default clerkMiddleware(async (auth, req) => {
   if (!isPublicRoute(req)) {

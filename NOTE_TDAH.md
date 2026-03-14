@@ -82,6 +82,13 @@
 | 13/03/2026 | Fase 12a — Página Plano TDAH (frontend) | `app/tdah/planos/page.tsx` |
 | 13/03/2026 | Fase 12b — Plano TDAH na sidebar | `SidebarTDAH.tsx` — admin/supervisor |
 | 13/03/2026 | Fase 12c — Registro de eventos na sessão | `app/tdah/sessoes/[id]/page.tsx` — modal + timeline |
+| 13/03/2026 | Fase 13a — Migration 025 teacher tokens | `scripts/migrations/025_tdah_teacher_tokens.sql` |
+| 13/03/2026 | Fase 13b — API tokens professor (GET/POST/PATCH/DELETE) | `app/api/tdah/escola/tokens/route.ts`, `[id]/route.ts` |
+| 13/03/2026 | Fase 13c — API pública portal professor (GET + POST DRC) | `app/api/escola/[token]/route.ts`, `drc/route.ts` |
+| 13/03/2026 | Fase 13d — Página gestão escola (admin) | `app/tdah/escola/page.tsx` |
+| 13/03/2026 | Fase 13e — Portal público do professor | `app/escola/[token]/page.tsx` + layout |
+| 13/03/2026 | Fase 13f — Middleware rotas públicas escola | `middleware.ts` — /escola, /api/escola |
+| 13/03/2026 | Fase 13g — Sidebar escola (admin/supervisor) | `SidebarTDAH.tsx` — ícone escola |
 
 ### 🔄 EM ANDAMENTO
 
@@ -94,10 +101,9 @@
 | # | Item | Dependência |
 |---|------|-------------|
 | 1 | Portal família | Aprovado — implementar (ver ABA como referência) |
-| 2 | Módulo escola completo (perfil professor, integração) | Aprovado — implementar |
-| 6 | Módulo casa (rotina, treino parental, economia fichas) | Nenhum |
-| 7 | Testes E2E | Após desenvolvimento |
-| 8 | Deploy beta | Após testes |
+| 5 | Módulo casa (rotina, treino parental, economia fichas) | Nenhum |
+| 6 | Testes E2E | Após desenvolvimento |
+| 7 | Deploy beta | Após testes |
 
 ---
 
@@ -357,6 +363,43 @@
   - Modal com análise ABC condicional (campos A/B/C só para tipo 'abc')
   - Intensidade (leve/moderada/alta/severa)
   - Timeline de eventos com badges coloridos por tipo
+
+### 13/03/2026 — Sessão 12
+- Fase 13: Módulo Escola completo
+- Migration 025: tdah_teacher_tokens + tdah_teacher_access_log (2 tabelas)
+  - Token de acesso (64 hex chars), expiração opcional, revogação com audit
+  - Log de acessos do professor (append-only, ação + IP + metadata)
+- API /api/tdah/escola/tokens: GET lista tokens, POST gera token + atualiza dados escola do paciente
+  - Apenas admin/supervisor pode gerenciar tokens
+  - Auto-preenche school_name/teacher_name/teacher_email no paciente
+- API /api/tdah/escola/tokens/[id]: PATCH atualiza, DELETE revoga (soft delete)
+  - Audit log para criação e revogação de tokens
+- API /api/escola/[token]: GET público — valida token, retorna dados paciente (nome + idade)
+  - Protocolos ativos (apenas título + código, sem dados clínicos)
+  - DRC entries (últimos 30), resumo DRC (taxa sucesso, média score)
+  - Bible §14 visibility: ❌ scores CSO, ❌ snapshots, ❌ layer AuDHD
+  - Access log registrado a cada visita
+- API /api/escola/[token]/drc: POST público — professor submete DRC via token
+  - filled_by automático = 'teacher', filled_by_name = teacher_name do token
+  - Bible §17: máximo 3 metas por dia enforced
+  - Protocol validation se informado
+- Página /tdah/escola: gestão de tokens de professor (admin/supervisor)
+  - Card informativo sobre como funciona o portal
+  - Filtros: ativos / revogados / todos
+  - Gerar token com: paciente, professor, escola, expiração (30/90/180/365 dias)
+  - Auto-fill dados escola do paciente selecionado
+  - Modal com link gerado + aviso sobre visibility
+  - Copiar link + revogar acesso
+- Portal público /escola/[token]: interface simplificada para professores
+  - Header com logo AXIS TDAH + nome professor + nome paciente
+  - Resumo 30 dias (registros, atingidas, não atingidas, taxa sucesso)
+  - Protocolos ativos listados (só código + título)
+  - Botão "+ Novo Registro DRC" com formulário completo
+  - Form: data, meta/comportamento, protocolo vinculado, goal_met (3 estados), score, notas
+  - Timeline de DRCs agrupada por data com status badges
+  - Footer com aviso: dados clínicos não visíveis
+- Middleware atualizado: /escola(.*)  e /api/escola/(.*) como rotas públicas
+- Sidebar TDAH: ícone escola (graduation cap SVG) entre DRC e Plano (admin/supervisor)
 
 ### 13/03/2026 — Sessão 8e
 - Fase 6e: Relatórios TDAH
