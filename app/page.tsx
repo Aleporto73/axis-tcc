@@ -155,19 +155,17 @@ export default function HomePage() {
                 {/* ── TCC ── */}
                 <div className="group bg-white rounded-2xl p-8 border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300">
                   <div className="h-1 w-full rounded-full mb-6" style={{ backgroundColor: navy }} />
-                  <img src="/axistcc.png" alt="AXIS TCC" className="h-10 w-auto mb-4 object-contain" />
+                  <img src="/axistcc.png" alt="AXIS TCC" className="h-14 w-auto mb-6 object-contain" />
                   <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full mb-4" style={{ backgroundColor: navy + '0D', color: navy }}>
                     Para psicólogos clínicos
                   </span>
-                  <h3 className="text-xl font-semibold mb-3" style={{ color: navy }}>AXIS TCC</h3>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Organização do processo terapêutico, registro estruturado
-                    e acompanhamento longitudinal para TCC.
+                    Organização do processo terapêutico com registro estruturado e acompanhamento longitudinal.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
                     <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Sessões com estrutura real</li>
                     <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Evolução clínica visível</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Relatórios com histórico preservado</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Histórico preservado</li>
                   </ul>
                   <div className="flex flex-col gap-2">
                     <Link href="/produto/tcc" className="w-full text-center px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: navy }}>
@@ -182,19 +180,17 @@ export default function HomePage() {
                 {/* ── ABA ── */}
                 <div className="group bg-white rounded-2xl p-8 border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300">
                   <div className="h-1 w-full rounded-full mb-6" style={{ backgroundColor: navy }} />
-                  <img src="/axisaba.png" alt="AXIS ABA" className="h-10 w-auto mb-4 object-contain" />
+                  <img src="/axisaba.png" alt="AXIS ABA" className="h-14 w-auto mb-6 object-contain" />
                   <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full mb-4" style={{ backgroundColor: navy + '0D', color: navy }}>
                     Para clínicas e equipes
                   </span>
-                  <h3 className="text-xl font-semibold mb-3" style={{ color: navy }}>AXIS ABA</h3>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Continuidade clínica, progressão documentada
-                    e documentação consistente para ABA.
+                    Continuidade clínica com progressão documentada e estrutura para defesa técnica.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
                     <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Ciclo clínico organizado</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Progressão documentada ao longo do tempo</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Estrutura para prática, gestão e defesa técnica</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Progressão documentada</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Defesa técnica estruturada</li>
                   </ul>
                   <div className="flex flex-col gap-2">
                     <Link href="/produto/aba" className="w-full text-center px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: navy }}>
@@ -209,19 +205,17 @@ export default function HomePage() {
                 {/* ── TDAH ── */}
                 <div className="group bg-white rounded-2xl p-8 border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300">
                   <div className="h-1 w-full rounded-full mb-6" style={{ backgroundColor: teal }} />
-                  <img src="/axistdah.png" alt="AXIS TDAH" className="h-10 w-auto mb-4 object-contain" />
+                  <img src="/axistdah.png" alt="AXIS TDAH" className="h-14 w-auto mb-6 object-contain" />
                   <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full mb-4" style={{ backgroundColor: teal + '0D', color: teal }}>
                     Para clínica, escola e família
                   </span>
-                  <h3 className="text-xl font-semibold mb-3" style={{ color: teal }}>AXIS TDAH</h3>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Integração tricontextual entre consultório, escola
-                    e rotina familiar em acompanhamento contínuo.
+                    Integração entre consultório, escola e família em acompanhamento tricontextual.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Três contextos no mesmo eixo clínico</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Monitoramento funcional ao longo do tempo</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Casos que não cabem só no consultório</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Clínica, escola e casa integrados</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Monitoramento funcional contínuo</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Casos além do consultório</li>
                   </ul>
                   <div className="flex flex-col gap-2">
                     <Link href="/produto/tdah" className="w-full text-center px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: teal }}>
