@@ -155,6 +155,7 @@ export default function HomePage() {
                 {/* ── TCC ── */}
                 <div className="group bg-white rounded-2xl p-8 border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300">
                   <div className="h-1 w-full rounded-full mb-6" style={{ backgroundColor: navy }} />
+                  <img src="/axistcc.png" alt="AXIS TCC" className="h-10 w-auto mb-4 object-contain" />
                   <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full mb-4" style={{ backgroundColor: navy + '0D', color: navy }}>
                     Para psicólogos clínicos
                   </span>
@@ -181,6 +182,7 @@ export default function HomePage() {
                 {/* ── ABA ── */}
                 <div className="group bg-white rounded-2xl p-8 border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300">
                   <div className="h-1 w-full rounded-full mb-6" style={{ backgroundColor: navy }} />
+                  <img src="/axisaba.png" alt="AXIS ABA" className="h-10 w-auto mb-4 object-contain" />
                   <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full mb-4" style={{ backgroundColor: navy + '0D', color: navy }}>
                     Para clínicas e equipes
                   </span>
@@ -207,6 +209,7 @@ export default function HomePage() {
                 {/* ── TDAH ── */}
                 <div className="group bg-white rounded-2xl p-8 border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300">
                   <div className="h-1 w-full rounded-full mb-6" style={{ backgroundColor: teal }} />
+                  <img src="/axistdah.png" alt="AXIS TDAH" className="h-10 w-auto mb-4 object-contain" />
                   <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full mb-4" style={{ backgroundColor: teal + '0D', color: teal }}>
                     Para clínica, escola e família
                   </span>
