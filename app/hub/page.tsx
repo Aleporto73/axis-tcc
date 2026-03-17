@@ -12,6 +12,17 @@ interface License {
   valid_until: string | null
 }
 
+const DEMO_PATHS: Record<string, string> = {
+  aba: '/demo',
+  tdah: '/demo/tdah',
+}
+
+const FREE_CTA_COLORS: Record<string, { bg: string; hover: string }> = {
+  tcc: { bg: '#1a1f4e', hover: '#2a2f6e' },
+  aba: { bg: '#B4532F', hover: '#963f24' },
+  tdah: { bg: '#0d7377', hover: '#0a5c5f' },
+}
+
 const PRODUCTS = [
   {
     id: 'tcc',
@@ -74,6 +85,7 @@ export default function HubPage() {
   const router = useRouter()
   const [licenses, setLicenses] = useState<License[]>([])
   const [loading, setLoading] = useState(true)
+  const [activating, setActivating] = useState<string | null>(null)
 
   useEffect(() => {
     if (isLoaded && userId) {
@@ -99,7 +111,32 @@ export default function HubPage() {
   }
 
   const hasLicense = (productId: string) =>
-    licenses.some(l => l.product_type === productId)
+    licenses.some(l => l.product_type === productId && l.is_active)
+
+  async function handleActivateFree(productType: string) {
+    setActivating(productType)
+    try {
+      const res = await fetch('/api/user/activate-free', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_type: productType }),
+      })
+      const data = await res.json()
+
+      if (res.ok && data.redirect) {
+        router.push(data.redirect)
+      } else if (res.status === 409 && data.redirect) {
+        // Já tem licença — redireciona direto
+        router.push(data.redirect)
+      } else {
+        console.error('[HUB] activate-free failed:', data)
+        setActivating(null)
+      }
+    } catch (err) {
+      console.error('[HUB] activate-free error:', err)
+      setActivating(null)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -127,6 +164,10 @@ export default function HubPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {PRODUCTS.map(product => {
             const licensed = hasLicense(product.id)
+            const demoPath = DEMO_PATHS[product.id]
+            const freeColors = FREE_CTA_COLORS[product.id]
+            const isActivating = activating === product.id
+
             return (
               <div
                 key={product.id}
@@ -181,7 +222,7 @@ export default function HubPage() {
                     {product.description}
                   </p>
 
-                  {/* Button */}
+                  {/* Buttons */}
                   {licensed ? (
                     <button
                       onClick={() => router.push(product.hrefActive)}
@@ -193,18 +234,39 @@ export default function HubPage() {
                       Acessar &rarr;
                     </button>
                   ) : (
-                    <button
-                      onClick={() => router.push(product.hrefInactive)}
-                      className="w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200"
-                      style={{
-                        background: product.btnInactiveBg,
-                        color: product.btnInactiveText,
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = product.btnInactiveBg.replace(/[\d.]+\)$/, '0.14)'))}
-                      onMouseLeave={e => (e.currentTarget.style.background = product.btnInactiveBg)}
-                    >
-                      Conhecer &rarr;
-                    </button>
+                    <div className="space-y-2.5">
+                      {/* Começar FREE — solid */}
+                      <button
+                        onClick={() => handleActivateFree(product.id)}
+                        disabled={isActivating || activating !== null}
+                        className="w-full py-2.5 px-4 rounded-lg text-sm font-semibold text-white transition-all duration-200 disabled:opacity-60"
+                        style={{ background: freeColors.bg }}
+                        onMouseEnter={e => { if (!isActivating) e.currentTarget.style.background = freeColors.hover }}
+                        onMouseLeave={e => { if (!isActivating) e.currentTarget.style.background = freeColors.bg }}
+                      >
+                        {isActivating ? 'Ativando...' : 'Começar FREE'}
+                      </button>
+                      {/* Ver Demo — outline (só se demo existir) */}
+                      {demoPath && (
+                        <button
+                          onClick={() => router.push(demoPath)}
+                          className="w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200"
+                          style={{
+                            background: 'transparent',
+                            border: `1.5px solid ${product.btnInactiveText}`,
+                            color: product.btnInactiveText,
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = product.btnInactiveBg
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'transparent'
+                          }}
+                        >
+                          Ver Demo
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

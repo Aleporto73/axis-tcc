@@ -25,6 +25,13 @@ const BRANDING: Record<string, ProductBranding> = {
     dashboardPath: '/aba/dashboard',
     footer: 'AXIS ABA · Psiform Tecnologia · axisclinico.com',
   },
+  tdah: {
+    name: 'AXIS TDAH',
+    color: '#0d7377',
+    colorLight: '#e0f2f1',
+    dashboardPath: '/tdah/dashboard',
+    footer: 'AXIS TDAH · Psiform Tecnologia · axisclinico.com',
+  },
 }
 
 function getBranding(productType: string): ProductBranding {

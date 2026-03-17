@@ -206,6 +206,25 @@ export default function DemoDashboardPage() {
         </div>
 
         <p className="text-[10px] text-slate-300 text-center mt-8 mb-4">AXIS ABA · Motor CSO-ABA v2.6.1 · Dados demonstrativos</p>
+
+        {/* CTA Free Tier */}
+        <div className="mt-12 mb-8 p-8 bg-gradient-to-r from-orange-50 to-white rounded-2xl border border-orange-200 text-center">
+          <h3 className="text-2xl font-bold text-slate-900 mb-2">
+            Pronto para usar com um aprendiz real?
+          </h3>
+          <p className="text-slate-600 mb-6">
+            Comece gratuitamente com 1 aprendiz. Sem cartão, sem prazo.
+          </p>
+          <a
+            href="/sign-up?produto=aba"
+            className="inline-flex items-center px-8 py-4 text-lg font-semibold text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+            style={{ backgroundColor: '#B4532F' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#963f24')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#B4532F')}
+          >
+            Começar FREE com 1 aprendiz
+          </a>
+        </div>
       </div>
     </>
   )

@@ -509,9 +509,9 @@ export default function ProdutoTDAHPage() {
           <div className="md:hidden space-y-6">
             {[
               { name: '1 Paciente', price: 'Sem custo', subtitle: '', features: ['Motor CSO-TDAH completo', 'Sessões tricontextuais', 'Daily Report Card (DRC)', 'Layer AuDHD', '46 protocolos clínicos'], href: '/sign-up?produto=tdah', cta: 'Começar com 1 paciente real', highlight: false },
-              { name: 'Founders', price: 'R$97/mês', subtitle: 'até 50 pacientes', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: 'https://pay.hotmart.com/7380571?off=founders', cta: 'Entrar como Fundador', highlight: true },
-              { name: 'Clínica 100', price: 'R$247/mês', subtitle: '', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: 'https://pay.hotmart.com/7380571?off=clinica100', cta: 'Assinar Clínica 100', highlight: false },
-              { name: 'Clínica 250', price: 'R$497/mês', subtitle: '', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: 'https://pay.hotmart.com/7380571?off=clinica250', cta: 'Solicitar Clínica 250', highlight: false },
+              { name: 'Founders', price: 'R$97/mês', subtitle: 'até 50 pacientes', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: 'https://pay.hotmart.com/7380571?off=xqzgdn1i', cta: 'Entrar como Fundador', highlight: true },
+              { name: 'Clínica 100', price: 'R$247/mês', subtitle: '', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: 'https://pay.hotmart.com/7380571?off=cr3rh0u9', cta: 'Assinar Clínica 100', highlight: false },
+              { name: 'Clínica 250', price: 'R$497/mês', subtitle: '', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: 'https://pay.hotmart.com/7380571?off=hxzwuwfh', cta: 'Solicitar Clínica 250', highlight: false },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: teal } : undefined}>
                 <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
@@ -546,7 +546,7 @@ export default function ProdutoTDAHPage() {
               Começar com 1 paciente real
             </Link>
             <a
-              href="https://pay.hotmart.com/7380571?off=founders"
+              href="https://pay.hotmart.com/7380571?off=xqzgdn1i"
               target="_blank"
               className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: teal }}
@@ -556,14 +556,14 @@ export default function ProdutoTDAHPage() {
               Entrar como Fundador
             </a>
             <a
-              href="https://pay.hotmart.com/7380571?off=clinica100"
+              href="https://pay.hotmart.com/7380571?off=cr3rh0u9"
               target="_blank"
               className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
             >
               Assinar Clínica 100
             </a>
             <a
-              href="https://pay.hotmart.com/7380571?off=clinica250"
+              href="https://pay.hotmart.com/7380571?off=hxzwuwfh"
               target="_blank"
               className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
             >
