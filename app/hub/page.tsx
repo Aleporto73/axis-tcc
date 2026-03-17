@@ -23,11 +23,17 @@ const FREE_CTA_COLORS: Record<string, { bg: string; hover: string }> = {
   tdah: { bg: '#0d7377', hover: '#0a5c5f' },
 }
 
+const FREE_CTA_LABELS: Record<string, string> = {
+  tcc: 'Utilizar com 1 paciente FREE',
+  aba: 'Utilizar com 1 aprendiz FREE',
+  tdah: 'Utilizar com 1 paciente FREE',
+}
+
 const PRODUCTS = [
   {
     id: 'tcc',
     name: 'AXIS TCC',
-    description: 'Sistema de Apoio à Prática Clínica em Terapia Cognitivo-Comportamental',
+    description: 'Sistema clínico para acompanhamento e documentação em Terapia Cognitivo-Comportamental',
     logo: '/axistcc.png',
     hrefActive: '/dashboard',
     hrefInactive: '/produto/tcc',
@@ -45,7 +51,7 @@ const PRODUCTS = [
   {
     id: 'aba',
     name: 'AXIS ABA',
-    description: 'Sistema de Apoio à Análise do Comportamento Aplicada',
+    description: 'Sistema clínico para acompanhamento e documentação em Análise do Comportamento Aplicada',
     logo: '/axisaba.png',
     hrefActive: '/aba/dashboard',
     hrefInactive: '/produto/aba',
@@ -63,7 +69,7 @@ const PRODUCTS = [
   {
     id: 'tdah',
     name: 'AXIS TDAH',
-    description: 'Sistema de Apoio à Intervenção Comportamental em TDAH',
+    description: 'Sistema clínico para acompanhamento e documentação em TDAH',
     logo: '/axisTDAH.png',
     hrefActive: '/tdah/dashboard',
     hrefInactive: '/produto/tdah',
@@ -244,7 +250,7 @@ export default function HubPage() {
                         onMouseEnter={e => { if (!isActivating) e.currentTarget.style.background = freeColors.hover }}
                         onMouseLeave={e => { if (!isActivating) e.currentTarget.style.background = freeColors.bg }}
                       >
-                        {isActivating ? 'Ativando...' : 'Começar FREE'}
+                        {isActivating ? 'Ativando...' : (FREE_CTA_LABELS[product.id] || 'Começar FREE')}
                       </button>
                       {/* Ver Demo — outline (só se demo existir) */}
                       {demoPath && (
@@ -263,7 +269,7 @@ export default function HubPage() {
                             e.currentTarget.style.background = 'transparent'
                           }}
                         >
-                          Ver Demo
+                          Ver estrutura
                         </button>
                       )}
                     </div>
