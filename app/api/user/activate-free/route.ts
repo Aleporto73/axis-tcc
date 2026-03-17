@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Verificar se já tem licença para esse produto
     const existingLicense = await client.query(
-      `SELECT is_active, hotmart_plan, plan_tier
+      `SELECT is_active, hotmart_plan
        FROM user_licenses
        WHERE tenant_id = $1 AND product_type = $2
        LIMIT 1`,
