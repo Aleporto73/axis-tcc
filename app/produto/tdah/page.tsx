@@ -44,6 +44,30 @@ const jsonLd = {
       priceCurrency: 'BRL',
       description: 'Motor CSO-TDAH completo, DRC escolar, Layer AuDHD e sessões tricontextuais para 1 paciente.',
     },
+    {
+      '@type': 'Offer',
+      name: 'Founders',
+      price: '97',
+      priceCurrency: 'BRL',
+      billingIncrement: 'P1M',
+      description: 'Até 50 pacientes, multi-terapeuta, relatórios consolidados.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Clínica 100',
+      price: '247',
+      priceCurrency: 'BRL',
+      billingIncrement: 'P1M',
+      description: 'Até 100 pacientes com todos os recursos profissionais.',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Clínica 250',
+      price: '497',
+      priceCurrency: 'BRL',
+      billingIncrement: 'P1M',
+      description: 'Até 250 pacientes com todos os recursos profissionais.',
+    },
   ],
   publisher: {
     '@type': 'Organization',
@@ -85,10 +109,10 @@ export default function ProdutoTDAHPage() {
       <section className="bg-slate-900 py-24 md:py-32">
         <div className="max-w-5xl mx-auto px-6">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight text-white max-w-3xl">
-            TDAH não é só clínica. É escola, casa e contexto.
+            TDAH com acompanhamento tricontextual, documentação consistente e governança real
           </h1>
           <p className="mt-6 text-lg md:text-xl text-slate-300 max-w-2xl leading-relaxed">
-            Sistema estruturado para intervenção comportamental em TDAH com sessões tricontextuais, acompanhamento escolar diário e motor clínico proprietário.
+            O AXIS TDAH ajuda profissionais e equipes a organizar o caso ao longo do tempo, integrar clínica, escola e família com mais clareza e sustentar uma prática mais sólida, contínua e profissional.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
             <Link
@@ -108,37 +132,47 @@ export default function ProdutoTDAHPage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-slate-400">
-            Sistema completo · Sem custo · Sem cartão
+            Sem cartão • Sem custo • Estrutura real desde o primeiro caso
           </p>
         </div>
       </section>
 
-      {/* ────────────────── BLOCO 1 — CONTEXTO ────────────────── */}
+      {/* ────────────────── BLOCO 1 — ABERTURA ────────────────── */}
       <section id="sistema" className="bg-white py-16 md:py-20">
+        <div className="max-w-4xl mx-auto px-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6">
+            TDAH não acontece só no consultório. O acompanhamento também não pode.
+          </h2>
+          <p className="text-base md:text-lg text-slate-600 leading-relaxed max-w-3xl">
+            Na prática, o caso costuma ficar dividido entre o que o clínico observa, o que a escola relata e o que a família vive no dia a dia. O problema não é falta de esforço. É falta de uma estrutura que organize tudo isso com continuidade, clareza e utilidade clínica real.
+          </p>
+          <p className="mt-4 text-base md:text-lg text-slate-600 leading-relaxed max-w-3xl">
+            O AXIS TDAH nasce para isso.
+          </p>
+        </div>
+      </section>
+
+      {/* ────────────────── BLOCO DOR ────────────────── */}
+      <section className="py-16 md:py-20" style={{ backgroundColor: '#f8f8fa' }}>
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-12">
-            A intervenção TDAH vai além do consultório.
+            Quando cada contexto fala sozinho, o caso perde força
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-            <ul className="space-y-5">
-              {[
-                'TDAH impacta escola, casa e clínica simultaneamente.',
-                'Professores precisam de ferramentas estruturadas.',
-                'Famílias precisam de orientação prática.',
-                'O clínico precisa integrar todos os contextos.',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full mt-2 shrink-0" style={{ backgroundColor: teal }} />
-                  <span className="text-base text-slate-600 leading-relaxed">{item}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="flex items-center">
-              <p className="text-2xl md:text-3xl font-semibold text-slate-900 leading-snug">
-                Intervenção integrada.{' '}
-                <span style={{ color: teal }}>Três contextos, um sistema.</span>
-              </p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              { title: 'A clínica vê uma parte', desc: 'O consultório capta padrões importantes, mas não sustenta sozinho a leitura do caso no mundo real.', Icon: Stethoscope },
+              { title: 'A escola vê outra', desc: 'O que acontece em sala de aula nem sempre chega ao clínico de forma simples, estruturada e utilizável.', Icon: GraduationCap },
+              { title: 'A família carrega o resto', desc: 'Rotina, transições, tarefas e manejo do dia a dia acabam ficando soltos, sem um eixo clínico claro.', Icon: Home },
+              { title: 'A evolução fica fragmentada', desc: 'Sem integração, o acompanhamento depende mais de memória, mensagens dispersas e improviso do que de continuidade organizada.', Icon: BarChart3 },
+            ].map((card) => (
+              <div key={card.title} className="bg-white border border-slate-200 rounded-xl p-6">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: teal + '15' }}>
+                  <card.Icon className="w-5 h-5" style={{ color: teal }} />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">{card.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{card.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -147,7 +181,7 @@ export default function ProdutoTDAHPage() {
       <section id="tricontextual" className="bg-slate-100 py-16 md:py-20">
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 text-center mb-12">
-            Sessões tricontextuais
+            Três contextos. Um acompanhamento mais claro.
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
@@ -165,7 +199,7 @@ export default function ProdutoTDAHPage() {
             ))}
           </div>
           <p className="mt-8 text-sm text-slate-500 text-center">
-            Motor CSO-TDAH v1.0.0 · Sessões tricontextuais · Layer AuDHD opcional
+            O valor do sistema está em conectar esses três eixos sem transformar o caso em ruído.
           </p>
         </div>
       </section>
@@ -216,10 +250,10 @@ export default function ProdutoTDAHPage() {
             {/* Features */}
             <div className="space-y-4">
               {[
-                { title: 'Metas objetivas (máx. 3/dia)', desc: 'Bible §17: metas claras, mensuráveis e realistas para o contexto escolar.' },
-                { title: 'Preenchido pelo professor', desc: 'Interface simples. O professor marca se a meta foi atingida e adiciona notas.' },
-                { title: 'Revisão do clínico', desc: 'O terapeuta revisa cada DRC, adiciona notas clínicas e valida o progresso.' },
-                { title: 'Vinculado a protocolos', desc: 'Cada meta pode ser vinculada a um protocolo ativo, fechando o ciclo clínico.' },
+                { title: 'Metas claras', desc: 'Poucas metas, bem definidas e observáveis no contexto real.' },
+                { title: 'Preenchimento simples', desc: 'O professor registra de forma prática, sem virar burocracia.' },
+                { title: 'Revisão clínica', desc: 'O profissional integra esse retorno ao acompanhamento do caso.' },
+                { title: 'Continuidade real', desc: 'A escola deixa de ser apenas fonte de relato e passa a fazer parte de uma leitura mais organizada da evolução.' },
               ].map((f) => (
                 <div key={f.title} className="bg-white rounded-xl border border-slate-200 p-5">
                   <h4 className="text-sm font-semibold text-slate-800 mb-1">{f.title}</h4>
@@ -228,6 +262,9 @@ export default function ProdutoTDAHPage() {
               ))}
             </div>
           </div>
+          <p className="mt-6 text-sm text-slate-500 italic text-center lg:text-left">
+            Menos ruído. Mais utilidade clínica.
+          </p>
         </div>
       </section>
 
@@ -284,6 +321,33 @@ export default function ProdutoTDAHPage() {
                   <item.Icon className="w-6 h-6 text-slate-700" />
                 </div>
                 <p className="text-sm font-semibold text-slate-700">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────────── BLOCO LIMITES ────────────────── */}
+      <section className="bg-white py-16 md:py-20">
+        <div className="max-w-4xl mx-auto px-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-8 text-center">
+            O que o AXIS TDAH não faz
+          </h2>
+          <p className="text-base text-slate-500 text-center mb-10 max-w-2xl mx-auto">
+            Transparência também é parte da estrutura.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              'Não substitui o julgamento clínico do profissional.',
+              'Não faz diagnóstico automaticamente.',
+              'Não transforma retorno escolar em decisão clínica final.',
+              'Não prescreve intervenção por conta própria.',
+              'Não compartilha dados sem autorização.',
+              'Não promete resolver o caso por software.',
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-3 p-4 rounded-lg border border-slate-100">
+                <X className="w-4 h-4 text-slate-300 mt-0.5 shrink-0" />
+                <span className="text-sm text-slate-600 leading-relaxed">{item}</span>
               </div>
             ))}
           </div>
@@ -349,15 +413,17 @@ export default function ProdutoTDAHPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-900 text-white">
-                  <th className="text-left py-4 px-6 font-semibold w-[40%]">Recurso</th>
+                  <th className="text-left py-4 px-6 font-semibold w-[34%]">Recurso</th>
                   <th className="text-center py-4 px-3 font-semibold">
                     <span className="block">1 Paciente</span>
                     <span className="text-xs font-normal text-slate-400">Free</span>
                   </th>
                   <th className="text-center py-4 px-3 font-semibold">
-                    <span className="block">Clínica</span>
-                    <span className="text-xs font-normal text-slate-400">Em breve</span>
+                    <span className="block">Founders</span>
+                    <span className="text-xs font-normal text-slate-400">até 50</span>
                   </th>
+                  <th className="text-center py-4 px-3 font-semibold">Clínica 100</th>
+                  <th className="text-center py-4 px-3 font-semibold">Clínica 250</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
@@ -379,9 +445,11 @@ export default function ProdutoTDAHPage() {
                         <X className="w-4 h-4 mx-auto text-slate-300" />
                       )}
                     </td>
-                    <td className="py-3.5 px-3 text-center">
-                      <Check className="w-5 h-5 mx-auto" style={{ color: teal }} />
-                    </td>
+                    {[0, 1, 2].map((j) => (
+                      <td key={j} className="py-3.5 px-3 text-center">
+                        <Check className="w-5 h-5 mx-auto" style={{ color: teal }} />
+                      </td>
+                    ))}
                   </tr>
                 ))}
                 <tr className="border-t-2 border-slate-200 bg-white">
@@ -390,7 +458,16 @@ export default function ProdutoTDAHPage() {
                     <span className="text-lg font-bold text-slate-900">Sem custo</span>
                   </td>
                   <td className="py-5 px-3 text-center">
-                    <span className="text-sm text-slate-400">A definir</span>
+                    <span className="text-lg font-bold text-slate-900">R$97</span>
+                    <span className="text-sm text-slate-500">/mês</span>
+                  </td>
+                  <td className="py-5 px-3 text-center">
+                    <span className="text-lg font-bold text-slate-900">R$247</span>
+                    <span className="text-sm text-slate-500">/mês</span>
+                  </td>
+                  <td className="py-5 px-3 text-center">
+                    <span className="text-lg font-bold text-slate-900">R$497</span>
+                    <span className="text-sm text-slate-500">/mês</span>
                   </td>
                 </tr>
               </tbody>
@@ -400,11 +477,14 @@ export default function ProdutoTDAHPage() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-6">
             {[
-              { name: '1 Paciente', price: 'Sem custo', features: ['Motor CSO-TDAH completo', 'Sessões tricontextuais', 'Daily Report Card (DRC)', 'Layer AuDHD', '46 protocolos clínicos'], href: '/sign-up?produto=tdah', cta: 'Utilizar com 1 paciente real', highlight: true },
-              { name: 'Clínica', price: 'Em breve', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: '#', cta: 'Em breve', highlight: false },
+              { name: '1 Paciente', price: 'Sem custo', subtitle: '', features: ['Motor CSO-TDAH completo', 'Sessões tricontextuais', 'Daily Report Card (DRC)', 'Layer AuDHD', '46 protocolos clínicos'], href: '/sign-up?produto=tdah', cta: 'Começar com 1 paciente real', highlight: false },
+              { name: 'Founders', price: 'R$97/mês', subtitle: 'até 50 pacientes', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: 'https://pay.hotmart.com/7380571?off=founders', cta: 'Entrar como Fundador', highlight: true },
+              { name: 'Clínica 100', price: 'R$247/mês', subtitle: '', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: 'https://pay.hotmart.com/7380571?off=clinica100', cta: 'Assinar Clínica 100', highlight: false },
+              { name: 'Clínica 250', price: 'R$497/mês', subtitle: '', features: ['Tudo do plano Free', 'Multi-terapeuta', 'Relatórios consolidados'], href: 'https://pay.hotmart.com/7380571?off=clinica250', cta: 'Solicitar Clínica 250', highlight: false },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: teal } : undefined}>
                 <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
+                {plan.subtitle && <p className="text-xs text-slate-400">{plan.subtitle}</p>}
                 <p className="text-2xl font-bold text-slate-900 mt-2">{plan.price}</p>
                 <ul className="mt-4 space-y-2">
                   {plan.features.map((f) => (
@@ -416,6 +496,7 @@ export default function ProdutoTDAHPage() {
                 </ul>
                 <a
                   href={plan.href}
+                  target={plan.href.startsWith('http') ? '_blank' : undefined}
                   className="mt-6 block w-full text-center py-2.5 rounded-lg text-sm font-semibold transition-colors"
                   style={plan.highlight ? { backgroundColor: teal, color: 'white' } : { border: '1px solid #0F172A', color: '#0F172A' }}
                 >
@@ -425,17 +506,38 @@ export default function ProdutoTDAHPage() {
             ))}
           </div>
 
-          {/* CTA desktop */}
+          {/* Botões desktop */}
           <div className="hidden md:flex gap-4 mt-6">
             <Link
               href="/sign-up?produto=tdah"
+              className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+            >
+              Começar com 1 paciente real
+            </Link>
+            <a
+              href="https://pay.hotmart.com/7380571?off=founders"
+              target="_blank"
               className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: teal }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = tealHover)}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = teal)}
             >
-              Utilizar com 1 paciente real
-            </Link>
+              Entrar como Fundador
+            </a>
+            <a
+              href="https://pay.hotmart.com/7380571?off=clinica100"
+              target="_blank"
+              className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+            >
+              Assinar Clínica 100
+            </a>
+            <a
+              href="https://pay.hotmart.com/7380571?off=clinica250"
+              target="_blank"
+              className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+            >
+              Solicitar Clínica 250
+            </a>
           </div>
         </div>
       </section>
@@ -467,7 +569,7 @@ export default function ProdutoTDAHPage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-slate-400">
-            Sistema completo · Sem custo · Sem cartão
+            Sem cartão • Sem custo • Estrutura real desde o primeiro caso
           </p>
         </div>
       </section>
@@ -486,7 +588,7 @@ export default function ProdutoTDAHPage() {
             </div>
           </div>
           <p className="mt-4 text-xs text-slate-500 text-center md:text-left">
-            Este sistema é uma ferramenta de apoio e organização. Não substitui o julgamento clínico do profissional.
+            AXIS TDAH é uma infraestrutura clínica de apoio à organização, ao acompanhamento e à documentação profissional. Não substitui formação, supervisão ou julgamento clínico.
           </p>
         </div>
       </footer>
