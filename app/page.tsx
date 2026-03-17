@@ -76,28 +76,29 @@ export default function HomePage() {
           </header>
 
           {/* ════════════════ BLOCO 2 — HERO ════════════════ */}
-          <section className="pt-28 pb-16 px-6 relative">
+          <section className="pt-32 pb-20 px-6 relative">
             <div className="absolute inset-0 bg-gradient-to-b from-slate-100/60 to-transparent pointer-events-none" />
             <div className="max-w-5xl mx-auto text-center relative">
               <div className={`transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                <span className="inline-block px-4 py-2 bg-slate-100 text-slate-600 text-sm font-medium rounded-full mb-8">
+                <span className="inline-block px-4 py-2 bg-slate-100 text-slate-600 text-sm font-medium rounded-full mb-10">
                   Psiform Tecnologia
                 </span>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tight leading-[1.1] mb-8">
-                  TCC, ABA e TDAH com acompanhamento
-                  <br />
-                  <span className="font-semibold" style={{ color: navy }}>
-                    longitudinal, documentação consistente
-                  </span>
-                  <br />
-                  <span className="font-semibold" style={{ color: navy }}>
-                    e governança real
-                  </span>
+
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tight leading-[1.15] mb-6">
+                  TCC, ABA e TDAH
                 </h1>
-                <p className="text-lg md:text-xl text-slate-600 font-light max-w-3xl mx-auto leading-relaxed mb-10">
-                  Sistemas clínicos para organizar o caso ao longo do tempo, acompanhar evolução com mais clareza
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.15] mb-10" style={{ color: navy }}>
+                  com acompanhamento longitudinal,
+                  <br />
+                  documentação consistente e governança real
+                </h1>
+
+                <p className="text-lg md:text-xl text-slate-600 font-light max-w-2xl mx-auto leading-[1.8] mb-12">
+                  Sistemas clínicos para organizar o caso ao longo do tempo,
+                  acompanhar evolução com mais clareza
                   e sustentar uma prática profissional mais sólida.
                 </p>
+
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <a
                     href="#produtos"
@@ -114,7 +115,8 @@ export default function HomePage() {
                     Começar com 1 caso real
                   </Link>
                 </div>
-                <div className="mt-10 text-xs text-slate-500 tracking-wide">
+
+                <div className="mt-12 text-xs text-slate-500 tracking-wide">
                   Acompanhamento contínuo &bull; Histórico preservado &bull; Julgamento humano
                 </div>
               </div>
@@ -122,15 +124,17 @@ export default function HomePage() {
           </section>
 
           {/* ════════════════ BLOCO 3 — ABERTURA ════════════════ */}
-          <section id="como-funciona" className="py-16 px-6 bg-white border-t border-slate-200">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-light mb-6">
-                Cada atendimento importa.{' '}
+          <section id="como-funciona" className="py-20 px-6 bg-white border-t border-slate-200">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-light leading-snug mb-8">
+                Cada atendimento importa.
+                <br />
                 <span className="font-semibold" style={{ color: navy }}>O que vem depois dele também.</span>
               </h2>
-              <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed mb-4">
-                O desafio não é apenas registrar uma sessão. É acompanhar o caso com continuidade,
-                enxergar evolução com clareza e manter documentação que faça sentido ao longo do tempo.
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-[1.8] mb-6">
+                O desafio não é apenas registrar uma sessão.
+                É acompanhar o caso com continuidade, enxergar evolução com clareza
+                e manter documentação que faça sentido ao longo do tempo.
               </p>
               <p className="text-lg font-medium" style={{ color: navy }}>
                 O AXIS nasce para isso.
@@ -156,8 +160,8 @@ export default function HomePage() {
                   </span>
                   <h3 className="text-xl font-semibold mb-3" style={{ color: navy }}>AXIS TCC</h3>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Registro estruturado, organização do processo terapêutico e acompanhamento longitudinal
-                    para Terapia Cognitivo-Comportamental.
+                    Organização do processo terapêutico, registro estruturado
+                    e acompanhamento longitudinal para TCC.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
                     <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Sessões com estrutura real</li>
@@ -182,8 +186,8 @@ export default function HomePage() {
                   </span>
                   <h3 className="text-xl font-semibold mb-3" style={{ color: navy }}>AXIS ABA</h3>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Organização protocolar, acompanhamento evolutivo e documentação consistente
-                    para Análise do Comportamento Aplicada.
+                    Gestão protocolar, acompanhamento evolutivo
+                    e documentação consistente para ABA.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
                     <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Ciclo clínico organizado</li>
@@ -208,13 +212,13 @@ export default function HomePage() {
                   </span>
                   <h3 className="text-xl font-semibold mb-3" style={{ color: teal }}>AXIS TDAH</h3>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Sistema tricontextual integrando consultório, escola e rotina familiar
-                    em um acompanhamento contínuo e utilizável.
+                    Integração tricontextual entre consultório, escola
+                    e rotina familiar em acompanhamento contínuo.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
                     <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Três contextos no mesmo eixo clínico</li>
                     <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Monitoramento funcional ao longo do tempo</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Organização real de casos que não cabem só no consultório</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Casos que não cabem só no consultório</li>
                   </ul>
                   <div className="flex flex-col gap-2">
                     <Link href="/produto/tdah" className="w-full text-center px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: teal }}>
@@ -230,21 +234,28 @@ export default function HomePage() {
           </section>
 
           {/* ════════════════ BLOCO 5 — DIFERENÇA ════════════════ */}
-          <section className="py-16 px-6 bg-white border-t border-slate-200">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-light mb-6 text-center">
-                O valor está na <span className="font-semibold" style={{ color: navy }}>continuidade</span>, não na tela.
+          <section className="py-20 px-6 bg-white border-t border-slate-200">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-light leading-snug mb-8">
+                O profissional quer ver o <span className="font-semibold" style={{ color: navy }}>antes e o depois</span>.
+                <br />
+                O AXIS torna isso visível.
               </h2>
-              <p className="text-lg text-slate-600 text-center max-w-3xl mx-auto leading-relaxed mb-8">
-                O AXIS não foi pensado para ser apenas um lugar onde o profissional guarda informações.
-                Ele foi pensado para ajudar a:
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-[1.8] mb-10">
+                Com o tempo, a memória do caso se dilui.
+                O que mudou, quando mudou e por que mudou ficam cada vez menos claros.
+              </p>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-[1.8] mb-10">
+                O AXIS mede e organiza a evolução de cada caso,
+                para que o profissional consiga comparar momentos,
+                enxergar progresso real e decidir com mais segurança.
               </p>
               <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
                 {[
-                  'Conectar o que aconteceu antes com o que vem depois',
-                  'Reduzir perda de informação importante',
-                  'Dar consistência à documentação clínica',
-                  'Apoiar uma prática séria por dentro, não só bonita por fora',
+                  'Comparar o início com o momento atual do caso',
+                  'Reduzir perda de informação ao longo do tempo',
+                  'Manter documentação com consistência real',
+                  'Decidir com base no que ficou registrado',
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl">
                     <span className="mt-1 w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: navy }} />
@@ -259,22 +270,23 @@ export default function HomePage() {
           <section id="governanca" className="py-16 px-6 bg-slate-50 border-t border-slate-200">
             <div className="max-w-5xl mx-auto">
               <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-light mb-4">
-                  Uma arquitetura comum.{' '}
-                  <span className="font-semibold" style={{ color: navy }}>Governança que sustenta.</span>
+                <h2 className="text-3xl md:text-4xl font-light leading-snug mb-4">
+                  Para que essa visão funcione,{' '}
+                  <span className="font-semibold" style={{ color: navy }}>a base precisa ser sólida.</span>
                 </h2>
-                <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
-                  Os sistemas AXIS compartilham a mesma lógica de base: organização estruturada,
-                  acompanhamento longitudinal, histórico preservado, rastreabilidade e julgamento humano no centro.
+                <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-[1.8]">
+                  Os três sistemas compartilham a mesma lógica:
+                  organização estruturada, histórico preservado
+                  e julgamento humano no centro de cada decisão.
                 </p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
                 {[
-                  { title: 'Histórico preservado', desc: 'O passado clínico continua acessível, organizado e confiável.' },
-                  { title: 'Rastreabilidade', desc: 'Mudanças e registros relevantes permanecem claros ao longo do uso.' },
-                  { title: 'Organização consistente', desc: 'Os dados deixam de ficar espalhados entre anotações, memórias e documentos soltos.' },
-                  { title: 'Estrutura profissional', desc: 'A documentação ganha consistência para a rotina clínica e para contextos institucionais.' },
+                  { title: 'Histórico preservado', desc: 'O passado clínico permanece acessível, organizado e confiável ao longo do tempo.' },
+                  { title: 'Rastreabilidade', desc: 'Cada registro e cada mudança ficam claros, sem depender de memória ou improviso.' },
+                  { title: 'Organização consistente', desc: 'Os dados deixam de ficar espalhados entre anotações soltas, planilhas e memórias.' },
+                  { title: 'Estrutura profissional', desc: 'A documentação ganha forma para a rotina clínica, supervisão e contextos institucionais.' },
                 ].map((item, i) => (
                   <div key={i} className="bg-white rounded-2xl border border-slate-200 p-8">
                     <h3 className="text-lg font-semibold mb-3" style={{ color: navy }}>{item.title}</h3>

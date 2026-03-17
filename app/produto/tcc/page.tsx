@@ -22,6 +22,7 @@ import {
   Calendar,
   Mic,
   ListChecks,
+  Users,
 } from 'lucide-react'
 
 /* ─── palette ─── */
@@ -97,10 +98,10 @@ export default function ProdutoTCCPage() {
       <section className="py-24 md:py-32" style={{ backgroundColor: azul }}>
         <div className="max-w-5xl mx-auto px-6">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight text-white max-w-3xl">
-            Sistema TCC com estrutura clínica para quem faz terapia de verdade.
+            TCC com acompanhamento longitudinal, estrutura clínica e documentação consistente
           </h1>
           <p className="mt-6 text-lg md:text-xl max-w-2xl leading-relaxed" style={{ color: lilasLight }}>
-            Registro estruturado de sessões, conceitualização cognitiva, monitoramento evolutivo e documentação com padrão institucional.
+            O AXIS TCC ajuda psicólogos a organizar o processo terapêutico ao longo do tempo, acompanhar evolução com mais clareza e sustentar uma prática profissional mais sólida.
           </p>
           <div className="mt-10">
             <Link
@@ -114,55 +115,35 @@ export default function ProdutoTCCPage() {
             </Link>
           </div>
           <p className="mt-4 text-sm" style={{ color: lilas }}>
-            Sem cartão. Sem prazo.
+            Sem cartão • Sem prazo • Estrutura real desde o primeiro caso
           </p>
         </div>
       </section>
 
-      {/* ────────────────── BLOCO 1 — POSICIONAMENTO ────────────────── */}
+      {/* ────────────────── BLOCO 1 — ABERTURA ────────────────── */}
       <section id="sistema" className="bg-white py-16 md:py-20">
-        <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-12">
-            TCC exige estrutura. Estrutura exige sistema.
+        <div className="max-w-4xl mx-auto px-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6">
+            O desafio não é só conduzir bem a sessão. É não perder o caso depois dela.
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-            <ul className="space-y-5">
-              {[
-                'Conceitualização cognitiva precisa ser viva, não estatica.',
-                'Registro de pensamentos automáticos se perde em anotações soltas.',
-                'Evolução clínica não pode depender de memória.',
-                'Documentação técnica precisa resistir a auditoria.',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full mt-2 shrink-0" style={{ backgroundColor: azul }} />
-                  <span className="text-base text-slate-600 leading-relaxed">{item}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="flex items-center">
-              <p className="text-2xl md:text-3xl font-semibold text-slate-900 leading-snug">
-                O AXIS organiza o que você ja faz.{' '}
-                <span style={{ color: azul }}>Sem mudar seu método.</span>
-              </p>
-            </div>
-          </div>
+          <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-3xl">
+            Na prática, muita coisa importante fica espalhada entre anotações, memória clínica, transcrições, tarefas e relatórios montados na correria. O AXIS TCC nasce para dar continuidade ao que acontece na sessão, transformar isso em acompanhamento organizado e manter uma documentação mais clara ao longo do tempo.
+          </p>
         </div>
       </section>
 
-      {/* ────────────────── BLOCO 2 — O PROBLEMA ────────────────── */}
+      {/* ────────────────── BLOCO 2 — DOR ────────────────── */}
       <section className="py-16 md:py-20" style={{ backgroundColor: '#f0f0f5' }}>
         <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
-            Você sabe o que acontece na sessão. O problema e depois.
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-12">
+            Quando o caso evolui, a estrutura precisa acompanhar
           </h2>
-          <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-3xl mb-12">
-            Anotacoes soltas, planilhas paralelas, relatórios montados na correria. O AXIS resolve isso com estrutura clínica real.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              { title: 'Registro se perde', desc: 'Pensamentos automáticos, distorções e técnicas aplicadas ficam em cadernos ou planilhas sem padrão.', Icon: AlertTriangle },
-              { title: 'Evolução invisivel', desc: 'Sem dados estruturados, e impossível mostrar progresso real para o paciente ou para o convênio.', Icon: TrendingUp },
-              { title: 'Documentação frágil', desc: 'Relatórios manuais não sustentam auditoria. Sem rastreabilidade, sem defesa técnica.', Icon: FileText },
+              { title: 'Registro se perde', desc: 'Pensamentos automáticos, distorções, tarefas e intervenções acabam dispersos em anotações sem padrão.', Icon: AlertTriangle },
+              { title: 'Evolução fica difícil de enxergar', desc: 'Sem estrutura longitudinal, o processo terapêutico depende mais de memória do que de continuidade visível.', Icon: TrendingUp },
+              { title: 'Documentação fica frágil', desc: 'Relatórios feitos manualmente consomem tempo e não oferecem o mesmo nível de consistência histórica.', Icon: FileText },
+              { title: 'O profissional carrega mais peso do que deveria', desc: 'O trabalho clínico já é complexo. O sistema precisa sustentar a prática, não criar mais fricção.', Icon: Users },
             ].map((card) => (
               <div key={card.title} className="bg-white border border-slate-300 rounded-xl p-8">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: azul + '12' }}>
@@ -246,25 +227,23 @@ export default function ProdutoTCCPage() {
               </div>
             </div>
 
-            {/* Coluna direita — Sinais e eventos */}
+            {/* Coluna direita — O que o motor entrega */}
             <div className="space-y-4">
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">
-                  Sinais capturados automáticamente
+                  O que o motor entrega
                 </p>
                 <div className="space-y-3">
                   {[
-                    'Confrontação observada (CONFRONTATION_OBSERVED)',
-                    'Esquiva observada (AVOIDANCE_OBSERVED)',
-                    'Ajuste terapêutico (ADJUSTMENT_OBSERVED)',
-                    'Recuperação observada (RECOVERY_OBSERVED)',
-                    'Início / fim de sessão (SESSION_START / SESSION_END)',
-                    'Tarefa concluída / não concluída (TASK_COMPLETED / TASK_INCOMPLETE)',
-                    'Check de humor (MOOD_CHECK · escala 0-10)',
-                  ].map((signal) => (
-                    <div key={signal} className="flex items-center gap-3">
+                    'Organiza sinais clínicos ao longo do tempo',
+                    'Conecta sessão, tarefa e evolução',
+                    'Reduz dependência de memória retrospectiva',
+                    'Mantém histórico preservado e rastreável',
+                    'Apoia leitura de continuidade sem fórmulas manuais',
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-3">
                       <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: lilas }} />
-                      <span className="text-sm text-slate-600">{signal}</span>
+                      <span className="text-sm text-slate-600">{item}</span>
                     </div>
                   ))}
                 </div>
@@ -274,8 +253,8 @@ export default function ProdutoTCCPage() {
                 <p className="text-sm text-slate-500 leading-relaxed">
                   Cada evento gera um novo registro imutável (append-only). O sistema nunca sobrescreve dados anteriores. Histórico clínico preservado com integridade total.
                 </p>
-                <p className="text-xs text-slate-400 mt-3 font-mono">
-                  Motor CSO-TCC v3.0.0 · Anti-duplicidade via SHA256
+                <p className="text-xs text-slate-400 mt-3">
+                  Histórico preservado. Evolução rastreável. Leitura mais clara do processo.
                 </p>
               </div>
             </div>
@@ -432,7 +411,7 @@ export default function ProdutoTCCPage() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 md:p-10">
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-8">
-              Documentação com padrão institucional.
+              Documentação com padrão profissional
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
@@ -472,8 +451,9 @@ export default function ProdutoTCCPage() {
               'Não substitui o julgamento clínico do terapeuta.',
               'Não faz diagnóstico.',
               'Não prescreve intervenções.',
-              'Não interpreta resultados automáticamente.',
-              'Não compartilha dados sem autorização explicita.',
+              'Não interpreta resultados automaticamente.',
+              'Não transforma dado em decisão clínica final.',
+              'Não compartilha dados sem autorização explícita.',
               'Não gera laudos — gera relatórios estruturados.',
             ].map((item) => (
               <div key={item} className="flex items-start gap-3 p-4 rounded-lg border border-slate-100">
@@ -654,7 +634,7 @@ export default function ProdutoTCCPage() {
             </div>
           </div>
           <p className="mt-4 text-xs text-center md:text-left" style={{ color: lilas + '80' }}>
-            Este sistema é uma ferramenta de apoio e organização. Não substitui o julgamento clínico do profissional.
+            AXIS TCC é uma infraestrutura clínica de apoio à organização, ao acompanhamento e à documentação profissional. Não substitui formação, supervisão ou julgamento clínico.
           </p>
         </div>
       </footer>
