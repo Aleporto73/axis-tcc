@@ -210,7 +210,7 @@ export default function HomePage() {
                     Para clínica, escola e família
                   </span>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Integração entre consultório, escola e família em acompanhamento tricontextual.
+                    Integração entre consultório, escola e rotina familiar com acompanhamento tricontextual e documentação unificada.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
                     <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: teal }} />Clínica, escola e casa integrados</li>
