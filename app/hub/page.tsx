@@ -12,11 +12,6 @@ interface License {
   valid_until: string | null
 }
 
-const DEMO_PATHS: Record<string, string> = {
-  aba: '/demo',
-  tdah: '/demo/tdah',
-}
-
 const FREE_CTA_COLORS: Record<string, { bg: string; hover: string }> = {
   tcc: { bg: '#1a1f4e', hover: '#2a2f6e' },
   aba: { bg: '#B4532F', hover: '#963f24' },
@@ -69,8 +64,8 @@ const PRODUCTS = [
   {
     id: 'tdah',
     name: 'AXIS TDAH',
-    description: 'Sistema clínico para acompanhamento e documentação em TDAH',
-    logo: '/axisTDAH.png',
+    description: 'Sistema clínico para acompanhamento e documentação em TDAH com integração tricontextual',
+    logo: '/axistdah.png',
     hrefActive: '/tdah/dashboard',
     hrefInactive: '/produto/tdah',
     accent: '#0d7377',
@@ -170,7 +165,6 @@ export default function HubPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {PRODUCTS.map(product => {
             const licensed = hasLicense(product.id)
-            const demoPath = DEMO_PATHS[product.id]
             const freeColors = FREE_CTA_COLORS[product.id]
             const isActivating = activating === product.id
 
@@ -252,26 +246,6 @@ export default function HubPage() {
                       >
                         {isActivating ? 'Ativando...' : (FREE_CTA_LABELS[product.id] || 'Começar FREE')}
                       </button>
-                      {/* Ver Demo — outline (só se demo existir) */}
-                      {demoPath && (
-                        <button
-                          onClick={() => router.push(demoPath)}
-                          className="w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-200"
-                          style={{
-                            background: 'transparent',
-                            border: `1.5px solid ${product.btnInactiveText}`,
-                            color: product.btnInactiveText,
-                          }}
-                          onMouseEnter={e => {
-                            e.currentTarget.style.background = product.btnInactiveBg
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.background = 'transparent'
-                          }}
-                        >
-                          Ver estrutura
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
