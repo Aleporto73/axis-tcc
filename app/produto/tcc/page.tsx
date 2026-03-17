@@ -77,7 +77,7 @@ export default function ProdutoTCCPage() {
       <header className="bg-white border-b border-slate-300 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <Link href="/">
-            <Image src="/axistcc.png" alt="AXIS TCC — Sistema de apoio clínico para Terapia Cognitivo-Comportamental" width={140} height={36} className="h-9 w-auto" priority />
+            <Image src="/axistcc.png" alt="AXIS TCC — Sistema clínico para Terapia Cognitivo-Comportamental" width={140} height={36} className="h-9 w-auto" priority />
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
             <a href="#sistema" className="hover:text-slate-900 transition-colors">Sistema</a>
@@ -352,10 +352,10 @@ export default function ProdutoTCCPage() {
       <section className="bg-white py-16 md:py-20">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
-            Dúvidas? A Ana resolve na hora.
+            Dúvidas operacionais? A Ana responde dentro da plataforma.
           </h2>
           <p className="mt-4 text-base md:text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto">
-            Nossa assistente virtual conhece cada detalhe do sistema e está disponível 24h dentro da plataforma.
+            A Ana ajuda o profissional a entender funcionalidades, fluxos e dúvidas de uso no dia a dia.
           </p>
 
           {/* Chat mockup — conversa real */}
@@ -546,7 +546,7 @@ export default function ProdutoTCCPage() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-6">
             {[
-              { name: '1 Paciente', price: 'Sem custo', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição por áudio', 'Relatório institucional'], href: '/sign-up?produto=tcc', cta: 'Começar com 1 paciente', highlight: false },
+              { name: '1 Paciente', price: 'Sem custo', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição por áudio', 'Relatório institucional'], href: '/sign-up?produto=tcc', cta: 'Começar com 1 paciente real', highlight: false },
               { name: 'Profissional', price: 'R$59/mês', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição por áudio', 'Relatório institucional', 'Google Calendar sync', 'Pacientes ilimitados'], href: 'https://pay.hotmart.com/J104687347A?off=sn8ebdqc', cta: 'Assinar Profissional', highlight: true },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: azul } : undefined}>
@@ -578,7 +578,7 @@ export default function ProdutoTCCPage() {
               href="/sign-up?produto=tcc"
               className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
             >
-              Começar com 1 paciente
+              Começar com 1 paciente real
             </Link>
             <a
               href="https://pay.hotmart.com/J104687347A?off=sn8ebdqc"
@@ -719,7 +719,7 @@ function RelatórioTCCMockup() {
       {/* Rodape */}
       <div className="mt-4 pt-3 border-t border-slate-200">
         <p className="text-[9px] text-slate-300 font-mono">
-          Motor CSO-TCC v3.0.0 · SHA256: a7f2b...
+          Documento gerado a partir de dados estruturados
         </p>
       </div>
     </div>

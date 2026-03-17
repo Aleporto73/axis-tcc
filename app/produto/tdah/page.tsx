@@ -34,7 +34,7 @@ const jsonLd = {
   name: 'AXIS TDAH',
   applicationCategory: 'HealthApplication',
   operatingSystem: 'Web',
-  description: 'Sistema de gestão clínica para intervenção comportamental em TDAH. Sessões tricontextuais, Daily Report Card escolar, Layer AuDHD e motor CSO-TDAH.',
+  description: 'Sistema clínico para acompanhamento tricontextual em TDAH. Sessões tricontextuais, Daily Report Card escolar, Layer AuDHD e motor CSO-TDAH.',
   url: 'https://axisclinico.com/produto/tdah',
   offers: [
     {
@@ -88,7 +88,7 @@ export default function ProdutoTDAHPage() {
       <header className="bg-white border-b border-slate-300 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <Link href="/">
-            <Image src="/axisTDAH-transparente.png" alt="AXIS TDAH — Sistema de gestão clínica para TDAH" width={140} height={32} className="h-8 w-auto" priority />
+            <Image src="/axisTDAH-transparente.png" alt="AXIS TDAH — Sistema clínico para acompanhamento tricontextual em TDAH" width={140} height={32} className="h-8 w-auto" priority />
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
             <a href="#sistema" className="hover:text-slate-900 transition-colors">Sistema</a>
@@ -122,7 +122,7 @@ export default function ProdutoTDAHPage() {
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = teal)}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = tealLight)}
             >
-              Utilizar com 1 paciente real
+              Começar com 1 paciente real
             </Link>
             <Link
               href="/demo/tdah"
@@ -185,8 +185,8 @@ export default function ProdutoTDAHPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: 'Clínico', desc: 'Sessões estruturadas no consultório com protocolos, observações e cálculo evolutivo.', Icon: Stethoscope, color: teal },
-              { title: 'Domiciliar', desc: 'Orientação e intervenção no ambiente familiar. Rotinas, economia de fichas, manejo.', Icon: Home, color: '#6366f1' },
+              { title: 'Clínico', desc: 'Sessões estruturadas no consultório com observações clínicas e acompanhamento evolutivo.', Icon: Stethoscope, color: teal },
+              { title: 'Domiciliar', desc: 'Orientação familiar, rotina e continuidade fora do consultório.', Icon: Home, color: '#6366f1' },
               { title: 'Escolar', desc: 'DRC diário, integração com professor, metas objetivas e revisão do clínico.', Icon: GraduationCap, color: '#f59e0b' },
             ].map((card) => (
               <div key={card.title} className="bg-white border border-slate-300 rounded-xl p-8">
@@ -288,8 +288,8 @@ export default function ProdutoTDAHPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { label: 'Off', desc: 'Apenas TDAH puro. Blocos Base + Executivo.' },
-                { label: 'Core', desc: 'Ativa SEN (sensorial) e TRF (transições).' },
-                { label: 'Completa', desc: 'Core + RIG (rigidez/impulsividade) e MSK.' },
+                { label: 'Core', desc: 'Ativa dimensões de sensorialidade e transições.' },
+                { label: 'Completa', desc: 'Core + rigidez, impulsividade e outras dimensões relevantes.' },
               ].map((mode) => (
                 <div key={mode.label} className="rounded-xl border border-slate-200 p-5">
                   <span className="text-xs font-bold px-2 py-1 rounded" style={{ backgroundColor: '#7c3aed15', color: '#7c3aed' }}>
@@ -301,6 +301,37 @@ export default function ProdutoTDAHPage() {
             </div>
             <p className="mt-6 text-sm text-slate-500 italic">
               Toda mudança de layer é auditada. Histórico preservado. Desativação não apaga dados.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────────── BLOCO DOCUMENTAÇÃO PROFISSIONAL ────────────────── */}
+      <section className="bg-white py-16 md:py-20">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 md:p-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-8">
+              Documentação com padrão profissional
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                'Registro longitudinal do caso',
+                'Histórico preservado e acessível',
+                'Rastreabilidade de mudanças',
+                'Estrutura útil para clínica e contextos institucionais',
+                'Fundamentação metodológica declarada',
+                'Integração entre contextos documentada',
+              ].map((item) => (
+                <div key={item} className="group rounded-xl border border-slate-200 p-5 hover:border-slate-300 hover:shadow-sm transition-all">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: teal + '15' }}>
+                    <Check className="w-5 h-5" style={{ color: teal }} />
+                  </div>
+                  <p className="text-sm font-medium text-slate-700 leading-relaxed">{item}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-8 text-sm text-slate-500 italic">
+              O sistema organiza. A responsabilidade clínica permanece do profissional.
             </p>
           </div>
         </div>
@@ -358,10 +389,10 @@ export default function ProdutoTDAHPage() {
       <section className="bg-slate-100 py-16 md:py-20">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
-            Precisa de ajuda? A Ana responde na hora.
+            Dúvidas operacionais? A Ana responde dentro da plataforma.
           </h2>
           <p className="mt-4 text-base md:text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto">
-            Assistente virtual disponível 24h dentro da plataforma.
+            A Ana ajuda o profissional a entender funcionalidades, fluxos e dúvidas de uso no dia a dia.
           </p>
 
           <div className="mt-10 max-w-xl mx-auto bg-white rounded-xl border border-slate-300 shadow-sm text-left">
@@ -559,7 +590,7 @@ export default function ProdutoTDAHPage() {
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = teal)}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = tealLight)}
             >
-              Utilizar com 1 paciente real
+              Começar com 1 paciente real
             </Link>
             <Link
               href="/demo/tdah"

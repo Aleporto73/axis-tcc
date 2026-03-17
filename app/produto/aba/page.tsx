@@ -35,7 +35,7 @@ const jsonLd = {
   name: 'AXIS ABA',
   applicationCategory: 'HealthApplication',
   operatingSystem: 'Web',
-  description: 'Sistema de gestão clínica para Análise do Comportamento Aplicada. Protocolos ABA, cálculo evolutivo CSO-ABA, generalização 3×2 e relatórios institucionais.',
+  description: 'Sistema clínico para Análise do Comportamento Aplicada. Protocolos ABA, cálculo evolutivo CSO-ABA, generalização 3×2 e relatórios institucionais.',
   url: 'https://axisclinico.com/produto/aba',
   offers: [
     {
@@ -89,7 +89,7 @@ export default function ProdutoABAPage() {
       <header className="bg-white border-b border-slate-300 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <Link href="/">
-            <Image src="/axisaba.png" alt="AXIS ABA — Sistema de gestão clínica para Análise do Comportamento Aplicada" width={140} height={32} className="h-8 w-auto" priority />
+            <Image src="/axisaba.png" alt="AXIS ABA — Sistema clínico para Análise do Comportamento Aplicada" width={140} height={32} className="h-8 w-auto" priority />
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
             <a href="#sistema" className="hover:text-slate-900 transition-colors">Sistema</a>
@@ -434,10 +434,10 @@ export default function ProdutoABAPage() {
       <section className="bg-slate-100 py-16 md:py-20">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
-            Dúvidas? A Ana resolve na hora.
+            Dúvidas operacionais? A Ana responde dentro da plataforma.
           </h2>
           <p className="mt-4 text-base md:text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto">
-            Nossa assistente virtual conhece cada detalhe do sistema e está disponível 24h dentro da plataforma.
+            A Ana ajuda a equipe a entender funcionalidades, fluxos e dúvidas de uso no dia a dia.
           </p>
 
           {/* Chat mockup */}
@@ -578,7 +578,7 @@ export default function ProdutoABAPage() {
             {[
               { name: '1 Aprendiz', price: 'Sem custo', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional'], href: '/sign-up', cta: 'Utilizar com 1 aprendiz real', highlight: false },
               { name: 'Clínica 100 — Founders', price: 'R$147/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=u2t04kz5', cta: 'Entrar como Fundador', highlight: true },
-              { name: 'Clínica 100', price: 'R$247/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=iwqieqxc', cta: 'Assinar agora', highlight: false },
+              { name: 'Clínica 100', price: 'R$247/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=iwqieqxc', cta: 'Assinar Clínica 100', highlight: false },
               { name: 'Clínica 250', price: 'R$497/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=gona25or', cta: 'Solicitar adesão', highlight: false },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: coral } : undefined}>
@@ -627,7 +627,7 @@ export default function ProdutoABAPage() {
               target="_blank"
               className="flex-1 text-center py-2.5 rounded-lg border border-slate-900 text-sm font-semibold text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
             >
-              Assinar agora
+              Assinar Clínica 100
             </a>
             <a
               href="https://pay.hotmart.com/H104663812P?off=gona25or"

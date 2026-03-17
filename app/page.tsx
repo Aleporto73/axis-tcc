@@ -186,7 +186,7 @@ export default function HomePage() {
                   </span>
                   <h3 className="text-xl font-semibold mb-3" style={{ color: navy }}>AXIS ABA</h3>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Gestão protocolar, acompanhamento evolutivo
+                    Continuidade clínica, progressão documentada
                     e documentação consistente para ABA.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
