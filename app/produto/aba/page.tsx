@@ -17,6 +17,9 @@ import {
   MessageCircle,
   Layers,
   Calendar,
+  AlertTriangle,
+  TrendingUp,
+  Users,
 } from 'lucide-react'
 
 /* ─── palette ─── */
@@ -107,10 +110,10 @@ export default function ProdutoABAPage() {
       <section className="bg-slate-900 py-24 md:py-32">
         <div className="max-w-5xl mx-auto px-6">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight text-white max-w-3xl">
-            Sistema ABA para clínicas. Documentação estruturada para defesa técnica.
+            ABA com continuidade clínica, documentação consistente e governança real
           </h1>
           <p className="mt-6 text-lg md:text-xl text-slate-300 max-w-2xl leading-relaxed">
-            Sistema estruturado para organização terapêutica, cálculo evolutivo automatizado e emissão de relatórios com padrão institucional brasileiro.
+            O AXIS ABA ajuda clínicas e equipes a organizar o ciclo clínico ao longo do tempo, acompanhar evolução com mais clareza e sustentar uma documentação mais sólida, rastreável e profissional.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
             <Link
@@ -130,37 +133,47 @@ export default function ProdutoABAPage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-slate-400">
-            Sistema completo · Sem custo · Sem cartão
+            Sem cartão • Sem custo • Estrutura real desde o primeiro caso
           </p>
         </div>
       </section>
 
-      {/* ────────────────── BLOCO 1 — CONTEXTO OPERACIONAL ────────────────── */}
+      {/* ────────────────── BLOCO 1 — ABERTURA ────────────────── */}
       <section id="sistema" className="bg-white py-16 md:py-20">
-        <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-12">
+        <div className="max-w-4xl mx-auto px-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6">
             A clínica evoluiu. A documentação precisa acompanhar.
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-            <ul className="space-y-5">
-              {[
-                'Convênios exigem justificativa técnica.',
-                'Auditorias exigem rastreabilidade.',
-                'Planilhas não sustentam governança.',
-                'Relatórios manuais não escalam operação.',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full mt-2 shrink-0" style={{ backgroundColor: coral }} />
-                  <span className="text-base text-slate-600 leading-relaxed">{item}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="flex items-center">
-              <p className="text-2xl md:text-3xl font-semibold text-slate-900 leading-snug">
-                Estrutura não é luxo.{' '}
-                <span style={{ color: coral }}>É proteção clínica.</span>
-              </p>
-            </div>
+          <p className="text-base md:text-lg text-slate-600 leading-relaxed max-w-3xl">
+            Na rotina ABA, o desafio não é apenas registrar sessões. É conseguir acompanhar protocolos com continuidade, enxergar progressão de forma clara, preservar histórico e manter uma documentação que sustente a prática clínica com seriedade.
+          </p>
+          <p className="mt-4 text-base md:text-lg text-slate-600 leading-relaxed max-w-3xl">
+            O AXIS ABA nasce para isso.
+          </p>
+        </div>
+      </section>
+
+      {/* ────────────────── BLOCO DOR ────────────────── */}
+      <section className="py-16 md:py-20" style={{ backgroundColor: '#f8f8fa' }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-12">
+            Quando a operação cresce, a estrutura precisa crescer junto
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              { title: 'Planilhas não sustentam continuidade', desc: 'Com o tempo, protocolo, sessão, generalização, manutenção e relatório começam a se espalhar em controles paralelos.', Icon: AlertTriangle },
+              { title: 'Evolução pode ficar fragmentada', desc: 'Sem uma estrutura contínua, progresso, oscilação e regressão deixam de aparecer com clareza.', Icon: TrendingUp },
+              { title: 'Documentação perde força', desc: 'Relatórios feitos manualmente exigem tempo, aumentam atrito operacional e enfraquecem a consistência histórica.', Icon: FileText },
+              { title: 'A equipe passa a depender de memória', desc: 'Quanto mais casos, mais a clínica precisa de um sistema que organize o trabalho sem aumentar a carga.', Icon: Users },
+            ].map((card) => (
+              <div key={card.title} className="bg-white border border-slate-200 rounded-xl p-6">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: coral + '12' }}>
+                  <card.Icon className="w-5 h-5" style={{ color: coral }} />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">{card.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{card.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -170,9 +183,9 @@ export default function ProdutoABAPage() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: 'Motor CSO-ABA proprietário', desc: 'Cálculo multidimensional automatizado' },
-              { title: 'Registro estruturado por protocolo', desc: 'Sessões organizadas com integridade' },
-              { title: 'Emissão documental institucional', desc: 'Histórico preservado e auditável' },
+              { title: 'Motor CSO-ABA', desc: 'Organiza a evolução do aprendiz a partir do que foi registrado no processo terapêutico.' },
+              { title: 'Registro estruturado', desc: 'Sessões, protocolos e ocorrências em um eixo clínico contínuo.' },
+              { title: 'Documentação profissional', desc: 'Relatórios nascem de dados estruturados e histórico preservado.' },
             ].map((card) => (
               <div key={card.title} className="bg-white border border-slate-300 rounded-xl p-8">
                 <h3 className="text-lg font-semibold text-slate-900 mb-2">{card.title}</h3>
@@ -181,7 +194,7 @@ export default function ProdutoABAPage() {
             ))}
           </div>
           <p className="mt-8 text-sm text-slate-500 text-center">
-            Motor clínico v2.6.1 · Estrutura modular · Emissão rastreável
+            Histórico preservado. Evolução rastreável. Leitura mais clara do caso.
           </p>
         </div>
       </section>
@@ -299,7 +312,7 @@ export default function ProdutoABAPage() {
           </div>
 
           <p className="mt-10 text-sm text-slate-500 italic text-center">
-            Sem planilhas paralelas. Sem cálculos manuais. Sem esquecer de sondar.
+            Sem planilhas paralelas. Sem esquecer sondas. Sem perder o fio clínico do protocolo.
           </p>
         </div>
       </section>
@@ -364,7 +377,7 @@ export default function ProdutoABAPage() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 md:p-10">
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-8">
-              Documentação com padrão institucional.
+              Documentação com padrão profissional
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
@@ -386,6 +399,33 @@ export default function ProdutoABAPage() {
             <p className="mt-8 text-sm text-slate-500 italic">
               O sistema organiza. A responsabilidade clínica permanece do profissional.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────────── BLOCO LIMITES ────────────────── */}
+      <section className="bg-white py-16 md:py-20">
+        <div className="max-w-4xl mx-auto px-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-8 text-center">
+            O que o AXIS ABA não faz
+          </h2>
+          <p className="text-base text-slate-500 text-center mb-10 max-w-2xl mx-auto">
+            Transparência também é parte da estrutura.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              'Não substitui o julgamento clínico do profissional.',
+              'Não elimina a necessidade de supervisão.',
+              'Não transforma registro em decisão automática.',
+              'Não resolve continuidade clínica sozinho sem uso responsável.',
+              'Não compartilha dados sem autorização.',
+              'Não promete resultado por software.',
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-3 p-4 rounded-lg border border-slate-100">
+                <X className="w-4 h-4 text-slate-300 mt-0.5 shrink-0" />
+                <span className="text-sm text-slate-600 leading-relaxed">{item}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -632,7 +672,7 @@ export default function ProdutoABAPage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-slate-400">
-            Sistema completo · Sem custo · Sem cartão
+            Sem cartão • Sem custo • Estrutura real desde o primeiro caso
           </p>
         </div>
       </section>
@@ -652,7 +692,7 @@ export default function ProdutoABAPage() {
             </div>
           </div>
           <p className="mt-4 text-xs text-slate-500 text-center md:text-left">
-            Este sistema é uma ferramenta de apoio e organização. Não substitui o julgamento clínico do profissional.
+            AXIS ABA é uma infraestrutura clínica de apoio à organização, ao acompanhamento e à documentação profissional. Não substitui formação, supervisão ou julgamento clínico.
           </p>
         </div>
       </footer>
@@ -736,8 +776,8 @@ function RelatorioMockup() {
 
       {/* Rodapé */}
       <div className="mt-4 pt-3 border-t border-slate-200">
-        <p className="text-[9px] text-slate-300 font-mono">
-          Motor CSO-ABA v2.6.1 · SHA256: e3d8c...
+        <p className="text-[9px] text-slate-300">
+          Documento gerado a partir de dados estruturados
         </p>
       </div>
     </div>
