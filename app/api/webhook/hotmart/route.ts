@@ -114,7 +114,74 @@ async function provisionNewBuyer(
       const clerkUserId = existingUsers.data[0].id
       console.log('[HOTMART PROVISION] Clerk user já existe:', clerkUserId, email)
 
-      // Criar tenant + profile ATIVO + licença
+      // Verificar se esse Clerk user já tem tenant (evita duplicação)
+      const existingTenant = await dbClient.query(
+        `SELECT tenant_id, clerk_user_id FROM (
+          SELECT p.tenant_id, t.clerk_user_id, 1 as prio
+            FROM profiles p
+            JOIN tenants t ON t.id = p.tenant_id
+           WHERE p.clerk_user_id = $1
+          UNION ALL
+          SELECT t.id AS tenant_id, t.clerk_user_id, 2 as prio
+            FROM tenants t
+           WHERE t.clerk_user_id = $1
+        ) combined
+        ORDER BY prio
+        LIMIT 1`,
+        [clerkUserId]
+      )
+
+      if (existingTenant.rows.length > 0) {
+        // Tenant existe — upgrade licença + plan em vez de criar novo
+        const tid = existingTenant.rows[0].tenant_id
+        console.log('[HOTMART PROVISION] Tenant existente encontrado, fazendo upgrade:', tid)
+
+        await dbClient.query(
+          `INSERT INTO user_licenses (
+            tenant_id, clerk_user_id, product_type, is_active,
+            valid_from, valid_until,
+            hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
+            buyer_email, created_at, updated_at
+          ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())
+          ON CONFLICT ON CONSTRAINT uq_user_product
+          DO UPDATE SET
+            is_active = true,
+            valid_from = EXCLUDED.valid_from,
+            valid_until = NULL,
+            hotmart_transaction = EXCLUDED.hotmart_transaction,
+            hotmart_event = EXCLUDED.hotmart_event,
+            hotmart_offer = EXCLUDED.hotmart_offer,
+            hotmart_plan = EXCLUDED.hotmart_plan,
+            buyer_email = EXCLUDED.buyer_email,
+            updated_at = NOW()`,
+          [tid, clerkUserId, productType, now, transactionId, event, offerCode, planName, email]
+        )
+
+        await dbClient.query(
+          `UPDATE tenants SET plan_tier = $1, max_patients = $2, trial_status = 'active', updated_at = NOW()
+           WHERE id = $3`,
+          [plan.plan_tier, plan.max_patients, tid]
+        )
+
+        // Audit
+        try {
+          await dbClient.query(
+            `INSERT INTO axis_audit_logs (
+              tenant_id, user_id, actor, action, entity_type, metadata, created_at
+            ) VALUES ($1, $2, 'hotmart_webhook', 'FREE_TO_PAID_UPGRADE', 'user_licenses', $3, NOW())`,
+            [tid, clerkUserId, JSON.stringify({
+              source: 'hotmart_provision_upgrade',
+              buyer_email: email, product_type: productType,
+              plan_tier: plan.plan_tier, max_patients: plan.max_patients,
+              offer_code: offerCode, transaction_id: transactionId,
+            })]
+          )
+        } catch (_) { /* audit non-blocking */ }
+
+        return { tenant_id: tid, clerk_user_id: clerkUserId, method: 'existing_user' }
+      }
+
+      // Clerk user sem tenant — criar tenant + profile + licença
       const tenantId = await createTenantWithLicense(
         dbClient, email, buyerName, clerkUserId, true,
         plan, productType, transactionId, event, offerCode, planName, now,
@@ -299,15 +366,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: 'ignored', reason: 'product_not_mapped' })
     }
 
-    // 5. Identificar tenant pelo email do buyer
+    // 5. Identificar tenant pelo email do buyer (busca ampla)
+    //    Busca em 3 fontes para evitar criação de tenant duplicado:
+    //    1. profiles.email  (fluxo padrão)
+    //    2. tenants.email   (signup direto)
+    //    3. user_licenses.buyer_email (FREE tier ativado)
     const buyerEmail = buyer.email.toLowerCase().trim()
 
     const tenantResult = await client.query(
-      `SELECT p.tenant_id, p.id as profile_id, t.clerk_user_id
-       FROM profiles p
-       JOIN tenants t ON t.id = p.tenant_id
-       WHERE LOWER(p.email) = $1
-       LIMIT 1`,
+      `SELECT tenant_id, clerk_user_id FROM (
+        SELECT p.tenant_id, t.clerk_user_id, 1 as prio
+          FROM profiles p
+          JOIN tenants t ON t.id = p.tenant_id
+         WHERE LOWER(p.email) = $1
+        UNION ALL
+        SELECT t.id AS tenant_id, t.clerk_user_id, 2 as prio
+          FROM tenants t
+         WHERE LOWER(t.email) = $1
+        UNION ALL
+        SELECT ul.tenant_id, ul.clerk_user_id, 3 as prio
+          FROM user_licenses ul
+         WHERE LOWER(ul.buyer_email) = $1
+      ) combined
+      ORDER BY prio
+      LIMIT 1`,
       [buyerEmail]
     )
 
