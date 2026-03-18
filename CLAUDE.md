@@ -23,8 +23,10 @@ Claude must load and follow the instructions from the following files:
 - skills/skill_axis_ui.md
 - skills/skill_axis_tcc.md
 - skills/skill_axis_aba.md
+- skills/skill_axis_aba_v270.md
 
 These files define the architectural and ethical rules of the AXIS platform.
+Note: skill_axis_aba.md = motor clínico v2.6.1 (congelado). skill_axis_aba_v270.md = camada operadora ready.
 
 ---
 
@@ -71,4 +73,4 @@ If a modification may impact clinical engines, database integrity, or historical
 
 ---
 
-**Reference:** AXIS_ABA_BIBLE v2.6.1, Documento Mestre TCC v2.1
+**Reference:** AXIS_ABA_BIBLE v2.7.0 Operadora Ready, AXIS_ABA_BIBLE v2.6.1 (motor clínico), Documento Mestre TCC v2.1
