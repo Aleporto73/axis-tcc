@@ -86,7 +86,7 @@ export default function OnboardingABA() {
   }, [])
 
   // ── Finalizar: marca onboarding + redireciona ──
-  const handleComplete = async (destination: 'clinica' | 'aprendiz') => {
+  const handleComplete = async (destination: 'clinica' | 'aprendiz' | 'ajuda') => {
     setSaving(true)
     setError('')
     try {
@@ -110,6 +110,8 @@ export default function OnboardingABA() {
       // Redirecionar conforme escolha
       if (destination === 'clinica') {
         router.push('/aba/configuracoes?welcome=1')
+      } else if (destination === 'ajuda') {
+        router.push('/aba/ajuda?welcome=1')
       } else {
         router.push('/aba/aprendizes?welcome=1')
       }
@@ -204,7 +206,7 @@ export default function OnboardingABA() {
                 Por onde quer começar?
               </h1>
               <p className="text-sm text-slate-500">
-                Escolha uma opção. Você pode fazer as duas depois!
+                Escolha uma opção. Você pode fazer as outras depois!
               </p>
             </div>
 
@@ -251,6 +253,28 @@ export default function OnboardingABA() {
                     </h3>
                     <p className="text-xs text-slate-500 leading-relaxed">
                       Comece cadastrando um aprendiz para registrar sessões e acompanhar a evolução.
+                    </p>
+                  </div>
+                </div>
+              </button>
+              {/* Opção 3: Ver como funciona */}
+              <button
+                onClick={() => handleComplete('ajuda')}
+                disabled={saving}
+                className="w-full text-left p-5 rounded-xl border-2 border-slate-100 hover:border-[#c46a50]/40 hover:bg-[#c46a50]/5 transition-all group disabled:opacity-50"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-100 transition-colors">
+                    <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-800 mb-1">
+                      Ver como funciona
+                    </h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Conheça o sistema passo a passo com ajuda da Ana, sua assistente virtual.
                     </p>
                   </div>
                 </div>
