@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withTenant } from '@/src/database/with-tenant'
+import { auth } from '@clerk/nextjs/server'
+import pool from '@/src/database/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,9 +8,10 @@ export const dynamic = 'force-dynamic'
 // TCC Onboarding — CPF/CRP obrigatórios
 //
 // GET:  retorna { completed, cpf, crp }
-//       completed = true se CPF já preenchido (não depende de onboarding_completed_at)
-// POST: salva CPF + CRP, marca onboarding completo
-//       UPDATE usa clerk_user_id + tenant_id (não profileId que pode ser fallback)
+// POST: salva CPF + CRP diretamente (sem withTenant)
+//
+// Usa pool direto em vez de withTenant para evitar issues
+// com transações e colunas recém-criadas.
 // =====================================================
 
 function validateCPF(cpf: string): boolean {
@@ -32,36 +34,71 @@ function validateCRP(crp: string): boolean {
   return /^(\d{1,2}|[A-Z]{2})[\/\-]\d{4,6}(-\d)?$/i.test(crp.trim())
 }
 
+function parseCRP(raw: string): { crp_uf: string; crp_number: string } {
+  // Limpar: remover "CRP ", "CRFa ", etc antes do split
+  let cleaned = raw.trim()
+  // Remove prefixos como "CRP ", "CRFa ", etc
+  cleaned = cleaned.replace(/^[A-Za-z]+\s+/i, '')
+
+  if (cleaned.includes('/')) {
+    const parts = cleaned.split('/')
+    return { crp_uf: parts[0].trim(), crp_number: parts.slice(1).join('/').trim() }
+  }
+  if (cleaned.includes('-')) {
+    const parts = cleaned.split('-')
+    return { crp_uf: parts[0].trim(), crp_number: parts.slice(1).join('-').trim() }
+  }
+  return { crp_uf: '', crp_number: cleaned }
+}
+
 export async function GET() {
   try {
-    const result = await withTenant(async ({ client, tenantId, userId }) => {
-      // Buscar profile pelo clerk_user_id (não depende de profileId)
-      const profile = await client.query(
-        `SELECT cpf, crp, crp_uf, name FROM profiles
-         WHERE clerk_user_id = $1 AND tenant_id = $2 AND is_active = true LIMIT 1`,
-        [userId, tenantId]
-      )
-      const p = profile.rows[0]
-      const hasCpf = p?.cpf && p.cpf.trim() !== ''
+    const { userId } = await auth()
+    if (!userId) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-      return {
-        // completed = CPF preenchido (não depende de onboarding_completed_at)
-        completed: hasCpf,
-        cpf: p?.cpf || null,
-        crp: p?.crp_uf && p?.crp ? `${p.crp_uf}/${p.crp}` : p?.crp || null,
-        name: p?.name || null,
-      }
+    // Resolver tenant
+    let tenantId: string | null = null
+    const profileRes = await pool.query(
+      'SELECT tenant_id FROM profiles WHERE clerk_user_id = $1 AND is_active = true LIMIT 1',
+      [userId]
+    )
+    if (profileRes.rows.length > 0) {
+      tenantId = profileRes.rows[0].tenant_id
+    } else {
+      const tenantRes = await pool.query('SELECT id FROM tenants WHERE clerk_user_id = $1 LIMIT 1', [userId])
+      tenantId = tenantRes.rows[0]?.id || null
+    }
+
+    if (!tenantId) return NextResponse.json({ completed: false, cpf: null, crp: null })
+
+    // Buscar CPF/CRP do profile
+    const profile = await pool.query(
+      `SELECT cpf, crp, crp_uf, name FROM profiles
+       WHERE clerk_user_id = $1 AND tenant_id = $2 AND is_active = true LIMIT 1`,
+      [userId, tenantId]
+    )
+    const p = profile.rows[0]
+    const hasCpf = p?.cpf && p.cpf.trim() !== ''
+
+    return NextResponse.json({
+      completed: hasCpf,
+      cpf: p?.cpf || null,
+      crp: p?.crp_uf && p?.crp ? `${p.crp_uf}/${p.crp}` : p?.crp || null,
+      name: p?.name || null,
     })
-    return NextResponse.json(result)
-  } catch (error: any) {
-    if (error.message === 'Não autenticado') return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  } catch (error) {
     console.error('[TCC Onboarding GET]', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
+  const client = await pool.connect()
+
   try {
+    const { userId } = await auth()
+    if (!userId) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
     const body = await request.json()
     const { cpf, crp } = body
 
@@ -75,72 +112,96 @@ export async function POST(request: NextRequest) {
     }
 
     const cpfClean = cpf.replace(/\D/g, '')
-    const [crp_uf, crp_number] = crp.includes('/') ? crp.split('/') : crp.includes('-') ? crp.split('-') : ['', crp]
+    const { crp_uf, crp_number } = parseCRP(crp)
 
-    const result = await withTenant(async ({ client, tenantId, userId }) => {
-      // Verificar unicidade CPF (excluindo o próprio user)
-      const existing = await client.query(
-        `SELECT id FROM profiles WHERE cpf = $1 AND clerk_user_id != $2`,
-        [cpfClean, userId]
-      )
-      if (existing.rows.length > 0) {
-        throw new Error('CPF_DUPLICATE')
-      }
+    // Resolver tenant
+    const profileRes = await client.query(
+      'SELECT tenant_id FROM profiles WHERE clerk_user_id = $1 AND is_active = true LIMIT 1',
+      [userId]
+    )
+    let tenantId: string | null = profileRes.rows[0]?.tenant_id || null
 
-      // Salvar CPF + CRP — usar clerk_user_id + tenant_id (NÃO profileId que pode ser fallback errado)
-      const updateResult = await client.query(
-        `UPDATE profiles SET cpf = $1, crp = $2, crp_uf = $3, updated_at = NOW()
-         WHERE clerk_user_id = $4 AND tenant_id = $5 AND is_active = true`,
-        [cpfClean, crp_number, crp_uf, userId, tenantId]
-      )
+    if (!tenantId) {
+      const tenantRes = await client.query('SELECT id FROM tenants WHERE clerk_user_id = $1 LIMIT 1', [userId])
+      tenantId = tenantRes.rows[0]?.id || null
+    }
 
-      console.log('[TCC Onboarding POST] UPDATE profiles:', {
-        rowCount: updateResult.rowCount,
-        userId, tenantId, cpfClean, crp_uf, crp_number,
-      })
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 })
+    }
 
-      if (updateResult.rowCount === 0) {
-        // Se nenhum profile encontrado, pode ser fallback sem profile
-        // Tentar criar profile se não existe
-        console.warn('[TCC Onboarding POST] Nenhum profile atualizado, tentando INSERT')
-        const tenantData = await client.query(
-          `SELECT name, email FROM tenants WHERE id = $1`,
-          [tenantId]
-        )
-        if (tenantData.rows.length > 0) {
-          await client.query(
-            `INSERT INTO profiles (tenant_id, clerk_user_id, role, name, email, cpf, crp, crp_uf, is_active)
-             VALUES ($1, $2, 'admin', $3, $4, $5, $6, $7, true)
-             ON CONFLICT DO NOTHING`,
-            [tenantId, userId, tenantData.rows[0].name, tenantData.rows[0].email, cpfClean, crp_number, crp_uf]
-          )
-        }
-      }
+    // Verificar unicidade CPF
+    const existing = await client.query(
+      `SELECT id FROM profiles WHERE cpf = $1 AND clerk_user_id != $2`,
+      [cpfClean, userId]
+    )
+    if (existing.rows.length > 0) {
+      return NextResponse.json({ error: 'Este CPF já está cadastrado em outra conta' }, { status: 409 })
+    }
 
-      // Marcar onboarding completo (idempotente)
-      await client.query(
-        `UPDATE tenants SET onboarding_completed_at = COALESCE(onboarding_completed_at, NOW()) WHERE id = $1`,
-        [tenantId]
-      )
+    await client.query('BEGIN')
 
-      // Audit
-      try {
-        await client.query(
-          `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
-           VALUES ($1, $2, $3, 'TCC_ONBOARDING_COMPLETED', 'profiles',
-           jsonb_build_object('cpf_set', true, 'crp', $4), NOW())`,
-          [tenantId, userId, userId, `${crp_uf}/${crp_number}`]
-        )
-      } catch { /* non-blocking */ }
+    // UPDATE com RETURNING para confirmar salvamento
+    const updateResult = await client.query(
+      `UPDATE profiles
+       SET cpf = $1, crp = $2, crp_uf = $3, updated_at = NOW()
+       WHERE clerk_user_id = $4 AND tenant_id = $5 AND is_active = true
+       RETURNING id, cpf, crp, crp_uf`,
+      [cpfClean, crp_number, crp_uf, userId, tenantId]
+    )
 
-      return { success: true }
+    console.log('[TCC Onboarding POST] UPDATE RETURNING:', {
+      rowCount: updateResult.rowCount,
+      returned: updateResult.rows[0] || 'NONE',
+      params: { cpfClean, crp_number, crp_uf, userId, tenantId },
     })
 
-    return NextResponse.json(result, { status: 201 })
+    if (updateResult.rowCount === 0) {
+      // Nenhum profile — criar um
+      console.warn('[TCC Onboarding POST] Nenhum profile, criando...')
+      const tenantData = await client.query(`SELECT name, email FROM tenants WHERE id = $1`, [tenantId])
+      if (tenantData.rows.length > 0) {
+        const insertResult = await client.query(
+          `INSERT INTO profiles (tenant_id, clerk_user_id, role, name, email, cpf, crp, crp_uf, is_active)
+           VALUES ($1, $2, 'admin', $3, $4, $5, $6, $7, true)
+           RETURNING id, cpf, crp, crp_uf`,
+          [tenantId, userId, tenantData.rows[0].name, tenantData.rows[0].email, cpfClean, crp_number, crp_uf]
+        )
+        console.log('[TCC Onboarding POST] INSERT RETURNING:', insertResult.rows[0])
+      }
+    }
+
+    // Marcar onboarding completo
+    await client.query(
+      `UPDATE tenants SET onboarding_completed_at = COALESCE(onboarding_completed_at, NOW()) WHERE id = $1`,
+      [tenantId]
+    )
+
+    await client.query('COMMIT')
+
+    // Verificação final: ler do banco pra confirmar
+    const verify = await pool.query(
+      `SELECT cpf, crp, crp_uf FROM profiles WHERE clerk_user_id = $1 AND tenant_id = $2 AND is_active = true`,
+      [userId, tenantId]
+    )
+    console.log('[TCC Onboarding POST] VERIFICAÇÃO FINAL:', verify.rows[0] || 'PROFILE NÃO ENCONTRADO')
+
+    // Audit (fora da transação, non-blocking)
+    try {
+      await pool.query(
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
+         VALUES ($1, $2, $3, 'TCC_ONBOARDING_COMPLETED', 'profiles',
+         jsonb_build_object('cpf_set', true, 'crp', $4), NOW())`,
+        [tenantId, userId, userId, `${crp_uf}/${crp_number}`]
+      )
+    } catch { /* non-blocking */ }
+
+    return NextResponse.json({ success: true }, { status: 201 })
   } catch (error: any) {
-    if (error.message === 'Não autenticado') return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    if (error.message === 'CPF_DUPLICATE') return NextResponse.json({ error: 'Este CPF já está cadastrado em outra conta' }, { status: 409 })
+    await client.query('ROLLBACK').catch(() => {})
     console.error('[TCC Onboarding POST] Erro:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  } finally {
+    client.release()
   }
 }
