@@ -13,13 +13,13 @@ export async function GET() {
 
   try {
     // Totais de licenças por produto e status
-    // hotmart_plan pode ser NULL ou '' (vazio) para free — tratar ambos
+    // Cast ::int DEPOIS do FILTER — senão dá syntax error no PostgreSQL
     const licensesRes = await pool.query(`
       SELECT
         product_type,
-        COUNT(*)::int FILTER (WHERE is_active = true AND hotmart_plan IS NOT NULL AND hotmart_plan != '') AS pagos,
-        COUNT(*)::int FILTER (WHERE is_active = true AND (hotmart_plan IS NULL OR hotmart_plan = '')) AS free,
-        COUNT(*)::int FILTER (WHERE is_active = false) AS inativos
+        (COUNT(*) FILTER (WHERE is_active = true AND hotmart_plan IS NOT NULL AND hotmart_plan != ''))::int AS pagos,
+        (COUNT(*) FILTER (WHERE is_active = true AND (hotmart_plan IS NULL OR hotmart_plan = '')))::int AS free,
+        (COUNT(*) FILTER (WHERE is_active = false))::int AS inativos
       FROM user_licenses
       GROUP BY product_type
       ORDER BY product_type
@@ -49,7 +49,7 @@ export async function GET() {
     const duplicatesRes = await pool.query(`
       SELECT COUNT(*)::int AS total FROM (
         SELECT tenant_id, product_type FROM user_licenses
-        WHERE is_active GROUP BY 1,2 HAVING COUNT(*) > 1
+        WHERE is_active = true GROUP BY 1,2 HAVING COUNT(*) > 1
       ) d
     `)
 
@@ -73,19 +73,19 @@ export async function GET() {
     `)
 
     return NextResponse.json({
-      tenants_total: tenantsRes.rows[0].total,
-      new_today: newTodayRes.rows[0].total,
-      webhook_errors_24h: webhookErrorsRes.rows[0].total,
+      tenants_total: tenantsRes.rows[0]?.total ?? 0,
+      new_today: newTodayRes.rows[0]?.total ?? 0,
+      webhook_errors_24h: webhookErrorsRes.rows[0]?.total ?? 0,
       licenses_by_product: licensesRes.rows,
       alerts: {
-        duplicate_licenses: duplicatesRes.rows[0].total,
-        orphan_tenants: orphanTenantsRes.rows[0].total,
-        orphan_licenses: orphanLicensesRes.rows[0].total,
+        duplicate_licenses: duplicatesRes.rows[0]?.total ?? 0,
+        orphan_tenants: orphanTenantsRes.rows[0]?.total ?? 0,
+        orphan_licenses: orphanLicensesRes.rows[0]?.total ?? 0,
       },
       signups_by_day: signupsByDayRes.rows,
     })
   } catch (error) {
-    console.error('[ADMIN STATS]', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    console.error('[ADMIN STATS] Erro:', error)
+    return NextResponse.json({ error: 'Erro interno', detail: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }

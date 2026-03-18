@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import AdminStats from '../components/AdminStats'
 import AdminCharts from '../components/AdminCharts'
-import UserTable from '../components/UserTable'
+import UserTable, { type LicenseRow } from '../components/UserTable'
 import UserDetail from '../components/UserDetail'
 import WebhookLogs from '../components/WebhookLogs'
 import AlertsPanel from '../components/AlertsPanel'
@@ -33,13 +33,19 @@ export default function AdminDashboardPage() {
   // Stats
   const [stats, setStats] = useState<any>(null)
   const [statsLoading, setStatsLoading] = useState(true)
+  const [statsError, setStatsError] = useState('')
 
-  // Users
-  const [users, setUsers] = useState<any[]>([])
+  // Alerts (independente do stats)
+  const [alertCounts, setAlertCounts] = useState<any>(null)
+  const [alertsLoading, setAlertsLoading] = useState(true)
+
+  // Users (flat rows)
+  const [rows, setRows] = useState<LicenseRow[]>([])
   const [usersTotal, setUsersTotal] = useState(0)
   const [usersPage, setUsersPage] = useState(1)
   const [usersTotalPages, setUsersTotalPages] = useState(1)
   const [usersLoading, setUsersLoading] = useState(false)
+  const [usersError, setUsersError] = useState('')
   const [filters, setFilters] = useState({ search: '', product: '', status: '' })
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -58,9 +64,12 @@ export default function AdminDashboardPage() {
     }
   }, [isLoaded, user])
 
-  // Fetch stats
+  // Fetch on auth
   useEffect(() => {
-    if (authorized) fetchStats()
+    if (authorized) {
+      fetchStats()
+      fetchAlerts()
+    }
   }, [authorized])
 
   // Fetch users on filter/page change
@@ -73,15 +82,37 @@ export default function AdminDashboardPage() {
 
   const fetchStats = async () => {
     setStatsLoading(true)
+    setStatsError('')
     try {
       const res = await fetch('/api/admin/stats')
-      if (res.ok) setStats(await res.json())
-    } catch { /* silent */ }
+      if (res.ok) {
+        const data = await res.json()
+        setStats(data)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setStatsError(data.detail || data.error || `Erro ${res.status}`)
+      }
+    } catch (e) {
+      setStatsError('Erro de conexão ao carregar stats')
+    }
     setStatsLoading(false)
+  }
+
+  const fetchAlerts = async () => {
+    setAlertsLoading(true)
+    try {
+      const res = await fetch('/api/admin/alerts')
+      if (res.ok) {
+        const data = await res.json()
+        setAlertCounts(data.counts)
+      }
+    } catch { /* silent */ }
+    setAlertsLoading(false)
   }
 
   const fetchUsers = async () => {
     setUsersLoading(true)
+    setUsersError('')
     try {
       const params = new URLSearchParams({ page: String(usersPage) })
       if (filters.search) params.set('search', filters.search)
@@ -90,11 +121,16 @@ export default function AdminDashboardPage() {
       const res = await fetch(`/api/admin/users?${params}`)
       if (res.ok) {
         const data = await res.json()
-        setUsers(data.users || [])
+        setRows(data.rows || [])
         setUsersTotal(data.total || 0)
         setUsersTotalPages(data.total_pages || 1)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setUsersError(data.detail || data.error || `Erro ${res.status}`)
       }
-    } catch { /* silent */ }
+    } catch {
+      setUsersError('Erro de conexão')
+    }
     setUsersLoading(false)
   }
 
@@ -105,6 +141,7 @@ export default function AdminDashboardPage() {
 
   const handleRefresh = () => {
     fetchStats()
+    fetchAlerts()
     fetchUsers()
   }
 
@@ -119,6 +156,8 @@ export default function AdminDashboardPage() {
     )
   }
 
+  const hasAlerts = alertCounts && Object.values(alertCounts).some((v: any) => v > 0)
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -131,13 +170,13 @@ export default function AdminDashboardPage() {
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">{user?.primaryEmailAddress?.emailAddress}</p>
           </div>
-          <button
-            onClick={() => router.push('/hub')}
-            className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-            Voltar ao Hub
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={handleRefresh} className="text-xs text-blue-500 hover:text-blue-700 font-medium">Recarregar</button>
+            <button onClick={() => router.push('/hub')} className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              Hub
+            </button>
+          </div>
         </div>
       </header>
 
@@ -154,16 +193,11 @@ export default function AdminDashboardPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === tab.id
-                  ? 'border-slate-800 text-slate-800'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
+                activeTab === tab.id ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'
               }`}
             >
               {tab.label}
-              {tab.id === 'alerts' && stats?.alerts &&
-                Object.values(stats.alerts).some((v: any) => v > 0) && (
-                <span className="ml-1.5 w-2 h-2 rounded-full bg-red-500 inline-block" />
-              )}
+              {tab.id === 'alerts' && hasAlerts && <span className="ml-1.5 w-2 h-2 rounded-full bg-red-500 inline-block" />}
             </button>
           ))}
         </div>
@@ -171,13 +205,13 @@ export default function AdminDashboardPage() {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        {/* Quick Search (always visible) */}
+        {/* Quick Search */}
         <div className="bg-white rounded-xl border border-slate-100 p-4">
           <div className="flex items-center gap-3">
             <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input
               type="text"
-              placeholder="Busca rápida por email do usuário..."
+              placeholder="Busca rápida por email..."
               className="flex-1 text-sm text-slate-700 placeholder-slate-400 outline-none"
               onKeyDown={e => {
                 if (e.key === 'Enter') {
@@ -190,13 +224,18 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Overview Tab */}
+        {/* Overview */}
         {activeTab === 'overview' && (
           <>
+            {statsError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm">
+                <strong>Erro ao carregar stats:</strong> {statsError}
+                <button onClick={fetchStats} className="ml-3 text-xs font-bold text-red-700 underline">Tentar novamente</button>
+              </div>
+            )}
             {statsLoading ? (
               <div className="animate-pulse space-y-4">
                 <div className="grid grid-cols-5 gap-4">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-20 bg-slate-100 rounded-xl" />)}</div>
-                <div className="grid grid-cols-3 gap-4">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-24 bg-slate-100 rounded-xl" />)}</div>
               </div>
             ) : stats ? (
               <>
@@ -210,42 +249,42 @@ export default function AdminDashboardPage() {
                   licensesByProduct={stats.licenses_by_product}
                   signupsByDay={stats.signups_by_day}
                 />
-                <AlertsPanel counts={stats.alerts} />
               </>
             ) : null}
+            <AlertsPanel counts={alertCounts} />
           </>
         )}
 
-        {/* Users Tab */}
+        {/* Users */}
         {activeTab === 'users' && (
-          <>
-            {usersLoading && users.length === 0 ? (
-              <div className="animate-pulse h-64 bg-slate-100 rounded-xl" />
-            ) : (
-              <UserTable
-                users={users}
-                total={usersTotal}
-                page={usersPage}
-                totalPages={usersTotalPages}
-                onPageChange={setUsersPage}
-                onViewUser={setSelectedTenant}
-                filters={filters}
-                onFilterChange={handleFilterChange}
-              />
-            )}
-          </>
+          <UserTable
+            rows={rows}
+            total={usersTotal}
+            page={usersPage}
+            totalPages={usersTotalPages}
+            loading={usersLoading}
+            error={usersError}
+            onPageChange={setUsersPage}
+            onViewUser={setSelectedTenant}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+          />
         )}
 
-        {/* Webhooks Tab */}
+        {/* Webhooks */}
         {activeTab === 'webhooks' && <WebhookLogs />}
 
-        {/* Alerts Tab */}
+        {/* Alerts */}
         {activeTab === 'alerts' && (
-          <AlertsPanel counts={stats?.alerts || null} />
+          alertsLoading ? (
+            <div className="animate-pulse h-40 bg-slate-100 rounded-xl" />
+          ) : (
+            <AlertsPanel counts={alertCounts} />
+          )
         )}
       </main>
 
-      {/* User Detail Modal */}
+      {/* Detail Modal */}
       {selectedTenant && (
         <UserDetail
           tenantId={selectedTenant}
