@@ -20,7 +20,7 @@ const ADMIN_EMAILS = new Set([
   'aleporto305@gmail.com',
 ])
 
-type Tab = 'overview' | 'users' | 'webhooks' | 'alerts'
+type Tab = 'overview' | 'users' | 'hotmart' | 'system' | 'alerts'
 
 export default function AdminDashboardPage() {
   const { isSignedIn } = useAuth()
@@ -194,7 +194,8 @@ export default function AdminDashboardPage() {
           {([
             { id: 'overview' as Tab, label: 'Visão Geral' },
             { id: 'users' as Tab, label: 'Usuários & Licenças' },
-            { id: 'webhooks' as Tab, label: 'Webhooks' },
+            { id: 'hotmart' as Tab, label: 'Compras Hotmart' },
+            { id: 'system' as Tab, label: 'Eventos Sistema' },
             { id: 'alerts' as Tab, label: 'Alertas' },
           ]).map(tab => (
             <button
@@ -279,8 +280,11 @@ export default function AdminDashboardPage() {
           />
         )}
 
-        {/* Webhooks */}
-        {activeTab === 'webhooks' && <WebhookLogs />}
+        {/* Compras Hotmart */}
+        {activeTab === 'hotmart' && <WebhookLogs type="hotmart" title="Transações Hotmart" />}
+
+        {/* Eventos Sistema */}
+        {activeTab === 'system' && <WebhookLogs type="system" title="Eventos do Sistema" />}
 
         {/* Alerts */}
         {activeTab === 'alerts' && (

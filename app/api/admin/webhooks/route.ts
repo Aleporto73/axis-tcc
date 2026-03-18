@@ -6,8 +6,10 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 // =====================================================
-// GET /api/admin/webhooks?status=error&days=7
-// Últimos webhooks recebidos (via audit_logs)
+// GET /api/admin/webhooks?type=hotmart|system&status=error&days=7
+// type=hotmart → só transações Hotmart
+// type=system  → eventos sistema (Clerk, admin, etc)
+// sem type     → tudo
 // =====================================================
 
 export async function GET(request: NextRequest) {
@@ -16,12 +18,20 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type') || ''
     const status = searchParams.get('status') || ''
     const days = parseInt(searchParams.get('days') || '7')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 200)
 
     const conditions = [`a.created_at >= NOW() - INTERVAL '${Math.min(days, 90)} days'`]
-    conditions.push(`a.actor IN ('hotmart_webhook', 'clerk_webhook')`)
+
+    if (type === 'hotmart') {
+      conditions.push(`(a.actor = 'hotmart_webhook' OR a.action LIKE 'HOTMART_%')`)
+    } else if (type === 'system') {
+      conditions.push(`a.actor != 'hotmart_webhook' AND a.action NOT LIKE 'HOTMART_%'`)
+    } else {
+      conditions.push(`a.actor IN ('hotmart_webhook', 'clerk_webhook', 'admin_panel')`)
+    }
 
     if (status === 'error') {
       conditions.push(`a.action LIKE '%FAILED%'`)
@@ -29,7 +39,7 @@ export async function GET(request: NextRequest) {
       conditions.push(`a.action NOT LIKE '%FAILED%'`)
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+    const whereClause = `WHERE ${conditions.join(' AND ')}`
 
     const res = await pool.query(
       `SELECT
@@ -45,6 +55,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ webhooks: res.rows, total: res.rows.length })
   } catch (error) {
     console.error('[ADMIN WEBHOOKS]', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro interno', detail: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
