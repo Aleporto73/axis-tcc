@@ -13,19 +13,24 @@ export async function GET() {
 
   try {
     // Totais de licenças por produto e status
+    // hotmart_plan pode ser NULL ou '' (vazio) para free — tratar ambos
     const licensesRes = await pool.query(`
       SELECT
         product_type,
-        COUNT(*) FILTER (WHERE is_active AND hotmart_plan IS NOT NULL) AS pagos,
-        COUNT(*) FILTER (WHERE is_active AND hotmart_plan IS NULL) AS free,
-        COUNT(*) FILTER (WHERE NOT is_active) AS inativos
+        COUNT(*)::int FILTER (WHERE is_active = true AND hotmart_plan IS NOT NULL AND hotmart_plan != '') AS pagos,
+        COUNT(*)::int FILTER (WHERE is_active = true AND (hotmart_plan IS NULL OR hotmart_plan = '')) AS free,
+        COUNT(*)::int FILTER (WHERE is_active = false) AS inativos
       FROM user_licenses
       GROUP BY product_type
       ORDER BY product_type
     `)
 
-    // Total de tenants
-    const tenantsRes = await pool.query(`SELECT COUNT(*)::int AS total FROM tenants`)
+    // Total de tenants com pelo menos 1 licença ativa
+    const tenantsRes = await pool.query(`
+      SELECT COUNT(DISTINCT ul.tenant_id)::int AS total
+      FROM user_licenses ul
+      WHERE ul.is_active = true
+    `)
 
     // Novos nas últimas 24h
     const newTodayRes = await pool.query(`
