@@ -22,6 +22,7 @@ export default function ConfiguracoesTDAHPage() {
   const [profileLoading, setProfileLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // Notificações
   const [notifPrefs, setNotifPrefs] = useState({
@@ -72,6 +73,7 @@ export default function ConfiguracoesTDAHPage() {
   const saveProfile = async () => {
     setSaving(true)
     setSaved(false)
+    setSaveError('')
     try {
       const [crp_uf, crp_number] = profileForm.crp.includes('/') ? profileForm.crp.split('/') : ['', profileForm.crp]
       const res = await fetch('/api/aba/me', {
@@ -81,9 +83,16 @@ export default function ConfiguracoesTDAHPage() {
       })
       if (res.ok) {
         setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
+        setTimeout(() => setSaved(false), 3000)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setSaveError(data.error || 'Erro ao salvar. Tente novamente.')
+        setTimeout(() => setSaveError(''), 4000)
       }
-    } catch { /* silent */ }
+    } catch {
+      setSaveError('Erro de conexão. Tente novamente.')
+      setTimeout(() => setSaveError(''), 4000)
+    }
     setSaving(false)
   }
 
@@ -158,11 +167,11 @@ export default function ConfiguracoesTDAHPage() {
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">CRP (UF/número)</label>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Registro profissional</label>
               <input type="text" value={profileForm.crp}
                 onChange={e => setProfileForm(f => ({ ...f, crp: e.target.value }))}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0d7377]"
-                placeholder="SP/12345" />
+                placeholder="Ex: CRP 06/12345, CRFa 2-12345, CREFITO-3/12345" />
             </div>
             <div className="flex items-center gap-3">
               <button onClick={saveProfile} disabled={saving}
@@ -170,7 +179,8 @@ export default function ConfiguracoesTDAHPage() {
                 style={{ backgroundColor: TDAH_COLOR }}>
                 {saving ? 'Salvando...' : 'Salvar'}
               </button>
-              {saved && <span className="text-xs text-green-600">Salvo!</span>}
+              {saved && <span className="text-xs text-green-600 font-medium">Salvo com sucesso!</span>}
+              {saveError && <span className="text-xs text-red-500 font-medium">{saveError}</span>}
             </div>
           </div>
         )}

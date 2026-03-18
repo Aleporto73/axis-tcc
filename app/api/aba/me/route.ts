@@ -1,11 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { withTenant, TenantSelectionRequired } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
-// AXIS ABA - API: Perfil do Usuário Logado
-// Retorna role, profileId, dados do profile para o frontend.
-// Usado pelo RoleProvider para decidir o que mostrar na UI.
+// AXIS — API: Perfil do Usuário Logado
+// GET  → retorna role, profileId, dados do profile
+// PUT  → atualiza name e registro profissional (crp/crp_uf)
+//
+// Usado por: RoleProvider, Configurações TCC/ABA/TDAH
 //
 // Se o usuário pertence a múltiplos tenants e não selecionou:
 //   Retorna 409 com lista de tenants para escolha.
@@ -56,6 +58,53 @@ export async function GET() {
     if (error instanceof TenantSelectionRequired) {
       return NextResponse.json(
         { error: 'tenant_selection_required', tenants: error.tenants },
+        { status: 409 }
+      )
+    }
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
+  }
+}
+
+// ── PUT: Atualizar perfil (name, crp) ──
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { name, crp, crp_uf } = body
+
+    const result = await withTenant(async (ctx) => {
+      // Atualiza profiles (multi-tenant safe)
+      const profileUpdate = await ctx.client.query(
+        `UPDATE profiles
+         SET name = COALESCE(NULLIF($1, ''), name),
+             crp = $2,
+             crp_uf = $3
+         WHERE clerk_user_id = $4 AND tenant_id = $5 AND is_active = true
+         RETURNING id, name, crp, crp_uf`,
+        [name?.trim() || '', crp || '', crp_uf || '', ctx.userId, ctx.tenantId]
+      )
+
+      if (profileUpdate.rows.length === 0) {
+        throw new Error('Profile não encontrado')
+      }
+
+      // Sync: atualiza tenants.name também (owner/admin)
+      if (name?.trim()) {
+        await ctx.client.query(
+          `UPDATE tenants SET name = $1, updated_at = NOW() WHERE id = $2 AND clerk_user_id = $3`,
+          [name.trim(), ctx.tenantId, ctx.userId]
+        )
+      }
+
+      return profileUpdate.rows[0]
+    })
+
+    return NextResponse.json({ success: true, profile: result })
+  } catch (error) {
+    if (error instanceof TenantSelectionRequired) {
+      return NextResponse.json(
+        { error: 'tenant_selection_required' },
         { status: 409 }
       )
     }
