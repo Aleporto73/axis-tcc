@@ -84,7 +84,7 @@ export default function AdminDashboardPage() {
     setStatsLoading(true)
     setStatsError('')
     try {
-      const res = await fetch('/api/admin/stats')
+      const res = await fetch('/api/admin/stats', { cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
         setStats(data)
@@ -101,7 +101,7 @@ export default function AdminDashboardPage() {
   const fetchAlerts = async () => {
     setAlertsLoading(true)
     try {
-      const res = await fetch('/api/admin/alerts')
+      const res = await fetch('/api/admin/alerts', { cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
         setAlertCounts(data.counts)
@@ -110,7 +110,14 @@ export default function AdminDashboardPage() {
     setAlertsLoading(false)
   }
 
+  const abortRef = useRef<AbortController | null>(null)
+
   const fetchUsers = async () => {
+    // Cancelar request anterior pra evitar race condition
+    if (abortRef.current) abortRef.current.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setUsersLoading(true)
     setUsersError('')
     try {
@@ -118,7 +125,7 @@ export default function AdminDashboardPage() {
       if (filters.search) params.set('search', filters.search)
       if (filters.product) params.set('product', filters.product)
       if (filters.status) params.set('status', filters.status)
-      const res = await fetch(`/api/admin/users?${params}`)
+      const res = await fetch(`/api/admin/users?${params}`, { signal: controller.signal, cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
         setRows(data.rows || [])
@@ -128,7 +135,8 @@ export default function AdminDashboardPage() {
         const data = await res.json().catch(() => ({}))
         setUsersError(data.detail || data.error || `Erro ${res.status}`)
       }
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return // Request cancelado, ignorar
       setUsersError('Erro de conexão')
     }
     setUsersLoading(false)

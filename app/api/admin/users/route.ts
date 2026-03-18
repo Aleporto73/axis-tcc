@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdmin } from '../guard'
 import pool from '@/src/database/db'
 
+// Impedir cache do Next.js — cada request precisa ir pro banco
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // =====================================================
 // GET /api/admin/users?search=email&product=tdah&status=pago&page=1
 // Retorna 1 linha por licença (flat) — filtros funcionam corretamente
@@ -48,18 +52,26 @@ export async function GET(request: NextRequest) {
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
-    // Count — linhas de licenças (não tenants)
+    // Subquery pra profile — evita duplicatas quando tenant tem múltiplos profiles
+    const profileSubquery = `(
+      SELECT DISTINCT ON (pp.tenant_id) pp.tenant_id, pp.name, pp.email, pp.crp, pp.crp_uf
+      FROM profiles pp
+      WHERE pp.is_active = true
+      ORDER BY pp.tenant_id, pp.created_at DESC
+    )`
+
+    // Count
     const countRes = await pool.query(
       `SELECT COUNT(*)::int AS total
        FROM user_licenses ul
        JOIN tenants t ON t.id = ul.tenant_id
-       LEFT JOIN profiles p ON p.tenant_id = t.id AND p.is_active = true
+       LEFT JOIN ${profileSubquery} p ON p.tenant_id = t.id
        ${where}`,
       params
     )
     const total = countRes.rows[0]?.total ?? 0
 
-    // Data — flat: 1 linha por licença
+    // Data — flat: 1 linha por licença, sem duplicatas
     const dataRes = await pool.query(
       `SELECT
         t.id AS tenant_id,
@@ -84,7 +96,7 @@ export async function GET(request: NextRequest) {
         ul.created_at AS license_created
       FROM user_licenses ul
       JOIN tenants t ON t.id = ul.tenant_id
-      LEFT JOIN profiles p ON p.tenant_id = t.id AND p.is_active = true
+      LEFT JOIN ${profileSubquery} p ON p.tenant_id = t.id
       ${where}
       ORDER BY ul.created_at DESC
       LIMIT $${idx} OFFSET $${idx + 1}`,
@@ -97,6 +109,8 @@ export async function GET(request: NextRequest) {
       page,
       per_page: PER_PAGE,
       total_pages: Math.ceil(total / PER_PAGE),
+      // Debug: retorna filtros recebidos pra confirmar
+      _filters: { search, product, status },
     })
   } catch (error) {
     console.error('[ADMIN USERS] Erro:', error)

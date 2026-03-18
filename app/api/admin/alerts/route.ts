@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdmin } from '../guard'
 import pool from '@/src/database/db'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // =====================================================
 // GET /api/admin/alerts?type=duplicates
 // Alertas de integridade do sistema

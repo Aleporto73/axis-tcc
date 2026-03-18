@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { verifyAdmin } from '../guard'
 import pool from '@/src/database/db'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // =====================================================
 // GET /api/admin/stats
 // Cards de resumo: totais, licenças por produto, novos hoje
