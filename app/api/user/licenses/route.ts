@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     let licenses: Array<{ product_type: string; is_active: boolean; valid_from: string; valid_until: string | null }> = []
     try {
       const licensesResult = await pool.query(
-        `SELECT product_type, is_active, valid_from, valid_until
+        `SELECT product_type, is_active, valid_from, valid_until, hotmart_plan
          FROM user_licenses
          WHERE tenant_id = $1
            AND is_active = true

@@ -10,6 +10,7 @@ interface License {
   is_active: boolean
   valid_from: string
   valid_until: string | null
+  hotmart_plan: string | null
 }
 
 const FREE_CTA_COLORS: Record<string, { bg: string; hover: string }> = {
@@ -114,6 +115,9 @@ export default function HubPage() {
   const hasLicense = (productId: string) =>
     licenses.some(l => l.product_type === productId && l.is_active)
 
+  const isPaid = (productId: string) =>
+    licenses.some(l => l.product_type === productId && l.is_active && l.hotmart_plan != null && l.hotmart_plan !== '')
+
   async function handleActivateFree(productType: string) {
     setActivating(productType)
     try {
@@ -206,9 +210,15 @@ export default function HubPage() {
                       }}
                     />
                     {licensed && (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-800">
-                        Ativo
-                      </span>
+                      isPaid(product.id) ? (
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                          Ativo
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+                          Free
+                        </span>
+                      )
                     )}
                   </div>
 
