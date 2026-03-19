@@ -23,6 +23,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Coverage (test reports — não é código)
+coverage/
+
 # Misc
 *.bak
 *.tsbuildinfo
