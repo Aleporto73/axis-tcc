@@ -93,11 +93,12 @@ Responda APENAS em JSON válido:
       max_tokens: 1000,
     })
 
-    const content = completion.choices[0]?.message?.content || '{}'
-    
+    const content = (completion.choices[0]?.message?.content || '{}').slice(0, 5000)
+
     let parsed
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      // Regex não-gulosa (*?) para evitar backtracking catastrófico (SonarCloud S5852)
+      const jsonMatch = content.match(/\{[\s\S]*?\}/)
       parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {}
     } catch {
       parsed = { complaint: '', patterns: '', interventions: '', current_state: '' }

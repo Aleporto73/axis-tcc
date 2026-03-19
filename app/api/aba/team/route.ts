@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { withTenant } from '@/src/database/with-tenant'
 import { requireAdmin, handleRouteError } from '@/src/database/with-role'
 
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
 
       // Criar profile pendente (sem clerk_user_id até o primeiro login)
       // clerk_user_id será preenchido quando o convidado fizer sign-up/login
-      const tempClerkId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      const tempClerkId = `pending_${Date.now()}_${randomBytes(4).toString('hex')}`
 
       // invited_by: usar profile real, ou NULL se fallback (tenantId como profileId)
       const invitedBy = ctx.profileId !== ctx.tenantId ? ctx.profileId : null

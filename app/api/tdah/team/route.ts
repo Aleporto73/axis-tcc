@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { withTenant } from '@/src/database/with-tenant'
 import { requireAdmin, handleRouteError } from '@/src/database/with-role'
 
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
         throw new Error('DUPLICATE_EMAIL')
       }
 
-      const tempClerkId = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      const tempClerkId = `pending_${Date.now()}_${randomBytes(4).toString('hex')}`
       const invitedBy = ctx.profileId !== ctx.tenantId ? ctx.profileId : null
 
       const insert = await ctx.client.query(
