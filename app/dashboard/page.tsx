@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../components/Sidebar'
 import { TableSkeleton } from '../components/Skeleton'
-import TermsModal from '../components/TermsModal'
 import TranscriptionUsageBar from '@/app/tcc/components/TranscriptionUsageBar'
 
 interface Stats {
@@ -121,8 +120,6 @@ export default function DashboardPage() {
   const router = useRouter()
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showTerms, setShowTerms] = useState(false)
-  const [acceptingTerms, setAcceptingTerms] = useState(false)
   const [patients, setPatients] = useState<PatientOption[]>([])
   const [selectedPatient, setSelectedPatient] = useState<string>('')
   const [csoHistory, setCsoHistory] = useState<CSOHistory | null>(null)
@@ -133,9 +130,6 @@ export default function DashboardPage() {
       fetch('/api/user/tenant')
         .then(r => r.json())
         .then(data => {
-          if (!data.termsAccepted) {
-            setShowTerms(true)
-          }
           return fetch('/api/stats')
         })
         .then(r => r.json())
@@ -180,20 +174,6 @@ export default function DashboardPage() {
   useEffect(() => {
     if (selectedPatient) loadCSO(selectedPatient)
   }, [selectedPatient, loadCSO])
-
-  const handleAcceptTerms = async () => {
-    setAcceptingTerms(true)
-    try {
-      const res = await fetch('/api/user/accept-terms', { method: 'POST' })
-      if (res.ok) {
-        window.location.reload()
-      }
-    } catch (error) {
-      console.error('Erro ao aceitar termos:', error)
-    } finally {
-      setAcceptingTerms(false)
-    }
-  }
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -306,11 +286,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-white">
       <Sidebar />
-      
-      {showTerms && (
-        <TermsModal onAccept={handleAcceptTerms} loading={acceptingTerms} />
-      )}
-      
+
       <main className="md:ml-20 min-h-screen pb-20 md:pb-8">
         
         {/* Top Capsule Navigation */}
