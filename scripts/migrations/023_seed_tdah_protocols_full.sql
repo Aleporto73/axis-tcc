@@ -10,7 +10,8 @@ ALTER TABLE tdah_protocol_library ADD COLUMN IF NOT EXISTS system_fields JSONB;
 ALTER TABLE tdah_protocol_library ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
 
 -- Limpar protocolos existentes antes de inserir (os 14 da 022 serão substituídos por 45 completos)
-DELETE FROM tdah_protocol_library;
+-- DELETE sem WHERE é INTENCIONAL: tabela de templates estáticos, re-seed completo
+DELETE FROM tdah_protocol_library; -- NOSONAR: seed script — limpa templates antes de reinserir 45 protocolos
 
 INSERT INTO tdah_protocol_library (code, title, block, priority, description, bible_version, system_fields, is_active)
 VALUES ('TDAH-A01', 'Iniciar tarefa em até 2 minutos', 'A', 'P1', 'Reduzir a latência entre a instrução de início e o primeiro comportamento funcional alinhado à tarefa. Protocolo de entrada do Bloco A — trata especificamente o custo de ativação inicial.', '2.5', '{"protocol_id": "TDAH-A01","version": "2.5","audhd_layer_status": "off | active_core | active_full","snapshot_type": "initial | progress | closure","source_record_id": "","target_task": "","latency_window_minutes": 2,"functional_hypothesis": ""}'::jsonb, true);
