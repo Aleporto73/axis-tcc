@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
 import SessionReport from '../../components/SessionReport'
+import TranscriptionLimitModal from '@/app/tcc/components/TranscriptionLimitModal'
 
 interface Session {
   id: string
@@ -52,6 +53,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [showReport, setShowReport] = useState(false)
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
   const [transcribeProgress, setTranscribeProgress] = useState<TranscribeProgress | null>(null)
+  const [showLimitModal, setShowLimitModal] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -82,6 +84,17 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       setTranscribeProgress({ type: 'status', message: 'Enviando audio...', percent: 0 })
 
       const res = await fetch('/api/transcribe', { method: 'POST', body: fd })
+
+      // ── Limite de transcrição atingido ──
+      if (res.status === 402) {
+        const data = await res.json().catch(() => ({}))
+        if (data.error === 'LIMIT_REACHED') {
+          setShowLimitModal(true)
+          setTranscribeProgress(null)
+          setUploading(false)
+          return
+        }
+      }
 
       const contentType = res.headers.get('content-type') || ''
 
@@ -509,6 +522,11 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal limite de transcrição */}
+      {showLimitModal && (
+        <TranscriptionLimitModal onClose={() => setShowLimitModal(false)} />
       )}
     </div>
   )

@@ -47,7 +47,7 @@ const jsonLd = {
       name: '1 Paciente',
       price: '0',
       priceCurrency: 'BRL',
-      description: 'Motor CSO-TCC completo, registro estruturado, transcrição por áudio e relatório institucional para 1 paciente.',
+      description: 'Motor CSO-TCC completo, registro estruturado, 120 min de transcrição/mês e relatório institucional para 1 paciente.',
     },
     {
       '@type': 'Offer',
@@ -55,7 +55,7 @@ const jsonLd = {
       price: '59',
       priceCurrency: 'BRL',
       billingIncrement: 'P1M',
-      description: 'Pacientes ilimitados, Google Calendar sync e todos os recursos do plano gratuito.',
+      description: 'Pacientes ilimitados, transcrição ilimitada, Google Calendar sync e todos os recursos do plano gratuito.',
     },
   ],
   publisher: {
@@ -510,7 +510,8 @@ export default function ProdutoTCCPage() {
                 {[
                   { label: 'Motor CSO-TCC completo', free: true },
                   { label: 'Registro estruturado', free: true },
-                  { label: 'Transcrição por áudio', free: true },
+                  { label: 'Transcrição (120 min/mês no Free)', free: true },
+                  { label: 'Transcrição ilimitada', free: false },
                   { label: 'Relatório institucional', free: true },
                   { label: 'Google Calendar sync', free: false },
                   { label: 'Pacientes ilimitados', free: false },
@@ -546,8 +547,8 @@ export default function ProdutoTCCPage() {
           {/* Mobile cards */}
           <div className="md:hidden space-y-6">
             {[
-              { name: '1 Paciente', price: 'Sem custo', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição por áudio', 'Relatório institucional'], href: '/sign-up?produto=tcc', cta: 'Começar com 1 paciente real', highlight: false },
-              { name: 'Profissional', price: 'R$59/mês', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição por áudio', 'Relatório institucional', 'Google Calendar sync', 'Pacientes ilimitados'], href: 'https://pay.hotmart.com/J104687347A?off=sn8ebdqc', cta: 'Assinar Profissional', highlight: true },
+              { name: '1 Paciente', price: 'Sem custo', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição: 120 min/mês', 'Relatório institucional'], href: '/sign-up?produto=tcc', cta: 'Começar com 1 paciente real', highlight: false },
+              { name: 'Profissional', price: 'R$59/mês', features: ['Motor CSO-TCC completo', 'Registro estruturado', 'Transcrição ilimitada', 'Relatório institucional', 'Google Calendar sync', 'Pacientes ilimitados'], href: 'https://pay.hotmart.com/J104687347A?off=sn8ebdqc', cta: 'Assinar Profissional', highlight: true },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: azul } : undefined}>
                 <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>

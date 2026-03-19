@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '../components/Sidebar'
 import { TableSkeleton } from '../components/Skeleton'
 import TermsModal from '../components/TermsModal'
+import TranscriptionUsageBar from '@/app/tcc/components/TranscriptionUsageBar'
 
 interface Stats {
   patients: number
@@ -325,8 +326,13 @@ export default function DashboardPage() {
           </nav>
         </div>
 
+        {/* Barra de uso de transcrição (FREE) */}
+        <div className="px-4 md:px-8 lg:px-12 xl:px-16 mb-2">
+          <TranscriptionUsageBar />
+        </div>
+
         <div className="px-4 md:px-8 lg:px-12 xl:px-16">
-          
+
           {/* Header Editorial */}
           <header className="mb-2">
             <h1 className="text-lg font-normal text-slate-400 tracking-tight mb-0">Dashboard</h1>

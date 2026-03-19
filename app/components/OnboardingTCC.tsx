@@ -224,6 +224,7 @@ export default function OnboardingTCC() {
             <div className="text-center mb-6">
               <h1 className="text-2xl font-normal text-slate-800 mb-2">Dados Profissionais</h1>
               <p className="text-sm text-slate-500">O AXIS TCC é de uso exclusivo para Psicólogos</p>
+              <p className="text-xs text-slate-400 mt-2">O plano gratuito inclui 1 paciente e 120 minutos de transcrição por mês.</p>
             </div>
 
             <div className="space-y-4">

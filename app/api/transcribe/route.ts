@@ -17,6 +17,7 @@ const openai = new OpenAI({
 const CHUNK_DURATION = 300
 const MAX_DIRECT_SIZE = 5 * 1024 * 1024
 const TEMP_DIR = '/tmp/axis-audio'
+const FREE_LIMIT_MINUTES = 120
 
 async function ensureTempDir() {
   if (!existsSync(TEMP_DIR)) {
@@ -102,6 +103,68 @@ async function cleanupFiles(files: string[]) {
   }
 }
 
+// ── Verificar limite de transcrição para FREE ──
+async function checkTranscriptionLimit(userId: string): Promise<{
+  tenantId: string
+  isFree: boolean
+  minutesUsed: number
+  blocked: boolean
+  month: string
+}> {
+  // Resolver tenant
+  const profileRes = await pool.query(
+    'SELECT tenant_id FROM profiles WHERE clerk_user_id = $1 AND is_active = true LIMIT 1',
+    [userId]
+  )
+  let tenantId = profileRes.rows[0]?.tenant_id
+  if (!tenantId) {
+    const tenantRes = await pool.query('SELECT id FROM tenants WHERE clerk_user_id = $1 LIMIT 1', [userId])
+    tenantId = tenantRes.rows[0]?.id
+  }
+  if (!tenantId) throw new Error('TENANT_NOT_FOUND')
+
+  // Verificar se é FREE ou PAGO
+  const licenseRes = await pool.query(
+    `SELECT hotmart_plan FROM user_licenses
+     WHERE tenant_id = $1 AND product_type = 'tcc' AND is_active = true LIMIT 1`,
+    [tenantId]
+  )
+  const isFree = !licenseRes.rows[0]?.hotmart_plan || licenseRes.rows[0].hotmart_plan === ''
+
+  if (!isFree) {
+    return { tenantId, isFree: false, minutesUsed: 0, blocked: false, month: '' }
+  }
+
+  // Verificar uso do mês
+  const month = new Date().toISOString().slice(0, 7)
+  const usageRes = await pool.query(
+    'SELECT minutes_used FROM transcription_usage WHERE tenant_id = $1 AND month = $2',
+    [tenantId, month]
+  )
+  const minutesUsed = usageRes.rows[0]?.minutes_used || 0
+
+  return {
+    tenantId,
+    isFree: true,
+    minutesUsed,
+    blocked: minutesUsed >= FREE_LIMIT_MINUTES,
+    month,
+  }
+}
+
+// ── Incrementar minutos usados ──
+async function incrementUsage(tenantId: string, month: string, minutes: number) {
+  if (minutes <= 0) return
+  await pool.query(
+    `INSERT INTO transcription_usage (tenant_id, month, minutes_used, updated_at)
+     VALUES ($1, $2, $3, NOW())
+     ON CONFLICT (tenant_id, month)
+     DO UPDATE SET minutes_used = transcription_usage.minutes_used + $3, updated_at = NOW()`,
+    [tenantId, month, minutes]
+  )
+  console.log('[TRANSCRIBE] Uso incrementado:', { tenantId, month, minutes })
+}
+
 export async function POST(request: NextRequest) {
   const filesToCleanup: string[] = []
 
@@ -112,16 +175,28 @@ export async function POST(request: NextRequest) {
       return new Response(JSON.stringify({ error: 'Nao autenticado' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
     }
 
-    const tenantResult = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      [userId]
-    )
-
-    if (tenantResult.rows.length === 0) {
-      return new Response(JSON.stringify({ error: 'Tenant nao encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+    // ── VERIFICAR LIMITE ANTES DE TUDO ──
+    let limitInfo: Awaited<ReturnType<typeof checkTranscriptionLimit>>
+    try {
+      limitInfo = await checkTranscriptionLimit(userId)
+    } catch (e: any) {
+      if (e.message === 'TENANT_NOT_FOUND') {
+        return new Response(JSON.stringify({ error: 'Tenant nao encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+      }
+      throw e
     }
 
-    const tenantId = tenantResult.rows[0].id
+    if (limitInfo.blocked) {
+      console.log('[TRANSCRIBE] Limite atingido:', { tenantId: limitInfo.tenantId, minutesUsed: limitInfo.minutesUsed })
+      return new Response(JSON.stringify({
+        error: 'LIMIT_REACHED',
+        message: 'Você atingiu o limite de 120 minutos de transcrição gratuita este mês.',
+        minutes_used: limitInfo.minutesUsed,
+        limit: FREE_LIMIT_MINUTES,
+      }), { status: 402, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    const tenantId = limitInfo.tenantId
 
     const formData = await request.formData()
     const audioFile = formData.get('audio') as File
@@ -159,10 +234,19 @@ export async function POST(request: NextRequest) {
         [tenantId, patientId, sessionId, fullTranscription]
       )
 
+      // ── INCREMENTAR USO (áudio pequeno: estimar ~2 min) ──
+      if (limitInfo.isFree) {
+        const estimatedMinutes = Math.max(1, Math.ceil(fileSize / (64 * 1024 / 8 * 60)))
+        await incrementUsage(tenantId, limitInfo.month, estimatedMinutes)
+      }
+
       return new Response(JSON.stringify({ success: true, transcript: result.rows[0] }), { status: 200, headers: { 'Content-Type': 'application/json' } })
     }
 
     // Audio grande - divide em partes e envia progresso via streaming
+    const isFree = limitInfo.isFree
+    const month = limitInfo.month
+
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder()
@@ -185,6 +269,22 @@ export async function POST(request: NextRequest) {
           filesToCleanup.push(tempInputPath)
 
           sendProgress({ type: 'status', message: 'Dividindo audio em partes...' })
+
+          // ── OBTER DURAÇÃO REAL DO ÁUDIO ──
+          const totalDuration = await getAudioDuration(tempInputPath)
+          const durationMinutes = Math.ceil(totalDuration / 60)
+
+          // ── VERIFICAR SE DURAÇÃO EXCEDE LIMITE RESTANTE ──
+          if (isFree) {
+            const remaining = FREE_LIMIT_MINUTES - limitInfo.minutesUsed
+            if (durationMinutes > remaining + 5) {
+              // Margem de 5 min pra não frustrar por arredondamento
+              sendProgress({
+                type: 'warning',
+                message: `Este áudio tem ~${durationMinutes} min. Você tem ${remaining} min restantes no plano FREE.`,
+              })
+            }
+          }
 
           const chunkPaths = await splitAudio(tempInputPath, jobId)
           const totalChunks = chunkPaths.length
@@ -242,6 +342,11 @@ export async function POST(request: NextRequest) {
             'INSERT INTO transcripts (tenant_id, patient_id, session_id, session_date, text, processed) VALUES ($1, $2, $3, CURRENT_DATE, $4, false) RETURNING id, text, created_at',
             [tenantId, patientId, sessionId, fullTranscription]
           )
+
+          // ── INCREMENTAR USO (áudio grande: duração real) ──
+          if (isFree && durationMinutes > 0) {
+            await incrementUsage(tenantId, month, durationMinutes)
+          }
 
           sendProgress({
             type: 'done',
