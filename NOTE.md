@@ -402,8 +402,64 @@ PM2 (producao)
 23. **LANCAMENTO BETA PUBLICO** — quarta 12/03/2026 ✅ PRONTO
 
 ### STATUS GERAL PARA LANCAMENTO: 100% — Beta comercial pronto para venda
+
 AGUARDANDO:
 - [ ] Verificacao Google Brand (3-6 semanas) → reativar botao Google Calendar quando aprovado
+
+---
+
+## CONCLUIDO EM 19/03/2026
+
+### Sessão Cowork (manhã-noite) — Admin + Bugs Críticos + Bible v2.7.0
+
+**Bugs críticos corrigidos:**
+- [x] Fix activate-free: remove plan_tier inexistente da query
+- [x] Fix webhook Hotmart: busca ampla por email (profiles + tenants + user_licenses) para evitar tenant duplicado
+- [x] Fix onboarding TCC: salvamento CPF/CRP — removido withTenant, usa pool direto + RETURNING
+- [x] Fix onboarding TCC: remove TermsModal antigo conflitante (modal azul sobre dashboard)
+- [x] Fix admin stats: syntax PostgreSQL (COUNT FILTER cast), hotmart_plan vazio tratado como free
+- [x] Fix admin filtros: force-dynamic em todas APIs, DISTINCT ON profiles, AbortController race condition
+- [x] Fix security hotspots SonarCloud: regex DoS (non-greedy), Math.random → crypto.randomBytes
+
+**Painel Administrativo completo (/admin/dashboard):**
+- [x] Guard: só porto.ar4@gmail.com e aleporto305@gmail.com
+- [x] 5 abas: Visão Geral, Usuários & Licenças, Compras Hotmart, Eventos Sistema, Alertas
+- [x] Stats cards: totais, pagos/free por produto, novos 24h, erros webhook
+- [x] Tabela licenças: filtros produto/status/email, paginação 20/página
+- [x] Modal detalhe: dados + licenças + ações (FREE, upgrade, desativar, LGPD delete)
+- [x] Gráficos recharts: signups/dia, distribuição, pagos vs free
+- [x] Alertas integridade: duplicatas, órfãos, fantasmas
+- [x] Migration 030: limpeza licenças fantasma CLERK_FREE_TIER
+
+**Hub melhorias:**
+- [x] TDAH descrição 4 linhas + remove "Ver estrutura" + logo transparente
+- [x] Badge Free (cinza) vs Ativo (verde) no Hub — usa hotmart_plan
+
+**Configurações TDAH:**
+- [x] PUT handler em /api/aba/me para salvar nome/registro
+- [x] Label "Registro profissional" (multi-profissional)
+
+**Bible v2.7.0 Operadora Ready:**
+- [x] Skill skill_axis_aba_v270.md criado (511 linhas)
+- [x] CLAUDE.md atualizado com referência v2.7.0
+- [x] Motor CSO-ABA v2.6.1 permanece congelado
+- [x] 12 tabelas novas + 1 extensão planejadas para Sprints 1-4
+
+**Onboarding 3 opções:**
+- [x] ABA e TDAH: adicionada opção "Ver como funciona" → /ajuda
+
+**SonarCloud:**
+- [x] coverage/ removido do git (189 arquivos, 48.898 linhas)
+- [x] sonar-project.properties configurado
+- [x] Páginas exemplo Sentry removidas
+- [x] NOSONAR no seed TDAH (DELETE intencional)
+
+**Arquivos principais criados/modificados:**
+- app/admin/ (13 arquivos novos: dashboard, components, APIs)
+- app/api/admin/ (guard, stats, users, users/[id], webhooks, alerts)
+- skills/skill_axis_aba_v270.md (novo)
+- scripts/migrations/030_cleanup_phantom_licenses.sql (novo)
+- sonar-project.properties (novo)
 
 ### TESTE HOTMART — CONCLUIDO ✅ 08/03/2026
 

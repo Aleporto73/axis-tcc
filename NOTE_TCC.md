@@ -267,6 +267,39 @@
 - Itens v2.x confirmados como não-bloqueantes: sessions `any` type, sessions sem withTenant, dashboard dead fields, hex em onboarding/evolution
 - **VEREDICTO: 100% PRONTO PARA BETA COMERCIAL** ✅
 
+### 2026-03-19 — Onboarding TCC + Limite Transcrição + Polish
+
+**Onboarding TCC (novo — 3 telas):**
+- [x] Tela 1: Termo LGPD adaptado para psicólogos (inclui transcrição e CSO-TCC)
+- [x] Tela 2: CPF + CRP obrigatórios (validação completa, unicidade CPF)
+- [x] Tela 3: 3 opções (Personalizar Clínica / Cadastrar Paciente / Ver como funciona)
+- [x] API /api/tcc/onboarding (GET/POST) — completude por presença de CPF, não onboarding_completed_at
+- [x] Migration 031: CPF + CRP em profiles com índice único
+- [x] Removido TermsModal antigo (modal azul conflitante)
+- [x] Fix: CPF não salvava — removido withTenant, usa pool direto + RETURNING
+- [x] Fix: parseCRP() limpa prefixos ("CRP 99/99999" → crp_uf="99")
+
+**Limite Transcrição 120 min/mês (FREE):**
+- [x] Migration 032: tabela transcription_usage (tenant_id + month)
+- [x] API /api/tcc/transcription/usage (GET/POST)
+- [x] API /api/transcribe: verifica limite ANTES, incrementa DEPOIS (duração real via ffprobe)
+- [x] Frontend: 402 LIMIT_REACHED → TranscriptionLimitModal
+- [x] TranscriptionUsageBar no dashboard TCC (barra verde/amarelo/vermelho)
+- [x] TranscriptionLimitModal com CTA Hotmart
+- [x] Landing page: Free "Transcrição: 120 min/mês", Pago "Transcrição ilimitada"
+- [x] Onboarding: nota "O plano gratuito inclui 1 paciente e 120 minutos de transcrição por mês"
+
+**Arquivos criados:**
+- app/components/OnboardingTCC.tsx
+- app/api/tcc/onboarding/route.ts
+- app/api/tcc/transcription/usage/route.ts
+- app/tcc/components/TranscriptionUsageBar.tsx
+- app/tcc/components/TranscriptionLimitModal.tsx
+- scripts/migrations/031_tcc_cpf_crp.sql
+- scripts/migrations/032_transcription_usage.sql
+
+**Migrations pendentes em produção:** 031, 032
+
 ### 2026-03-12 (tarde) — Security Audit: tenant_id isolation
 - Audit de segurança em 17 rotas TCC (sessions, events, suggestions, analyze-tcc, stats, audit)
 - ✅ CRITICO: analyze-tcc — patient_id/session_id do body não eram validados contra tenant (cross-tenant injection possível)

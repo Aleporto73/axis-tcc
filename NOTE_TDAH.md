@@ -119,8 +119,25 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Push do commit 1621916 (sem credenciais no ambiente) | `git push origin main` — fazer no terminal local |
-| 2 | Deploy beta | Após push |
+| 1 | Deploy beta + migrations 030-032 em produção | VPS |
+
+---
+
+## CONCLUIDO EM 19/03/2026
+
+### Sessão Cowork — TDAH readiness + Onboarding + Hub
+
+- [x] TDAH descrição Hub: "com integração tricontextual" (4 linhas)
+- [x] Removido botão "Ver estrutura" dos cards Hub
+- [x] Logo TDAH: /axisTDAH.png → /axistdah.png (transparente)
+- [x] Badge Free (cinza) vs Ativo (verde) no Hub
+- [x] Onboarding TDAH: adicionada opção "Ver como funciona" → /tdah/ajuda
+- [x] Configurações: label "Registro profissional", placeholder multi-conselho
+- [x] PUT /api/aba/me adicionado (salvamento nome/registro)
+- [x] Offer codes TDAH verificados: xqzgdn1i (founders 50), cr3rh0u9 (100), hxzwuwfh (250)
+- [x] Webhook Hotmart: busca ampla por email (evita tenant duplicado)
+- [x] Email template TDAH adicionado (cor #0d7377)
+- [x] Landing TDAH: offer codes corrigidos, CTAs, Ana block, mockup
 
 ---
 
