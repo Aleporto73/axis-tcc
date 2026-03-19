@@ -45,6 +45,7 @@
   "dependencies": {
     "@clerk/localizations": "^3.35.3",
     "@clerk/nextjs": "^6.37.1",
+    "@sentry/nextjs": "^10.44.0",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
