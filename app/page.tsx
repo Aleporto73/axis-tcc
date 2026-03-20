@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 /* ─── Colors ─── */
 const navy = '#1e3a5f'
 const teal = '#0d7377'
+const aba = '#C46A2F'
 
 /* ─── JSON-LD ─── */
 const jsonLd = {
@@ -60,9 +61,9 @@ export default function HomePage() {
               </Link>
               <nav className="hidden md:flex items-center gap-8">
                 <a href="#produtos" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Produtos</a>
+                <a href="#operadora" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Operadora Ready</a>
                 <a href="#como-funciona" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Como funciona</a>
                 <a href="#governanca" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Governança</a>
-                <a href="#base-clinica" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Base clínica</a>
                 <a href="#contato" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Contato</a>
               </nav>
               <Link
@@ -178,25 +179,31 @@ export default function HomePage() {
                 </div>
 
                 {/* ── ABA ── */}
-                <div className="group bg-white rounded-2xl p-8 border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300">
-                  <div className="h-1 w-full rounded-full mb-6" style={{ backgroundColor: navy }} />
-                  <img src="/axisaba.png" alt="AXIS ABA" className="h-14 w-auto mb-6 object-contain" />
-                  <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full mb-4" style={{ backgroundColor: navy + '0D', color: navy }}>
-                    Para clínicas e equipes
+                <div className="group bg-white rounded-2xl p-8 border-2 hover:shadow-lg transition-all duration-300 relative" style={{ borderColor: aba + '40' }}>
+                  <div className="h-1 w-full rounded-full mb-6" style={{ backgroundColor: aba }} />
+                  <div className="flex items-center gap-3 mb-6">
+                    <img src="/axisaba.png" alt="AXIS ABA" className="h-14 w-auto object-contain" />
+                    <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded" style={{ backgroundColor: aba + '18', color: aba }}>
+                      Operadora Ready
+                    </span>
+                  </div>
+                  <span className="inline-block px-3 py-1 text-xs font-semibold tracking-wide uppercase rounded-full mb-4" style={{ backgroundColor: aba + '0D', color: aba }}>
+                    Para clínicas e operadoras
                   </span>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Continuidade clínica com progressão documentada e estrutura para defesa técnica.
+                    Motor clínico completo + camada institucional para compliance, faturamento e auditoria com operadoras de saúde.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Ciclo clínico organizado</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Progressão documentada</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: navy }} />Defesa técnica estruturada</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Ciclo clínico + presença GPS</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Atestações e bundles de evidência</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Claim packets para faturamento</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Dashboard de compliance</li>
                   </ul>
                   <div className="flex flex-col gap-2">
-                    <Link href="/produto/aba" className="w-full text-center px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: navy }}>
+                    <Link href="/produto/aba" className="w-full text-center px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: aba }}>
                       Conhecer
                     </Link>
-                    <Link href="/sign-up" className="w-full text-center px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-50 transition-all" style={{ color: navy }}>
+                    <Link href="/sign-up" className="w-full text-center px-4 py-2.5 text-sm font-medium rounded-lg border hover:bg-slate-50 transition-all" style={{ color: aba, borderColor: aba + '40' }}>
                       Começar com 1 caso real
                     </Link>
                   </div>
@@ -226,6 +233,100 @@ export default function HomePage() {
                     </Link>
                   </div>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ════════════════ BLOCO 4B — OPERADORA READY (ABA v2.7.0) ════════════════ */}
+          <section id="operadora" className="py-20 px-6 relative overflow-hidden" style={{ backgroundColor: '#1a1a2e' }}>
+            <div className="absolute inset-0 opacity-[0.03]">
+              <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+            </div>
+            <div className="max-w-6xl mx-auto relative">
+              <div className="text-center mb-14">
+                <span className="inline-block px-4 py-2 text-xs font-bold tracking-widest uppercase rounded-full mb-6" style={{ backgroundColor: aba + '20', color: aba }}>
+                  Novo — AXIS ABA v2.7.0
+                </span>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-white leading-snug mb-4">
+                  Pronto para <span className="font-semibold" style={{ color: aba }}>operadoras</span>.
+                  <br />
+                  Pronto para auditoria.
+                </h2>
+                <p className="text-lg text-white/60 max-w-2xl mx-auto leading-[1.8]">
+                  O AXIS ABA agora inclui a camada institucional que clínicas precisam
+                  para comprovar presença, atestar sessões, documentar evidências
+                  e gerar pacotes de faturamento prontos para operadoras de saúde.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-5 mb-12">
+                {[
+                  {
+                    icon: '📍',
+                    title: 'Presença GPS comprovada',
+                    desc: 'Check-in e check-out com geolocalização. Prova objetiva de que o atendimento aconteceu no local registrado.',
+                  },
+                  {
+                    icon: '✍️',
+                    title: 'Atestações digitais',
+                    desc: 'Terapeuta e responsável atestam cada sessão. Assinatura digital com timestamp e vínculo ao prontuário.',
+                  },
+                  {
+                    icon: '📦',
+                    title: 'Bundles de evidência',
+                    desc: 'Dados da sessão, trials, provas GPS e atestações reunidos em um pacote íntegro e auditável.',
+                  },
+                  {
+                    icon: '💳',
+                    title: 'Pacotes de faturamento',
+                    desc: 'Claim packets prontos para submissão. Cada sessão gera documentação no formato que operadoras exigem.',
+                  },
+                  {
+                    icon: '🛡️',
+                    title: 'Compliance e integridade',
+                    desc: 'Scan automático de inconsistências. Flags de integridade, credenciais vencidas e gaps de documentação.',
+                  },
+                  {
+                    icon: '📋',
+                    title: 'Perfis de cobertura',
+                    desc: 'Dados do plano de saúde do aprendiz vinculados ao prontuário. Autorização, vigência e limites organizados.',
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+                    <span className="text-2xl mb-3 block">{item.icon}</span>
+                    <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
+                    <p className="text-sm text-white/50 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl border border-white/10 p-8 md:p-10 mb-10">
+                <div className="grid md:grid-cols-4 gap-6 text-center">
+                  {[
+                    { value: '100%', label: 'Aditivo ao motor clínico' },
+                    { value: 'LGPD', label: 'Dados geo com retenção controlada' },
+                    { value: '4 planos', label: 'De gratuito a enterprise' },
+                    { value: 'Zero', label: 'Impacto no fluxo clínico existente' },
+                  ].map((stat, i) => (
+                    <div key={i}>
+                      <div className="text-2xl font-bold mb-1" style={{ color: aba }}>{stat.value}</div>
+                      <div className="text-xs text-white/40 leading-snug">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-center">
+                <Link
+                  href="/produto/aba"
+                  className="inline-block px-8 py-4 text-white font-medium rounded-xl hover:opacity-90 transition-all shadow-lg"
+                  style={{ backgroundColor: aba }}
+                >
+                  Conhecer AXIS ABA Operadora Ready →
+                </Link>
+                <p className="text-xs text-white/30 mt-4">
+                  A camada operadora é 100% aditiva. O motor clínico CSO-ABA v2.6.1 permanece congelado e intacto.
+                </p>
               </div>
             </div>
           </section>
@@ -403,10 +504,13 @@ export default function HomePage() {
                     Conhecer AXIS TCC
                   </Link>
                 </div>
-                <div className="p-6 rounded-2xl border border-slate-200 text-left">
-                  <h3 className="text-lg font-semibold mb-2" style={{ color: navy }}>AXIS ABA</h3>
-                  <p className="text-sm text-slate-600 mb-6">Para equipes que precisam de continuidade clínica e documentação consistente.</p>
-                  <Link href="/produto/aba" className="inline-block px-5 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: navy }}>
+                <div className="p-6 rounded-2xl border-2 text-left" style={{ borderColor: aba + '30' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-semibold" style={{ color: aba }}>AXIS ABA</h3>
+                    <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase rounded" style={{ backgroundColor: aba + '15', color: aba }}>Operadora Ready</span>
+                  </div>
+                  <p className="text-sm text-slate-600 mb-6">Motor clínico completo + compliance, faturamento e auditoria para operadoras de saúde.</p>
+                  <Link href="/produto/aba" className="inline-block px-5 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: aba }}>
                     Conhecer AXIS ABA
                   </Link>
                 </div>
