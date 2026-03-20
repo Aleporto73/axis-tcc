@@ -20,6 +20,12 @@ import {
   AlertTriangle,
   TrendingUp,
   Users,
+  MapPin,
+  Fingerprint,
+  Package,
+  CreditCard,
+  ShieldCheck,
+  ClipboardCheck,
 } from 'lucide-react'
 
 /* ─── palette ─── */
@@ -35,7 +41,7 @@ const jsonLd = {
   name: 'AXIS ABA',
   applicationCategory: 'HealthApplication',
   operatingSystem: 'Web',
-  description: 'Sistema clínico para Análise do Comportamento Aplicada. Protocolos ABA, cálculo evolutivo CSO-ABA, generalização 3×2 e relatórios institucionais.',
+  description: 'Sistema clínico para Análise do Comportamento Aplicada. Protocolos ABA, cálculo evolutivo CSO-ABA, generalização 3×2, relatórios institucionais e camada Operadora Ready para compliance, faturamento e auditoria.',
   url: 'https://axisclinico.com/produto/aba',
   offers: [
     {
@@ -94,6 +100,7 @@ export default function ProdutoABAPage() {
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
             <a href="#sistema" className="hover:text-slate-900 transition-colors">Sistema</a>
             <a href="#arquitetura" className="hover:text-slate-900 transition-colors">Arquitetura</a>
+            <a href="#operadora" className="hover:text-slate-900 transition-colors">Operadora Ready</a>
             <a href="#relatorios" className="hover:text-slate-900 transition-colors">Relatórios</a>
             <a href="#planos" className="hover:text-slate-900 transition-colors">Planos</a>
           </nav>
@@ -403,6 +410,101 @@ export default function ProdutoABAPage() {
         </div>
       </section>
 
+      {/* ────────────────── BLOCO OPERADORA READY (v2.7.0) ────────────────── */}
+      <section id="operadora" className="py-20 md:py-24 relative overflow-hidden" style={{ backgroundColor: '#1a1a2e' }}>
+        <div className="absolute inset-0 opacity-[0.03]">
+          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+        </div>
+        <div className="max-w-6xl mx-auto px-6 relative">
+          <div className="text-center mb-14">
+            <span className="inline-block px-4 py-2 text-xs font-bold tracking-widest uppercase rounded-full mb-6" style={{ backgroundColor: coral + '20', color: coralLight }}>
+              Novo — v2.7.0 Operadora Ready
+            </span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-white leading-snug mb-4">
+              Camada institucional para{' '}
+              <span className="font-semibold" style={{ color: coralLight }}>operadoras de saúde</span>
+            </h2>
+            <p className="text-lg text-white/60 max-w-2xl mx-auto leading-[1.8]">
+              Tudo o que a clínica precisa para comprovar presença, atestar sessões,
+              documentar evidências e gerar pacotes de faturamento prontos para auditoria.
+              100% aditivo ao motor clínico existente.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5 mb-12">
+            {[
+              {
+                Icon: MapPin,
+                title: 'Presença GPS comprovada',
+                desc: 'Check-in e check-out com geolocalização. Prova objetiva de que o atendimento aconteceu no local e horário registrados.',
+              },
+              {
+                Icon: Fingerprint,
+                title: 'Atestações digitais',
+                desc: 'Terapeuta e responsável atestam cada sessão com assinatura digital, timestamp e vínculo direto ao prontuário.',
+              },
+              {
+                Icon: Package,
+                title: 'Bundles de evidência',
+                desc: 'Dados da sessão, trials, provas GPS e atestações reunidos em um pacote íntegro, auditável e exportável.',
+              },
+              {
+                Icon: CreditCard,
+                title: 'Claim packets para faturamento',
+                desc: 'Pacotes prontos para submissão a operadoras. Cada sessão gera documentação no formato exigido para reembolso.',
+              },
+              {
+                Icon: ShieldCheck,
+                title: 'Compliance e integridade',
+                desc: 'Scan automático de inconsistências: credenciais vencidas, gaps de documentação, flags de integridade por aprendiz.',
+              },
+              {
+                Icon: ClipboardCheck,
+                title: 'Perfis de cobertura',
+                desc: 'Plano de saúde, autorização, vigência e limites do aprendiz vinculados ao prontuário. Tudo organizado em um só lugar.',
+              },
+            ].map((item, i) => (
+              <div key={i} className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: coral + '20' }}>
+                  <item.Icon className="w-5 h-5" style={{ color: coralLight }} />
+                </div>
+                <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
+                <p className="text-sm text-white/50 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl border border-white/10 p-8 md:p-10 mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+              {[
+                { value: '100%', label: 'Aditivo ao motor clínico CSO-ABA' },
+                { value: 'LGPD', label: 'Geolocalização com retenção controlada' },
+                { value: '4 planos', label: 'Free → Founders → Clínica 100 → 250' },
+                { value: 'Zero', label: 'Impacto no fluxo clínico existente' },
+              ].map((stat, i) => (
+                <div key={i}>
+                  <div className="text-2xl font-bold mb-1" style={{ color: coralLight }}>{stat.value}</div>
+                  <div className="text-xs text-white/40 leading-snug">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-center">
+            <a
+              href="#planos"
+              className="inline-block px-8 py-4 text-white font-medium rounded-xl hover:opacity-90 transition-all shadow-lg"
+              style={{ backgroundColor: coral }}
+            >
+              Ver planos com Operadora Ready →
+            </a>
+            <p className="text-xs text-white/30 mt-4">
+              Motor clínico CSO-ABA v2.6.1 permanece congelado e intacto. A camada operadora é puramente aditiva.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ────────────────── BLOCO LIMITES ────────────────── */}
       <section className="bg-white py-16 md:py-20">
         <div className="max-w-4xl mx-auto px-6">
@@ -527,26 +629,49 @@ export default function ProdutoABAPage() {
                 </tr>
               </thead>
               <tbody className="bg-white">
+                {/* ── Motor Clínico ── */}
+                <tr className="bg-slate-800">
+                  <td colSpan={5} className="py-2 px-6 text-xs font-bold tracking-widest uppercase text-slate-400">Motor Clínico</td>
+                </tr>
                 {[
-                  { label: 'Motor CSO-ABA completo', free: true },
-                  { label: 'Registro estruturado', free: true },
-                  { label: 'Relatório institucional', free: true },
-                  { label: 'Multi-terapeuta', free: false },
-                  { label: 'Relatórios consolidados', free: false },
-                  { label: 'Onboarding dedicado', free: false },
+                  { label: 'Motor CSO-ABA completo', cols: [true, true, true, true] },
+                  { label: 'Registro estruturado', cols: [true, true, true, true] },
+                  { label: 'Relatório institucional', cols: [true, true, true, true] },
+                  { label: 'Multi-terapeuta', cols: [false, true, true, true] },
+                  { label: 'Relatórios consolidados', cols: [false, true, true, true] },
+                  { label: 'Onboarding dedicado', cols: [false, true, true, true] },
                 ].map((row, i) => (
                   <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                     <td className="py-3.5 px-6 text-slate-700 font-medium">{row.label}</td>
-                    <td className="py-3.5 px-3 text-center">
-                      {row.free ? (
-                        <Check className="w-5 h-5 mx-auto" style={{ color: coral }} />
-                      ) : (
-                        <X className="w-4 h-4 mx-auto text-slate-300" />
-                      )}
-                    </td>
-                    {[0, 1, 2].map((j) => (
+                    {row.cols.map((v, j) => (
                       <td key={j} className="py-3.5 px-3 text-center">
-                        <Check className="w-5 h-5 mx-auto" style={{ color: coral }} />
+                        {v ? <Check className="w-5 h-5 mx-auto" style={{ color: coral }} /> : <X className="w-4 h-4 mx-auto text-slate-300" />}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {/* ── Operadora Ready v2.7.0 ── */}
+                <tr style={{ backgroundColor: coral + '10' }}>
+                  <td colSpan={5} className="py-2 px-6 text-xs font-bold tracking-widest uppercase" style={{ color: coral }}>Operadora Ready v2.7.0</td>
+                </tr>
+                {[
+                  { label: 'Presença GPS (check-in/out)', cols: [false, true, true, true] },
+                  { label: 'Atestações digitais (terapeuta)', cols: [false, true, true, true] },
+                  { label: 'Locais de atendimento', cols: [false, false, true, true] },
+                  { label: 'Bundles de evidência', cols: [false, false, true, true] },
+                  { label: 'Anexos de sessão', cols: [false, false, true, true] },
+                  { label: 'Perfis de cobertura', cols: [false, false, true, true] },
+                  { label: 'Claim packets (faturamento)', cols: [false, false, true, true] },
+                  { label: 'Credenciais do provedor', cols: [false, false, true, true] },
+                  { label: 'Flags de integridade', cols: [false, false, true, true] },
+                  { label: 'Perfis de operadora/payer', cols: [false, false, true, true] },
+                  { label: 'Dashboard de compliance', cols: [false, false, false, true] },
+                ].map((row, i) => (
+                  <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                    <td className="py-3.5 px-6 text-slate-700 font-medium">{row.label}</td>
+                    {row.cols.map((v, j) => (
+                      <td key={j} className="py-3.5 px-3 text-center">
+                        {v ? <Check className="w-5 h-5 mx-auto" style={{ color: coral }} /> : <X className="w-4 h-4 mx-auto text-slate-300" />}
                       </td>
                     ))}
                   </tr>
@@ -577,9 +702,9 @@ export default function ProdutoABAPage() {
           <div className="md:hidden space-y-6">
             {[
               { name: '1 Aprendiz', price: 'Sem custo', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional'], href: '/sign-up', cta: 'Utilizar com 1 aprendiz real', highlight: false },
-              { name: 'Clínica 100 — Founders', price: 'R$147/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=u2t04kz5', cta: 'Entrar como Fundador', highlight: true },
-              { name: 'Clínica 100', price: 'R$247/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=iwqieqxc', cta: 'Assinar Clínica 100', highlight: false },
-              { name: 'Clínica 250', price: 'R$497/mês', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado'], href: 'https://pay.hotmart.com/H104663812P?off=gona25or', cta: 'Solicitar adesão', highlight: false },
+              { name: 'Clínica 100 — Founders', price: 'R$147/mês', features: ['Motor CSO-ABA completo', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado', 'Presença GPS', 'Atestações digitais'], href: 'https://pay.hotmart.com/H104663812P?off=u2t04kz5', cta: 'Entrar como Fundador', highlight: true },
+              { name: 'Clínica 100', price: 'R$247/mês', features: ['Tudo do Founders +', 'Bundles de evidência', 'Claim packets', 'Perfis de cobertura', 'Credenciais do provedor', 'Flags de integridade'], href: 'https://pay.hotmart.com/H104663812P?off=iwqieqxc', cta: 'Assinar Clínica 100', highlight: false },
+              { name: 'Clínica 250', price: 'R$497/mês', features: ['Tudo do Clínica 100 +', 'Até 250 aprendizes', 'Dashboard de compliance', 'Perfis de operadora/payer', 'Suporte prioritário'], href: 'https://pay.hotmart.com/H104663812P?off=gona25or', cta: 'Solicitar adesão', highlight: false },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: coral } : undefined}>
                 <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
