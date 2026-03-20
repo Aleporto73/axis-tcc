@@ -1,7 +1,8 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { getOperadoraAccess, OperadoraAccess } from '@/src/lib/operadora-gate'
 
 // =====================================================
 // AXIS ABA - Role Context Provider (Multi-Terapeuta)
@@ -35,6 +36,7 @@ interface RoleContextValue {
   canManageTeam: boolean       // admin only
   canManageProtocols: boolean  // admin + supervisor
   canCreateLearners: boolean   // admin + supervisor
+  operadora: OperadoraAccess   // v2.7.0 feature access by plan
   loading: boolean
 }
 
@@ -47,6 +49,7 @@ const RoleContext = createContext<RoleContextValue>({
   canManageTeam: false,
   canManageProtocols: false,
   canCreateLearners: false,
+  operadora: getOperadoraAccess(null),
   loading: true,
 })
 
@@ -95,6 +98,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const isSupervisor = role === 'supervisor'
   const isTerapeuta = role === 'terapeuta'
 
+  const operadora = useMemo(
+    () => getOperadoraAccess(profile?.tenant_plan),
+    [profile?.tenant_plan]
+  )
+
   const value: RoleContextValue = {
     profile,
     role,
@@ -104,6 +112,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     canManageTeam: isAdmin,
     canManageProtocols: isAdmin || isSupervisor,
     canCreateLearners: isAdmin || isSupervisor,
+    operadora,
     loading,
   }
 

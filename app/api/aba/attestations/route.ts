@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { requireFeature, handleRouteError } from '@/src/database/with-role'
 import { encryptParam, getKeyParam } from '@/src/lib/crypto'
 
 // =====================================================
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'attestationsTherapist')
       const attestations = await ctx.client.query(
         `SELECT
           id, session_id, attestor_type, attestor_name,
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'attestationsTherapist')
       // Verificar sessão
       const sessionCheck = await ctx.client.query(
         `SELECT id, status FROM sessions_aba WHERE id = $1 AND tenant_id = $2`,

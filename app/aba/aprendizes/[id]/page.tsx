@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Tooltip, { HelpTip } from '@/components/Tooltip'
 import CoverageProfilesManager from '@/app/components/CoverageProfilesManager'
+import { useRole } from '@/app/components/RoleProvider'
 
 interface Learner { id: string; name: string; birth_date: string; diagnosis: string; cid_code: string; cid_system: string | null; cid_label: string | null; support_level: number }
 interface Protocol { id: string; title: string; domain: string; status: string; ebp_name: string; objective: string; mastery_criteria_pct: number; mastery_criteria_sessions: number; generalization_status: string; regression_count: number; activated_at: string|null; mastered_at: string|null; created_at: string; discontinuation_reason: string|null; pei_goal_id: string|null; pei_goal_title: string|null; pei_goal_domain: string|null; gen_cells_passed: number|null }
@@ -37,6 +38,7 @@ function age(b: string): string {
 export default function LearnerDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { operadora } = useRole()
   const learnerId = params.id as string
   const [learner, setLearner] = useState<Learner|null>(null)
   const [protocols, setProtocols] = useState<Protocol[]>([])
@@ -335,7 +337,7 @@ export default function LearnerDetailPage() {
       </div>
       {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
       <div className="flex gap-1 mb-6 border-b border-slate-200 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-        {([['protocols','Protocolos (' + protocols.length + ')'],['sessions','Sessões (' + sessions.length + ')'],['cso','Evolução CSO'],['guardians','Responsáveis'],['coverage','Cobertura']] as const).map(([k,l]) => (
+        {([['protocols','Protocolos (' + protocols.length + ')'],['sessions','Sessões (' + sessions.length + ')'],['cso','Evolução CSO'],['guardians','Responsáveis'],...(operadora.coverageProfiles ? [['coverage','Cobertura'] as const] : [])] as const).map(([k,l]) => (
           <button key={k} onClick={() => setTab(k as any)} className={'px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ' + (tab===k ? 'border-aba-500 text-aba-500' : 'border-transparent text-slate-400 hover:text-slate-600')}>{l}</button>
         ))}
       </div>
@@ -587,7 +589,7 @@ export default function LearnerDetailPage() {
         </div>
       )}
 
-      {tab === 'coverage' && learner && (
+      {tab === 'coverage' && learner && operadora.coverageProfiles && (
         <CoverageProfilesManager
           learnerId={learner.id}
           learnerName={learner.name}

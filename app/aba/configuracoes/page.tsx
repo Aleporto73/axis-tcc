@@ -28,7 +28,7 @@ import PayerRequirementsManager from '@/app/components/PayerRequirementsManager'
 // =====================================================
 
 export default function ConfiguracoesABAPage() {
-  const { profile: roleProfile, role, isAdmin, isTerapeuta, loading: roleLoading } = useRole()
+  const { profile: roleProfile, role, isAdmin, isTerapeuta, operadora, loading: roleLoading } = useRole()
 
   // Google Calendar — Bible S19
   const [googleStatus, setGoogleStatus] = useState<any>(null)
@@ -530,7 +530,7 @@ export default function ConfiguracoesABAPage() {
         {/* Ref: skill_axis_aba_v270.md — Sprint 0 */}
         {/* Locais onde a equipe atende (clínica, domicílio, escola, etc.) */}
         {/* ============================================ */}
-        {!isTerapeuta && (
+        {!isTerapeuta && operadora.serviceSites && (
           <section className="bg-white rounded-xl border border-slate-200 p-6">
             <ServiceSitesManager canEdit={isAdmin || role === 'supervisor'} />
           </section>
@@ -540,7 +540,7 @@ export default function ConfiguracoesABAPage() {
         {/* SEÇÃO: Credenciais da Equipe (admin/supervisor) */}
         {/* Ref: skill_axis_aba_v270.md — Sprint 2 */}
         {/* ============================================ */}
-        {!isTerapeuta && (
+        {!isTerapeuta && operadora.providerCredentials && (
           <section className="bg-white rounded-xl border border-slate-200 p-6">
             <ProviderCredentialsManager canEdit={isAdmin || role === 'supervisor'} />
           </section>
@@ -550,7 +550,7 @@ export default function ConfiguracoesABAPage() {
         {/* SEÇÃO: Conformidade (admin/supervisor) */}
         {/* Ref: skill_axis_aba_v270.md — Sprint 3 */}
         {/* ============================================ */}
-        {!isTerapeuta && (
+        {!isTerapeuta && operadora.integrityDashboard && (
           <section className="bg-white rounded-xl border border-slate-200 p-6">
             <IntegrityDashboard canEdit={isAdmin || role === 'supervisor'} />
           </section>
@@ -560,7 +560,7 @@ export default function ConfiguracoesABAPage() {
         {/* SEÇÃO: Perfis de Pagador (admin/supervisor) */}
         {/* Ref: skill_axis_aba_v270.md — Sprint 4 */}
         {/* ============================================ */}
-        {!isTerapeuta && (
+        {!isTerapeuta && operadora.payerProfiles && (
           <section className="bg-white rounded-xl border border-slate-200 p-6">
             <PayerRequirementsManager canEdit={isAdmin || role === 'supervisor'} />
           </section>

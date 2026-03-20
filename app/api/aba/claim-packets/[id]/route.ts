@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Claim Packet [id]
@@ -35,6 +35,7 @@ export async function GET(
     const { id } = await params
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'claimPackets')
       const packet = await ctx.client.query(
         `SELECT cp.*, l.name as learner_name,
           lcp.payer_name,
@@ -95,6 +96,7 @@ export async function PATCH(
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'claimPackets')
 
       // Verificar existência e status atual
       const check = await ctx.client.query(

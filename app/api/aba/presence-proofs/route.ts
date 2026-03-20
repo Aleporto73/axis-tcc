@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { requireFeature, handleRouteError } from '@/src/database/with-role'
 import { encryptParam, getKeyParam } from '@/src/lib/crypto'
 import { classifyGeoProof, haversineDistance } from '@/src/lib/geo-classifier'
 
@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'presenceProofs')
       const proofs = await ctx.client.query(
         `SELECT
           id, session_id, proof_type, accuracy_meters, altitude_meters,
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'presenceProofs')
       // Verificar sessão pertence ao tenant e está em andamento
       const sessionCheck = await ctx.client.query(
         `SELECT id, status, declared_site_id, service_mode

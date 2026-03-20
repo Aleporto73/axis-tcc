@@ -20,6 +20,7 @@ export interface TenantContext {
   userId: string        // clerk_user_id
   profileId: string     // profiles.id
   role: UserRole
+  planTier: string      // tenants.plan_tier (free, founders, clinica_100, clinica_250)
   client: PoolClient
 }
 
@@ -101,7 +102,7 @@ export async function withTenant<T>(
 
     // ─── Passo 2: Buscar TODOS os profiles ativos ───
     const profileResult = await client.query(
-      `SELECT p.id AS profile_id, p.tenant_id, p.role, t.name AS tenant_name
+      `SELECT p.id AS profile_id, p.tenant_id, p.role, t.name AS tenant_name, COALESCE(t.plan_tier, 'free') AS plan_tier
        FROM profiles p
        JOIN tenants t ON t.id = p.tenant_id
        WHERE p.clerk_user_id = $1 AND p.is_active = true
@@ -112,6 +113,7 @@ export async function withTenant<T>(
     let tenantId: string
     let profileId: string
     let role: UserRole
+    let planTier: string
 
     if (profileResult.rows.length > 1) {
       // ─── Múltiplos tenants: verificar cookie ───
@@ -126,6 +128,7 @@ export async function withTenant<T>(
         tenantId = match.tenant_id
         profileId = match.profile_id
         role = match.role as UserRole
+        planTier = match.plan_tier || 'free'
       } else {
         // Sem cookie ou cookie inválido → precisa selecionar
         await client.query('ROLLBACK')
@@ -144,6 +147,7 @@ export async function withTenant<T>(
       tenantId = profileResult.rows[0].tenant_id
       profileId = profileResult.rows[0].profile_id
       role = profileResult.rows[0].role as UserRole
+      planTier = profileResult.rows[0].plan_tier || 'free'
     } else {
       // ─── Fallback: buscar em tenants (compatibilidade pré-migração) ───
       const tenantResult = await client.query(
@@ -158,11 +162,12 @@ export async function withTenant<T>(
       tenantId = tenantResult.rows[0].id
       profileId = tenantId // fallback: usar tenantId como profileId
       role = 'admin'       // fallback: tenant owner = admin
+      planTier = 'free'    // fallback: sem plan_tier = free
     }
 
     await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId])
 
-    const result = await callback({ tenantId, userId, profileId, role, client })
+    const result = await callback({ tenantId, userId, profileId, role, planTier, client })
 
     await client.query('COMMIT')
     return result

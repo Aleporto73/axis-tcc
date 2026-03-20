@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 import { encryptParam, decryptColumn, getKeyParam } from '@/src/lib/crypto'
 
 // =====================================================
@@ -26,6 +26,7 @@ export async function GET(
     const { id } = await params
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'serviceSites')
       const keyParam = getKeyParam()
 
       const site = await ctx.client.query(
@@ -103,6 +104,7 @@ export async function PATCH(
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'serviceSites')
 
       // Verificar existência
       const existing = await ctx.client.query(

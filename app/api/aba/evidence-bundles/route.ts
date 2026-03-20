@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Pacotes de Evidência (session_evidence_bundles)
@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'evidenceBundles')
       const bundles = await ctx.client.query(
         `SELECT
           id, session_id, bundle_hash, components, status,
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'evidenceBundles')
       // Verificar sessão
       const sessionCheck = await ctx.client.query(
         `SELECT s.id, s.status, s.declared_site_id, s.service_mode

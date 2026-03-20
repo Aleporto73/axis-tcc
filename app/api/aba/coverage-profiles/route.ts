@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Perfis de Cobertura (learner_coverage_profiles)
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const learnerId = request.nextUrl.searchParams.get('learner_id')
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'coverageProfiles')
       let query = `
         SELECT
           cp.id, cp.learner_id, cp.payer_profile_id, cp.payer_name,
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'coverageProfiles')
 
       // Verificar aprendiz pertence ao tenant
       const learnerCheck = await ctx.client.query(

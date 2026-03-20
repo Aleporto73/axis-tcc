@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Credencial [id]
@@ -25,6 +25,7 @@ export async function GET(
     const { id } = await params
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'providerCredentials')
       const cred = await ctx.client.query(
         `SELECT pc.*, p.name as profile_name, p.email as profile_email, p.role as profile_role
         FROM provider_credentials pc
@@ -55,6 +56,7 @@ export async function PATCH(
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'providerCredentials')
 
       const check = await ctx.client.query(
         `SELECT id FROM provider_credentials WHERE id = $1 AND tenant_id = $2`,

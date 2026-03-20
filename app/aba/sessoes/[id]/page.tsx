@@ -8,6 +8,7 @@ import GPSCheckIn from '@/app/components/GPSCheckIn'
 import SessionAttachments from '@/app/components/SessionAttachments'
 import EvidenceCard from '@/app/components/EvidenceCard'
 import { runSessionCloseHook } from '@/src/lib/session-close-hook'
+import { useRole } from '@/app/components/RoleProvider'
 
 interface Profile {
   id: string
@@ -110,6 +111,7 @@ const intensityLabels: Record<string, string> = {
 export default function SessionPage() {
   const params = useParams()
   const router = useRouter()
+  const { operadora } = useRole()
   const sessionId = params.id as string
 
   const [session, setSession] = useState<Session | null>(null)
@@ -585,7 +587,7 @@ export default function SessionPage() {
         {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
 
         {/* v2.7.0: Prova de presença GPS */}
-        {(isActive || isCompleted) && (
+        {operadora.presenceProofs && (isActive || isCompleted) && (
           <GPSCheckIn
             sessionId={sessionId}
             sessionStatus={session.status}
@@ -596,11 +598,13 @@ export default function SessionPage() {
         )}
 
         {/* v2.7.0: Anexos da sessão */}
-        <SessionAttachments
-          sessionId={sessionId}
-          sessionStatus={session.status}
-          canEdit={isActive}
-        />
+        {operadora.attachments && (
+          <SessionAttachments
+            sessionId={sessionId}
+            sessionStatus={session.status}
+            canEdit={isActive}
+          />
+        )}
 
         {isCompleted && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl space-y-3">
@@ -692,7 +696,7 @@ export default function SessionPage() {
         )}
 
         {/* v2.7.0: Pacote de Evidência */}
-        {isCompleted && (
+        {operadora.evidenceBundles && isCompleted && (
           <div className="mb-6">
             <EvidenceCard sessionId={sessionId} sessionStatus={session.status} />
           </div>

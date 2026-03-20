@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Perfis de Pagador (payer_requirement_profiles)
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const activeOnly = request.nextUrl.searchParams.get('active') !== 'false'
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'payerProfiles')
       let query = `
         SELECT
           id, payer_name, payer_code,
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'payerProfiles')
 
       const inserted = await ctx.client.query(
         `INSERT INTO payer_requirement_profiles (

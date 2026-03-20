@@ -16,8 +16,9 @@ import { requireAdmin, handleRouteError } from '@/src/database/with-role'
  */
 export async function GET() {
   try {
-    const result = await withTenant(async ({ client, tenantId, role, profileId }) => {
-      requireAdmin({ tenantId, userId: '', profileId, role, client })
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId } = ctx
+      requireAdmin(ctx)
 
       const members = await client.query(
         `SELECT

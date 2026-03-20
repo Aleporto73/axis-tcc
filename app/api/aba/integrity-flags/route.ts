@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Integrity Flags (v2.7.0 Sprint 3)
@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(sp.get('offset') || '0', 10)
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'integrityFlags')
       let query = `
         SELECT
           id, entity_type, entity_id, rule_code, severity,
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'integrityFlags')
 
       // Importação dinâmica para evitar carregar engine em todo request
       const { runFullScan } = await import('@/src/engines/integrity-scanner')

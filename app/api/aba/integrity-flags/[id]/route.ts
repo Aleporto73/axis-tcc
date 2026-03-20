@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Integrity Flag [id] (v2.7.0 Sprint 3)
@@ -37,6 +37,7 @@ export async function GET(
     const { id } = await params
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'integrityFlags')
       const flag = await ctx.client.query(`
         SELECT
           f.*,
@@ -82,6 +83,7 @@ export async function PATCH(
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'integrityFlags')
 
       // Buscar flag atual
       const check = await ctx.client.query(

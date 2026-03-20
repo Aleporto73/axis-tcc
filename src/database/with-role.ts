@@ -1,8 +1,9 @@
 import { TenantContext, UserRole, TenantSelectionRequired } from './with-tenant'
+import { getOperadoraAccess, OperadoraAccess, FEATURE_LABELS } from '@/src/lib/operadora-gate'
 
 // =====================================================
 // AXIS ABA - Authorization Helpers (Multi-Terapeuta)
-// Conforme AXIS ABA Bible v2.6.1
+// Conforme AXIS ABA Bible v2.6.1 + v2.7.0 Operadora Ready
 // IA não decide — IA organiza. Roles são humanas.
 // =====================================================
 
@@ -100,6 +101,42 @@ export async function canAccessLearner(
   return result.rows.length > 0
 }
 
+// =====================================================
+// Operadora Ready — Feature Gate (v2.7.0)
+// =====================================================
+
+/**
+ * Verifica se o plano do tenant tem acesso a uma feature v2.7.0.
+ * Lança PlanGateError (403) se não autorizado.
+ *
+ * Uso:
+ *   requireFeature(ctx, 'presenceProofs')
+ *   requireFeature(ctx, 'claimPackets')
+ */
+export function requireFeature(ctx: TenantContext, feature: keyof OperadoraAccess): void {
+  const access = getOperadoraAccess(ctx.planTier)
+  if (!access[feature]) {
+    throw new PlanGateError(
+      `Recurso "${FEATURE_LABELS[feature]}" não disponível no plano atual. Faça upgrade para acessar.`,
+      feature
+    )
+  }
+}
+
+/**
+ * Erro customizado para gate de plano — capturado nas rotas para retornar 403.
+ */
+export class PlanGateError extends Error {
+  public statusCode = 403
+  public feature: string
+
+  constructor(message: string, feature: string) {
+    super(message)
+    this.name = 'PlanGateError'
+    this.feature = feature
+  }
+}
+
 /**
  * Erro customizado para autorização — capturado nas rotas para retornar 403.
  */
@@ -119,6 +156,9 @@ export class RoleError extends Error {
 export function handleRouteError(error: unknown): { message: string; status: number; tenants?: any[] } {
   if (error instanceof TenantSelectionRequired) {
     return { message: 'Seleção de clínica necessária', status: 409, tenants: error.tenants }
+  }
+  if (error instanceof PlanGateError) {
+    return { message: error.message, status: 403 }
   }
   if (error instanceof RoleError) {
     return { message: error.message, status: 403 }

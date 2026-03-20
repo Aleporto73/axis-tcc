@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Perfil de Cobertura [id]
@@ -22,6 +22,7 @@ export async function GET(
     const { id } = await params
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'coverageProfiles')
       const coverage = await ctx.client.query(
         `SELECT cp.*, l.name as learner_name
         FROM learner_coverage_profiles cp
@@ -52,6 +53,7 @@ export async function PATCH(
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'coverageProfiles')
 
       // Verificar existência
       const check = await ctx.client.query(

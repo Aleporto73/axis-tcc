@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Credenciais de Prestadores (provider_credentials)
@@ -26,6 +26,7 @@ const CREDENTIAL_STATUSES = ['active', 'pending', 'expired', 'blocked'] as const
 export async function GET() {
   try {
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'providerCredentials')
       return ctx.client.query(
         `SELECT
           pc.*,
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'providerCredentials')
 
       // Verificar profile pertence ao tenant
       const profileCheck = await ctx.client.query(

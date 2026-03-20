@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Perfil de Pagador [id]
@@ -54,6 +54,7 @@ export async function GET(
     const { id } = await params
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'payerProfiles')
       const profile = await ctx.client.query(
         `SELECT * FROM payer_requirement_profiles WHERE id = $1 AND tenant_id = $2`,
         [id, ctx.tenantId]
@@ -95,6 +96,7 @@ export async function PATCH(
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'payerProfiles')
 
       // Buscar estado atual (snapshot before)
       const check = await ctx.client.query(

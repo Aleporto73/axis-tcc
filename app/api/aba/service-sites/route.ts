@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
 import { encryptParam, decryptColumn, getKeyParam } from '@/src/lib/crypto'
 
 // =====================================================
@@ -25,6 +25,7 @@ const VALID_SITE_TYPES = ['clinic', 'home', 'school', 'telehealth', 'community',
 export async function GET() {
   try {
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'serviceSites')
       const keyParam = getKeyParam()
 
       const sites = await ctx.client.query(
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
 
     const result = await withTenant(async (ctx) => {
       requireAdminOrSupervisor(ctx)
+      requireFeature(ctx, 'serviceSites')
 
       const keyParam = getKeyParam()
       const { encryptSQL } = encryptParam(7)

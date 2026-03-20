@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { requireFeature, handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS ABA - API: Anexos de Sessão (session_attachments)
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'attachments')
       const attachments = await ctx.client.query(
         `SELECT
           id, session_id, attachment_type, file_name, file_hash,
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
       .digest('hex')
 
     const result = await withTenant(async (ctx) => {
+      requireFeature(ctx, 'attachments')
       // Verificar sessão
       const sessionCheck = await ctx.client.query(
         `SELECT id FROM sessions_aba WHERE id = $1 AND tenant_id = $2`,
