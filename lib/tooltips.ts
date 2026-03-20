@@ -108,6 +108,25 @@ export const TOOLTIPS = {
 
   // ─── Perfis de Pagador (v2.7.0 Sprint 4) ───
   perfil_pagador: 'Requisitos exigidos por cada operadora: GPS, atestação do responsável, foto, documentação obrigatória, frequência de relatórios e formatos aceitos. Alterações são versionadas no audit log.',
+  // ─── Páginas Comerciais (linguagem 50+) ───
+  pub_gps: 'O sistema confirma automaticamente que o terapeuta estava no local do atendimento usando a localização do celular. Funciona como um "ponto digital" com prova geográfica.',
+  pub_atestacao: 'Depois da sessão, o terapeuta e o responsável pelo paciente confirmam digitalmente que o atendimento aconteceu. É como uma assinatura eletrônica vinculada ao prontuário.',
+  pub_bundle: 'Todos os registros da sessão (dados clínicos, localização GPS, assinaturas, fotos) são reunidos num pacote único e protegido. Ninguém pode alterar depois de gerado.',
+  pub_claim: 'A documentação necessária para solicitar reembolso à operadora de saúde é gerada automaticamente a partir dos dados da sessão. Sem preencher formulários extras.',
+  pub_compliance: 'O sistema verifica automaticamente se há documentos vencidos, sessões sem comprovação ou inconsistências. Alertas aparecem antes que virem problemas.',
+  pub_cobertura: 'Os dados do plano de saúde do paciente ficam vinculados ao prontuário: qual operadora, número da autorização, quantas horas por semana, validade. Tudo num só lugar.',
+  pub_cso: 'Um número calculado automaticamente que mostra se o paciente está evoluindo. Acima de 70 é considerado bom progresso. Ajuda a visualizar a melhora ao longo do tempo.',
+  pub_lgpd: 'Lei Geral de Proteção de Dados. O sistema segue as regras brasileiras de privacidade: dados GPS são apagados automaticamente após o período necessário.',
+  pub_operadora: 'Empresas de plano de saúde (Unimed, Bradesco Saúde, SulAmérica, etc.) que exigem comprovação detalhada dos atendimentos para liberar reembolso.',
+  pub_append_only: 'Depois que um registro clínico é salvo, ele nunca é apagado ou alterado. Novas informações são adicionadas sem modificar o histórico. Isso garante rastreabilidade total.',
+  pub_multi_tenant: 'Cada clínica tem seus dados completamente separados. Nenhuma clínica consegue ver ou acessar dados de outra, mesmo estando no mesmo sistema.',
+  pub_motor_congelado: 'O motor de cálculo clínico (que mede progresso do paciente) foi testado e validado. Ele não muda quando novas funcionalidades são adicionadas. Seus dados históricos ficam intactos.',
+  pub_founders: 'Primeiros clientes que adotam o sistema. Em troca, garantem o preço de lançamento para sempre, mesmo quando o valor normal aumentar.',
+  pub_dashboard_compliance: 'Painel visual que mostra a situação de toda a clínica: quais documentos estão em dia, quais vencem em breve, e onde há pendências que precisam de atenção.',
+  pub_credenciais: 'Registros profissionais da equipe: número do conselho (CRP, CRFa, etc.), validade, credenciamento junto a operadoras. O sistema avisa quando algo está para vencer.',
+  pub_flags: 'Alertas automáticos quando o sistema detecta algo que precisa de atenção: documento vencido, sessão sem GPS, horários sobrepostos. Cada alerta tem nível de urgência.',
+  pub_service_sites: 'Endereços cadastrados onde a equipe faz atendimentos. Quando o terapeuta faz check-in, o GPS compara com o endereço cadastrado para validar a presença.',
+  pub_payer_profiles: 'Cada operadora de saúde tem regras diferentes (quais documentos exige, se precisa de GPS, formato do relatório). Esses perfis guardam as regras de cada uma.',
 } as const
 
 export type TooltipKey = keyof typeof TOOLTIPS

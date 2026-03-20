@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { HelpTip } from '@/components/Tooltip'
 import {
   Lock,
   FileText,
@@ -436,31 +437,37 @@ export default function ProdutoABAPage() {
               {
                 Icon: MapPin,
                 title: 'Presença GPS comprovada',
+                tip: 'pub_gps' as const,
                 desc: 'Check-in e check-out com geolocalização. Prova objetiva de que o atendimento aconteceu no local e horário registrados.',
               },
               {
                 Icon: Fingerprint,
                 title: 'Atestações digitais',
+                tip: 'pub_atestacao' as const,
                 desc: 'Terapeuta e responsável atestam cada sessão com assinatura digital, timestamp e vínculo direto ao prontuário.',
               },
               {
                 Icon: Package,
                 title: 'Bundles de evidência',
+                tip: 'pub_bundle' as const,
                 desc: 'Dados da sessão, trials, provas GPS e atestações reunidos em um pacote íntegro, auditável e exportável.',
               },
               {
                 Icon: CreditCard,
                 title: 'Claim packets para faturamento',
+                tip: 'pub_claim' as const,
                 desc: 'Pacotes prontos para submissão a operadoras. Cada sessão gera documentação no formato exigido para reembolso.',
               },
               {
                 Icon: ShieldCheck,
                 title: 'Compliance e integridade',
+                tip: 'pub_compliance' as const,
                 desc: 'Scan automático de inconsistências: credenciais vencidas, gaps de documentação, flags de integridade por aprendiz.',
               },
               {
                 Icon: ClipboardCheck,
                 title: 'Perfis de cobertura',
+                tip: 'pub_cobertura' as const,
                 desc: 'Plano de saúde, autorização, vigência e limites do aprendiz vinculados ao prontuário. Tudo organizado em um só lugar.',
               },
             ].map((item, i) => (
@@ -468,7 +475,7 @@ export default function ProdutoABAPage() {
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ backgroundColor: coral + '20' }}>
                   <item.Icon className="w-5 h-5" style={{ color: coralLight }} />
                 </div>
-                <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
+                <h3 className="text-base font-semibold text-white mb-2">{item.title} <HelpTip tip={item.tip} color="bg-white/10 text-white/60" /></h3>
                 <p className="text-sm text-white/50 leading-relaxed">{item.desc}</p>
               </div>
             ))}
@@ -476,17 +483,22 @@ export default function ProdutoABAPage() {
 
           <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl border border-white/10 p-8 md:p-10 mb-10">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              {[
-                { value: '100%', label: 'Aditivo ao motor clínico CSO-ABA' },
-                { value: 'LGPD', label: 'Geolocalização com retenção controlada' },
-                { value: '4 planos', label: 'Free → Founders → Clínica 100 → 250' },
-                { value: 'Zero', label: 'Impacto no fluxo clínico existente' },
-              ].map((stat, i) => (
-                <div key={i}>
-                  <div className="text-2xl font-bold mb-1" style={{ color: coralLight }}>{stat.value}</div>
-                  <div className="text-xs text-white/40 leading-snug">{stat.label}</div>
-                </div>
-              ))}
+              <div>
+                <div className="text-2xl font-bold mb-1" style={{ color: coralLight }}>100%</div>
+                <div className="text-xs text-white/40 leading-snug">Aditivo ao motor clínico CSO-ABA <HelpTip tip="pub_motor_congelado" color="bg-white/10 text-white/40" /></div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold mb-1" style={{ color: coralLight }}>LGPD</div>
+                <div className="text-xs text-white/40 leading-snug">Geolocalização com retenção controlada <HelpTip tip="pub_lgpd" color="bg-white/10 text-white/40" /></div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold mb-1" style={{ color: coralLight }}>4 planos</div>
+                <div className="text-xs text-white/40 leading-snug">Free → Founders → Clínica 100 → 250</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold mb-1" style={{ color: coralLight }}>Zero</div>
+                <div className="text-xs text-white/40 leading-snug">Impacto no fluxo clínico existente</div>
+              </div>
             </div>
           </div>
 

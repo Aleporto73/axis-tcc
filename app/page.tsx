@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { SignedIn, SignedOut } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
+import { HelpTip } from '@/components/Tooltip'
 
 /* ─── Colors ─── */
 const navy = '#1e3a5f'
@@ -260,59 +261,56 @@ export default function HomePage() {
               </div>
 
               <div className="grid md:grid-cols-3 gap-5 mb-12">
-                {[
-                  {
-                    icon: '📍',
-                    title: 'Presença GPS comprovada',
-                    desc: 'Check-in e check-out com geolocalização. Prova objetiva de que o atendimento aconteceu no local registrado.',
-                  },
-                  {
-                    icon: '✍️',
-                    title: 'Atestações digitais',
-                    desc: 'Terapeuta e responsável atestam cada sessão. Assinatura digital com timestamp e vínculo ao prontuário.',
-                  },
-                  {
-                    icon: '📦',
-                    title: 'Bundles de evidência',
-                    desc: 'Dados da sessão, trials, provas GPS e atestações reunidos em um pacote íntegro e auditável.',
-                  },
-                  {
-                    icon: '💳',
-                    title: 'Pacotes de faturamento',
-                    desc: 'Claim packets prontos para submissão. Cada sessão gera documentação no formato que operadoras exigem.',
-                  },
-                  {
-                    icon: '🛡️',
-                    title: 'Compliance e integridade',
-                    desc: 'Scan automático de inconsistências. Flags de integridade, credenciais vencidas e gaps de documentação.',
-                  },
-                  {
-                    icon: '📋',
-                    title: 'Perfis de cobertura',
-                    desc: 'Dados do plano de saúde do aprendiz vinculados ao prontuário. Autorização, vigência e limites organizados.',
-                  },
-                ].map((item, i) => (
-                  <div key={i} className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
-                    <span className="text-2xl mb-3 block">{item.icon}</span>
-                    <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
-                    <p className="text-sm text-white/50 leading-relaxed">{item.desc}</p>
-                  </div>
-                ))}
+                <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+                  <span className="text-2xl mb-3 block">📍</span>
+                  <h3 className="text-base font-semibold text-white mb-2">Presença GPS comprovada <HelpTip tip="pub_gps" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Check-in e check-out com geolocalização. Prova objetiva de que o atendimento aconteceu no local registrado.</p>
+                </div>
+                <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+                  <span className="text-2xl mb-3 block">✍️</span>
+                  <h3 className="text-base font-semibold text-white mb-2">Atestações digitais <HelpTip tip="pub_atestacao" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Terapeuta e responsável atestam cada sessão. Assinatura digital com timestamp e vínculo ao prontuário.</p>
+                </div>
+                <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+                  <span className="text-2xl mb-3 block">📦</span>
+                  <h3 className="text-base font-semibold text-white mb-2">Bundles de evidência <HelpTip tip="pub_bundle" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Dados da sessão, trials, provas GPS e atestações reunidos em um pacote íntegro e auditável.</p>
+                </div>
+                <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+                  <span className="text-2xl mb-3 block">💳</span>
+                  <h3 className="text-base font-semibold text-white mb-2">Pacotes de faturamento <HelpTip tip="pub_claim" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Claim packets prontos para submissão. Cada sessão gera documentação no formato que operadoras exigem.</p>
+                </div>
+                <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+                  <span className="text-2xl mb-3 block">🛡️</span>
+                  <h3 className="text-base font-semibold text-white mb-2">Compliance e integridade <HelpTip tip="pub_compliance" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Scan automático de inconsistências. Flags de integridade, credenciais vencidas e gaps de documentação.</p>
+                </div>
+                <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+                  <span className="text-2xl mb-3 block">📋</span>
+                  <h3 className="text-base font-semibold text-white mb-2">Perfis de cobertura <HelpTip tip="pub_cobertura" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Dados do plano de saúde do aprendiz vinculados ao prontuário. Autorização, vigência e limites organizados.</p>
+                </div>
               </div>
 
               <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl border border-white/10 p-8 md:p-10 mb-10">
                 <div className="grid md:grid-cols-4 gap-6 text-center">
-                  {[
-                    { value: '100%', label: 'Aditivo ao motor clínico' },
-                    { value: 'LGPD', label: 'Dados geo com retenção controlada' },
-                    { value: '4 planos', label: 'De gratuito a enterprise' },
-                    { value: 'Zero', label: 'Impacto no fluxo clínico existente' },
-                  ].map((stat, i) => (
-                    <div key={i}>
-                      <div className="text-2xl font-bold mb-1" style={{ color: aba }}>{stat.value}</div>
-                      <div className="text-xs text-white/40 leading-snug">{stat.label}</div>
-                    </div>
-                  ))}
+                  <div>
+                    <div className="text-2xl font-bold mb-1" style={{ color: aba }}>100%</div>
+                    <div className="text-xs text-white/40 leading-snug">Aditivo ao motor clínico <HelpTip tip="pub_motor_congelado" color="bg-white/10 text-white/40" /></div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold mb-1" style={{ color: aba }}>LGPD</div>
+                    <div className="text-xs text-white/40 leading-snug">Dados geo com retenção controlada <HelpTip tip="pub_lgpd" color="bg-white/10 text-white/40" /></div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold mb-1" style={{ color: aba }}>4 planos</div>
+                    <div className="text-xs text-white/40 leading-snug">De gratuito a enterprise</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold mb-1" style={{ color: aba }}>Zero</div>
+                    <div className="text-xs text-white/40 leading-snug">Impacto no fluxo clínico existente</div>
+                  </div>
                 </div>
               </div>
 

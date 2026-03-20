@@ -1,5 +1,9 @@
+'use client'
+
 import Link from 'next/link'
 import { Check, X, ArrowRight } from 'lucide-react'
+import { HelpTip } from '@/components/Tooltip'
+import type { TooltipKey } from '@/lib/tooltips'
 
 /* ─── palette ─── */
 const coral = '#B4532F'
@@ -58,6 +62,7 @@ type RowValue = boolean | string
 
 interface FeatureRow {
   label: string
+  tip?: TooltipKey
   values: [RowValue, RowValue, RowValue, RowValue]
 }
 
@@ -71,14 +76,14 @@ const features: FeatureGroup[] = [
   {
     section: 'Motor Clínico (CSO-ABA v2.6.1)',
     rows: [
-      { label: 'Motor CSO-ABA completo', values: [true, true, true, true] },
+      { label: 'Motor CSO-ABA completo', tip: 'pub_cso', values: [true, true, true, true] },
       { label: 'Registro estruturado de sessões', values: [true, true, true, true] },
       { label: 'Ciclo de protocolo (rascunho → mantido)', values: [true, true, true, true] },
       { label: 'Generalização 3×2', values: [true, true, true, true] },
       { label: 'Manutenção 2-6-12', values: [true, true, true, true] },
       { label: 'Relatório institucional', values: [true, true, true, true] },
       { label: 'Aprendizes', values: ['1', 'Até 100', 'Até 100', 'Até 250'] },
-      { label: 'Multi-terapeuta', values: [false, true, true, true] },
+      { label: 'Multi-terapeuta', tip: 'pub_multi_tenant', values: [false, true, true, true] },
       { label: 'Relatórios consolidados', values: [false, true, true, true] },
       { label: 'Onboarding dedicado', values: [false, true, true, true] },
     ],
@@ -87,26 +92,26 @@ const features: FeatureGroup[] = [
     section: 'Operadora Ready (v2.7.0)',
     sectionColor: coral,
     rows: [
-      { label: 'Presença GPS (check-in / check-out)', values: [false, true, true, true] },
-      { label: 'Atestações digitais (terapeuta)', values: [false, true, true, true] },
-      { label: 'Locais de atendimento (service sites)', values: [false, false, true, true] },
-      { label: 'Bundles de evidência', values: [false, false, true, true] },
+      { label: 'Presença GPS (check-in / check-out)', tip: 'pub_gps', values: [false, true, true, true] },
+      { label: 'Atestações digitais (terapeuta)', tip: 'pub_atestacao', values: [false, true, true, true] },
+      { label: 'Locais de atendimento (service sites)', tip: 'pub_service_sites', values: [false, false, true, true] },
+      { label: 'Bundles de evidência', tip: 'pub_bundle', values: [false, false, true, true] },
       { label: 'Anexos de sessão', values: [false, false, true, true] },
-      { label: 'Perfis de cobertura (plano de saúde)', values: [false, false, true, true] },
-      { label: 'Claim packets (faturamento)', values: [false, false, true, true] },
-      { label: 'Credenciais do provedor', values: [false, false, true, true] },
-      { label: 'Flags de integridade', values: [false, false, true, true] },
-      { label: 'Perfis de operadora / payer', values: [false, false, true, true] },
-      { label: 'Dashboard de compliance', values: [false, false, false, true] },
+      { label: 'Perfis de cobertura (plano de saúde)', tip: 'pub_cobertura', values: [false, false, true, true] },
+      { label: 'Claim packets (faturamento)', tip: 'pub_claim', values: [false, false, true, true] },
+      { label: 'Credenciais do provedor', tip: 'pub_credenciais', values: [false, false, true, true] },
+      { label: 'Flags de integridade', tip: 'pub_flags', values: [false, false, true, true] },
+      { label: 'Perfis de operadora / payer', tip: 'pub_payer_profiles', values: [false, false, true, true] },
+      { label: 'Dashboard de compliance', tip: 'pub_dashboard_compliance', values: [false, false, false, true] },
     ],
   },
   {
     section: 'Plataforma',
     rows: [
       { label: 'Assistente Ana (suporte in-app)', values: [true, true, true, true] },
-      { label: 'LGPD aplicada', values: [true, true, true, true] },
-      { label: 'Histórico append-only', values: [true, true, true, true] },
-      { label: 'Multi-tenant isolado', values: [true, true, true, true] },
+      { label: 'LGPD aplicada', tip: 'pub_lgpd', values: [true, true, true, true] },
+      { label: 'Histórico append-only', tip: 'pub_append_only', values: [true, true, true, true] },
+      { label: 'Multi-tenant isolado', tip: 'pub_multi_tenant', values: [true, true, true, true] },
       { label: 'Suporte prioritário', values: [false, true, true, true] },
     ],
   },
@@ -291,7 +296,7 @@ export default function PrecosPage() {
                     </tr>
                     {group.rows.map((row, i) => (
                       <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                        <td className="py-3 px-6 text-slate-700 font-medium">{row.label}</td>
+                        <td className="py-3 px-6 text-slate-700 font-medium">{row.label} {row.tip && <HelpTip tip={row.tip} />}</td>
                         {row.values.map((v, j) => (
                           <td key={j} className="py-3 px-3 text-center">
                             {typeof v === 'string' ? (
