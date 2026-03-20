@@ -25,29 +25,29 @@ SELECT
   pc.id,
   'EXPIRED_COUNCIL',
   CASE
-    WHEN pc.council_expiry < NOW() THEN 'warning'
+    WHEN pc.council_valid_until < NOW() THEN 'warning'
     ELSE 'warning'
   END,
   CASE
-    WHEN pc.council_expiry < NOW() THEN
-      'Conselho ' || pc.council_type || ' ' || pc.council_number || ' vencido em ' || pc.council_expiry::date
+    WHEN pc.council_valid_until < NOW() THEN
+      'Conselho ' || pc.council_type || ' ' || pc.council_number || ' vencido em ' || pc.council_valid_until::date
     ELSE
-      'Conselho ' || pc.council_type || ' ' || pc.council_number || ' vence em ' || pc.council_expiry::date
+      'Conselho ' || pc.council_type || ' ' || pc.council_number || ' vence em ' || pc.council_valid_until::date
   END,
   jsonb_build_object(
     'council_type', pc.council_type,
     'council_number', pc.council_number,
-    'expiry_date', pc.council_expiry::date,
+    'expiry_date', pc.council_valid_until::date,
     'profile_name', p.name,
-    'days_until_expiry', EXTRACT(DAY FROM pc.council_expiry - NOW())::int
+    'days_until_expiry', EXTRACT(DAY FROM pc.council_valid_until - NOW())::int
   ),
   NOW(),
   NOW(),
   'open'
 FROM provider_credentials pc
 JOIN profiles p ON p.id = pc.profile_id
-WHERE pc.council_expiry IS NOT NULL
-  AND pc.council_expiry <= NOW() + INTERVAL '30 days'
+WHERE pc.council_valid_until IS NOT NULL
+  AND pc.council_valid_until <= NOW() + INTERVAL '30 days'
   AND pc.credentialing_status != 'inactive'
 ON CONFLICT (tenant_id, entity_type, entity_id, rule_code)
   WHERE status IN ('open', 'reviewing')

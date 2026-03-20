@@ -7,8 +7,9 @@
 # Ref: skill_axis_aba_v270.md — Jobs Operacionais
 #   "scan_integrity | Diário | Recalcula flags automáticas"
 #
-# Executa via API para manter lógica centralizada no engine.
-# Requer: AXIS_API_URL, AXIS_CRON_TOKEN
+# Executa via API dedicada (/api/cron/scan-integrity).
+# Auth: Bearer CRON_SECRET (mesmo token dos outros crons).
+# Requer: AXIS_API_URL, CRON_SECRET
 # =====================================================
 
 set -euo pipefail
@@ -21,21 +22,21 @@ if [ -f "${SCRIPT_DIR}/../../.env.local" ]; then
 fi
 
 API_URL="${AXIS_API_URL:-http://localhost:3000}"
-CRON_TOKEN="${AXIS_CRON_TOKEN:-}"
+CRON_TOKEN="${CRON_SECRET:-}"
 
 if [ -z "$CRON_TOKEN" ]; then
-  echo "[$(date -Iseconds)] ERRO: AXIS_CRON_TOKEN não definido"
+  echo "[$(date -Iseconds)] ERRO: CRON_SECRET não definido"
   exit 1
 fi
 
 echo "[$(date -Iseconds)] Iniciando scan de integridade..."
 
-# Chamar API de scan (POST /api/aba/integrity-flags)
+# Chamar rota cron dedicada (POST /api/cron/scan-integrity)
 RESPONSE=$(curl -s -w "\n%{http_code}" \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${CRON_TOKEN}" \
-  "${API_URL}/api/aba/integrity-flags")
+  "${API_URL}/api/cron/scan-integrity")
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | sed '$d')
