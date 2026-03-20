@@ -7,6 +7,10 @@ import {
   Check, X, Zap, Unlink, Building2, Clock, FileText, CreditCard, ArrowUpRight
 } from 'lucide-react'
 import Tooltip, { HelpTip } from '@/components/Tooltip'
+import ServiceSitesManager from '@/app/components/ServiceSitesManager'
+import ProviderCredentialsManager from '@/app/components/ProviderCredentialsManager'
+import IntegrityDashboard from '@/app/components/IntegrityDashboard'
+import PayerRequirementsManager from '@/app/components/PayerRequirementsManager'
 
 // =====================================================
 // AXIS ABA - Configurações (Multi-Terapeuta, Role-Aware)
@@ -518,6 +522,47 @@ export default function ConfiguracoesABAPage() {
                 </button>
               </div>
             </div>
+          </section>
+        )}
+
+        {/* ============================================ */}
+        {/* SEÇÃO: Locais de Atendimento (admin/supervisor) */}
+        {/* Ref: skill_axis_aba_v270.md — Sprint 0 */}
+        {/* Locais onde a equipe atende (clínica, domicílio, escola, etc.) */}
+        {/* ============================================ */}
+        {!isTerapeuta && (
+          <section className="bg-white rounded-xl border border-slate-200 p-6">
+            <ServiceSitesManager canEdit={isAdmin || role === 'supervisor'} />
+          </section>
+        )}
+
+        {/* ============================================ */}
+        {/* SEÇÃO: Credenciais da Equipe (admin/supervisor) */}
+        {/* Ref: skill_axis_aba_v270.md — Sprint 2 */}
+        {/* ============================================ */}
+        {!isTerapeuta && (
+          <section className="bg-white rounded-xl border border-slate-200 p-6">
+            <ProviderCredentialsManager canEdit={isAdmin || role === 'supervisor'} />
+          </section>
+        )}
+
+        {/* ============================================ */}
+        {/* SEÇÃO: Conformidade (admin/supervisor) */}
+        {/* Ref: skill_axis_aba_v270.md — Sprint 3 */}
+        {/* ============================================ */}
+        {!isTerapeuta && (
+          <section className="bg-white rounded-xl border border-slate-200 p-6">
+            <IntegrityDashboard canEdit={isAdmin || role === 'supervisor'} />
+          </section>
+        )}
+
+        {/* ============================================ */}
+        {/* SEÇÃO: Perfis de Pagador (admin/supervisor) */}
+        {/* Ref: skill_axis_aba_v270.md — Sprint 4 */}
+        {/* ============================================ */}
+        {!isTerapeuta && (
+          <section className="bg-white rounded-xl border border-slate-200 p-6">
+            <PayerRequirementsManager canEdit={isAdmin || role === 'supervisor'} />
           </section>
         )}
 

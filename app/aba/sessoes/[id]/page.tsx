@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Tooltip, { HelpTip } from '@/components/Tooltip'
+import GPSCheckIn from '@/app/components/GPSCheckIn'
+import SessionAttachments from '@/app/components/SessionAttachments'
+import EvidenceCard from '@/app/components/EvidenceCard'
+import { runSessionCloseHook } from '@/src/lib/session-close-hook'
 
 interface Profile {
   id: string
@@ -27,6 +31,8 @@ interface Session {
   applied_by_name: string | null
   active_duration_seconds: number
   timed_trials: number
+  service_mode: string | null
+  declared_site_id: string | null
 }
 
 interface Target {
@@ -115,6 +121,12 @@ export default function SessionPage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Provas de presença (v2.7.0)
+  const [presenceProofs, setPresenceProofs] = useState<Array<{
+    id: string; proof_type: 'checkin' | 'checkout'; confidence_status: 'valid' | 'warning' | 'exception';
+    exception_reason: string | null; accuracy_meters: number | null; distance_to_site_meters: number | null; captured_at: string;
+  }>>([])
 
   // Cronômetro por trial
   const [timerRunning, setTimerRunning] = useState(false)
@@ -353,6 +365,11 @@ export default function SessionPage() {
         const pData = await pRes.json()
         setProtocols(pData.protocols || [])
       }
+      // Provas de presença (v2.7.0)
+      try {
+        const ppRes = await fetch(`/api/aba/presence-proofs?session_id=${sessionId}`)
+        if (ppRes.ok) { const ppData = await ppRes.json(); setPresenceProofs(ppData.proofs || []) }
+      } catch { /* silencioso */ }
       setLoading(false)
     } catch { setError('Falha de conexão'); setLoading(false) }
   }, [sessionId])
@@ -381,6 +398,36 @@ export default function SessionPage() {
         setActionLoading(false)
         return
       }
+
+      // v2.7.0: Hook pós-fechamento (fire-and-forget)
+      if (action === 'close' && session) {
+        // Determinar terapeuta (applied_by ou primeiro perfil)
+        const therapistName = session.applied_by_name
+          || profiles.find(p => p.role === 'therapist')?.name
+          || profiles[0]?.name
+          || 'Terapeuta'
+        const therapistId = session.applied_by
+          || profiles.find(p => p.role === 'therapist')?.id
+          || profiles[0]?.id
+          || undefined
+
+        // Executar hook sem bloquear a UI — erros são silenciosos
+        runSessionCloseHook({
+          sessionId,
+          therapistName,
+          therapistId,
+          learnerId: session.learner_id,
+        }).then(hookResult => {
+          if (hookResult.errors.length > 0) {
+            console.warn('[v2.7.0 close hook]', hookResult.errors)
+          }
+          // Refetch para atualizar provas/bundles na UI
+          fetchSession()
+        }).catch(err => {
+          console.warn('[v2.7.0 close hook] falha:', err)
+        })
+      }
+
       await fetchSession()
       setActionLoading(false)
     } catch {
@@ -537,6 +584,24 @@ export default function SessionPage() {
 
         {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
 
+        {/* v2.7.0: Prova de presença GPS */}
+        {(isActive || isCompleted) && (
+          <GPSCheckIn
+            sessionId={sessionId}
+            sessionStatus={session.status}
+            serviceMode={session.service_mode || 'presencial'}
+            existingProofs={presenceProofs}
+            onProofRecorded={fetchSession}
+          />
+        )}
+
+        {/* v2.7.0: Anexos da sessão */}
+        <SessionAttachments
+          sessionId={sessionId}
+          sessionStatus={session.status}
+          canEdit={isActive}
+        />
+
         {isCompleted && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl space-y-3">
             <div className="flex items-center justify-between gap-4">
@@ -623,6 +688,13 @@ export default function SessionPage() {
                 </select>
               )}
             </div>
+          </div>
+        )}
+
+        {/* v2.7.0: Pacote de Evidência */}
+        {isCompleted && (
+          <div className="mb-6">
+            <EvidenceCard sessionId={sessionId} sessionStatus={session.status} />
           </div>
         )}
 

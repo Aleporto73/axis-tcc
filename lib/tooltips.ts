@@ -87,6 +87,27 @@ export const TOOLTIPS = {
   gen_desc_contexto: 'Onde está sendo testado. Ex: "Clínica", "Em casa", "Escola".',
   gen_nivel_dica: 'Quanto de ajuda foi necessária: Independente = sem ajuda, Física total = ajuda completa.',
   gen_tentativas: 'Quantas vezes tentou e quantas acertou. O critério (ex: 80%) é calculado automaticamente.',
+
+  // ─── Locais de Atendimento (v2.7.0 Sprint 0) ───
+  site_locais: 'Cadastre os locais onde sua equipe atende. Na sessão, o terapeuta seleciona o local e o GPS valida a presença automaticamente.',
+  site_raio: 'Distância máxima aceitável entre o GPS do terapeuta e este local. Padrão: 200m.',
+
+  // ─── Prova de Presença (v2.7.0 Sprint 1) ───
+  presenca_gps: 'Captura a localização GPS do dispositivo para comprovar presença no local de atendimento. Classificação automática: válido, ressalva ou exceção.',
+  presenca_anexos: 'Fotos e documentos anexados à sessão. Formatos: JPG, PNG, PDF (até 10MB). Duplicatas são detectadas automaticamente.',
+  evidencia_bundle: 'Pacote de evidências da sessão: snapshot clínico, provas GPS, atestações e anexos. Hash SHA256 garante integridade. Imutável após geração.',
+
+  // ─── Camada Institucional (v2.7.0 Sprint 2) ───
+  credenciais_equipe: 'Cadastro dos conselhos profissionais (CRP, CRFa, CREFITO, etc.), credenciamento junto a operadoras e dados de formação da equipe.',
+  cobertura_pagador: 'Vínculos com operadoras de saúde. Cada aprendiz pode ter múltiplas coberturas ativas com códigos de autorização e horas semanais aprovadas.',
+
+  // ─── Integridade (v2.7.0 Sprint 3) ───
+  integridade_painel: 'Painel de conformidade com alertas automáticos. Flags críticas exigem revisão humana. O scan diário detecta inconsistências como sessões sobrepostas, conselho vencido e horas excedidas.',
+  integridade_flag: 'Alerta de integridade detectado pelo sistema. Severidade: crítico (ação imediata), atenção (revisar), info (registro). Flags críticas não podem ser dispensadas sem justificativa.',
+  integridade_scan: 'Executa verificação completa de conformidade. Detecta sobreposição de sessões, duração excessiva, exceções recorrentes, conselhos vencidos e mais.',
+
+  // ─── Perfis de Pagador (v2.7.0 Sprint 4) ───
+  perfil_pagador: 'Requisitos exigidos por cada operadora: GPS, atestação do responsável, foto, documentação obrigatória, frequência de relatórios e formatos aceitos. Alterações são versionadas no audit log.',
 } as const
 
 export type TooltipKey = keyof typeof TOOLTIPS

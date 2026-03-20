@@ -643,5 +643,79 @@ AGUARDANDO:
 
 ---
 
+---
+
+## v2.7.0 OPERADORA READY (implementado 20/03/2026)
+
+> Camada institucional auditavel sobre o motor clinico CSO-ABA v2.6.1 (CONGELADO).
+> Ref: skill_axis_aba_v270.md (Bible v2.7.0)
+
+### Migrations
+| # | Arquivo | Conteudo |
+|---|---------|----------|
+| 035 | `035_operadora_sprint2_institutional.sql` | learner_coverage_profiles, claim_packets, claim_packet_items, payer_submissions, provider_credentials + ALTER learner_therapists |
+| 036 | `036_operadora_sprint3_integrity.sql` | integrity_flags + partial unique index para UPSERT |
+| 037 | `037_operadora_sprint4_payer_profiles.sql` | payer_requirement_profiles + FK coverage→payer |
+
+### APIs Criadas (Sprint 1-4)
+| Rota | Metodos | Sprint |
+|------|---------|--------|
+| `/api/aba/service-sites` | GET, POST | 0 |
+| `/api/aba/service-sites/[id]` | GET, PATCH | 0 |
+| `/api/aba/presence-proofs` | GET, POST | 1 |
+| `/api/aba/attestations` | GET, POST | 1 |
+| `/api/aba/evidence-bundles` | GET, POST | 1 |
+| `/api/aba/attachments` | GET, POST | 1 |
+| `/api/aba/coverage-profiles` | GET, POST | 2 |
+| `/api/aba/coverage-profiles/[id]` | GET, PATCH | 2 |
+| `/api/aba/claim-packets` | GET, POST | 2 |
+| `/api/aba/claim-packets/[id]` | GET, PATCH | 2 |
+| `/api/aba/provider-credentials` | GET, POST | 2 |
+| `/api/aba/provider-credentials/[id]` | GET, PATCH | 2 |
+| `/api/aba/integrity-flags` | GET, POST(scan) | 3 |
+| `/api/aba/integrity-flags/[id]` | GET, PATCH | 3 |
+| `/api/aba/payer-profiles` | GET, POST | 4 |
+| `/api/aba/payer-profiles/[id]` | GET, PATCH | 4 |
+
+### Componentes UI
+| Componente | Localizacao | Sprint |
+|-----------|-------------|--------|
+| `ServiceSitesManager` | Configuracoes | 0 |
+| `GPSCheckIn` | Sessao detalhe | 1 |
+| `SessionAttachments` | Sessao detalhe | 1 |
+| `EvidenceCard` | Sessao detalhe | 1 |
+| `CoverageProfilesManager` | Aprendiz detalhe (tab Cobertura) | 2 |
+| `ProviderCredentialsManager` | Configuracoes | 2 |
+| `IntegrityDashboard` | Configuracoes | 3 |
+| `PayerRequirementsManager` | Configuracoes | 4 |
+
+### Engines/Lib
+| Arquivo | Funcao |
+|---------|--------|
+| `src/lib/geo-classifier.ts` | Classificacao GPS (valid/warning/exception) |
+| `src/lib/session-close-hook.ts` | Hook pos-fechamento (auto-attestation + magic_link + bundle) |
+| `src/engines/integrity-scanner.ts` | 10 regras de deteccao + UPSERT + auto-resolve |
+
+### Jobs Operacionais (`scripts/jobs/`)
+| Job | Frequencia | Acao |
+|-----|-----------|------|
+| `purge_geo.sql` | Mensal | Anonimiza GPS/IP > 2 anos (LGPD) |
+| `scan_integrity.sh` | Diario 5h | Recalcula flags via API |
+| `check_expiration.sql` | Diario 5:15h | Flags conselhos/coberturas vencendo |
+| `expire_attestations.sql` | Diario 5:30h | Expira atestacoes pendentes > deadline |
+
+### LGPD Ampliada
+- Export v4.0: 10 abas novas no Excel (presenca, atestacoes, bundles, anexos, coberturas, packets, credenciais, flags, pagadores, sites)
+- Delete v2.0: 12 etapas novas de anonimizacao para tabelas v2.7.0
+- Retencao: Geo 2a, Bundles/Atestacoes 7a, Flags/Submissions 5a
+
+### Tooltips Adicionados
+`presenca_gps`, `presenca_anexos`, `evidencia_bundle`, `credenciais_equipe`, `cobertura_pagador`, `integridade_painel`, `integridade_flag`, `integridade_scan`, `perfil_pagador`
+
+### Testes
+384 testes passando. 4 erros TS pre-existentes (validator.ts, AdminCharts.tsx recharts). 0 erros novos.
+
+---
+
 *Este arquivo e a fonte unica de verdade do projeto. Atualizar a cada sessao de trabalho.*
-*Ultima verificacao cruzada com codigo: 10/03/2026 (noite)*
+*Ultima verificacao cruzada com codigo: 20/03/2026*

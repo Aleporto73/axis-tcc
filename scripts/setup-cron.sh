@@ -7,6 +7,10 @@
 # Crons instalados:
 #   1. Backup PostgreSQL — diário às 3h
 #   2. Renovação webhook Google — diário às 4h (já existente)
+#   3. scan_integrity — diário às 5h (v2.7.0)
+#   4. check_expiration — diário às 5:15h (v2.7.0)
+#   5. expire_attestations — diário às 5:30h (v2.7.0)
+#   6. purge_geo — mensal dia 1 às 4:30h (v2.7.0)
 # =====================================================
 
 set -euo pipefail
@@ -42,10 +46,28 @@ if echo "$EXISTING_CRON" | grep -q "$CRON_TAG"; then
   EXISTING_CRON=$(echo "$EXISTING_CRON" | grep -v "$CRON_TAG" | grep -v "backup-postgres.sh")
 fi
 
+# Jobs v2.7.0
+JOBS_DIR="${SCRIPT_DIR}/jobs"
+JOBS_LOG="/var/log/axis-jobs.log"
+SCAN_SCRIPT="${JOBS_DIR}/scan_integrity.sh"
+SQL_RUNNER="${JOBS_DIR}/run_sql_job.sh"
+
+# Criar log de jobs se necessário
+touch "$JOBS_LOG" 2>/dev/null || true
+
+# Tornar scripts executáveis
+chmod +x "$SCAN_SCRIPT" 2>/dev/null || true
+chmod +x "$SQL_RUNNER" 2>/dev/null || true
+
 # Adicionar novo cron
 NEW_CRON="${EXISTING_CRON}
 ${CRON_TAG}
-0 3 * * * ${BACKUP_SCRIPT} >> ${LOG_FILE} 2>&1"
+0 3 * * * ${BACKUP_SCRIPT} >> ${LOG_FILE} 2>&1
+# AXIS-JOBS-V270
+0 5 * * * ${SCAN_SCRIPT} >> ${JOBS_LOG} 2>&1
+15 5 * * * ${SQL_RUNNER} check_expiration >> ${JOBS_LOG} 2>&1
+30 5 * * * ${SQL_RUNNER} expire_attestations >> ${JOBS_LOG} 2>&1
+30 4 1 * * ${SQL_RUNNER} purge_geo >> ${JOBS_LOG} 2>&1"
 
 # Limpar linhas vazias duplicadas
 NEW_CRON=$(echo "$NEW_CRON" | sed '/^$/N;/^\n$/d')

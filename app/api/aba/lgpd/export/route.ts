@@ -6,12 +6,16 @@ import ExcelJS from 'exceljs'
 
 // =====================================================
 // AXIS ABA — Exportação LGPD (Art. 18, Lei 13.709/2018)
-// Conforme AXIS ABA Bible v2.6.1
+// Conforme AXIS ABA Bible v2.6.1 + v2.7.0
 // Acesso: admin ou supervisor
 //
-// v3.0: Exportação em Excel (.xlsx) com abas organizadas
+// v4.0: Exportação em Excel (.xlsx) com abas organizadas
 //       Cabeçalhos em português, datas formatadas dd/mm/yyyy
 //       ?format=json mantém opção técnica (JSON)
+//       Inclui tabelas v2.7.0: presence_proofs, attestations,
+//       evidence_bundles, attachments, coverage_profiles,
+//       claim_packets, provider_credentials, integrity_flags,
+//       payer_requirement_profiles
 // =====================================================
 
 // Helper: query resiliente com SAVEPOINT
@@ -207,12 +211,71 @@ async function fetchAllData(client: PoolClient, tenantId: string) {
     `SELECT id, user_id, actor, action, entity_type, entity_id, metadata, created_at
      FROM axis_audit_logs WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'axis_audit_logs')
 
+  // ── v2.7.0 Camada Operadora ──
+
+  const serviceSites = await safeQuery(client,
+    `SELECT id, site_name, site_type, radius_meters, is_active, created_at
+     FROM service_sites WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'service_sites')
+
+  const presenceProofs = await safeQuery(client,
+    `SELECT id, session_id, proof_type, accuracy_meters, distance_to_site_meters,
+            capture_source, confidence_status, exception_reason, created_at
+     FROM session_presence_proofs WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'presence_proofs')
+
+  const attestations = await safeQuery(client,
+    `SELECT id, session_id, attestor_type, attestor_name, attestation_method,
+            status, attested_at, created_at
+     FROM session_attestations WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'attestations')
+
+  const evidenceBundles = await safeQuery(client,
+    `SELECT id, session_id, bundle_status, component_count, completeness_pct,
+            bundle_hash, version, generated_by, created_at
+     FROM session_evidence_bundles WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'evidence_bundles')
+
+  const attachments = await safeQuery(client,
+    `SELECT id, session_id, file_name, file_type, file_size_bytes, file_hash,
+            created_at
+     FROM session_attachments WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'attachments')
+
+  const coverageProfiles = await safeQuery(client,
+    `SELECT id, learner_id, payer_name, authorization_code, authorized_hours_week,
+            start_date, end_date, status, notes, created_at
+     FROM learner_coverage_profiles WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'coverage_profiles')
+
+  const claimPackets = await safeQuery(client,
+    `SELECT id, learner_id, coverage_id, period_start, period_end,
+            packet_status, completeness_pct, version, submitted_at, created_at
+     FROM claim_packets WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'claim_packets')
+
+  const providerCredentials = await safeQuery(client,
+    `SELECT pc.id, pc.profile_id, p.name as profile_name,
+            pc.council_type, pc.council_number, pc.council_uf,
+            pc.council_expiry, pc.education_level, pc.credentialing_status,
+            pc.created_at
+     FROM provider_credentials pc
+     JOIN profiles p ON p.id = pc.profile_id
+     WHERE pc.tenant_id = $1 ORDER BY pc.created_at`, [tenantId], 'provider_credentials')
+
+  const integrityFlags = await safeQuery(client,
+    `SELECT id, entity_type, entity_id, rule_code, severity, description,
+            status, auto_resolved, first_detected_at, last_detected_at, created_at
+     FROM integrity_flags WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'integrity_flags')
+
+  const payerProfiles = await safeQuery(client,
+    `SELECT id, payer_name, payer_code, requires_geo, geo_level,
+            requires_guardian_attestation, requires_photo,
+            report_frequency_days, cid_version, is_active, created_at
+     FROM payer_requirement_profiles WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'payer_profiles')
+
   return {
     tenant: tenant[0] || null,
     profiles, learners, assignments, guardians, consents,
     peiPlans, peiGoals, protocols, sessions, targets, behaviors,
     snapshots, clinicalStates, genProbes, maintProbes,
     summaries, reports, portalAccess, emailLogs, notifications, auditLogs,
+    // v2.7.0
+    serviceSites, presenceProofs, attestations, evidenceBundles, attachments,
+    coverageProfiles, claimPackets, providerCredentials, integrityFlags, payerProfiles,
   }
 }
 
@@ -264,6 +327,18 @@ async function buildExcelWorkbook(data: any, meta: { profileId: string; role: st
     ['Resumos de Sessão', String(data.summaries.length)],
     ['Logs de Auditoria', String(data.auditLogs.length)],
     [],
+    ['Registros v2.7.0 Operadora', ''],
+    ['Locais de Atendimento', String((data.serviceSites || []).length)],
+    ['Provas de Presença', String((data.presenceProofs || []).length)],
+    ['Atestações', String((data.attestations || []).length)],
+    ['Bundles de Evidência', String((data.evidenceBundles || []).length)],
+    ['Anexos de Sessão', String((data.attachments || []).length)],
+    ['Perfis de Cobertura', String((data.coverageProfiles || []).length)],
+    ['Pacotes de Faturamento', String((data.claimPackets || []).length)],
+    ['Credenciais Profissionais', String((data.providerCredentials || []).length)],
+    ['Flags de Integridade', String((data.integrityFlags || []).length)],
+    ['Perfis de Pagador', String((data.payerProfiles || []).length)],
+    [],
     ['Política de Retenção', ''],
     ['Dados clínicos', '7 anos (CFM/CRP)'],
     ['Relatórios gerados', '7 anos (CFM/CRP)'],
@@ -271,6 +346,9 @@ async function buildExcelWorkbook(data: any, meta: { profileId: string; role: st
     ['Portal família', 'Enquanto vínculo ativo (Consentimento)'],
     ['E-mail logs', '5 anos (Compliance)'],
     ['Notificações', '1 ano (Operacional)'],
+    ['Geo/Fotos (v2.7.0)', '2 anos (Auditoria) → purge automático'],
+    ['Bundles/Atestações/Claim Packets', '7 anos (CFM/CRP)'],
+    ['Flags/Payer Submissions', '5 anos (Compliance)'],
   ]
 
   for (const row of infoRows) {
@@ -488,6 +566,147 @@ async function buildExcelWorkbook(data: any, meta: { profileId: string; role: st
     autoWidth(ws)
   }
 
+  // ══════════════════════════════════════════════════
+  // ABAS v2.7.0 — Camada Operadora
+  // ══════════════════════════════════════════════════
+
+  // ── ABA 15: LOCAIS DE ATENDIMENTO ──
+  if ((data.serviceSites || []).length > 0) {
+    const ws = wb.addWorksheet('Locais Atendimento', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Nome', 'Tipo', 'Raio (m)', 'Ativo', 'Criado em'])
+    for (const s of data.serviceSites) {
+      ws.addRow([s.site_name, s.site_type, s.radius_meters, s.is_active ? 'Sim' : 'Não', fmtDate(s.created_at)])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
+  // ── ABA 16: PROVAS DE PRESENÇA ──
+  if ((data.presenceProofs || []).length > 0) {
+    const ws = wb.addWorksheet('Provas Presença', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Sessão ID', 'Tipo', 'Precisão (m)', 'Distância (m)', 'Fonte', 'Status', 'Motivo Exceção', 'Data'])
+    for (const p of data.presenceProofs) {
+      ws.addRow([
+        p.session_id, p.proof_type, p.accuracy_meters ?? '', p.distance_to_site_meters ?? '',
+        p.capture_source, p.confidence_status, p.exception_reason || '', fmtDate(p.created_at),
+      ])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
+  // ── ABA 17: ATESTAÇÕES ──
+  if ((data.attestations || []).length > 0) {
+    const ws = wb.addWorksheet('Atestações', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Sessão ID', 'Tipo Atestador', 'Nome', 'Método', 'Status', 'Atestado em', 'Criado em'])
+    for (const a of data.attestations) {
+      ws.addRow([
+        a.session_id, a.attestor_type, a.attestor_name || '', a.attestation_method || '',
+        a.status, fmtDate(a.attested_at), fmtDate(a.created_at),
+      ])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
+  // ── ABA 18: BUNDLES DE EVIDÊNCIA ──
+  if ((data.evidenceBundles || []).length > 0) {
+    const ws = wb.addWorksheet('Bundles Evidência', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Sessão ID', 'Status', 'Componentes', 'Completude %', 'Hash', 'Versão', 'Criado em'])
+    for (const b of data.evidenceBundles) {
+      ws.addRow([
+        b.session_id, b.bundle_status, b.component_count, b.completeness_pct ?? '',
+        b.bundle_hash || '', b.version, fmtDate(b.created_at),
+      ])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
+  // ── ABA 19: ANEXOS ──
+  if ((data.attachments || []).length > 0) {
+    const ws = wb.addWorksheet('Anexos Sessão', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Sessão ID', 'Arquivo', 'Tipo', 'Tamanho (bytes)', 'Hash', 'Criado em'])
+    for (const a of data.attachments) {
+      ws.addRow([
+        a.session_id, a.file_name, a.file_type, a.file_size_bytes, a.file_hash || '', fmtDate(a.created_at),
+      ])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
+  // ── ABA 20: COBERTURAS ──
+  if ((data.coverageProfiles || []).length > 0) {
+    const ws = wb.addWorksheet('Coberturas', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Pagador', 'Autorização', 'Horas/Semana', 'Início', 'Fim', 'Status', 'Notas', 'Criado em'])
+    for (const c of data.coverageProfiles) {
+      ws.addRow([
+        c.payer_name, c.authorization_code || '', c.authorized_hours_week ?? '',
+        fmtDateShort(c.start_date), fmtDateShort(c.end_date), c.status, c.notes || '', fmtDate(c.created_at),
+      ])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
+  // ── ABA 21: PACOTES FATURAMENTO ──
+  if ((data.claimPackets || []).length > 0) {
+    const ws = wb.addWorksheet('Pacotes Faturamento', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Período Início', 'Período Fim', 'Status', 'Completude %', 'Versão', 'Submetido em', 'Criado em'])
+    for (const p of data.claimPackets) {
+      ws.addRow([
+        fmtDateShort(p.period_start), fmtDateShort(p.period_end), p.packet_status,
+        p.completeness_pct ?? '', p.version, fmtDate(p.submitted_at), fmtDate(p.created_at),
+      ])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
+  // ── ABA 22: CREDENCIAIS PROFISSIONAIS ──
+  if ((data.providerCredentials || []).length > 0) {
+    const ws = wb.addWorksheet('Credenciais', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Profissional', 'Conselho', 'Número', 'UF', 'Validade', 'Formação', 'Status', 'Criado em'])
+    for (const c of data.providerCredentials) {
+      ws.addRow([
+        c.profile_name, c.council_type, c.council_number || '', c.council_uf || '',
+        fmtDateShort(c.council_expiry), c.education_level || '', c.credentialing_status || '', fmtDate(c.created_at),
+      ])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
+  // ── ABA 23: FLAGS DE INTEGRIDADE ──
+  if ((data.integrityFlags || []).length > 0) {
+    const ws = wb.addWorksheet('Flags Integridade', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Regra', 'Severidade', 'Tipo Entidade', 'Descrição', 'Status', 'Auto-resolvida', 'Primeira Detecção', 'Última Detecção'])
+    for (const f of data.integrityFlags) {
+      ws.addRow([
+        f.rule_code, f.severity, f.entity_type, f.description || '',
+        f.status, f.auto_resolved ? 'Sim' : 'Não', fmtDate(f.first_detected_at), fmtDate(f.last_detected_at),
+      ])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
+  // ── ABA 24: PERFIS DE PAGADOR ──
+  if ((data.payerProfiles || []).length > 0) {
+    const ws = wb.addWorksheet('Perfis Pagador', { properties: { tabColor: { argb: 'FFC46A2F' } } })
+    addHeaderRow(ws, ['Pagador', 'Código', 'Exige GPS', 'Nível GPS', 'Exige Atestação', 'Exige Foto', 'Relatório (dias)', 'CID', 'Ativo', 'Criado em'])
+    for (const p of data.payerProfiles) {
+      ws.addRow([
+        p.payer_name, p.payer_code || '', p.requires_geo ? 'Sim' : 'Não', p.geo_level,
+        p.requires_guardian_attestation ? 'Sim' : 'Não', p.requires_photo ? 'Sim' : 'Não',
+        p.report_frequency_days, p.cid_version, p.is_active ? 'Sim' : 'Não', fmtDate(p.created_at),
+      ])
+    }
+    styleDataRows(ws, 2)
+    autoWidth(ws)
+  }
+
   return wb
 }
 
@@ -510,7 +729,7 @@ export async function GET(request: NextRequest) {
           `INSERT INTO axis_audit_logs
             (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
            VALUES ($1, $2, $3, 'LGPD_EXPORT_REQUESTED', 'tenant', $4, NOW())`,
-          [tenantId, userId, userId, JSON.stringify({ requested_by_profile: profileId, requested_by_role: role, export_version: '3.0', format })]
+          [tenantId, userId, userId, JSON.stringify({ requested_by_profile: profileId, requested_by_role: role, export_version: '4.0', format })]
         )
       } catch { /* non-critical */ }
 
@@ -527,11 +746,11 @@ export async function GET(request: NextRequest) {
 
       const jsonResult = {
         _meta: {
-          export_version: '3.0',
+          export_version: '4.0',
           exported_at: new Date().toISOString(),
           exported_by: { profile_id: meta.profileId, role: meta.role, clerk_user_id: meta.userId },
           engine: 'axis_aba',
-          bible_version: '2.6.1',
+          bible_version: '2.7.0',
           lgpd: {
             base_legal: 'Art. 18, Lei 13.709/2018 (LGPD)',
             controlador: clinicName,
@@ -549,7 +768,7 @@ export async function GET(request: NextRequest) {
           'Content-Type': 'application/json; charset=utf-8',
           'Content-Disposition': `attachment; filename="${filename}"`,
           'Cache-Control': 'no-store',
-          'X-AXIS-Export-Version': '3.0',
+          'X-AXIS-Export-Version': '4.0',
         },
       })
     }
@@ -568,7 +787,7 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Cache-Control': 'no-store',
-        'X-AXIS-Export-Version': '3.0',
+        'X-AXIS-Export-Version': '4.0',
       },
     })
   } catch (error) {

@@ -24,6 +24,10 @@ export async function GET(request: NextRequest) {
           lt.profile_id,
           lt.is_primary,
           lt.assigned_at,
+          lt.role_in_case,
+          lt.weekly_hours,
+          lt.start_date,
+          lt.end_date,
           p.name AS therapist_name,
           p.role AS therapist_role,
           p.email AS therapist_email,
@@ -67,7 +71,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { learner_id, profile_id, is_primary } = body
+    const { learner_id, profile_id, is_primary, role_in_case, weekly_hours, start_date, end_date } = body
 
     if (!learner_id || !profile_id) {
       return NextResponse.json(
@@ -108,13 +112,26 @@ export async function POST(request: NextRequest) {
       // Verificar se profileId do admin é um profile real (não fallback tenantId)
       const assignedBy = ctx.profileId !== ctx.tenantId ? ctx.profileId : null
 
-      // Criar vínculo
+      // Criar vínculo (v2.7.0: campos institucionais opcionais)
       const insert = await ctx.client.query(
-        `INSERT INTO learner_therapists (tenant_id, learner_id, profile_id, is_primary, assigned_by)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (learner_id, profile_id) DO UPDATE SET is_primary = $4
-         RETURNING id, learner_id, profile_id, is_primary, assigned_at`,
-        [ctx.tenantId, learner_id, profile_id, is_primary || false, assignedBy]
+        `INSERT INTO learner_therapists (
+          tenant_id, learner_id, profile_id, is_primary, assigned_by,
+          role_in_case, weekly_hours, start_date, end_date
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::date, $9::date)
+         ON CONFLICT (learner_id, profile_id) DO UPDATE SET
+           is_primary = $4,
+           role_in_case = COALESCE($6, learner_therapists.role_in_case),
+           weekly_hours = COALESCE($7, learner_therapists.weekly_hours),
+           start_date = COALESCE($8::date, learner_therapists.start_date),
+           end_date = $9::date
+         RETURNING id, learner_id, profile_id, is_primary, assigned_at,
+           role_in_case, weekly_hours, start_date, end_date`,
+        [
+          ctx.tenantId, learner_id, profile_id, is_primary || false, assignedBy,
+          role_in_case || null, weekly_hours || null,
+          start_date || null, end_date || null,
+        ]
       )
 
       // Audit log

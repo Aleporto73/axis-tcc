@@ -5,7 +5,7 @@ import { PoolClient } from 'pg'
 
 // =====================================================
 // AXIS ABA — Exclusão LGPD / Anonimização Irreversível
-// Conforme AXIS ABA Bible v2.6.1:
+// Conforme AXIS ABA Bible v2.6.1 + v2.7.0:
 //
 //   S13.1 LGPD — Operador vs Controlador
 //   S13.2 Política de Retenção: 90 dias → anonimização irreversível
@@ -527,7 +527,119 @@ export async function DELETE() {
         [tenantId], 'count_audit_logs')
       stats.audit_logs_preserved = r24.rows[0]?.cnt || 0
 
-      // 25. TENANT — marcar como anonimizado
+      // ══════════════════════════════════════════════════
+      // v2.7.0 — Camada Operadora
+      // ══════════════════════════════════════════════════
+
+      // 25. PRESENCE_PROOFS — anonimizar GPS (pgcrypto), zerar accuracy
+      const r25 = await safeExec(client,
+        `UPDATE session_presence_proofs SET
+           latitude = NULL,
+           longitude = NULL,
+           ip_address = NULL,
+           accuracy_meters = NULL,
+           altitude_meters = NULL,
+           distance_to_site_meters = NULL,
+           device_hash = '[ANONIMIZADO]',
+           exception_reason = NULL
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_presence_proofs')
+      stats.presence_proofs = r25.rowCount
+
+      // 26. ATTESTATIONS — anonimizar nomes, tokens
+      const r26 = await safeExec(client,
+        `UPDATE session_attestations SET
+           attestor_name = '${ANON_PREFIX}_' || LEFT(id::text, 8),
+           magic_link_token = NULL
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_attestations')
+      stats.attestations = r26.rowCount
+
+      // 27. EVIDENCE_BUNDLES — preservar hash (integridade), limpar metadata
+      const r27 = await safeExec(client,
+        `UPDATE session_evidence_bundles SET
+           missing_items = NULL,
+           collected_items = NULL
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_evidence_bundles')
+      stats.evidence_bundles = r27.rowCount
+
+      // 28. ATTACHMENTS — anonimizar EXIF, canvas_data
+      const r28 = await safeExec(client,
+        `UPDATE session_attachments SET
+           extracted_geo = NULL,
+           canvas_data = NULL,
+           file_name = '${ANON_PREFIX}_' || LEFT(id::text, 8) || '.' || file_type
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_attachments')
+      stats.attachments = r28.rowCount
+
+      // 29. COVERAGE_PROFILES — anonimizar notas
+      const r29 = await safeExec(client,
+        `UPDATE learner_coverage_profiles SET
+           authorization_code = NULL,
+           notes = NULL,
+           status = 'expired'
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_coverage_profiles')
+      stats.coverage_profiles = r29.rowCount
+
+      // 30. CLAIM_PACKETS — preservar hash, anonimizar notas
+      const r30 = await safeExec(client,
+        `UPDATE claim_packets SET
+           return_reason = NULL
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_claim_packets')
+      stats.claim_packets = r30.rowCount
+
+      // 31. PAYER_SUBMISSIONS — preservar (5 anos compliance)
+      const r31 = await safeExec(client,
+        `SELECT COUNT(*)::int as cnt FROM payer_submissions WHERE tenant_id = $1`,
+        [tenantId], 'count_payer_submissions')
+      stats.payer_submissions_preserved = r31.rows[0]?.cnt || 0
+
+      // 32. PROVIDER_CREDENTIALS — anonimizar dados sensíveis
+      const r32 = await safeExec(client,
+        `UPDATE provider_credentials SET
+           council_number = '[ANONIMIZADO]',
+           council_expiry = NULL,
+           education_level = NULL,
+           credentialing_status = 'inactive'
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_provider_credentials')
+      stats.provider_credentials = r32.rowCount
+
+      // 33. INTEGRITY_FLAGS — preservar (5 anos compliance)
+      const r33 = await safeExec(client,
+        `UPDATE integrity_flags SET
+           review_notes = NULL
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_integrity_flags')
+      stats.integrity_flags = r33.rowCount
+
+      // 34. PAYER_REQUIREMENT_PROFILES — desativar
+      const r34 = await safeExec(client,
+        `UPDATE payer_requirement_profiles SET
+           is_active = false,
+           notes = NULL,
+           checklist_items = NULL
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_payer_profiles')
+      stats.payer_profiles = r34.rowCount
+
+      // 35. SERVICE_SITES — anonimizar endereços
+      const r35 = await safeExec(client,
+        `UPDATE service_sites SET
+           address = NULL,
+           latitude = NULL,
+           longitude = NULL,
+           site_name = '${ANON_PREFIX}_SITE_' || LEFT(id::text, 8),
+           is_active = false
+         WHERE tenant_id = $1`,
+        [tenantId], 'anon_service_sites')
+      stats.service_sites = r35.rowCount
+
+      // 36. TENANT — marcar como anonimizado
       await client.query(
         `UPDATE tenants SET
            name = '${ANON_PREFIX}_CLINIC_' || LEFT(id::text, 8),
@@ -563,6 +675,10 @@ export async function DELETE() {
           session_snapshots: 'Preservados com engine_version (Bible S7 — imutável)',
           clinical_states: 'Preservados com engine_version (Bible S7 — append-only)',
           report_snapshots: 'Hash SHA256 preservado, pdf_url removido (Blindagem Jurídica)',
+          evidence_bundles: 'Hash preservado, items limpos (v2.7.0 — 7 anos)',
+          claim_packets: 'Hash preservado, notas limpas (v2.7.0 — 7 anos)',
+          payer_submissions: 'Preservados intactos (v2.7.0 — 5 anos compliance)',
+          integrity_flags: 'Estrutura preservada, notas limpas (v2.7.0 — 5 anos)',
         },
         message: 'Anonimização irreversível concluída com sucesso.',
       }
