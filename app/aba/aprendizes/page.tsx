@@ -229,7 +229,7 @@ export default function AprendizesPage() {
                 <label className="block text-xs font-medium text-slate-600 mb-1">Nome completo *</label>
                 <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Nome do aprendiz" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Data de nascimento *</label>
                   <input type="date" value={form.birth_date} onChange={e => setForm({...form, birth_date: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" />
@@ -253,7 +253,7 @@ export default function AprendizesPage() {
                 label={form.cid_label}
                 onChange={(code, sys, label) => setForm({...form, cid_code: code, cid_system: sys, cid_label: label})}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Escola</label>
                   <input type="text" value={form.school} onChange={e => setForm({...form, school: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Nome da escola" />

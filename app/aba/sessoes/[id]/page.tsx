@@ -739,7 +739,7 @@ export default function SessionPage() {
                       <h3 className="text-xs font-medium text-slate-600">Registrar Trial (DTT)</h3>
                       <button onClick={() => setShowProtocolModal(true)} className="text-[11px] text-aba-500 hover:underline">+ Protocolo</button>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[11px] text-slate-500 mb-1">Protocolo *</label>
                         <select value={trialForm.protocol_id} onChange={e => setTrialForm({...trialForm, protocol_id: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 bg-white">
@@ -803,7 +803,7 @@ export default function SessionPage() {
                       </div>
                     </div>
                     {/* V2: Cronômetro + Aplicado por */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[11px] text-slate-500 mb-1">Cronômetro (opcional)</label>
                         <div className="flex items-center gap-2">
@@ -901,7 +901,7 @@ export default function SessionPage() {
                 {isActive && (
                   <div className="border border-slate-200 rounded-xl p-4 space-y-3">
                     <h3 className="text-xs font-medium text-slate-600">Registrar Comportamento (ABC)</h3>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[11px] text-slate-500 mb-1">Tipo *</label>
                         <input type="text" value={behaviorForm.behavior_type} onChange={e => setBehaviorForm({...behaviorForm, behavior_type: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Ex: Autolesão, Estereotipia" />
@@ -994,7 +994,7 @@ export default function SessionPage() {
                 <label className="block text-xs font-medium text-slate-600 mb-1">Objetivo *</label>
                 <textarea value={protocolForm.objective} onChange={e => setProtocolForm({...protocolForm, objective: e.target.value})} rows={2} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 resize-none" placeholder="Ex: O aprendiz solicitará itens preferidos usando mando vocal em 80% das tentativas" />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[11px] text-slate-500 mb-1">Critério %</label>
                   <input type="number" min="50" max="100" value={protocolForm.mastery_criteria_pct} onChange={e => setProtocolForm({...protocolForm, mastery_criteria_pct: parseInt(e.target.value) || 80})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" />

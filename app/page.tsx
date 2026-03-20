@@ -192,13 +192,13 @@ export default function HomePage() {
                     Para clínicas e operadoras
                   </span>
                   <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                    Motor clínico completo + camada institucional para compliance, faturamento e auditoria com operadoras de saúde.
+                    Motor clínico completo + camada institucional para conformidade, reembolso e auditoria com operadoras de saúde.
                   </p>
                   <ul className="space-y-2 mb-8 text-sm text-slate-600">
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Ciclo clínico + presença GPS</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Atestações e bundles de evidência</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Claim packets para faturamento</li>
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Dashboard de compliance</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Presença comprovada por localização</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Assinatura digital do terapeuta e responsável</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Documentação pronta para auditoria</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: aba }} />Conformidade automática da equipe</li>
                   </ul>
                   <div className="flex flex-col gap-2">
                     <Link href="/produto/aba" className="w-full text-center px-4 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: aba }}>
@@ -256,45 +256,45 @@ export default function HomePage() {
                 <p className="text-lg text-white/60 max-w-2xl mx-auto leading-[1.8]">
                   O AXIS ABA agora inclui a camada institucional que clínicas precisam
                   para comprovar presença, atestar sessões, documentar evidências
-                  e gerar pacotes de faturamento prontos para operadoras de saúde.
+                  e gerar a documentação necessária para reembolso junto a operadoras de saúde.
                 </p>
               </div>
 
               <div className="grid md:grid-cols-3 gap-5 mb-12">
                 <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
-                  <span className="text-2xl mb-3 block">📍</span>
-                  <h3 className="text-base font-semibold text-white mb-2">Presença GPS comprovada <HelpTip tip="pub_gps" color="bg-white/10 text-white/60" /></h3>
+                  <svg className="w-8 h-8 mb-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0115 0z" /></svg>
+                  <h3 className="text-base font-semibold text-white mb-2">Presença comprovada por localização <HelpTip tip="pub_gps" color="bg-white/10 text-white/60" /></h3>
                   <p className="text-sm text-white/50 leading-relaxed">Check-in e check-out com geolocalização. Prova objetiva de que o atendimento aconteceu no local registrado.</p>
                 </div>
                 <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
-                  <span className="text-2xl mb-3 block">✍️</span>
-                  <h3 className="text-base font-semibold text-white mb-2">Atestações digitais <HelpTip tip="pub_atestacao" color="bg-white/10 text-white/60" /></h3>
-                  <p className="text-sm text-white/50 leading-relaxed">Terapeuta e responsável atestam cada sessão. Assinatura digital com timestamp e vínculo ao prontuário.</p>
+                  <svg className="w-8 h-8 mb-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.397-1.308 7.362M15.75 15.75l-2.489 3.584a.75.75 0 01-1.271-.078l-2.24-4.032" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a7.46 7.46 0 01-4.636-1.607M4.5 10.5a7.47 7.47 0 011.022-3.773" /></svg>
+                  <h3 className="text-base font-semibold text-white mb-2">Assinatura digital de sessão <HelpTip tip="pub_atestacao" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Terapeuta e responsável confirmam cada atendimento com assinatura digital vinculada ao prontuário.</p>
                 </div>
                 <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
-                  <span className="text-2xl mb-3 block">📦</span>
-                  <h3 className="text-base font-semibold text-white mb-2">Bundles de evidência <HelpTip tip="pub_bundle" color="bg-white/10 text-white/60" /></h3>
-                  <p className="text-sm text-white/50 leading-relaxed">Dados da sessão, trials, provas GPS e atestações reunidos em um pacote íntegro e auditável.</p>
+                  <svg className="w-8 h-8 mb-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                  <h3 className="text-base font-semibold text-white mb-2">Pacote de evidências auditável <HelpTip tip="pub_bundle" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Dados clínicos, localização, assinaturas e anexos reunidos em um pacote protegido e imutável.</p>
                 </div>
                 <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
-                  <span className="text-2xl mb-3 block">💳</span>
-                  <h3 className="text-base font-semibold text-white mb-2">Pacotes de faturamento <HelpTip tip="pub_claim" color="bg-white/10 text-white/60" /></h3>
-                  <p className="text-sm text-white/50 leading-relaxed">Claim packets prontos para submissão. Cada sessão gera documentação no formato que operadoras exigem.</p>
+                  <svg className="w-8 h-8 mb-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                  <h3 className="text-base font-semibold text-white mb-2">Documentação para reembolso <HelpTip tip="pub_claim" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Cada sessão gera automaticamente a documentação exigida por operadoras para solicitação de reembolso.</p>
                 </div>
                 <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
-                  <span className="text-2xl mb-3 block">🛡️</span>
-                  <h3 className="text-base font-semibold text-white mb-2">Compliance e integridade <HelpTip tip="pub_compliance" color="bg-white/10 text-white/60" /></h3>
-                  <p className="text-sm text-white/50 leading-relaxed">Scan automático de inconsistências. Flags de integridade, credenciais vencidas e gaps de documentação.</p>
+                  <svg className="w-8 h-8 mb-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                  <h3 className="text-base font-semibold text-white mb-2">Conformidade e integridade <HelpTip tip="pub_compliance" color="bg-white/10 text-white/60" /></h3>
+                  <p className="text-sm text-white/50 leading-relaxed">Verificação automática de documentos vencidos, sessões sem comprovação e inconsistências da equipe.</p>
                 </div>
                 <div className="bg-white/[0.04] backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
-                  <span className="text-2xl mb-3 block">📋</span>
+                  <svg className="w-8 h-8 mb-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm-3.375 6.75h4.5c.621 0 1.125-.504 1.125-1.125a3 3 0 00-6.75 0c0 .621.504 1.125 1.125 1.125z" /></svg>
                   <h3 className="text-base font-semibold text-white mb-2">Perfis de cobertura <HelpTip tip="pub_cobertura" color="bg-white/10 text-white/60" /></h3>
-                  <p className="text-sm text-white/50 leading-relaxed">Dados do plano de saúde do aprendiz vinculados ao prontuário. Autorização, vigência e limites organizados.</p>
+                  <p className="text-sm text-white/50 leading-relaxed">Plano de saúde, autorização, vigência e limites do paciente vinculados ao prontuário em um só lugar.</p>
                 </div>
               </div>
 
               <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl border border-white/10 p-8 md:p-10 mb-10">
-                <div className="grid md:grid-cols-4 gap-6 text-center">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
                   <div>
                     <div className="text-2xl font-bold mb-1" style={{ color: aba }}>100%</div>
                     <div className="text-xs text-white/40 leading-snug">Aditivo ao motor clínico <HelpTip tip="pub_motor_congelado" color="bg-white/10 text-white/40" /></div>
@@ -507,7 +507,7 @@ export default function HomePage() {
                     <h3 className="text-lg font-semibold" style={{ color: aba }}>AXIS ABA</h3>
                     <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase rounded" style={{ backgroundColor: aba + '15', color: aba }}>Operadora Ready</span>
                   </div>
-                  <p className="text-sm text-slate-600 mb-6">Motor clínico completo + compliance, faturamento e auditoria para operadoras de saúde.</p>
+                  <p className="text-sm text-slate-600 mb-6">Motor clínico completo + conformidade, reembolso e auditoria para operadoras de saúde.</p>
                   <Link href="/produto/aba" className="inline-block px-5 py-2.5 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ backgroundColor: aba }}>
                     Conhecer AXIS ABA
                   </Link>

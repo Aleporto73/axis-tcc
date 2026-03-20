@@ -336,17 +336,75 @@ export default function PrecosPage() {
             </table>
           </div>
 
-          {/* Mobile: simplified message */}
-          <div className="md:hidden text-center py-8">
-            <p className="text-sm text-slate-500 mb-4">
-              Para ver a comparação completa de funcionalidades, acesse em um dispositivo com tela maior.
-            </p>
-            <a href="#" className="text-sm font-medium" style={{ color: coral }}>
-              Ou role para cima para ver os cards de cada plano
+          {/* Mobile: horizontal scroll table */}
+          <div className="md:hidden overflow-x-auto -mx-6 px-6 pb-4">
+            <p className="text-xs text-slate-400 mb-3 text-center">← Deslize para ver todos os planos →</p>
+            <table className="text-xs min-w-[600px] w-full">
+              <thead>
+                <tr className="bg-slate-900 text-white">
+                  <th className="text-left py-3 px-3 font-semibold w-[36%]">Recurso</th>
+                  <th className="text-center py-3 px-2 font-semibold">Free</th>
+                  <th className="text-center py-3 px-2 font-semibold">Founders</th>
+                  <th className="text-center py-3 px-2 font-semibold">Clínica 100</th>
+                  <th className="text-center py-3 px-2 font-semibold">Clínica 250</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white">
+                {features.map((group) => (
+                  <>
+                    <tr key={'m-' + group.section} style={group.sectionColor ? { backgroundColor: group.sectionColor + '10' } : undefined} className={group.sectionColor ? '' : 'bg-slate-800'}>
+                      <td colSpan={5} className="py-1.5 px-3 text-[10px] font-bold tracking-widest uppercase" style={group.sectionColor ? { color: group.sectionColor } : { color: '#94a3b8' }}>
+                        {group.section}
+                      </td>
+                    </tr>
+                    {group.rows.map((row, i) => (
+                      <tr key={'m-' + row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                        <td className="py-2 px-3 text-slate-700 font-medium">{row.label}</td>
+                        {row.values.map((v, j) => (
+                          <td key={j} className="py-2 px-2 text-center">
+                            {typeof v === 'string' ? (
+                              <span className="text-[11px] font-semibold text-slate-700">{v}</span>
+                            ) : v ? (
+                              <Check className="w-4 h-4 mx-auto" style={{ color: coral }} />
+                            ) : (
+                              <X className="w-3.5 h-3.5 mx-auto text-slate-300" />
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </>
+                ))}
+                <tr className="border-t-2 border-slate-200 bg-white">
+                  <td className="py-3 px-3 text-slate-900 font-bold">Preço</td>
+                  <td className="py-3 px-2 text-center font-bold text-slate-900">Grátis</td>
+                  <td className="py-3 px-2 text-center font-bold text-slate-900">R$147</td>
+                  <td className="py-3 px-2 text-center font-bold text-slate-900">R$247</td>
+                  <td className="py-3 px-2 text-center font-bold text-slate-900">R$497</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* CTA buttons mobile */}
+          <div className="md:hidden flex flex-col gap-3 mt-6">
+            <Link
+              href="/sign-up?produto=aba"
+              className="text-center py-3 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors"
+            >
+              Começar grátis
+            </Link>
+            <a
+              href="https://pay.hotmart.com/H104663812P?off=u2t04kz5"
+              target="_blank"
+              className="text-center py-3 rounded-lg text-white text-sm font-semibold transition-colors"
+              style={{ backgroundColor: coral }}
+            >
+              Entrar como Fundador — R$147/mês
             </a>
           </div>
 
-          {/* CTA buttons */}
+          {/* CTA buttons desktop */}
           <div className="hidden md:flex gap-4 mt-6">
             <Link
               href="/sign-up?produto=aba"

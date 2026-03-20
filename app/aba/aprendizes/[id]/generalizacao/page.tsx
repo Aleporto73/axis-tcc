@@ -58,8 +58,8 @@ export default function GeneralizacaoPage() {
       {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}
       {success && <div className="mb-4 p-3 bg-green-50 rounded-lg"><p className="text-xs text-green-600">{success}</p></div>}
 
-      <div className="mb-6">
-        <div className="grid grid-cols-3 gap-px bg-slate-200 rounded-xl overflow-hidden">
+      <div className="mb-6 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="grid grid-cols-3 gap-px bg-slate-200 rounded-xl overflow-hidden min-w-[320px]">
           <div className="bg-slate-50 p-2 text-center text-[10px] font-medium text-slate-500 uppercase"><Tooltip tip="gen_variacao"><span className="cursor-help">Pessoa</span></Tooltip></div>
           <div className="bg-slate-50 p-2 text-center text-[10px] font-medium text-slate-500 uppercase"><Tooltip tip="gen_contexto"><span className="cursor-help">Ambiente 1</span></Tooltip></div>
           <div className="bg-slate-50 p-2 text-center text-[10px] font-medium text-slate-500 uppercase"><Tooltip tip="gen_contexto"><span className="cursor-help">Ambiente 2</span></Tooltip></div>
@@ -78,11 +78,11 @@ export default function GeneralizacaoPage() {
       {selectedCell && (
         <div className="p-4 rounded-xl border border-aba-500/30 bg-aba-500/5 mb-6">
           <h3 className="text-sm font-medium text-slate-800 mb-3">Probe — V{selectedCell.v} × C{selectedCell.c}</h3>
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div><label className="block text-[11px] text-slate-500 mb-1 flex items-center gap-0.5">Pessoa <HelpTip tip="gen_desc_variacao" /></label><input type="text" value={form.variation_desc} onChange={e => setForm({...form, variation_desc:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" placeholder="Ex: Mãe, pai, terapeuta" /></div>
             <div><label className="block text-[11px] text-slate-500 mb-1 flex items-center gap-0.5">Ambiente <HelpTip tip="gen_desc_contexto" /></label><input type="text" value={form.context_desc} onChange={e => setForm({...form, context_desc:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" placeholder="Ex: Clínica, casa, escola" /></div>
           </div>
-          <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
             <div><label className="block text-[11px] text-slate-500 mb-1 flex items-center gap-0.5">Total tentativas <HelpTip tip="gen_tentativas" /></label><input type="number" min={1} value={form.trials_total} onChange={e => setForm({...form, trials_total:parseInt(e.target.value)||0})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" /></div>
             <div><label className="block text-[11px] text-slate-500 mb-1">Corretas</label><input type="number" min={0} value={form.trials_correct} onChange={e => setForm({...form, trials_correct:parseInt(e.target.value)||0})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500" /></div>
             <div><label className="block text-[11px] text-slate-500 mb-1 flex items-center gap-0.5">Nível de dica <HelpTip tip="gen_nivel_dica" /></label><select value={form.prompt_level} onChange={e => setForm({...form, prompt_level:e.target.value})} className="w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-aba-500 bg-white">{Object.entries(promptLabels).map(([k,v]) => <option key={k} value={k}>{v}</option>)}</select></div>

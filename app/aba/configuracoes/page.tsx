@@ -762,12 +762,12 @@ export default function ConfiguracoesABAPage() {
             )}
           </div>
           {profileLoading ? (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
               <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Nome</label>
                 <input
