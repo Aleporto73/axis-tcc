@@ -102,6 +102,94 @@ export async function canAccessLearner(
 }
 
 // =====================================================
+// AXIS TDAH — Filtros de Vínculo Terapeuta-Paciente
+// Migration 038: tdah_patient_therapists (N:N)
+// =====================================================
+
+/**
+ * Retorna cláusula SQL para filtrar pacientes TDAH por terapeuta.
+ * - admin/supervisor: sem filtro (vê todos do tenant)
+ * - terapeuta: filtra via tdah_patient_therapists
+ *
+ * Uso:
+ *   const { clause, params } = tdahPatientFilter(ctx, startParamIndex)
+ *   const query = `SELECT * FROM tdah_patients p WHERE p.tenant_id = $1 ${clause}`
+ *
+ * Fallback: se não houver registros na tabela de vínculos, usa created_by
+ * para manter compatibilidade com tenants que ainda não migraram.
+ */
+export function tdahPatientFilter(
+  ctx: TenantContext,
+  startParamIndex: number
+): { clause: string; params: string[] } {
+  if (ctx.role === 'admin' || ctx.role === 'supervisor') {
+    return { clause: '', params: [] }
+  }
+
+  // Terapeuta: filtrar via tdah_patient_therapists (com fallback para created_by)
+  return {
+    clause: `AND (
+      p.id IN (
+        SELECT patient_id FROM tdah_patient_therapists
+        WHERE profile_id = $${startParamIndex} AND tenant_id = $1
+      )
+      OR p.created_by = $${startParamIndex}
+    )`,
+    params: [ctx.profileId]
+  }
+}
+
+/**
+ * Retorna cláusula SQL para filtrar sessões TDAH por pacientes do terapeuta.
+ * Para uso em queries que não fazem JOIN direto com tdah_patients.
+ */
+export function tdahSessionFilter(
+  ctx: TenantContext,
+  startParamIndex: number,
+  sessionAlias: string = 's'
+): { clause: string; params: string[] } {
+  if (ctx.role === 'admin' || ctx.role === 'supervisor') {
+    return { clause: '', params: [] }
+  }
+
+  return {
+    clause: `AND ${sessionAlias}.patient_id IN (
+      SELECT patient_id FROM tdah_patient_therapists
+      WHERE profile_id = $${startParamIndex} AND tenant_id = $1
+      UNION
+      SELECT id FROM tdah_patients
+      WHERE created_by = $${startParamIndex} AND tenant_id = $1
+    )`,
+    params: [ctx.profileId]
+  }
+}
+
+/**
+ * Verifica se terapeuta tem acesso a um paciente TDAH específico.
+ * Admin/Supervisor sempre têm acesso.
+ */
+export async function canAccessTdahPatient(
+  ctx: TenantContext,
+  patientId: string
+): Promise<boolean> {
+  if (ctx.role === 'admin' || ctx.role === 'supervisor') {
+    return true
+  }
+
+  const result = await ctx.client.query(
+    `SELECT 1 FROM tdah_patient_therapists
+     WHERE patient_id = $1 AND profile_id = $2 AND tenant_id = $3
+     UNION ALL
+     SELECT 1 FROM tdah_patients
+     WHERE id = $1 AND created_by = $2 AND tenant_id = $3
+     LIMIT 1`,
+    [patientId, ctx.profileId, ctx.tenantId]
+  )
+
+  return result.rows.length > 0
+}
+
+// =====================================================
 // Operadora Ready — Feature Gate (v2.7.0)
 // =====================================================
 

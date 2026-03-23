@@ -64,6 +64,7 @@
 | 13/03/2026 | Fase 7f — Enviar resumo sessão (email) | `app/api/tdah/sessions/[id]/summary/route.ts`, template email |
 | 13/03/2026 | Migration 024 — session_summaries multi-módulo | `scripts/migrations/024_*`, `scripts/run-migration-024.ts` |
 | 13/03/2026 | Fase 7g — Página de Configurações TDAH | `app/tdah/configuracoes/page.tsx` |
+| 20/03/2026 | Google Calendar adicionado às Configurações TDAH | `app/tdah/configuracoes/page.tsx` — seção completa (conectar/sync/desconectar) |
 | 13/03/2026 | Fase 7h — Central de Ajuda TDAH | `app/tdah/ajuda/page.tsx` |
 | 14/03/2026 | Polimento tooltips — lib + componente | `lib/tooltips-tdah.ts` (55 textos), `components/TooltipTDAH.tsx` |
 | 14/03/2026 | HelpTipTDAH integrado nas páginas | `sessoes/[id]`, `pacientes/[id]`, `dashboard` — 11 pontos |
@@ -119,7 +120,46 @@
 
 | # | Item | Dependência |
 |---|------|-------------|
-| 1 | Deploy beta + migrations 030-032 em produção | VPS |
+| 1 | Deploy beta + migrations 030-032, 038 em produção | VPS |
+
+---
+
+## CONCLUIDO EM 23/03/2026
+
+### Sessão Cowork — Auditoria Técnica TDAH (score 6.4 → ~8.5)
+
+**18 correções implementadas, 393/393 testes passando, 0 erros TypeScript.**
+
+- [x] **P0 CRÍTICO: Bug session_date** — Portal família/escola referenciava coluna inexistente `session_date` (correto: `scheduled_at`). Queries falhavam silenciosamente. Corrigido em `app/api/familia/[token]/route.ts` (2 queries)
+- [x] **P0: Migração created_by → N:N** — Vínculo terapeuta-paciente era 1:1 via `created_by`. Criada tabela `tdah_patient_therapists` (migration 038) com auto-migração de dados existentes como vínculo primário
+- [x] **3 helpers de acesso TDAH** em `src/database/with-role.ts`: `tdahPatientFilter()`, `tdahSessionFilter()`, `canAccessTdahPatient()` — todos com fallback para `created_by`
+- [x] **15+ rotas TDAH migradas** de `created_by` para novos helpers: patients, dashboard, protocols, scores, drc, guardians, alerts, routines, token-economy, reports, clinical-state, plans
+- [x] **CRUD terapeuta-paciente** — Nova rota `app/api/tdah/patient-therapists/route.ts` (GET/POST/DELETE). Admin/Supervisor: CRUD. Terapeuta: leitura própria
+- [x] **Portais públicos hardened** — Rate limiting (30 req/min GET, 10 POST família | 15 escola), validação token regex, queries paralelas (Promise.all)
+- [x] **Suite testes contrato SQL** — `src/tests/tdah-schema-contract.test.ts` (9 assertions) previne regressão do bug session_date
+- [x] **4 bugs corrigidos durante implementação**: clinical-state ctx parcial, scores 3 args, plans SQL injection, plans alias conflito
+
+**Arquivos novos:**
+- `scripts/migrations/038_tdah_patient_therapists.sql`
+- `app/api/tdah/patient-therapists/route.ts`
+- `src/tests/tdah-schema-contract.test.ts`
+
+**Migrations pendentes em produção:** 038
+
+---
+
+## CONCLUIDO EM 20/03/2026
+
+### Sessão Cowork — Google Calendar TDAH
+
+**Google Brand Verification aprovada pelo Google.**
+- [x] Seção Google Calendar adicionada em `app/tdah/configuracoes/page.tsx` (não existia antes)
+- [x] Imports: Calendar, Check, X, RefreshCw, Unlink (Lucide)
+- [x] State: googleStatus, googleLoading, syncing
+- [x] Handlers: fetchGoogleStatus, handleGoogleConnect, handleGoogleSync, handleGoogleDisconnect
+- [x] Detecção retorno OAuth (?google=success → limpa URL)
+- [x] UI: botões com cor TDAH (#0d7377), alerta token expirado, última sincronização
+- [x] Reutiliza APIs /api/google/* compartilhadas (mesmo tenant_id)
 
 ---
 
@@ -319,8 +359,8 @@
 - API summary: POST draft → PUT approve → PUT send (Resend)
 - Modal envio na sessão: seletor guardians, textarea, fluxo 3 etapas
 - Fase 7g: Página de Configurações TDAH
-- Perfil (nome + CRP), Notificações (toggles), Clínica (admin), Plano (tier), Privacidade
-- Reusa APIs ABA (/api/aba/me, /api/aba/settings, /api/aba/plan)
+- Perfil (nome + CRP), Notificações (toggles), Google Calendar, Clínica (admin), Plano (tier), Privacidade
+- Reusa APIs ABA (/api/aba/me, /api/aba/settings, /api/aba/plan) + APIs Google (/api/google/*)
 - Role-aware visibility
 - Fase 7h: Central de Ajuda TDAH
 - 6 seções FAQ: Primeiros Passos, Sessões, Protocolos, AuDHD, DRC, Privacidade

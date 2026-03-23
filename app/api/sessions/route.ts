@@ -1,52 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import pool from '@/src/database/db'
+import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
+/**
+ * GET /api/sessions
+ * List all sessions for the authenticated tenant
+ * Migration: withTenant (Auditoria TCC P0)
+ */
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-    }
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId } = ctx
 
-    const tenantResult = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      [userId]
-    )
+      const queryResult = await client.query(
+        `SELECT
+          s.id,
+          s.patient_id,
+          s.session_number,
+          s.session_type,
+          s.scheduled_at,
+          s.started_at,
+          s.ended_at,
+          s.duration_minutes,
+          s.status,
+          s.created_at,
+          s.patient_response,
+          p.full_name as patient_name,
+          (SELECT COUNT(*) FROM patient_push_tokens ppt WHERE ppt.patient_id = s.patient_id) > 0 as push_enabled
+        FROM sessions s
+        LEFT JOIN patients p ON s.patient_id = p.id
+        WHERE s.tenant_id = $1
+        ORDER BY s.scheduled_at DESC NULLS LAST, s.created_at DESC
+        LIMIT 50`,
+        [tenantId]
+      )
 
-    if (tenantResult.rows.length === 0) {
-      return NextResponse.json({ sessions: [] })
-    }
+      return { sessions: queryResult.rows }
+    })
 
-    const tenantId = tenantResult.rows[0].id
-
-    const result = await pool.query(
-      `SELECT 
-        s.id,
-        s.patient_id,
-        s.session_number,
-        s.session_type,
-        s.scheduled_at,
-        s.started_at,
-        s.ended_at,
-        s.duration_minutes,
-        s.status,
-        s.created_at,
-        s.patient_response,
-        p.full_name as patient_name,
-        (SELECT COUNT(*) FROM patient_push_tokens ppt WHERE ppt.patient_id = s.patient_id) > 0 as push_enabled
-      FROM sessions s
-      LEFT JOIN patients p ON s.patient_id = p.id
-      WHERE s.tenant_id = $1
-      ORDER BY s.scheduled_at DESC NULLS LAST, s.created_at DESC
-      LIMIT 50`,
-      [tenantId]
-    )
-
-    return NextResponse.json({ sessions: result.rows })
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Erro ao buscar sessoes:', error)
-    return NextResponse.json({ sessions: [] })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -36,7 +36,7 @@
 | Endpoint | Status | Descricao |
 |---|---|---|
 | /api/patients/* | ✅ | CRUD completo + clinical-record + evolution + sessions + supervision + push-link (TODOS com withTenant) |
-| /api/sessions/* | ✅ | CRUD + start + finish + report + create |
+| /api/sessions/* | ✅ | CRUD + start + finish + report + create (TODOS com withTenant desde 23/03) |
 | /api/suggestions/* | ✅ | GET lista + PATCH decide (aprovar/editar/ignorar) |
 | /api/events/create | ✅ | Pipeline de entrada de eventos clinicos |
 | /api/stats | ✅ | Dashboard KPIs |
@@ -45,7 +45,7 @@
 | /api/analyze-tcc | ✅ | Analise TCC especifica |
 | /api/audit | ✅ | Log imutavel |
 | /api/push/* | ✅ | FCM register/subscribe/send |
-| /api/google/* | ✅ | Calendar sync (7 rotas) — botao desabilitado |
+| /api/google/* | ✅ | Calendar sync (7 rotas) — ✅ ATIVO (Google Brand verificado 20/03/2026) |
 | /api/portal/* | ✅ | Portal Familia token-based |
 | /api/user/* | ✅ | Profile, licenses, tenant selection |
 | /api/demo/* | ✅ | Demo mode com dados publicos |
@@ -103,7 +103,7 @@
 | /obrigado | ✅ | Thank you page com branding AXIS |
 | Pricing page TCC | ❌ | Landing existe mas checkout links nao conectados |
 | Tiers/precos TCC | ✅ | Profissional R$59/mes (plano unico) |
-| UpgradeModalTCC | ✅ | Componente proprio com branding navy/rosa, checkout Hotmart J104687347A, integrado em /pacientes (403) |
+| UpgradeModalTCC | ✅ | Componente proprio com branding navy/rosa, checkout Hotmart J104687347A, integrado em /pacientes (403). Google Calendar sync (sem "em breve") |
 
 ### SEGURANCA — 100% ✅ (subiu de 98% — audit de tenant_id em 12/03)
 | Area | Status | Detalhe |
@@ -150,7 +150,7 @@
 
 13. ~~**Acessibilidade — Spinners**~~ → ✅ 11 spinners com role="status" + aria-label em 6 arquivos (sugestoes, sessoes, pacientes, pacientes/[id], sessoes/[id], SessionReport)
 
-14. **Rotas de sessão TCC sem withTenant** — 6 arquivos em /api/sessions/* usam pool.query() direto com lookup manual de tenant. Funcional mas inconsistente com padrão do /api/patients/*. Migrar para withTenant no v2.x.
+14. ~~**Rotas de sessão TCC sem withTenant**~~ → ✅ CORRIGIDO 23/03/2026: todas as 6 rotas migradas para withTenant na auditoria técnica
 
 15. **Dashboard pending_notes/pending_confirmation** — Interface Stats define esses campos mas /api/stats não os retorna. Não causa crash (campos undefined ignorados) mas é dead code.
 
@@ -300,6 +300,28 @@
 
 **Migrations pendentes em produção:** 031, 032
 
+### 2026-03-20 — Google Calendar liberado
+
+**Google Brand Verification aprovada pelo Google.**
+- [x] UpgradeModalTCC: "Google Calendar (em breve)" → "Google Calendar sync"
+- [x] Configurações TCC (/configuracoes): botões conectar/sync/desconectar já estavam funcionais — nenhuma alteração necessária
+- [x] API routes /api/google/* sem nenhum feature flag ou bloqueio — código 100% operacional
+
+### 2026-03-23 — Auditoria Técnica TCC (score 6.8 → ~8.5)
+
+**14 correções implementadas, 393/393 testes passando, 0 erros TypeScript.**
+
+- [x] **P0: 6 rotas de sessão migradas para withTenant** — sessions/route.ts (GET), sessions/[id] (GET, DELETE), sessions/[id]/start (POST), sessions/[id]/report (GET), sessions/[id]/finish (POST), sessions/create (POST). Pipeline CSO preservado integralmente na rota finish
+- [x] **P0: Error handler silencioso** — sessions/route.ts GET retornava `{ sessions: [] }` com status 200 em caso de erro. Corrigido para propagar via handleRouteError
+- [x] **P1: 6 rotas Google Calendar unificadas** — callback, disconnect, status, sync, watch, webhook. Todas removeram `new Pool(...)` e usam `import pool from '@/src/database/db'`
+- [x] **P1: Push/send hardened** — Rate limit 60 req/min + guard `!process.env.INTERNAL_API_KEY`
+- [x] **Fix build: handleRouteError signature** — 5 rotas chamavam com 3 args (aceita 1). Corrigido para `const { message, status } = handleRouteError(error)`
+- [x] **Funil comercial TCC** — Auditoria indicava ausência de checkout, mas `/produto/tcc` já tem CTAs Hotmart. Falso positivo descartado
+
+**Item 14 da auditoria de 11/03 (sessions sem withTenant) → RESOLVIDO nesta sessão.**
+
+---
+
 ### 2026-03-12 (tarde) — Security Audit: tenant_id isolation
 - Audit de segurança em 17 rotas TCC (sessions, events, suggestions, analyze-tcc, stats, audit)
 - ✅ CRITICO: analyze-tcc — patient_id/session_id do body não eram validados contra tenant (cross-tenant injection possível)
@@ -322,7 +344,7 @@
 | 11/03/2026 | ~~Regra CRISIS_PROTOCOL dead code~~ → CORRIGIDA | Reescrita com activation_level < 0.2 + emotional_load > 0.85 |
 | 12/03/2026 | Limite pacientes via hotmart_plan (não max_patients) | v1.x: FREE (NULL) = 1, PRO (NOT NULL) = ilimitado. v2.x tera seats/roles |
 | 12/03/2026 | Todas as rotas /api/patients/* migradas para withTenant | RLS exige set_config('app.tenant_id') — pool.query() direto falhava em INSERT/UPDATE |
-| 12/03/2026 | Rotas /api/sessions/* mantidas com pool.query() | Sessions table não tem RLS strict — funcional com WHERE tenant_id manual. Migrar para withTenant no v2.x |
+| ~~12/03/2026~~ | ~~Rotas /api/sessions/* mantidas com pool.query()~~ | ~~Migrar para withTenant no v2.x~~ → **RESOLVIDO 23/03/2026**: todas as 6 rotas migradas para withTenant na auditoria técnica |
 | 12/03/2026 | Migrations 020/021 criadas para colunas faltantes | gender/diagnosis/medication em patients + google cols em sessions. IF NOT EXISTS para idempotencia |
 
 ---

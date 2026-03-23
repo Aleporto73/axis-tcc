@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, tdahPatientFilter } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH - API: Alertas Clínicos
@@ -27,12 +27,11 @@ export async function GET(request: NextRequest) {
     const result = await withTenant(async (ctx) => {
       const { client, tenantId } = ctx
 
-      let roleClause = ''
+      // Migration 038: Filter patients by therapist access
       const params: any[] = [tenantId]
-      if (ctx.role === 'terapeuta') {
-        params.push(ctx.profileId)
-        roleClause = `AND p.created_by = $${params.length}`
-      }
+      const roleFilter = tdahPatientFilter(ctx, params.length + 1)
+      params.push(...roleFilter.params)
+      const roleClause = roleFilter.clause
 
       const alerts: Alert[] = []
       const now = new Date().toISOString()

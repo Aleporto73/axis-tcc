@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { tdahPatientFilter } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH — API Plano TDAH (equivalente PEI do ABA)
 // Tabelas: tdah_plans + tdah_plan_goals (Bible §13)
+// Migration 038: filtro via tdah_patient_therapists (N:N)
 //
 // Diferenças vs PEI (ABA):
 //   - Domínios clínicos TDAH (atencao_sustentada, controle_inibitorio, etc.)
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const patientId = searchParams.get('patient_id')
 
-    const result = await withTenant(async ({ client, tenantId, userId, role }) => {
+    const result = await withTenant(async ({ client, tenantId, userId, profileId, role }) => {
       let q = `
         SELECT p.*, tp.name as patient_name
         FROM tdah_plans p
@@ -39,9 +41,17 @@ export async function GET(request: NextRequest) {
         q += ` AND p.patient_id = $${params.length}`
       }
 
-      // Role filter: terapeuta vê só seus pacientes
+      // Role filter: terapeuta vê só pacientes vinculados (Migration 038)
+      // Nota: não usa tdahPatientFilter porque alias 'p' aqui é tdah_plans, não tdah_patients
       if (role === 'terapeuta') {
-        q += ` AND tp.created_by = '${userId}'`
+        params.push(profileId)
+        q += ` AND (
+          tp.id IN (
+            SELECT patient_id FROM tdah_patient_therapists
+            WHERE profile_id = $${params.length} AND tenant_id = $1
+          )
+          OR tp.created_by = $${params.length}
+        )`
       }
 
       q += ' ORDER BY p.created_at DESC'

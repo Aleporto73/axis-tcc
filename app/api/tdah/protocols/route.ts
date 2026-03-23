@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, handleRouteError, tdahPatientFilter } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH - API: Protocolos do Paciente
@@ -17,14 +17,12 @@ export async function GET(request: NextRequest) {
       const patientId = searchParams.get('patient_id')
       const status = searchParams.get('status')
 
-      let roleClause = ''
       const params: any[] = [ctx.tenantId]
 
-      // Terapeuta só vê protocolos de pacientes que criou
-      if (ctx.role === 'terapeuta') {
-        params.push(ctx.profileId)
-        roleClause = `AND p.created_by = $${params.length}`
-      }
+      // Migration 038: Terapeuta só vê protocolos de pacientes que criou
+      const roleFilter = tdahPatientFilter(ctx, params.length + 1)
+      params.push(...roleFilter.params)
+      const roleClause = roleFilter.clause
 
       let query = `
         SELECT tp.*, p.name as patient_name,

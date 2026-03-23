@@ -1,30 +1,26 @@
 import { NextResponse } from 'next/server'
 import { withTenant, TenantContext } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, tdahPatientFilter, tdahSessionFilter } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH - Dashboard API
 // KPIs agregados: pacientes, sessões, protocolos, CSO-TDAH
-// admin/supervisor: visão clínica. terapeuta: filtrado.
-// Sem Redis por enquanto (simplicidade v1)
+// admin/supervisor: visão clínica. terapeuta: filtrado via vínculo.
+// Migration 038: tdah_patient_therapists (N:N)
 // =====================================================
 
 async function fetchKPIs(ctx: TenantContext) {
   const { client, tenantId } = ctx
 
-  // Subquery para filtrar pacientes por role
-  const patientFilter = ctx.role === 'terapeuta'
-    ? `AND p.created_by = $2`
-    : ''
+  // Subquery para filtrar pacientes por role (via tdah_patient_therapists + fallback created_by)
+  const pFilter = tdahPatientFilter(ctx, 2)
+  const patientFilter = pFilter.clause
+  const sFilter = tdahSessionFilter(ctx, 2, 's')
+  const sessionPatientFilter = sFilter.clause
 
-  const baseParams: any[] = ctx.role === 'terapeuta'
-    ? [tenantId, ctx.profileId]
+  const baseParams: any[] = pFilter.params.length > 0
+    ? [tenantId, ...pFilter.params]
     : [tenantId]
-
-  // Sessões usam patient_id filtrado (não têm therapist_id direto como ABA)
-  const sessionPatientFilter = ctx.role === 'terapeuta'
-    ? `AND s.patient_id IN (SELECT id FROM tdah_patients WHERE tenant_id = $1 AND created_by = $2)`
-    : ''
 
   // ── KPIs básicos ──
   const metrics = await client.query(`

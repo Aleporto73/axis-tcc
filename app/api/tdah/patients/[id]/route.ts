@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, canAccessTdahPatient } from '@/src/database/with-role'
 import { CSO_TDAH_ENGINE_VERSION } from '@/src/engines/cso-tdah'
 
 // =====================================================
 // AXIS TDAH - API: Paciente por ID
 // GET — Retorna dados completos do paciente
 // PATCH — Editar dados gerais + toggle AuDHD layer
-// Respeita tenant_id e role (terapeuta só se created_by)
+// Respeita tenant_id e role (terapeuta via vínculo ou created_by)
 // Bible §9.3: mudança de layer SEMPRE gera log (append-only)
+// Migration 038: tdah_patient_therapists (N:N)
 // =====================================================
 
 const VALID_AUDHD_STATUS = ['off', 'active_core', 'active_full']
@@ -29,12 +30,12 @@ export async function GET(
     const { id } = await params
 
     const result = await withTenant(async (ctx) => {
-      let roleClause = ''
-      const queryParams: any[] = [id, ctx.tenantId]
-
-      if (ctx.role === 'terapeuta') {
-        queryParams.push(ctx.profileId)
-        roleClause = `AND p.created_by = $${queryParams.length}`
+      // Verificar acesso via vínculo (tdah_patient_therapists + fallback created_by)
+      const hasAccess = await canAccessTdahPatient(ctx, id)
+      if (!hasAccess) {
+        const err = new Error('Paciente não encontrado') as any
+        err.statusCode = 404
+        throw err
       }
 
       const res = await ctx.client.query(
@@ -42,9 +43,8 @@ export async function GET(
           (SELECT COUNT(*) FROM tdah_sessions s WHERE s.patient_id = p.id AND s.tenant_id = p.tenant_id) as total_sessions,
           (SELECT COUNT(*) FROM tdah_protocols tp WHERE tp.patient_id = p.id AND tp.tenant_id = p.tenant_id AND tp.status = 'active') as active_protocols
         FROM tdah_patients p
-        WHERE p.id = $1 AND p.tenant_id = $2
-        ${roleClause}`,
-        queryParams
+        WHERE p.id = $1 AND p.tenant_id = $2`,
+        [id, ctx.tenantId]
       )
 
       if (res.rows.length === 0) {
@@ -75,17 +75,17 @@ export async function PATCH(
     const body = await request.json()
 
     const result = await withTenant(async (ctx) => {
-      // Verificar paciente existe e pertence ao tenant
-      let roleClause = ''
-      const checkParams: any[] = [id, ctx.tenantId]
-      if (ctx.role === 'terapeuta') {
-        checkParams.push(ctx.profileId)
-        roleClause = `AND created_by = $${checkParams.length}`
+      // Verificar paciente existe e terapeuta tem acesso via vínculo
+      const hasAccess = await canAccessTdahPatient(ctx, id)
+      if (!hasAccess) {
+        const err = new Error('Paciente não encontrado') as any
+        err.statusCode = 404
+        throw err
       }
 
       const current = await ctx.client.query(
-        `SELECT * FROM tdah_patients WHERE id = $1 AND tenant_id = $2 ${roleClause}`,
-        checkParams
+        `SELECT * FROM tdah_patients WHERE id = $1 AND tenant_id = $2`,
+        [id, ctx.tenantId]
       )
 
       if (current.rows.length === 0) {

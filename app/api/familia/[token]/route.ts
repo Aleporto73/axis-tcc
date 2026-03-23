@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
+import { rateLimit } from '@/src/middleware/rate-limit'
 
 // =====================================================
 // AXIS TDAH — API Pública: Portal Família
@@ -8,7 +9,15 @@ import pool from '@/src/database/db'
 // SEM autenticação Clerk — acesso via token
 // Visibility: Progresso resumido, DRC, sessões
 // ❌ Scores CSO-TDAH, ❌ Snapshots, ❌ Layer AuDHD
+//
+// Segurança (Auditoria P1):
+//   - Rate limit: 30 req/min por IP (portal público)
+//   - Token: 256-bit random, expiração validada
+//   - Access log: append-only (tdah_family_access_log)
 // =====================================================
+
+// Rate limit config para portais públicos
+const PORTAL_RATE_LIMIT = { limit: 30, windowMs: 60_000, prefix: 'portal-familia' }
 
 async function validateToken(token: string) {
   const client = await pool.connect()
@@ -40,7 +49,16 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    // Rate limit por IP
+    const blocked = await rateLimit(request, PORTAL_RATE_LIMIT)
+    if (blocked) return blocked
+
     const { token } = await params
+
+    // Validação básica do formato do token (hex 64 chars)
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 400 })
+    }
     const tokenData = await validateToken(token)
 
     if (!tokenData) {
@@ -74,81 +92,79 @@ export async function GET(
         if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--
       }
 
-      // Protocolos ativos (status simplificado)
-      const protocols = await client.query(
-        `SELECT id, code, title, status, block,
-          CASE
-            WHEN status IN ('mastered', 'maintenance', 'generalization') THEN 'conquistado'
-            WHEN status = 'active' THEN 'em_progresso'
-            WHEN status = 'regression' THEN 'em_revisao'
-            ELSE status
-          END as status_label
-        FROM tdah_protocols
-        WHERE patient_id = $1 AND tenant_id = $2
-          AND status NOT IN ('archived', 'discontinued')
-        ORDER BY status, title`,
-        [patientId, tenantId]
-      )
-
-      // DRC resumo (30 dias) — progresso resumido
-      const drcSummary = await client.query(
-        `SELECT
-          COUNT(*) as total_entries,
-          COUNT(*) FILTER (WHERE goal_met = true) as goals_met,
-          COUNT(*) FILTER (WHERE goal_met = false) as goals_not_met,
-          ROUND(AVG(score) FILTER (WHERE score IS NOT NULL), 1) as avg_score
-        FROM tdah_drc
-        WHERE patient_id = $1 AND tenant_id = $2
-          AND drc_date >= CURRENT_DATE - INTERVAL '30 days'`,
-        [patientId, tenantId]
-      )
-
-      // Sessões futuras (próximas 5)
-      const upcomingSessions = await client.query(
-        `SELECT id, session_date, session_context, status
-        FROM tdah_sessions
-        WHERE patient_id = $1 AND tenant_id = $2
-          AND status = 'scheduled'
-          AND session_date >= CURRENT_DATE
-        ORDER BY session_date ASC
-        LIMIT 5`,
-        [patientId, tenantId]
-      )
-
-      // Sessões recentes (últimas 10 completadas — apenas data + contexto + duração)
-      const recentSessions = await client.query(
-        `SELECT id, session_date, session_context, duration_minutes, status
-        FROM tdah_sessions
-        WHERE patient_id = $1 AND tenant_id = $2
-          AND status = 'completed'
-        ORDER BY session_date DESC
-        LIMIT 10`,
-        [patientId, tenantId]
-      )
-
-      // Resumos de sessão aprovados (enviados para família)
-      const summaries = await client.query(
-        `SELECT id, session_id, summary_text, status, created_at
-        FROM session_summaries
-        WHERE patient_id = $1 AND tenant_id = $2
-          AND source_module = 'tdah'
-          AND status = 'sent'
-        ORDER BY created_at DESC
-        LIMIT 10`,
-        [patientId, tenantId]
-      )
-
-      // Conquistas (protocolos mastered)
-      const achievements = await client.query(
-        `SELECT code, title, mastered_at
-        FROM tdah_protocols
-        WHERE patient_id = $1 AND tenant_id = $2
-          AND status IN ('mastered', 'maintenance')
-          AND mastered_at IS NOT NULL
-        ORDER BY mastered_at DESC
-        LIMIT 10`,
-        [patientId, tenantId]
-      )
+      // Queries paralelas — todas independentes, mesmo paciente/tenant
+      const [protocols, drcSummary, upcomingSessions, recentSessions, summaries, achievements] = await Promise.all([
+        // Protocolos ativos (status simplificado)
+        client.query(
+          `SELECT id, code, title, status, block,
+            CASE
+              WHEN status IN ('mastered', 'maintenance', 'generalization') THEN 'conquistado'
+              WHEN status = 'active' THEN 'em_progresso'
+              WHEN status = 'regression' THEN 'em_revisao'
+              ELSE status
+            END as status_label
+          FROM tdah_protocols
+          WHERE patient_id = $1 AND tenant_id = $2
+            AND status NOT IN ('archived', 'discontinued')
+          ORDER BY status, title`,
+          [patientId, tenantId]
+        ),
+        // DRC resumo (30 dias)
+        client.query(
+          `SELECT
+            COUNT(*) as total_entries,
+            COUNT(*) FILTER (WHERE goal_met = true) as goals_met,
+            COUNT(*) FILTER (WHERE goal_met = false) as goals_not_met,
+            ROUND(AVG(score) FILTER (WHERE score IS NOT NULL), 1) as avg_score
+          FROM tdah_drc
+          WHERE patient_id = $1 AND tenant_id = $2
+            AND drc_date >= CURRENT_DATE - INTERVAL '30 days'`,
+          [patientId, tenantId]
+        ),
+        // Sessões futuras (próximas 5)
+        client.query(
+          `SELECT id, scheduled_at, session_context, status
+          FROM tdah_sessions
+          WHERE patient_id = $1 AND tenant_id = $2
+            AND status = 'scheduled'
+            AND scheduled_at >= CURRENT_DATE
+          ORDER BY scheduled_at ASC
+          LIMIT 5`,
+          [patientId, tenantId]
+        ),
+        // Sessões recentes (últimas 10 completadas)
+        client.query(
+          `SELECT id, scheduled_at, session_context, duration_minutes, status
+          FROM tdah_sessions
+          WHERE patient_id = $1 AND tenant_id = $2
+            AND status = 'completed'
+          ORDER BY scheduled_at DESC
+          LIMIT 10`,
+          [patientId, tenantId]
+        ),
+        // Resumos de sessão aprovados
+        client.query(
+          `SELECT id, session_id, summary_text, status, created_at
+          FROM session_summaries
+          WHERE patient_id = $1 AND tenant_id = $2
+            AND source_module = 'tdah'
+            AND status = 'sent'
+          ORDER BY created_at DESC
+          LIMIT 10`,
+          [patientId, tenantId]
+        ),
+        // Conquistas (protocolos mastered)
+        client.query(
+          `SELECT code, title, mastered_at
+          FROM tdah_protocols
+          WHERE patient_id = $1 AND tenant_id = $2
+            AND status IN ('mastered', 'maintenance')
+            AND mastered_at IS NOT NULL
+          ORDER BY mastered_at DESC
+          LIMIT 10`,
+          [patientId, tenantId]
+        ),
+      ])
 
       // Log access
       try {
@@ -192,7 +208,16 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    // Rate limit (mais restritivo para writes)
+    const blocked = await rateLimit(request, { limit: 10, windowMs: 60_000, prefix: 'portal-familia-consent' })
+    if (blocked) return blocked
+
     const { token } = await params
+
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 400 })
+    }
+
     const body = await request.json()
     const { accept_consent } = body
 

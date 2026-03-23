@@ -98,7 +98,7 @@ const features: FeatureGroup[] = [
       { label: 'Bundles de evidência', tip: 'pub_bundle', values: [false, false, true, true] },
       { label: 'Anexos de sessão', values: [false, false, true, true] },
       { label: 'Perfis de cobertura (plano de saúde)', tip: 'pub_cobertura', values: [false, false, true, true] },
-      { label: 'Claim packets (faturamento)', tip: 'pub_claim', values: [false, false, true, true] },
+      { label: 'Documentação para reembolso', tip: 'pub_claim', values: [false, false, true, true] },
       { label: 'Credenciais do provedor', tip: 'pub_credenciais', values: [false, false, true, true] },
       { label: 'Flags de integridade', tip: 'pub_flags', values: [false, false, true, true] },
       { label: 'Perfis de operadora / payer', tip: 'pub_payer_profiles', values: [false, false, true, true] },
@@ -456,7 +456,7 @@ export default function PrecosPage() {
               },
               {
                 q: 'O que é a camada Operadora Ready?',
-                a: 'É o conjunto de funcionalidades v2.7.0 para compliance institucional: presença GPS, atestações digitais, bundles de evidência, claim packets para faturamento, perfis de cobertura e dashboard de integridade.',
+                a: 'É o conjunto de funcionalidades v2.7.0 para compliance institucional: presença GPS, atestações digitais, bundles de evidência, documentação para reembolso, perfis de cobertura e dashboard de integridade.',
               },
               {
                 q: 'A camada Operadora altera o motor clínico?',

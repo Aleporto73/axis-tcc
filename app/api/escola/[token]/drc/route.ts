@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
+import { rateLimit } from '@/src/middleware/rate-limit'
 
 // =====================================================
 // AXIS TDAH — API Pública: Professor submete DRC
@@ -7,6 +8,10 @@ import pool from '@/src/database/db'
 // SEM autenticação Clerk — acesso via token único
 // Bible §17: máximo 3 metas por dia
 // Bible §14: Professor registra DRC
+//
+// Segurança (Auditoria P1):
+//   - Rate limit: 15 req/min (write endpoint)
+//   - Token format validation
 // =====================================================
 
 async function validateToken(token: string) {
@@ -42,7 +47,15 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const blocked = await rateLimit(request, { limit: 15, windowMs: 60_000, prefix: 'portal-escola-drc' })
+    if (blocked) return blocked
+
     const { token } = await params
+
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 400 })
+    }
+
     const tokenData = await validateToken(token)
 
     if (!tokenData) {

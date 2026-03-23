@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, handleRouteError, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH - API: Protocolo por ID
@@ -30,13 +30,7 @@ export async function GET(
     const { id } = await params
 
     const result = await withTenant(async (ctx) => {
-      let roleClause = ''
       const queryParams: any[] = [id, ctx.tenantId]
-
-      if (ctx.role === 'terapeuta') {
-        queryParams.push(ctx.profileId)
-        roleClause = `AND p.created_by = $${queryParams.length}`
-      }
 
       const res = await ctx.client.query(
         `SELECT tp.*, p.name as patient_name,
@@ -48,8 +42,7 @@ export async function GET(
          FROM tdah_protocols tp
          JOIN tdah_patients p ON p.id = tp.patient_id
          LEFT JOIN tdah_protocol_library tpl ON tpl.id = tp.library_protocol_id
-         WHERE tp.id = $1 AND tp.tenant_id = $2
-         ${roleClause}`,
+         WHERE tp.id = $1 AND tp.tenant_id = $2`,
         queryParams
       )
 
@@ -57,6 +50,17 @@ export async function GET(
         const err = new Error('Protocolo não encontrado') as any
         err.statusCode = 404
         throw err
+      }
+
+      // Migration 038: Check if terapeuta can access this patient
+      const protocol = res.rows[0]
+      if (ctx.role === 'terapeuta') {
+        const canAccess = await canAccessTdahPatient(ctx, protocol.patient_id)
+        if (!canAccess) {
+          const err = new Error('Protocolo não encontrado') as any
+          err.statusCode = 404
+          throw err
+        }
       }
 
       return res

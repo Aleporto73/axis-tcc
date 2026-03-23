@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
     const packetStatus = request.nextUrl.searchParams.get('status')
 
     const result = await withTenant(async (ctx) => {
+      // Auditoria ABA P0: role check — apenas admin/supervisor listam pacotes
+      requireAdminOrSupervisor(ctx)
       requireFeature(ctx, 'claimPackets')
       let query = `
         SELECT

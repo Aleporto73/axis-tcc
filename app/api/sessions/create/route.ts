@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
+import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 import { scheduleSessionReminders } from '@/src/services/reminder'
+
+// =====================================================
+// AXIS TCC — Criar Sessão
+// Migration: withTenant (Auditoria TCC P0)
+// Nota: pool mantido para Google Calendar (operação externa)
+// =====================================================
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
@@ -104,20 +111,6 @@ async function createGoogleCalendarEvent(
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-    }
-
-    const tenantResult = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      [userId]
-    )
-    if (tenantResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Tenant nao encontrado' }, { status: 404 })
-    }
-    const tenantId = tenantResult.rows[0].id
-
     const body = await request.json()
     const { patient_id, session_type = 'presencial', scheduled_at, start_now = true } = body
 
@@ -125,74 +118,88 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Paciente obrigatorio' }, { status: 400 })
     }
 
-    const patientResult = await pool.query(
-      'SELECT full_name, email FROM patients WHERE id = $1 AND tenant_id = $2',
-      [patient_id, tenantId]
-    )
-    if (patientResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Paciente nao encontrado' }, { status: 404 })
-    }
-    const patientName = patientResult.rows[0].full_name
-    const patientEmail = patientResult.rows[0].email
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId } = ctx
 
-    const countResult = await pool.query(
-      'SELECT COUNT(*) as total FROM sessions WHERE patient_id = $1 AND tenant_id = $2',
-      [patient_id, tenantId]
-    )
-    const sessionNumber = parseInt(countResult.rows[0].total) + 1
-
-    let result
-    let googleEventId = null
-    let googleMeetLink = null
-
-    if (start_now) {
-      result = await pool.query(
-        `INSERT INTO sessions (tenant_id, patient_id, session_type, session_number, scheduled_at, started_at, status, time_source)
-         VALUES ($1, $2, $3, $4, NOW(), NOW(), 'em_andamento', 'manual')
-         RETURNING id, patient_id, session_number, scheduled_at, started_at, status`,
-        [tenantId, patient_id, session_type, sessionNumber]
+      const patientResult = await client.query(
+        'SELECT full_name, email FROM patients WHERE id = $1 AND tenant_id = $2',
+        [patient_id, tenantId]
       )
-    } else {
-      if (!scheduled_at) {
-        return NextResponse.json({ error: 'Data de agendamento obrigatoria' }, { status: 400 })
+      if (patientResult.rows.length === 0) {
+        const err = new Error('Paciente nao encontrado') as any
+        err.statusCode = 404
+        throw err
+      }
+      const patientName = patientResult.rows[0].full_name
+      const patientEmail = patientResult.rows[0].email
+
+      const countResult = await client.query(
+        'SELECT COUNT(*) as total FROM sessions WHERE patient_id = $1 AND tenant_id = $2',
+        [patient_id, tenantId]
+      )
+      const sessionNumber = parseInt(countResult.rows[0].total) + 1
+
+      let sessionResult
+      let googleEventId = null
+      let googleMeetLink = null
+
+      if (start_now) {
+        sessionResult = await client.query(
+          `INSERT INTO sessions (tenant_id, patient_id, session_type, session_number, scheduled_at, started_at, status, time_source)
+           VALUES ($1, $2, $3, $4, NOW(), NOW(), 'em_andamento', 'manual')
+           RETURNING id, patient_id, session_number, scheduled_at, started_at, status`,
+          [tenantId, patient_id, session_type, sessionNumber]
+        )
+      } else {
+        if (!scheduled_at) {
+          const err = new Error('Data de agendamento obrigatoria') as any
+          err.statusCode = 400
+          throw err
+        }
+
+        // Google Calendar opera fora do client transacional (API externa)
+        const googleEvent = await createGoogleCalendarEvent(
+          tenantId,
+          patientName,
+          patientEmail,
+          new Date(scheduled_at),
+          60
+        )
+
+        if (googleEvent) {
+          googleEventId = googleEvent.eventId
+          googleMeetLink = googleEvent.meetLink
+        }
+
+        sessionResult = await client.query(
+          `INSERT INTO sessions (tenant_id, patient_id, session_type, session_number, scheduled_at, started_at, status, time_source, google_event_id, google_calendar_id, calendar_source, google_meet_link)
+           VALUES ($1, $2, $3, $4, $5, NULL, 'agendada', 'manual', $6, 'primary', $7, $8)
+           RETURNING id, patient_id, session_number, scheduled_at, started_at, status, google_meet_link`,
+          [tenantId, patient_id, session_type, sessionNumber, scheduled_at, googleEventId, googleEventId ? 'google' : null, googleMeetLink]
+        )
+
+        await scheduleSessionReminders({
+          tenant_id: tenantId,
+          session_id: sessionResult.rows[0].id,
+          patient_id,
+          scheduled_at: new Date(scheduled_at),
+          patient_name: patientName
+        })
       }
 
-      const googleEvent = await createGoogleCalendarEvent(
-        tenantId,
-        patientName,
-        patientEmail,
-        new Date(scheduled_at),
-        60
-      )
-
-      if (googleEvent) {
-        googleEventId = googleEvent.eventId
-        googleMeetLink = googleEvent.meetLink
-      }
-
-      result = await pool.query(
-        `INSERT INTO sessions (tenant_id, patient_id, session_type, session_number, scheduled_at, started_at, status, time_source, google_event_id, google_calendar_id, calendar_source, google_meet_link)
-         VALUES ($1, $2, $3, $4, $5, NULL, 'agendada', 'manual', $6, 'primary', $7, $8)
-         RETURNING id, patient_id, session_number, scheduled_at, started_at, status, google_meet_link`,
-        [tenantId, patient_id, session_type, sessionNumber, scheduled_at, googleEventId, googleEventId ? 'google' : null, googleMeetLink]
-      )
-
-      const remindersScheduled = await scheduleSessionReminders({
-        tenant_id: tenantId,
-        session_id: result.rows[0].id,
-        patient_id,
-        scheduled_at: new Date(scheduled_at),
-        patient_name: patientName
-      })
-    }
+      return { session: sessionResult.rows[0], google_synced: !!googleEventId }
+    })
 
     return NextResponse.json({
       success: true,
-      session: result.rows[0],
-      google_synced: !!googleEventId
+      session: result.session,
+      google_synced: result.google_synced
     }, { status: 201 })
-  } catch (error) {
-    console.error('Erro ao criar sessao:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  } catch (error: any) {
+    if (error?.statusCode) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -42,7 +42,7 @@ const jsonLd = {
   name: 'AXIS ABA',
   applicationCategory: 'HealthApplication',
   operatingSystem: 'Web',
-  description: 'Sistema clínico para Análise do Comportamento Aplicada. Protocolos ABA, cálculo evolutivo CSO-ABA, generalização 3×2, relatórios institucionais e camada Operadora Ready para compliance, faturamento e auditoria.',
+  description: 'Sistema clínico para Análise do Comportamento Aplicada. Protocolos ABA, cálculo evolutivo CSO-ABA, generalização 3×2, relatórios institucionais e camada Operadora Ready para compliance, reembolso e auditoria.',
   url: 'https://axisclinico.com/produto/aba',
   offers: [
     {
@@ -427,7 +427,7 @@ export default function ProdutoABAPage() {
             </h2>
             <p className="text-lg text-white/60 max-w-2xl mx-auto leading-[1.8]">
               Tudo o que a clínica precisa para comprovar presença, atestar sessões,
-              documentar evidências e gerar pacotes de faturamento prontos para auditoria.
+              documentar evidências e gerar documentação para reembolso pronta para auditoria.
               100% aditivo ao motor clínico existente.
             </p>
           </div>
@@ -454,7 +454,7 @@ export default function ProdutoABAPage() {
               },
               {
                 Icon: CreditCard,
-                title: 'Claim packets para faturamento',
+                title: 'Documentação para reembolso',
                 tip: 'pub_claim' as const,
                 desc: 'Pacotes prontos para submissão a operadoras. Cada sessão gera documentação no formato exigido para reembolso.',
               },
@@ -645,16 +645,18 @@ export default function ProdutoABAPage() {
                 <tr className="bg-slate-800">
                   <td colSpan={5} className="py-2 px-6 text-xs font-bold tracking-widest uppercase text-slate-400">Motor Clínico</td>
                 </tr>
-                {[
-                  { label: 'Motor CSO-ABA completo', cols: [true, true, true, true] },
-                  { label: 'Registro estruturado', cols: [true, true, true, true] },
-                  { label: 'Relatório institucional', cols: [true, true, true, true] },
-                  { label: 'Multi-terapeuta', cols: [false, true, true, true] },
-                  { label: 'Relatórios consolidados', cols: [false, true, true, true] },
-                  { label: 'Onboarding dedicado', cols: [false, true, true, true] },
-                ].map((row, i) => (
+                {([
+                  { label: 'Motor CSO-ABA completo', tip: 'pub_motor_cso' as const, cols: [true, true, true, true] },
+                  { label: 'Registro estruturado', tip: 'pub_registro_estruturado' as const, cols: [true, true, true, true] },
+                  { label: 'Relatório institucional', tip: 'pub_relatorio_institucional' as const, cols: [true, true, true, true] },
+                  { label: 'Multi-terapeuta', tip: 'pub_multi_terapeuta' as const, cols: [false, true, true, true] },
+                  { label: 'Relatórios consolidados', tip: 'pub_relatorios_consolidados' as const, cols: [false, true, true, true] },
+                  { label: 'Onboarding dedicado', tip: 'pub_onboarding' as const, cols: [false, true, true, true] },
+                ] as const).map((row, i) => (
                   <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="py-3.5 px-6 text-slate-700 font-medium">{row.label}</td>
+                    <td className="py-3.5 px-6 text-slate-700 font-medium">
+                      {row.label} <HelpTip tip={row.tip} />
+                    </td>
                     {row.cols.map((v, j) => (
                       <td key={j} className="py-3.5 px-3 text-center">
                         {v ? <Check className="w-5 h-5 mx-auto" style={{ color: coral }} /> : <X className="w-4 h-4 mx-auto text-slate-300" />}
@@ -666,21 +668,23 @@ export default function ProdutoABAPage() {
                 <tr style={{ backgroundColor: coral + '10' }}>
                   <td colSpan={5} className="py-2 px-6 text-xs font-bold tracking-widest uppercase" style={{ color: coral }}>Operadora Ready v2.7.0</td>
                 </tr>
-                {[
-                  { label: 'Presença GPS (check-in/out)', cols: [false, true, true, true] },
-                  { label: 'Atestações digitais (terapeuta)', cols: [false, true, true, true] },
-                  { label: 'Locais de atendimento', cols: [false, false, true, true] },
-                  { label: 'Bundles de evidência', cols: [false, false, true, true] },
-                  { label: 'Anexos de sessão', cols: [false, false, true, true] },
-                  { label: 'Perfis de cobertura', cols: [false, false, true, true] },
-                  { label: 'Claim packets (faturamento)', cols: [false, false, true, true] },
-                  { label: 'Credenciais do provedor', cols: [false, false, true, true] },
-                  { label: 'Flags de integridade', cols: [false, false, true, true] },
-                  { label: 'Perfis de operadora/payer', cols: [false, false, true, true] },
-                  { label: 'Dashboard de compliance', cols: [false, false, false, true] },
-                ].map((row, i) => (
+                {([
+                  { label: 'Presença GPS (check-in/out)', tip: 'pub_gps' as const, cols: [false, true, true, true] },
+                  { label: 'Atestações digitais (terapeuta)', tip: 'pub_atestacao_terapeuta' as const, cols: [false, true, true, true] },
+                  { label: 'Locais de atendimento', tip: 'pub_locais_atendimento' as const, cols: [false, false, true, true] },
+                  { label: 'Bundles de evidência', tip: 'pub_bundle' as const, cols: [false, false, true, true] },
+                  { label: 'Anexos de sessão', tip: 'pub_anexos_sessao' as const, cols: [false, false, true, true] },
+                  { label: 'Perfis de cobertura', tip: 'pub_cobertura' as const, cols: [false, false, true, true] },
+                  { label: 'Documentação para reembolso', tip: 'pub_claim' as const, cols: [false, false, true, true] },
+                  { label: 'Credenciais do provedor', tip: 'pub_credenciais_provedor' as const, cols: [false, false, true, true] },
+                  { label: 'Flags de integridade', tip: 'pub_flags_integridade' as const, cols: [false, false, true, true] },
+                  { label: 'Perfis de operadora/payer', tip: 'pub_perfis_operadora' as const, cols: [false, false, true, true] },
+                  { label: 'Dashboard de compliance', tip: 'pub_dashboard_compliance' as const, cols: [false, false, false, true] },
+                ] as const).map((row, i) => (
                   <tr key={row.label} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="py-3.5 px-6 text-slate-700 font-medium">{row.label}</td>
+                    <td className="py-3.5 px-6 text-slate-700 font-medium">
+                      {row.label} <HelpTip tip={row.tip} />
+                    </td>
                     {row.cols.map((v, j) => (
                       <td key={j} className="py-3.5 px-3 text-center">
                         {v ? <Check className="w-5 h-5 mx-auto" style={{ color: coral }} /> : <X className="w-4 h-4 mx-auto text-slate-300" />}
@@ -715,7 +719,7 @@ export default function ProdutoABAPage() {
             {[
               { name: '1 Aprendiz', price: 'Sem custo', features: ['Motor CSO-ABA completo', 'Registro estruturado', 'Relatório institucional'], href: '/sign-up', cta: 'Utilizar com 1 aprendiz real', highlight: false },
               { name: 'Clínica 100 — Founders', price: 'R$147/mês', features: ['Motor CSO-ABA completo', 'Multi-terapeuta', 'Relatórios consolidados', 'Onboarding dedicado', 'Presença GPS', 'Atestações digitais'], href: 'https://pay.hotmart.com/H104663812P?off=u2t04kz5', cta: 'Entrar como Fundador', highlight: true },
-              { name: 'Clínica 100', price: 'R$247/mês', features: ['Tudo do Founders +', 'Bundles de evidência', 'Claim packets', 'Perfis de cobertura', 'Credenciais do provedor', 'Flags de integridade'], href: 'https://pay.hotmart.com/H104663812P?off=iwqieqxc', cta: 'Assinar Clínica 100', highlight: false },
+              { name: 'Clínica 100', price: 'R$247/mês', features: ['Tudo do Founders +', 'Bundles de evidência', 'Documentação para reembolso', 'Perfis de cobertura', 'Credenciais do provedor', 'Flags de integridade'], href: 'https://pay.hotmart.com/H104663812P?off=iwqieqxc', cta: 'Assinar Clínica 100', highlight: false },
               { name: 'Clínica 250', price: 'R$497/mês', features: ['Tudo do Clínica 100 +', 'Até 250 aprendizes', 'Dashboard de compliance', 'Perfis de operadora/payer', 'Suporte prioritário'], href: 'https://pay.hotmart.com/H104663812P?off=gona25or', cta: 'Solicitar adesão', highlight: false },
             ].map((plan) => (
               <div key={plan.name} className={`bg-white rounded-xl p-6 ${plan.highlight ? 'border-2 shadow-md' : 'border border-slate-300'}`} style={plan.highlight ? { borderColor: coral } : undefined}>

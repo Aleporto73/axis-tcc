@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, tdahPatientFilter } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH — API: Economia de Fichas
@@ -21,12 +21,11 @@ export async function GET(request: NextRequest) {
 
     const result = await withTenant(async (ctx) => {
       const params: any[] = [patientId, ctx.tenantId]
-      let roleFilter = ''
 
-      if (ctx.role === 'terapeuta') {
-        params.push(ctx.profileId)
-        roleFilter = `AND te.patient_id IN (SELECT id FROM tdah_patients WHERE tenant_id = $2 AND created_by = $${params.length})`
-      }
+      // Migration 038: Filter by patient access
+      const roleFilterHelper = tdahPatientFilter(ctx, params.length + 1)
+      params.push(...roleFilterHelper.params)
+      const roleFilter = roleFilterHelper.clause ? `AND te.patient_id IN (SELECT id FROM tdah_patients WHERE tenant_id = $2 ${roleFilterHelper.clause.replace(/^AND /, '')})` : ''
 
       return await ctx.client.query(
         `SELECT te.*,

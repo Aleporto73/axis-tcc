@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, tdahPatientFilter } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH - API: Scores CSO-TDAH
@@ -22,14 +22,13 @@ export async function GET(request: NextRequest) {
         throw err
       }
 
-      // Role check: terapeuta só vê scores de pacientes que criou
-      let roleClause = ''
+      // Migration 038: Role check via tdah_patient_therapists
       const params: any[] = [patientId, ctx.tenantId, limit]
-
-      if (ctx.role === 'terapeuta') {
-        params.push(ctx.profileId)
-        roleClause = `AND EXISTS (SELECT 1 FROM tdah_patients p WHERE p.id = snap.patient_id AND p.created_by = $${params.length})`
-      }
+      const roleFilter = tdahPatientFilter(ctx, params.length + 1)
+      params.push(...roleFilter.params)
+      const roleClause = roleFilter.clause
+        ? `AND EXISTS (SELECT 1 FROM tdah_patients p WHERE p.id = snap.patient_id AND p.tenant_id = snap.tenant_id ${roleFilter.clause})`
+        : ''
 
       const res = await ctx.client.query(
         `SELECT snap.id, snap.session_id, snap.snapshot_type,

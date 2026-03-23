@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { requireAdminOrSupervisor, handleRouteError } from '@/src/database/with-role'
+import { requireAdminOrSupervisor, handleRouteError, tdahPatientFilter } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH - API: Pacientes (Multi-Terapeuta)
-// admin/supervisor: veem todos. terapeuta: só os que criou.
+// admin/supervisor: veem todos. terapeuta: filtrado via vínculo.
 // Tabela: tdah_patients (isolada do ABA)
+// Migration 038: tdah_patient_therapists (N:N)
 // =====================================================
 
 // GET — Listar pacientes TDAH do tenant
@@ -15,15 +16,11 @@ export async function GET(request: NextRequest) {
       const { searchParams } = new URL(request.url)
       const activeOnly = searchParams.get('active') !== 'false'
 
-      // Filtro por role: terapeuta só vê pacientes que criou
-      // (v1: sem tabela de vínculo terapeuta-paciente, usa created_by)
-      let roleClause = ''
+      // Filtro por role via tdah_patient_therapists (com fallback created_by)
       const params: any[] = [ctx.tenantId]
-
-      if (ctx.role === 'terapeuta') {
-        params.push(ctx.profileId)
-        roleClause = `AND p.created_by = $${params.length}`
-      }
+      const filter = tdahPatientFilter(ctx, params.length + 1)
+      params.push(...filter.params)
+      const roleClause = filter.clause
 
       let query = `
         SELECT p.*,

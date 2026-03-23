@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import crypto from 'crypto'
+import pool from '@/src/database/db'
 
-const pool = new Pool({
-  host: process.env.DATABASE_HOST,
-  port: parseInt(process.env.DATABASE_PORT || '5432'),
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME,
-})
+// Pool: shared (Auditoria TCC P0 — unified pool)
+// Segurança (Auditoria ABA P0): webhook_token + resource_id verification
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
@@ -180,27 +176,46 @@ async function syncCalendarForTenant(tenantId: string, userId: string) {
 export async function POST(request: NextRequest) {
   try {
     const channelId = request.headers.get('x-goog-channel-id')
+    const resourceId = request.headers.get('x-goog-resource-id')
     const resourceState = request.headers.get('x-goog-resource-state')
+    const channelToken = request.headers.get('x-goog-channel-token')
 
     if (resourceState === 'sync') {
       return NextResponse.json({ status: 'sync acknowledged' })
     }
 
-    if (!channelId) {
-      return NextResponse.json({ error: 'Missing channel ID' }, { status: 400 })
+    if (!channelId || !resourceId) {
+      return NextResponse.json({ error: 'Missing required headers' }, { status: 400 })
     }
 
+    // Auditoria ABA P0: validar channel_id + resource_id + token
     const connResult = await pool.query(
-      'SELECT tenant_id, user_id FROM calendar_connections WHERE webhook_channel_id = $1',
-      [channelId]
+      `SELECT tenant_id, user_id, webhook_token
+       FROM calendar_connections
+       WHERE webhook_channel_id = $1 AND webhook_resource_id = $2`,
+      [channelId, resourceId]
     )
 
     if (connResult.rows.length === 0) {
-      return NextResponse.json({ status: 'channel not found' })
+      console.warn('[WEBHOOK] Channel/resource mismatch:', { channelId, resourceId: resourceId?.slice(0, 8) })
+      return NextResponse.json({ status: 'channel not found' }, { status: 404 })
     }
 
-    const { tenant_id, user_id } = connResult.rows[0]
-    await syncCalendarForTenant(tenant_id, user_id)
+    const conn = connResult.rows[0]
+
+    // Verificar token HMAC se disponível (novo setup)
+    if (conn.webhook_token && channelToken) {
+      const expectedToken = crypto
+        .createHmac('sha256', conn.webhook_token)
+        .update(channelId)
+        .digest('hex')
+      if (!crypto.timingSafeEqual(Buffer.from(channelToken), Buffer.from(expectedToken))) {
+        console.warn('[WEBHOOK] Token mismatch para channel:', channelId)
+        return NextResponse.json({ status: 'invalid token' }, { status: 403 })
+      }
+    }
+
+    await syncCalendarForTenant(conn.tenant_id, conn.user_id)
 
     return NextResponse.json({ status: 'ok' })
   } catch (error) {

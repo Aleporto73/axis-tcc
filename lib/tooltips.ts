@@ -127,6 +127,21 @@ export const TOOLTIPS = {
   pub_flags: 'Alertas automáticos quando o sistema detecta algo que precisa de atenção: documento vencido, sessão sem GPS, horários sobrepostos. Cada alerta tem nível de urgência.',
   pub_service_sites: 'Endereços cadastrados onde a equipe faz atendimentos. Quando o terapeuta faz check-in, o GPS compara com o endereço cadastrado para validar a presença.',
   pub_payer_profiles: 'Cada operadora de saúde tem regras diferentes (quais documentos exige, se precisa de GPS, formato do relatório). Esses perfis guardam as regras de cada uma.',
+
+  // ─── Tabela de planos — Motor Clínico ───
+  pub_motor_cso: 'O coração do sistema: calcula automaticamente se o paciente está evoluindo. Analisa sessões, tentativas e comportamentos para gerar um índice de progresso confiável.',
+  pub_registro_estruturado: 'Cada sessão é registrada com campos padronizados: tentativas por alvo, nível de dica, comportamentos, duração. Nada se perde e tudo vira dado mensurável.',
+  pub_relatorio_institucional: 'Relatório gerado automaticamente com os dados das sessões. Pronto para apresentar a supervisores, famílias ou operadoras de saúde.',
+  pub_multi_terapeuta: 'Vários profissionais podem acessar o mesmo sistema, cada um vendo apenas os aprendizes vinculados a ele. Ideal para clínicas com equipe multidisciplinar.',
+  pub_relatorios_consolidados: 'Visão geral de todos os aprendizes e terapeutas da clínica. Ajuda a supervisão a acompanhar o progresso de toda a equipe num só lugar.',
+  pub_onboarding: 'Acompanhamento dedicado para configurar a clínica no sistema: cadastrar equipe, importar dados, configurar protocolos. Suporte humano nos primeiros passos.',
+  pub_atestacao_terapeuta: 'Depois da sessão, o terapeuta confirma digitalmente que o atendimento aconteceu. Funciona como assinatura eletrônica vinculada ao prontuário.',
+  pub_locais_atendimento: 'Endereços cadastrados onde a equipe atende. Na sessão, o GPS do terapeuta é comparado automaticamente com o local cadastrado para validar presença.',
+  pub_anexos_sessao: 'Fotos, documentos e registros podem ser anexados diretamente à sessão. Tudo fica vinculado ao prontuário e protegido contra alteração.',
+  pub_credenciais_provedor: 'Registros profissionais da equipe (CRP, CRFa, CREFITO, etc.), credenciamentos e validades. O sistema avisa quando algo está para vencer.',
+  pub_flags_integridade: 'Alertas automáticos que detectam inconsistências: documento vencido, sessão sem GPS, horários sobrepostos. Cada alerta tem nível de urgência.',
+  pub_perfis_operadora: 'Cada operadora de saúde tem regras diferentes. Esses perfis guardam quais documentos cada uma exige, se precisa de GPS e o formato do relatório.',
+  pub_investimento: 'Valor mensal do plano. Inclui todos os recursos listados acima, sem cobrança extra por funcionalidade.',
 } as const
 
 export type TooltipKey = keyof typeof TOOLTIPS

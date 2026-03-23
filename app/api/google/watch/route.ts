@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { Pool } from 'pg'
-import { randomUUID } from 'crypto'
+import { randomUUID, randomBytes, createHmac } from 'crypto'
+import pool from '@/src/database/db'
 
-const pool = new Pool({
-  host: process.env.DATABASE_HOST,
-  port: parseInt(process.env.DATABASE_PORT || '5432'),
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME,
-})
+// Pool: shared (Auditoria TCC P0 — unified pool)
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
@@ -72,6 +66,10 @@ export async function POST(request: NextRequest) {
     const channelId = randomUUID()
     const expiration = Date.now() + 7 * 24 * 60 * 60 * 1000
 
+    // Auditoria ABA P0: gerar token secreto para validação HMAC no webhook
+    const webhookSecret = randomBytes(32).toString('hex')
+    const channelToken = createHmac('sha256', webhookSecret).update(channelId).digest('hex')
+
     const watchResponse = await fetch(
       'https://www.googleapis.com/calendar/v3/calendars/primary/events/watch',
       {
@@ -85,6 +83,7 @@ export async function POST(request: NextRequest) {
           type: 'web_hook',
           address: WEBHOOK_URL,
           expiration: expiration,
+          token: channelToken,
         }),
       }
     )
@@ -98,10 +97,10 @@ export async function POST(request: NextRequest) {
     const watchData = await watchResponse.json()
 
     await pool.query(
-      `UPDATE calendar_connections 
-       SET webhook_channel_id = $1, webhook_resource_id = $2, webhook_expiration = $3, updated_at = NOW()
-       WHERE id = $4`,
-      [watchData.id, watchData.resourceId, new Date(parseInt(watchData.expiration)), conn.id]
+      `UPDATE calendar_connections
+       SET webhook_channel_id = $1, webhook_resource_id = $2, webhook_expiration = $3, webhook_token = $4, updated_at = NOW()
+       WHERE id = $5`,
+      [watchData.id, watchData.resourceId, new Date(parseInt(watchData.expiration)), webhookSecret, conn.id]
     )
 
     await pool.query(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH — API Estado Clínico (CSO-TDAH)
@@ -17,7 +18,8 @@ import { withTenant } from '@/src/database/with-tenant'
 // GET — Estado clínico atual + histórico de um paciente
 export async function GET(request: NextRequest) {
   try {
-    const result = await withTenant(async ({ client, tenantId, userId, role }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId } = ctx
       const { searchParams } = new URL(request.url)
       const patientId = searchParams.get('patient_id')
 
@@ -37,15 +39,10 @@ export async function GET(request: NextRequest) {
         throw new Error('Paciente não encontrado')
       }
 
-      // Role filter: terapeuta vê só seus pacientes
-      if (role === 'terapeuta') {
-        const prof = await client.query(
-          'SELECT clerk_user_id FROM profiles WHERE clerk_user_id = $1 AND tenant_id = $2',
-          [userId, tenantId]
-        )
-        if (prof.rows.length > 0 && patient.rows[0].created_by !== userId) {
-          throw new Error('Acesso negado — paciente de outro terapeuta')
-        }
+      // Migration 038: Role filter via tdah_patient_therapists
+      const canAccess = await canAccessTdahPatient(ctx, patientId)
+      if (!canAccess) {
+        throw new Error('Acesso negado — paciente de outro terapeuta')
       }
 
       const pat = patient.rows[0]

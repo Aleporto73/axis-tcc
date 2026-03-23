@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRole } from '@/app/components/RoleProvider'
+import { Calendar, Check, X, RefreshCw, Unlink } from 'lucide-react'
 
 // =====================================================
 // AXIS TDAH - Configurações
@@ -37,6 +38,21 @@ export default function ConfiguracoesTDAHPage() {
   const [clinicSaving, setClinicSaving] = useState(false)
   const [clinicSaved, setClinicSaved] = useState(false)
 
+  // Google Calendar
+  interface GoogleStatus {
+    connected: boolean
+    calendar_id?: string
+    sync_enabled?: boolean
+    token_expired?: boolean
+    connected_at?: string
+    last_sync_at?: string | null
+    webhook_active?: boolean
+    webhook_expiration?: string
+  }
+  const [googleStatus, setGoogleStatus] = useState<GoogleStatus>({ connected: false })
+  const [googleLoading, setGoogleLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
+
   // Plano
   const [planData, setPlanData] = useState<{
     plan_tier: string
@@ -44,8 +60,51 @@ export default function ConfiguracoesTDAHPage() {
     patient_count: number
   } | null>(null)
 
+  // ── Google Calendar handlers ──
+  const fetchGoogleStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/google/status')
+      if (res.ok) setGoogleStatus(await res.json())
+    } catch (err) { console.error('Erro ao buscar status Google:', err) }
+    setGoogleLoading(false)
+  }, [])
+
+  const handleGoogleConnect = () => { window.location.href = '/api/google' }
+
+  const handleGoogleDisconnect = async () => {
+    if (!confirm('Deseja desconectar o Google Calendar?')) return
+    try {
+      const res = await fetch('/api/google/disconnect', { method: 'POST' })
+      if (res.ok) setGoogleStatus({ connected: false })
+      else alert('Erro ao desconectar Google Calendar')
+    } catch { alert('Erro ao desconectar Google Calendar') }
+  }
+
+  const handleGoogleSync = async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch('/api/google/sync', { method: 'POST' })
+      if (res.ok) { await fetchGoogleStatus() }
+      else alert('Erro ao sincronizar com Google Calendar')
+    } catch (err) {
+      console.error('Erro ao sincronizar Google:', err)
+      alert('Erro ao sincronizar')
+    }
+    setSyncing(false)
+  }
+
+  // ── Detectar retorno do OAuth callback ──
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const googleParam = params.get('google')
+    if (googleParam === 'success') {
+      fetchGoogleStatus()
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
   // ── Fetch inicial ──
-  useEffect(() => { fetchProfile() }, [])
+  useEffect(() => { fetchProfile(); fetchGoogleStatus() }, [])
 
   useEffect(() => {
     if (roleProfile?.tenant_name && !clinicName) {
@@ -215,6 +274,71 @@ export default function ConfiguracoesTDAHPage() {
           ))}
         </div>
         <p className="text-[10px] text-slate-300 mt-3">Notificações push serão ativadas em versão futura.</p>
+      </section>
+
+      {/* ── Google Calendar ── */}
+      <section className="bg-white rounded-xl border border-slate-100 p-6 mb-6">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+          <Calendar className="w-4 h-4" />
+          Google Calendar
+        </h2>
+
+        {googleLoading ? (
+          <div className="h-12 bg-slate-50 rounded-lg animate-pulse" />
+        ) : googleStatus.connected ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-emerald-600">
+              <Check className="w-5 h-5" />
+              <span className="text-sm font-medium">Google Calendar conectado</span>
+            </div>
+            {googleStatus.last_sync_at && (
+              <p className="text-xs text-slate-400">
+                Última sincronização: {new Date(googleStatus.last_sync_at).toLocaleString('pt-BR')}
+              </p>
+            )}
+            {googleStatus.token_expired && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">Token expirado — reconecte para continuar sincronizando.</p>
+              </div>
+            )}
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={handleGoogleSync}
+                disabled={syncing}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50 transition-colors"
+                style={{ backgroundColor: TDAH_COLOR }}
+              >
+                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Sincronizando...' : 'Sincronizar Agora'}
+              </button>
+              <button
+                onClick={handleGoogleDisconnect}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-red-200 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors"
+              >
+                <Unlink className="w-4 h-4" />
+                Desconectar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-slate-400">
+              <X className="w-5 h-5" />
+              <span className="text-sm">Não conectado</span>
+            </div>
+            <p className="text-sm text-slate-600">
+              Conecte seu Google Calendar para sincronizar suas sessões diretamente com sua agenda.
+            </p>
+            <button
+              onClick={handleGoogleConnect}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm text-white rounded-lg font-medium hover:opacity-90 transition-colors"
+              style={{ backgroundColor: TDAH_COLOR }}
+            >
+              <Calendar className="w-4 h-4" />
+              Conectar Google Calendar
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ── Clínica (admin only) ── */}

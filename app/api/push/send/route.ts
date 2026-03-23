@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
+import { rateLimit } from '@/src/middleware/rate-limit'
+
+// =====================================================
+// AXIS — Push Notification Send (Internal API)
+// Segurança (Auditoria TCC P1):
+//   - Rate limit: 60 req/min
+//   - API key: INTERNAL_API_KEY (env)
+//   - Rota pública no middleware — auth via header
+// =====================================================
 
 let adminInitialized = false
 
@@ -34,8 +43,13 @@ async function getFirebaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit por IP
+    const blocked = await rateLimit(request, { limit: 60, windowMs: 60_000, prefix: 'push-send' })
+    if (blocked) return blocked
+
+    // Auth via API key
     const authHeader = request.headers.get('x-api-key')
-    if (authHeader !== process.env.INTERNAL_API_KEY) {
+    if (!process.env.INTERNAL_API_KEY || authHeader !== process.env.INTERNAL_API_KEY) {
       return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
     }
 

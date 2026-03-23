@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 10/03/2026 (noite)
+## Atualizado: 23/03/2026 (auditoria técnica)
 
 ---
 
@@ -27,7 +27,7 @@
 |---|---|---|
 | Portal familia | 100% | Token 90d, consent LGPD, dados filtrados (nunca mostra CSO/trials). UI completa: conquistas, proximas sessoes, resumos, habilidades. Sem login (token-based by design). SECURITY DEFINER functions para bypass RLS. UPSERT consent/access |
 | Push notifications (FCM) | 100% | Lembretes 24h + 10min, cron 60s, token auto-cleanup |
-| Google Calendar | 100% | Sync bidirecional. ABA: 7 rotas dedicadas. Multi-terapeuta. Helpers compartilhados com TCC. **Botao desabilitado no beta** — aguardando verificacao Google Brand. Codigo 100% funcional, so UI bloqueada |
+| Google Calendar | 100% | Sync bidirecional. ABA: 7 rotas dedicadas. Multi-terapeuta. Helpers compartilhados com TCC. **Verificação Google Brand aprovada — botões ativos em produção** |
 | PDF reports | 100% | Logo AXIS, CSO, protocolos, acentos OK, codigo autenticidade |
 | CID (Classificacao Diagnostica) | 100% | CIDSelector com CID-10/CID-11, catalogo 50+ codigos, 6 grupos, busca, entrada manual, cross-mapping |
 | Dashboard ABA | 100% | KPIs com cores pasteis + tooltips educativos + grafico CSO SVG + alertas regressao (vermelho) + alertas sondas pendentes (ciano). Acesso rapido: Aprendizes, Sessoes, Relatorios, PEI, Biblioteca |
@@ -47,8 +47,8 @@
 | Demo publica | 100% | /demo com tarja coral, layout dedicado, relatorios com chat simulado |
 | Landing ABA premium | 100% | /produto/aba — hero, ciclo ABA, relatorio mockup, chat Ana mockup |
 | Landing institucional | 100% | /app/page.tsx — TCC + ABA, Psiform Tecnologia, schema.org |
-| Pagina de precos | 100% | /aba/precos — 3 cards (Free / Clinica 100 Founders / Clinica 250) |
-| Mobile responsivo | 85% | Bottom nav mobile na sidebar, telas principais OK, falta polir |
+| Pagina de precos | 100% | /aba/precos — 4 cards (Free / Founders / Clinica 100 / Clinica 250) com tooltips 50+ e features operadora |
+| Mobile responsivo | 100% | Bottom nav mobile, grids sm: breakpoints em 7 telas internas + páginas públicas responsivas |
 | Onboarding clinica | 100% | v3: overlay client-side (LGPD → escolha), sem redirect server-side |
 
 ### COMERCIAL / BILLING (Hotmart)
@@ -367,7 +367,7 @@ PM2 (producao)
 | 2026-03-10 | PEI state machine | PEI plans agora tem lifecycle: draft→active→completed→archived. PATCH endpoint com validacao de transicoes. Audit PEI_STATUS_CHANGED |
 | 2026-03-10 | maintenance_started_at separado de maintained_at | maintained_at = quando TODAS sondas passaram (fim). maintenance_started_at = quando entrou em maintenance (inicio sondas). Sao momentos distintos |
 | 2026-03-10 | Multi-clinica (migration 018) | profiles.clerk_user_id UNIQUE impedia 1 user em N tenants. Drop UNIQUE, add compound (clerk_user_id, tenant_id). Cookie-based routing com auto-ativacao |
-| 2026-03-10 | Google Calendar desabilitado no beta | Verificacao Google Brand pendente. Botao desabilitado visualmente, codigo 100% funcional. Reativar quando aprovado |
+| 2026-03-10 | Google Calendar desabilitado no beta | Verificacao Google Brand pendente. Botao desabilitado visualmente, codigo 100% funcional. ~~Reativar quando aprovado~~ → REATIVADO 20/03/2026 |
 | 2026-03-10 | Mensagem Hotmart na exclusao | Ao excluir conta, orienta usuario a cancelar assinatura em hotmart.com. Sem mencao a contato AXIS |
 
 ---
@@ -404,7 +404,60 @@ PM2 (producao)
 ### STATUS GERAL PARA LANCAMENTO: 100% — Beta comercial pronto para venda
 
 AGUARDANDO:
-- [ ] Verificacao Google Brand (3-6 semanas) → reativar botao Google Calendar quando aprovado
+- [x] ~~Verificacao Google Brand (3-6 semanas)~~ → ✅ APROVADO 20/03/2026 — botões Google Calendar reativados em TCC, ABA e TDAH
+
+---
+
+## CONCLUIDO EM 23/03/2026
+
+### Sessão Cowork — Auditoria Técnica ABA (score 8.2 → ~9.0)
+
+**2 correções de segurança implementadas, 393/393 testes passando, 0 erros TypeScript.**
+
+- [x] **P0: Google webhook HMAC** — Handler validava apenas `channel_id` (UUID previsível). Agora valida `channel_id` + `resource_id` + token HMAC-SHA256 com `timingSafeEqual`. Watch route gera segredo 256-bit e envia HMAC ao Google. Migration 039 adiciona coluna `webhook_token`. Backward compatible (token NULL = skip HMAC)
+- [x] **P0: Claim packets GET sem role check** — Qualquer autenticado com feature flag podia listar todos os packets do tenant. Adicionado `requireAdminOrSupervisor(ctx)` antes de `requireFeature`
+- [x] **Não implementado: fila async claim packets** — Risco de regressão alto (infraestrutura job queue), sem evidência de timeout em produção
+- [x] **Não implementado: suite auth tests** — Aditivo, não corrige bug. Recomendado para sprint de qualidade
+- [x] **Não implementado: SLO instrumentation** — Requer stack de observabilidade não configurada
+
+**Arquivos modificados:**
+- `app/api/google/webhook/route.ts` (validação HMAC)
+- `app/api/google/watch/route.ts` (geração token)
+- `app/api/aba/claim-packets/route.ts` (role check GET)
+- `scripts/migrations/039_calendar_webhook_token.sql` (NOVO)
+
+**Migrations pendentes em produção:** 039
+
+---
+
+## CONCLUIDO EM 20/03/2026
+
+### Sessão Cowork — Google Calendar liberado + Tooltips tabela + Reembolso
+
+**Google Calendar — Verificação Google Brand APROVADA:**
+- [x] UpgradeModalTCC: removido "(em breve)" → "Google Calendar sync"
+- [x] Configurações TCC: botões conectar/sync/desconectar já estavam ativos (código pronto)
+- [x] Configurações ABA: idem — multi-terapeuta, webhook bidirecional funcional
+- [x] Configurações TDAH: seção Google Calendar ADICIONADA (não existia) — usa APIs /api/google/* compartilhadas
+- [x] Detecção de retorno OAuth (?google=success) no TDAH
+
+**Página de vendas ABA (/produto/aba) — Tooltips + Reembolso:**
+- [x] "faturamento" → "reembolso" em toda a página (tabela, cards mobile, JSON-LD, bloco Operadora)
+- [x] 17 HelpTip tooltips adicionados na tabela de planos (6 Motor Clínico + 11 Operadora Ready)
+- [x] 13 novos tooltip keys em lib/tooltips.ts (linguagem 50+): pub_motor_cso, pub_registro_estruturado, pub_relatorio_institucional, pub_multi_terapeuta, pub_relatorios_consolidados, pub_onboarding, pub_atestacao_terapeuta, pub_locais_atendimento, pub_anexos_sessao, pub_credenciais_provedor, pub_flags_integridade, pub_perfis_operadora, pub_investimento
+
+**Página de preços ABA (/aba/precos) — Reembolso:**
+- [x] "Claim packets (faturamento)" → "Documentação para reembolso" na tabela
+- [x] FAQ atualizado: "claim packets para faturamento" → "documentação para reembolso"
+
+**Zero "faturamento" restante em todo o /app.**
+
+**Arquivos modificados:**
+- app/components/UpgradeModalTCC.tsx
+- app/tdah/configuracoes/page.tsx (seção Google Calendar nova)
+- app/produto/aba/page.tsx (tooltips + reembolso)
+- app/aba/precos/page.tsx (reembolso)
+- lib/tooltips.ts (13 novos keys)
 
 ---
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
+import { rateLimit } from '@/src/middleware/rate-limit'
 
 // =====================================================
 // AXIS TDAH — API Pública: Portal do Professor
@@ -7,7 +8,14 @@ import pool from '@/src/database/db'
 // SEM autenticação Clerk — acesso via token único
 // Bible §14: Professor vê DRC + progresso resumido apenas
 // Visibility: ❌ scores clínicos, ❌ snapshots, ❌ layer AuDHD
+//
+// Segurança (Auditoria P1):
+//   - Rate limit: 30 req/min por IP
+//   - Token format validation
+//   - Access log: append-only
 // =====================================================
+
+const PORTAL_RATE_LIMIT = { limit: 30, windowMs: 60_000, prefix: 'portal-escola' }
 
 async function validateToken(token: string) {
   const client = await pool.connect()
@@ -51,7 +59,15 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const blocked = await rateLimit(request, PORTAL_RATE_LIMIT)
+    if (blocked) return blocked
+
     const { token } = await params
+
+    if (!/^[a-f0-9]{64}$/i.test(token)) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 400 })
+    }
+
     const tokenData = await validateToken(token)
 
     if (!tokenData) {
@@ -63,44 +79,45 @@ export async function GET(
 
     const client = await pool.connect()
     try {
-      // Protocolos ativos do paciente (professor pode ver apenas título e status)
-      const protocols = await client.query(
-        `SELECT id, code, title, status, block
-        FROM tdah_protocols
-        WHERE patient_id = $1 AND tenant_id = $2
-          AND status NOT IN ('archived', 'discontinued')
-        ORDER BY title`,
-        [tokenData.patient_id, tokenData.tenant_id]
-      )
-
-      // Últimas 30 DRC entries (professor vê tudo do DRC)
-      const drcs = await client.query(
-        `SELECT d.id, d.drc_date, d.goal_description, d.goal_met, d.score,
-          d.filled_by, d.filled_by_name, d.teacher_notes,
-          d.reviewed_by IS NOT NULL as is_reviewed,
-          d.protocol_id,
-          tp.code as protocol_code, tp.title as protocol_title
-        FROM tdah_drc d
-        LEFT JOIN tdah_protocols tp ON tp.id = d.protocol_id
-        WHERE d.patient_id = $1 AND d.tenant_id = $2
-        ORDER BY d.drc_date DESC, d.created_at DESC
-        LIMIT 30`,
-        [tokenData.patient_id, tokenData.tenant_id]
-      )
-
-      // DRC resumo (últimos 30 dias)
-      const drcSummary = await client.query(
-        `SELECT
-          COUNT(*) as total_entries,
-          COUNT(*) FILTER (WHERE goal_met = true) as goals_met,
-          COUNT(*) FILTER (WHERE goal_met = false) as goals_not_met,
-          COUNT(*) FILTER (WHERE goal_met IS NULL) as goals_pending,
-          ROUND(AVG(score) FILTER (WHERE score IS NOT NULL), 1) as avg_score
-        FROM tdah_drc
-        WHERE patient_id = $1 AND tenant_id = $2
-          AND drc_date >= CURRENT_DATE - INTERVAL '30 days'`,
-        [tokenData.patient_id, tokenData.tenant_id]
-      )
+      // Queries paralelas — todas independentes
+      const [protocols, drcs, drcSummary] = await Promise.all([
+        // Protocolos ativos (professor vê título e status apenas)
+        client.query(
+          `SELECT id, code, title, status, block
+          FROM tdah_protocols
+          WHERE patient_id = $1 AND tenant_id = $2
+            AND status NOT IN ('archived', 'discontinued')
+          ORDER BY title`,
+          [tokenData.patient_id, tokenData.tenant_id]
+        ),
+        // Últimas 30 DRC entries
+        client.query(
+          `SELECT d.id, d.drc_date, d.goal_description, d.goal_met, d.score,
+            d.filled_by, d.filled_by_name, d.teacher_notes,
+            d.reviewed_by IS NOT NULL as is_reviewed,
+            d.protocol_id,
+            tp.code as protocol_code, tp.title as protocol_title
+          FROM tdah_drc d
+          LEFT JOIN tdah_protocols tp ON tp.id = d.protocol_id
+          WHERE d.patient_id = $1 AND d.tenant_id = $2
+          ORDER BY d.drc_date DESC, d.created_at DESC
+          LIMIT 30`,
+          [tokenData.patient_id, tokenData.tenant_id]
+        ),
+        // DRC resumo (últimos 30 dias)
+        client.query(
+          `SELECT
+            COUNT(*) as total_entries,
+            COUNT(*) FILTER (WHERE goal_met = true) as goals_met,
+            COUNT(*) FILTER (WHERE goal_met = false) as goals_not_met,
+            COUNT(*) FILTER (WHERE goal_met IS NULL) as goals_pending,
+            ROUND(AVG(score) FILTER (WHERE score IS NOT NULL), 1) as avg_score
+          FROM tdah_drc
+          WHERE patient_id = $1 AND tenant_id = $2
+            AND drc_date >= CURRENT_DATE - INTERVAL '30 days'`,
+          [tokenData.patient_id, tokenData.tenant_id]
+        ),
+      ])
 
       // Log access
       try {
