@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 23/03/2026 (auditoria técnica)
+## Atualizado: 23/03/2026 (monitoramento interno implementado)
 
 ---
 
@@ -427,6 +427,37 @@ AGUARDANDO:
 - `scripts/migrations/039_calendar_webhook_token.sql` (NOVO)
 
 **Migrations pendentes em produção:** 039
+
+### Sessão Cowork — Monitoramento Interno (health check + system_alerts)
+
+**Infraestrutura de monitoramento completa, 393/393 testes passando, 0 erros TypeScript.**
+
+- [x] **Migration 040: system_alerts** — Tabela de alertas internos com campos module, severity (info/warning/critical), source, code, message, context (JSONB), resolved/resolved_at/resolved_by. Índices por severity e created_at
+- [x] **Helper fire-and-forget** — `src/utils/system-alert.ts`: createSystemAlert() grava alerta sem bloquear a request. Erro de gravação apenas loga no console
+- [x] **Health check público** — `GET /api/health` retorna 200 (ok) ou 503 (error). Verifica conectividade DB. Grava alerta critical se DB unreachable. Adicionado em middleware como rota pública
+- [x] **5 pontos críticos instrumentados:**
+  - Webhook Hotmart: hottok inválido (HOTTOK_INVALID, critical) + erro genérico (WEBHOOK_ERROR, critical)
+  - sessions/finish: erro 500 no pipeline CSO (SESSION_FINISH_ERROR, critical)
+  - claim-packets GET/POST: erro 500 (CLAIM_PACKETS_LIST_ERROR / CLAIM_PACKET_GENERATE_ERROR, critical)
+  - with-tenant.ts: JWT ausente (AUTH_MISSING, warning) + tenant não encontrado (TENANT_NOT_FOUND, warning)
+- [x] **Admin API system-alerts** — `GET /api/admin/system-alerts` com filtros (severity, module, resolved, limit) + contagens agregadas. `PATCH` para resolver alertas. Protegido por verifyAdmin
+- [x] **AlertsPanel expandido** — Seção "Erros de Sistema" no painel admin: contagens por severity, lista alertas pendentes, botão "Resolver" inline. Auto-fetch de contagens no mount
+
+**Arquivos novos:**
+- `scripts/migrations/040_system_alerts.sql`
+- `src/utils/system-alert.ts`
+- `app/api/health/route.ts`
+- `app/api/admin/system-alerts/route.ts`
+
+**Arquivos modificados:**
+- `middleware.ts` (rota pública /api/health)
+- `app/api/webhook/hotmart/route.ts` (2 alertas)
+- `app/api/sessions/[id]/finish/route.ts` (1 alerta)
+- `app/api/aba/claim-packets/route.ts` (2 alertas GET/POST)
+- `src/database/with-tenant.ts` (2 alertas auth/tenant)
+- `app/admin/components/AlertsPanel.tsx` (seção Erros de Sistema)
+
+**Migrations pendentes em produção:** 039, 040
 
 ---
 

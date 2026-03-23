@@ -146,6 +146,17 @@
 
 **Migrations pendentes em produção:** 038
 
+### Sessão Cowork — Monitoramento Interno (impacto compartilhado)
+
+**Infraestrutura de monitoramento implementada — impacto indireto em TDAH:**
+
+- [x] **Health check público** — `GET /api/health` verifica DB e grava alerta se falha. Beneficia todos os módulos
+- [x] **with-tenant.ts instrumentado** — JWT ausente e tenant não encontrado geram alertas warning. withTenant é usado por TODAS as rotas TDAH protegidas
+- [x] **AlertsPanel expandido** — Seção "Erros de Sistema" no admin visível para alertas de qualquer módulo (filtro por module: axis-tdah disponível)
+- [x] **Tabela system_alerts** — Campo `module` aceita 'axis-tdah'. Rotas TDAH podem usar `createSystemAlert({ module: 'axis-tdah', ... })` quando necessário
+
+**Nota:** Nenhuma rota TDAH-específica instrumentada nesta sessão. Candidatas futuras: sessions TDAH, observations, DRC
+
 ---
 
 ## CONCLUIDO EM 20/03/2026

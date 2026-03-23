@@ -1,5 +1,5 @@
 # AXIS TCC — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 12/03/2026 (noite — bug scan final confirmado 100%)
+## Atualizado: 23/03/2026 (monitoramento interno implementado)
 
 ---
 
@@ -319,6 +319,18 @@
 - [x] **Funil comercial TCC** — Auditoria indicava ausência de checkout, mas `/produto/tcc` já tem CTAs Hotmart. Falso positivo descartado
 
 **Item 14 da auditoria de 11/03 (sessions sem withTenant) → RESOLVIDO nesta sessão.**
+
+### 2026-03-23 — Monitoramento Interno (health check + system_alerts)
+
+**Infraestrutura de monitoramento implementada — impacto direto em TCC:**
+
+- [x] **Health check público** — `GET /api/health` verifica DB, retorna 200/503. Alerta critical se DB unreachable
+- [x] **sessions/finish instrumentado** — Erro 500 no pipeline CSO gera alerta critical (SESSION_FINISH_ERROR). Rota mais crítica do TCC
+- [x] **with-tenant.ts instrumentado** — JWT ausente (AUTH_MISSING) e tenant não encontrado (TENANT_NOT_FOUND) geram alertas warning. Detecta cenários de mismatch ou dados corrompidos
+- [x] **AlertsPanel expandido** — Seção "Erros de Sistema" no admin: contagens por severity, lista pendentes, botão resolver
+- [x] **Admin API** — `GET/PATCH /api/admin/system-alerts` com filtros
+
+**Nota:** Webhook Hotmart (compartilhado TCC+ABA) e claim-packets (ABA) também instrumentados — ver NOTE.md
 
 ---
 
