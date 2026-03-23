@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { withTenant } from '@/src/database/with-tenant'
 import { requireAdminOrSupervisor, requireFeature, handleRouteError } from '@/src/database/with-role'
+import { createSystemAlert } from '@/src/utils/system-alert'
 
 // =====================================================
 // AXIS ABA - API: Claim Packets (pacotes documentais)
@@ -70,6 +71,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ packets: result.rows })
   } catch (error) {
     const { message, status } = handleRouteError(error)
+
+    if (status >= 500) {
+      createSystemAlert({
+        module: 'axis-aba',
+        severity: 'critical',
+        source: 'api/aba/claim-packets/GET',
+        code: 'CLAIM_PACKETS_LIST_ERROR',
+        message: 'Erro 500 ao listar claim packets',
+        context: { error: error instanceof Error ? error.message : 'unknown' },
+      }).catch(() => {})
+    }
+
     return NextResponse.json({ error: message }, { status })
   }
 }
@@ -263,6 +276,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result, { status: 201 })
   } catch (error) {
     const { message, status } = handleRouteError(error)
+
+    if (status >= 500) {
+      createSystemAlert({
+        module: 'axis-aba',
+        severity: 'critical',
+        source: 'api/aba/claim-packets/POST',
+        code: 'CLAIM_PACKET_GENERATE_ERROR',
+        message: 'Erro 500 ao gerar claim packet',
+        context: { error: error instanceof Error ? error.message : 'unknown' },
+      }).catch(() => {})
+    }
+
     return NextResponse.json({ error: message }, { status })
   }
 }

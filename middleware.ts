@@ -5,6 +5,8 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/ativar-lembretes',
+  // Health check (público, sem auth)
+  '/api/health',
   // APIs internas - liberadas para desenvolvimento
   '/api/push/(.*)',
   '/api/cron/(.*)',

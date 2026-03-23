@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { cookies } from 'next/headers'
 import pool from './db'
 import { PoolClient } from 'pg'
+import { createSystemAlert } from '@/src/utils/system-alert'
 
 // =====================================================
 // AXIS ABA - Tenant Context com Roles (Multi-Terapeuta)
@@ -60,6 +61,15 @@ export async function withTenant<T>(
 ): Promise<T> {
   const { userId } = await auth()
   if (!userId) {
+    // Alerta: requisição chegou sem JWT válido em rota protegida
+    createSystemAlert({
+      module: 'shared',
+      severity: 'warning',
+      source: 'with-tenant',
+      code: 'AUTH_MISSING',
+      message: 'Requisicao sem JWT valido em rota protegida (withTenant)',
+    }).catch(() => {})
+
     throw new Error('Não autenticado')
   }
 
@@ -156,6 +166,16 @@ export async function withTenant<T>(
       )
 
       if (tenantResult.rows.length === 0) {
+        // Alerta: usuário autenticado sem tenant (possível mismatch ou dados corrompidos)
+        createSystemAlert({
+          module: 'shared',
+          severity: 'warning',
+          source: 'with-tenant',
+          code: 'TENANT_NOT_FOUND',
+          message: 'Usuario autenticado sem tenant ou profile associado',
+          context: { clerk_user_id: userId },
+        }).catch(() => {})
+
         throw new Error('Tenant não encontrado')
       }
 

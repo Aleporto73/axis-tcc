@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { clerkClient } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
+import { createSystemAlert } from '@/src/utils/system-alert'
 import { Resend } from 'resend'
 import { purchaseUpgradeTemplate, purchaseNewUserTemplate } from '@/src/email/purchase-template'
 
@@ -337,6 +338,13 @@ export async function POST(request: NextRequest) {
 
     if (hottok !== expectedHottok) {
       console.warn('[HOTMART WEBHOOK] Hottok inválido:', hottok?.substring(0, 8) + '...')
+      createSystemAlert({
+        module: 'shared',
+        severity: 'critical',
+        source: 'webhook/hotmart',
+        code: 'HOTTOK_INVALID',
+        message: 'Hottok validation failed — possivel tentativa de spoofing',
+      }).catch(() => {})
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
@@ -570,6 +578,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {})
     console.error('[HOTMART WEBHOOK] Erro:', error)
+    createSystemAlert({
+      module: 'shared',
+      severity: 'critical',
+      source: 'webhook/hotmart',
+      code: 'WEBHOOK_ERROR',
+      message: 'Webhook Hotmart falhou com erro 500',
+      context: { error: error instanceof Error ? error.message : 'unknown' },
+    }).catch(() => {})
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   } finally {
     client.release()

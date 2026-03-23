@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import { createSystemAlert } from '@/src/utils/system-alert'
 import { processEvent } from '@/src/engines/cso'
 import { generateSuggestions } from '@/src/engines/suggestion'
 
@@ -174,6 +175,17 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: error.statusCode })
     }
     const { message, status } = handleRouteError(error)
+
+    // Alerta de sistema: erro 500 em rota crítica (pipeline CSO)
+    createSystemAlert({
+      module: 'axis-tcc',
+      severity: 'critical',
+      source: 'api/sessions/finish',
+      code: 'SESSION_FINISH_ERROR',
+      message: 'Erro 500 ao finalizar sessao TCC',
+      context: { error: error instanceof Error ? error.message : 'unknown' },
+    }).catch(() => {})
+
     return NextResponse.json({ error: message }, { status })
   }
 }
