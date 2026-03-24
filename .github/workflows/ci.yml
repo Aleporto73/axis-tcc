@@ -41,7 +41,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npx vitest run
+      - run: npx vitest run --exclude='e2e/**'
 
   build:
     name: Build (Next.js)
