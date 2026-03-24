@@ -50,6 +50,14 @@ jobs:
     needs: [lint-and-typecheck, test]
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      REDIS_URL: ""
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_placeholder"
+      CLERK_SECRET_KEY: "sk_test_placeholder"
+      GOOGLE_CLIENT_ID: "placeholder"
+      GOOGLE_CLIENT_SECRET: "placeholder"
+      DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
+      NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder"
     steps:
       - uses: actions/checkout@v4
 
