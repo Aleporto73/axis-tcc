@@ -142,13 +142,13 @@ export async function GET(
           LIMIT 10`,
           [patientId, tenantId]
         ),
-        // Resumos de sessão aprovados
+        // Resumos de sessão enviados (schema real: learner_id, sent_at)
         client.query(
-          `SELECT id, session_id, summary_text, status, created_at
+          `SELECT id, session_id, summary_text, sent_at, created_at
           FROM session_summaries
-          WHERE patient_id = $1 AND tenant_id = $2
+          WHERE learner_id = $1 AND tenant_id = $2
             AND source_module = 'tdah'
-            AND status = 'sent'
+            AND sent_at IS NOT NULL
           ORDER BY created_at DESC
           LIMIT 10`,
           [patientId, tenantId]

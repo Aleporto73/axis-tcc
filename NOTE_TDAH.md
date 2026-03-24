@@ -170,6 +170,50 @@
 - `app/api/tdah/sessions/[id]/summary/route.ts` (Resend fix)
 - `src/tests/authorization.test.ts` (testes TDAH)
 
+### Sessão Cowork — Regressão Clínica TDAH + Correções P0 (nota 7→9)
+
+**Regressão clínica ponta a ponta: 14 etapas do fluxo clínico testadas, 4 quebras encontradas e corrigidas. 480/480 testes.**
+
+- [x] **P0-A CRÍTICO: session_summaries schema mismatch** — `summary/route.ts` usava colunas inexistentes (`content`, `status`, `updated_at`, `created_by`). Reescrito para schema real (migration 007): `summary_text`, `is_approved` (boolean), `sent_at`. Status derivado via CASE. Fluxo completo restaurado: criar rascunho → aprovar → enviar email
+- [x] **P0-B CRÍTICO: portal família query quebrada** — `familia/[token]/route.ts` usava `patient_id` (não existe, correto: `learner_id`) e `status = 'sent'` (não existe, correto: `sent_at IS NOT NULL`). Promise.all falhava → portal retornava 500
+- [x] **P0-C ALTO: DRC POST sem canAccessTdahPatient** — `drc/route.ts` verificava existência do paciente no tenant mas não verificava vínculo terapeuta. Corrigido
+- [x] **P0-D ALTO: Token Economy POST sem canAccessTdahPatient** — `token-economy/route.ts` mesmo gap. Corrigido
+
+**Decisão:** Código alinhado ao schema atual (migration 007+024). Zero migrations novas.
+
+**Arquivos modificados:**
+- `app/api/tdah/sessions/[id]/summary/route.ts` (reescrito — schema real)
+- `app/api/familia/[token]/route.ts` (query summaries corrigida)
+- `app/api/tdah/drc/route.ts` (canAccessTdahPatient no POST)
+- `app/api/tdah/token-economy/route.ts` (canAccessTdahPatient no POST)
+
+**Etapas validadas OK na regressão:** criar paciente, vínculo automático, criar sessão, observations, events, DRC, planos, rotinas, economia fichas, fechar sessão (CSO snapshot), clinical-state, portal escola, dashboard, persistência geral.
+
+### Sessão Cowork — Hardening TDAH (isolamento acesso nota 9.0)
+
+**13 rotas corrigidas com `canAccessTdahPatient`, 16 testes de isolamento, matriz de acesso completa. 480/480 testes.**
+
+- [x] **Fase 1 — 8 rotas críticas** com `canAccessTdahPatient`: observations, drc/[id], events, guardians/[id], plans/[id], routines/[id], token-economy/[id], token-economy/[id]/transactions
+- [x] **Fase 2 — 5 rotas moderadas**: sessions GET (tdahSessionFilter), sessions POST (canAccessTdahPatient), sessions/[id], sessions/[id]/summary, plans POST, routines POST
+- [x] **Fase 3 — Info leakage fix**: clinical-state "Acesso negado — paciente de outro terapeuta" → "Paciente não encontrado" (404 genérico, sem revelar existência)
+- [x] **Fase 4 — 16 testes** em `src/tests/tdah-isolation.test.ts`: canAccessTdahPatient (terapeuta bloqueado, linked, fallback, admin bypass), multi-tenant (4), mensagens seguras (4), cenários borda (4)
+- [x] **Fase 5 — Matriz de acesso**: `docs/MATRIZ_ACESSO_TDAH.md` — 13 tabelas (Pacientes, Sessões, Observações, Protocolos, Estado Clínico, DRC, Eventos, Responsáveis, Planos, Rotinas, Economia Fichas, Dashboard, Portais) + mecanismo + regras erro
+
+**Arquivos criados:**
+- `src/tests/tdah-isolation.test.ts` (16 testes)
+- `docs/MATRIZ_ACESSO_TDAH.md`
+
+**Arquivos modificados (13 rotas):**
+- `app/api/tdah/observations/route.ts`
+- `app/api/tdah/drc/[id]/route.ts`
+- `app/api/tdah/events/route.ts`
+- `app/api/tdah/guardians/[id]/route.ts`
+- `app/api/tdah/plans/route.ts` + `[id]/route.ts`
+- `app/api/tdah/routines/route.ts` + `[id]/route.ts`
+- `app/api/tdah/sessions/route.ts` + `[id]/route.ts` + `[id]/summary/route.ts`
+- `app/api/tdah/token-economy/[id]/route.ts` + `[id]/transactions/route.ts`
+- `app/api/tdah/clinical-state/route.ts` (info leakage fix)
+
 ---
 
 ## CONCLUIDO EM 20/03/2026

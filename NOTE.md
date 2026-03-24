@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 24/03/2026 (CI/CD + testes autorização + docs operacionais)
+## Atualizado: 24/03/2026 (Regressão clínica TDAH 7→9 + P0 fixes)
 
 ---
 
@@ -61,7 +61,7 @@
 | UpgradeModal | 100% | Dispara no free (>1 aprendiz). Links Hotmart reais. Tela "Meu Plano" nas configuracoes |
 | Middleware | 100% | Clerk auth, rotas publicas corretas (/produto, /demo, /portal, webhook) |
 | Cadastro ABA | 100% | /sign-up?produto=aba diferencia ABA vs TCC |
-| Testes automatizados | 50% | Vitest 279/279 passando (CSO engine, lifecycle, webhook). Coverage incompleta mas core coberto |
+| Testes automatizados | 75% | Vitest 480/480 passando (CSO engine, lifecycle, webhook, authorization, isolation TDAH/TCC, schema-contract). Coverage incompleta mas core + segurança cobertos |
 
 ### INFRAESTRUTURA
 | Area | % | Status |
@@ -405,6 +405,72 @@ PM2 (producao)
 
 AGUARDANDO:
 - [x] ~~Verificacao Google Brand (3-6 semanas)~~ → ✅ APROVADO 20/03/2026 — botões Google Calendar reativados em TCC, ABA e TDAH
+
+---
+
+## CONCLUIDO EM 24/03/2026
+
+### Sessão Cowork — Regressão Clínica TDAH + Correções P0 (nota 7→9)
+
+**Regressão clínica ponta a ponta: 14 etapas testadas, 4 quebras encontradas e corrigidas. 480/480 testes.**
+
+**Quebras encontradas e corrigidas:**
+- [x] **P0-A CRÍTICO: session_summaries schema mismatch** — `summary/route.ts` usava colunas inexistentes (`content`, `status`, `updated_at`, `created_by`). Reescrito para schema real: `summary_text`, `is_approved` (boolean), `sent_at`. Fluxo resumo TDAH restaurado
+- [x] **P0-B CRÍTICO: portal família query quebrada** — `familia/[token]/route.ts` usava `patient_id` (inexistente → `learner_id`) e `status = 'sent'` (inexistente → `sent_at IS NOT NULL`). Promise.all falhava, portal retornava 500
+- [x] **P0-C ALTO: DRC POST sem canAccessTdahPatient** — Terapeuta podia criar DRC para paciente de outro terapeuta. Adicionado check de vínculo
+- [x] **P0-D ALTO: Token Economy POST sem canAccessTdahPatient** — Mesmo gap. Adicionado check de vínculo
+
+**Decisão:** Código alinhado ao schema atual (migration 007+024). Zero migrations novas.
+
+**Arquivos modificados:**
+- `app/api/tdah/sessions/[id]/summary/route.ts` (reescrito — schema real)
+- `app/api/familia/[token]/route.ts` (query summaries corrigida)
+- `app/api/tdah/drc/route.ts` (canAccessTdahPatient no POST)
+- `app/api/tdah/token-economy/route.ts` (canAccessTdahPatient no POST)
+
+### Sessão Cowork — Hardening TDAH (isolamento acesso nota 9.0)
+
+**13 rotas corrigidas, 16 testes de isolamento, matriz de acesso completa. 480/480 testes.**
+
+- [x] **Fase 1 — 8 rotas críticas** com `canAccessTdahPatient`: observations, drc/[id], events, guardians/[id], plans/[id], routines/[id], token-economy/[id], token-economy/[id]/transactions
+- [x] **Fase 2 — 5 rotas moderadas**: sessions (GET usa `tdahSessionFilter`, POST usa `canAccessTdahPatient`), sessions/[id], sessions/[id]/summary, plans, routines
+- [x] **Fase 3 — Info leakage**: clinical-state mensagem "Acesso negado — paciente de outro terapeuta" → "Paciente não encontrado" (404 genérico)
+- [x] **Fase 4 — 16 testes** em `src/tests/tdah-isolation.test.ts`: canAccessTdahPatient (4), multi-tenant (4), mensagens seguras (4), cenários de borda (4)
+- [x] **Fase 5 — Matriz de acesso**: `docs/MATRIZ_ACESSO_TDAH.md` — 13 tabelas por recurso + mecanismo + regras de erro
+
+### Sessão Cowork — Hardening TCC (isolamento acesso nota 9.0)
+
+**35 rotas auditadas, 1 gap crítico corrigido, 15 testes de isolamento, matriz de acesso. 480/480 testes.**
+
+- [x] **Auditoria 35 rotas TCC** — 34/35 já tinham isolamento correto (withTenant ou pool+tenant lookup). 1 gap crítico encontrado
+- [x] **FIX CRÍTICO: /api/analyze-clinical** — Zero tenant isolation (só Clerk auth). Adicionado `pool.query` tenant resolution
+- [x] **FIX: /api/chat-ana mensagens** — "Licença TCC não encontrada" e "Tenant não encontrado" vazavam info. Alterados para "Não autorizado" genérico
+- [x] **15 testes** em `src/tests/tcc-isolation.test.ts`: cross-tenant (2), autenticação (3), rota crítica analyze-clinical (3), mensagens seguras (4), preparação futura roles (3)
+- [x] **Matriz de acesso**: `docs/MATRIZ_ACESSO_TCC.md` — tabelas por recurso, gaps corrigidos, roadmap multi-user (6 meses)
+
+**Arquivos criados:**
+- `src/tests/tdah-isolation.test.ts` (16 testes)
+- `src/tests/tcc-isolation.test.ts` (15 testes)
+- `docs/MATRIZ_ACESSO_TDAH.md`
+- `docs/MATRIZ_ACESSO_TCC.md`
+
+**Arquivos modificados:**
+- `app/api/analyze-clinical/route.ts` (tenant resolution)
+- `app/api/chat-ana/route.ts` (mensagens genéricas)
+- `app/api/tdah/observations/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/drc/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/events/route.ts` (canAccessTdahPatient + handleRouteError)
+- `app/api/tdah/guardians/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/plans/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/plans/[id]/route.ts` (canAccessTdahPatient + handleRouteError)
+- `app/api/tdah/routines/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/routines/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/sessions/route.ts` (tdahSessionFilter + canAccessTdahPatient)
+- `app/api/tdah/sessions/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/sessions/[id]/summary/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/token-economy/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/token-economy/[id]/transactions/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/clinical-state/route.ts` (info leakage fix)
 
 ---
 

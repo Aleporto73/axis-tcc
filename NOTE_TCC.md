@@ -1,5 +1,5 @@
 # AXIS TCC — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 24/03/2026 (CI/CD + testes autorização + docs operacionais)
+## Atualizado: 24/03/2026 (Hardening TCC nota 9.0 + regressão clínica TDAH P0 fixes)
 
 ---
 
@@ -120,6 +120,10 @@
 | suggestions/decide tenant | ✅ | Checagem de decisão existente agora filtra por tenant_id |
 | analyze-tcc cross-tenant | ✅ | CRITICO: patient_id/session_id validados contra tenant antes do INSERT. transcript UPDATE com tenant_id |
 | Todas as rotas /api/patients/* | ✅ | Migradas para withTenant (RLS compliance) |
+| analyze-clinical tenant isolation | ✅ | CRITICO (24/03): zero tenant_id. Adicionado pool.query tenant resolution |
+| chat-ana info leakage | ✅ | FIX (24/03): mensagens genéricas (não vaza licença/tenant) |
+| Testes isolamento TCC | ✅ | 15 testes em src/tests/tcc-isolation.test.ts |
+| Matriz de acesso TCC | ✅ | docs/MATRIZ_ACESSO_TCC.md — roadmap multi-user incluído |
 
 ---
 
@@ -341,6 +345,24 @@
 - [x] **process.env hardening** — 10 arquivos com `!` non-null assertion corrigidos para `|| ''`. Inclui rotas Google Calendar e sessions/create do TCC
 - [x] **Resend fix** — `app/api/demo/solicitar/route.ts` corrigido com instanciação condicional (Resend constructor crashava com undefined)
 - [x] **Docs operacionais** — `docs/CHECKLIST_RELEASE.md` (deploy) + `docs/PLAYBOOK_INCIDENTE.md` (resposta a incidentes)
+
+### 2026-03-24 — Hardening TCC (isolamento acesso nota 9.0)
+
+**35 rotas auditadas, 1 gap crítico corrigido, 15 testes de isolamento, matriz de acesso. 480/480 testes.**
+
+- [x] **Auditoria 35 rotas TCC** — 34/35 já tinham isolamento correto (withTenant ou pool+tenant lookup). 1 gap crítico encontrado
+- [x] **FIX CRÍTICO: /api/analyze-clinical** — Zero tenant isolation (só Clerk auth). Adicionado `pool.query` com `SELECT id FROM tenants WHERE clerk_user_id = $1`
+- [x] **FIX: /api/chat-ana mensagens** — "Licença TCC não encontrada" e "Tenant não encontrado" revelavam info interna. Alterados para "Não autorizado" genérico
+- [x] **15 testes isolamento** em `src/tests/tcc-isolation.test.ts`: cross-tenant (2), autenticação (3), rota crítica analyze-clinical (3), mensagens erro seguras (4), preparação futura roles (3)
+- [x] **Matriz de acesso** — `docs/MATRIZ_ACESSO_TCC.md` com tabelas por recurso (pacientes, sessões, eventos, sugestões, IA, chat, transcrição, dashboard), gaps corrigidos, roadmap multi-user admin/terapeuta/supervisor (6 meses)
+
+**Arquivos criados:**
+- `src/tests/tcc-isolation.test.ts`
+- `docs/MATRIZ_ACESSO_TCC.md`
+
+**Arquivos modificados:**
+- `app/api/analyze-clinical/route.ts` (tenant resolution adicionado)
+- `app/api/chat-ana/route.ts` (mensagens genéricas)
 
 ---
 
