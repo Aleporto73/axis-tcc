@@ -155,7 +155,7 @@ export async function PATCH(
             throw new Error('[AXIS ABA] Sessão não está em andamento')
           }
           const res = await client.query(
-            `UPDATE sessions_aba SET status = 'completed', completed_at = NOW()
+            `UPDATE sessions_aba SET status = 'completed', ended_at = NOW()
              WHERE id = $1 AND tenant_id = $2 RETURNING *`,
             [id, tenantId]
           )
