@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import OpenAI from 'openai'
+import pool from '@/src/database/db'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -12,6 +13,17 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
+
+    // Hardening: resolver tenant e verificar que usuário pertence a um tenant válido
+    const tenantResult = await pool.query(
+      'SELECT id FROM tenants WHERE clerk_user_id = $1',
+      [userId]
+    )
+    if (tenantResult.rows.length === 0) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+    // tenantId disponível para futuro uso (rate limiting, audit, etc.)
+    const _tenantId = tenantResult.rows[0].id
 
     const { transcript, patientName } = await request.json()
 

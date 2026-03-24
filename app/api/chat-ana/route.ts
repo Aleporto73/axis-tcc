@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       [userId]
     )
     if (tenantRes.rows.length === 0) {
-      return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 })
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
     const licRes = await pool.query(
       `SELECT id FROM user_licenses
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       [tenantRes.rows[0].id]
     )
     if (licRes.rows.length === 0) {
-      return NextResponse.json({ error: 'Licença TCC não encontrada' }, { status: 403 })
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
     }
 
     const body = await request.json()
