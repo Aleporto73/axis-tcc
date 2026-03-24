@@ -15,10 +15,10 @@ import pool from '@/src/database/db'
 //   - Redireciona para /aba/configuracoes
 // =====================================================
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
 const GOOGLE_REDIRECT_URI_ABA = process.env.GOOGLE_REDIRECT_URI_ABA
-  || process.env.GOOGLE_REDIRECT_URI!.replace('/api/google/callback', '/api/aba/google/callback')
+  || (process.env.GOOGLE_REDIRECT_URI || '').replace('/api/google/callback', '/api/aba/google/callback')
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
 

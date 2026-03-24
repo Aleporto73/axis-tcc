@@ -5,8 +5,8 @@ import pool from '@/src/database/db'
 // Pool: shared (Auditoria TCC P0 — unified pool)
 // Segurança (Auditoria ABA P0): webhook_token + resource_id verification
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
 
 async function refreshAccessToken(refreshToken: string): Promise<string | null> {
   const response = await fetch('https://oauth2.googleapis.com/token', {

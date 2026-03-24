@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI!
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || ''
 
 // Scopes necessários para Google Calendar
 const SCOPES = [

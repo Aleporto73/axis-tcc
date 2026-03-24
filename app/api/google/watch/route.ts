@@ -5,8 +5,8 @@ import pool from '@/src/database/db'
 
 // Pool: shared (Auditoria TCC P0 — unified pool)
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
 const WEBHOOK_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com') + '/api/google/webhook'
 
 async function refreshAccessToken(refreshToken: string): Promise<string | null> {

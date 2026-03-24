@@ -10,8 +10,8 @@ import { scheduleSessionReminders } from '@/src/services/reminder'
 // Nota: pool mantido para Google Calendar (operação externa)
 // =====================================================
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
 
 async function refreshAccessToken(refreshToken: string): Promise<string | null> {
   const response = await fetch('https://oauth2.googleapis.com/token', {
