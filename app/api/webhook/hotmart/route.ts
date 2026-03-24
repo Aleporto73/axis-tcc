@@ -5,7 +5,7 @@ import { createSystemAlert } from '@/src/utils/system-alert'
 import { Resend } from 'resend'
 import { purchaseUpgradeTemplate, purchaseNewUserTemplate } from '@/src/email/purchase-template'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const EMAIL_FROM_MAP: Record<string, string> = {
   tcc: process.env.RESEND_FROM_TCC || 'AXIS TCC <noreply@axisclinico.com>',
   aba: process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
@@ -439,6 +439,7 @@ export async function POST(request: NextRequest) {
           const planLabel = OFFER_TO_PLAN[offerCode || '']?.plan_tier || 'Founders'
           const isNewUser = provision.method === 'invitation'
           const label = PRODUCT_LABEL[productType] || 'AXIS'
+          if (!resend) throw new Error('RESEND_API_KEY ausente')
           await resend.emails.send({
             from: EMAIL_FROM_MAP[productType] || EMAIL_FROM_MAP.aba,
             to: buyerEmail,
@@ -561,6 +562,7 @@ export async function POST(request: NextRequest) {
         const offerCode = purchase?.offer?.code || null
         const planLabel = OFFER_TO_PLAN[offerCode || '']?.plan_tier || 'Founders'
         const label = PRODUCT_LABEL[productType] || 'AXIS'
+        if (!resend) throw new Error('RESEND_API_KEY ausente')
         await resend.emails.send({
           from: EMAIL_FROM_MAP[productType] || EMAIL_FROM_MAP.aba,
           to: buyerEmail,

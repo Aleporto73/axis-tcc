@@ -11,7 +11,7 @@ import { tdahSessionSummaryTemplate } from '@/src/email/tdah-session-summary-tem
 // GET — Busca resumo existente
 // =====================================================
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM = process.env.RESEND_FROM || 'AXIS TDAH <noreply@axisclinico.com>'
 
 // POST — Criar/atualizar resumo (rascunho)
@@ -106,6 +106,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           clinicName,
         })
 
+        if (!resend) throw new Error('Serviço de email não configurado (RESEND_API_KEY ausente)')
         const emailRes = await resend.emails.send({
           from: FROM,
           to: recipient_email,

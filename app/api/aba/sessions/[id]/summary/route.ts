@@ -3,7 +3,7 @@ import { withTenant } from '@/src/database/with-tenant'
 import { Resend } from 'resend'
 import { sessionSummaryTemplate } from '@/src/email/session-summary-template'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const FROM = process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>'
 
 // POST — Criar/atualizar resumo (rascunho)
@@ -91,6 +91,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           clinicName,
         })
 
+        if (!resend) throw new Error('Serviço de email não configurado (RESEND_API_KEY ausente)')
         const emailRes = await resend.emails.send({
           from: FROM,
           to: recipient_email,
