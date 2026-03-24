@@ -157,6 +157,19 @@
 
 **Nota:** Nenhuma rota TDAH-específica instrumentada nesta sessão. Candidatas futuras: sessions TDAH, observations, DRC
 
+### Sessão Cowork — Testes Autorização + CI/CD (impacto direto em TDAH)
+
+**56 testes de autorização cobrindo os 3 módulos + CI/CD + hardening env vars. 449/449 testes, CI verde.**
+
+- [x] **Testes autorização TDAH** — `tdahPatientFilter()`, `tdahSessionFilter()`, `canAccessTdahPatient()` com fallback `created_by`. Validação UUID portal tokens. Cobertura completa da migração N:N (`tdah_patient_therapists`)
+- [x] **CI/CD GitHub Actions** — Pipeline lint + test + build. Testes TDAH (schema-contract, autorização) executam no CI
+- [x] **Resend fix TDAH** — `app/api/tdah/sessions/[id]/summary/route.ts` corrigido: instanciação condicional do Resend + null guard antes de `.emails.send()`
+- [x] **Docs operacionais** — `CHECKLIST_RELEASE.md` inclui migrations TDAH (038) nos passos pre-deploy. `PLAYBOOK_INCIDENTE.md` cobre cenários multi-módulo
+
+**Arquivos TDAH modificados:**
+- `app/api/tdah/sessions/[id]/summary/route.ts` (Resend fix)
+- `src/tests/authorization.test.ts` (testes TDAH)
+
 ---
 
 ## CONCLUIDO EM 20/03/2026

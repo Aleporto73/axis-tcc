@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError, tdahPatientFilter } from '@/src/database/with-role'
+import { handleRouteError, tdahPatientFilter, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH — API: Rotinas Domésticas
@@ -84,6 +84,14 @@ export async function POST(request: NextRequest) {
         [patient_id, ctx.tenantId]
       )
       if (patient.rows.length === 0) {
+        const err = new Error('Paciente não encontrado') as any
+        err.statusCode = 404
+        throw err
+      }
+
+      // Hardening: verificar acesso ao paciente
+      const canAccess = await canAccessTdahPatient(ctx, patient_id)
+      if (!canAccess) {
         const err = new Error('Paciente não encontrado') as any
         err.statusCode = 404
         throw err

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH — API: Transações de Fichas
@@ -34,6 +34,14 @@ export async function POST(
         [economyId, ctx.tenantId]
       )
       if (economy.rows.length === 0) {
+        const err = new Error('Sistema de fichas não encontrado') as any
+        err.statusCode = 404
+        throw err
+      }
+
+      // Hardening: verificar acesso ao paciente
+      const canAccess = await canAccessTdahPatient(ctx, economy.rows[0].patient_id)
+      if (!canAccess) {
         const err = new Error('Sistema de fichas não encontrado') as any
         err.statusCode = 404
         throw err

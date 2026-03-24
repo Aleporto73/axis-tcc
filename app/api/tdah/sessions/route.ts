@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, tdahSessionFilter, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH - API: Sessões (Multi-Terapeuta)
@@ -18,14 +18,11 @@ export async function GET(request: NextRequest) {
       const status = searchParams.get('status')
       const sessionContext = searchParams.get('context')
 
-      // Filtro por role: terapeuta só vê suas sessões
-      let roleClause = ''
+      // Filtro por role: terapeuta só vê sessões de pacientes vinculados (Migration 038)
       const params: any[] = [ctx.tenantId]
-
-      if (ctx.role === 'terapeuta') {
-        params.push(ctx.userId)
-        roleClause = `AND (s.therapist_id = $${params.length} OR s.clinician_id = $${params.length})`
-      }
+      const sessionFilter = tdahSessionFilter(ctx, params.length + 1)
+      params.push(...sessionFilter.params)
+      const roleClause = sessionFilter.clause
 
       let query = `
         SELECT s.*, p.name as patient_name
@@ -83,6 +80,12 @@ export async function POST(request: NextRequest) {
       )
 
       if (patientCheck.rows.length === 0) {
+        throw new Error('Paciente não encontrado')
+      }
+
+      // Hardening: verificar acesso ao paciente
+      const canAccess = await canAccessTdahPatient(ctx, patient_id)
+      if (!canAccess) {
         throw new Error('Paciente não encontrado')
       }
 

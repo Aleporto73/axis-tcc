@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, canAccessTdahPatient } from '@/src/database/with-role'
 import { computeFullCsoTdah, CSO_TDAH_ENGINE_VERSION } from '@/src/engines/cso-tdah'
 import { observationsToInput } from '@/src/engines/cso-tdah-adapter'
 import type { AudhdLayerStatus, CsoTdahWeights } from '@/src/engines/cso-tdah'
@@ -37,6 +37,14 @@ export async function GET(
       }
 
       const sess = session.rows[0]
+
+      // Hardening: verificar acesso ao paciente desta sessão
+      const canAccess = await canAccessTdahPatient(ctx, sess.patient_id)
+      if (!canAccess) {
+        const err = new Error('Sessão não encontrada') as any
+        err.statusCode = 404
+        throw err
+      }
 
       // Observações desta sessão
       const observations = await ctx.client.query(
@@ -97,6 +105,14 @@ export async function PATCH(
       }
 
       const sess = current.rows[0]
+
+      // Hardening: verificar acesso ao paciente desta sessão
+      const canAccess = await canAccessTdahPatient(ctx, sess.patient_id)
+      if (!canAccess) {
+        const err = new Error('Sessão não encontrada') as any
+        err.statusCode = 404
+        throw err
+      }
 
       // Bible §11: sessão fechada é imutável
       if (sess.status === 'completed' && action !== undefined) {

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       // Migration 038: Role filter via tdah_patient_therapists
       const canAccess = await canAccessTdahPatient(ctx, patientId)
       if (!canAccess) {
-        throw new Error('Acesso negado — paciente de outro terapeuta')
+        throw new Error('Paciente não encontrado')
       }
 
       const pat = patient.rows[0]
@@ -138,9 +138,6 @@ export async function GET(request: NextRequest) {
     }
     if (error.message === 'Paciente não encontrado') {
       return NextResponse.json({ error: error.message }, { status: 404 })
-    }
-    if (error.message?.includes('Acesso negado')) {
-      return NextResponse.json({ error: error.message }, { status: 403 })
     }
     console.error('[TDAH CLINICAL-STATE] Erro:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })

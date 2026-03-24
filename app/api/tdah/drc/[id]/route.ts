@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH - API: DRC por ID
@@ -35,6 +35,15 @@ export async function GET(
         err.statusCode = 404
         throw err
       }
+
+      // Hardening: verificar acesso ao paciente
+      const canAccess = await canAccessTdahPatient(ctx, res.rows[0].patient_id)
+      if (!canAccess) {
+        const err = new Error('Registro DRC não encontrado') as any
+        err.statusCode = 404
+        throw err
+      }
+
       return res
     })
 
@@ -64,6 +73,14 @@ export async function PATCH(
         [id, ctx.tenantId]
       )
       if (current.rows.length === 0) {
+        const err = new Error('Registro DRC não encontrado') as any
+        err.statusCode = 404
+        throw err
+      }
+
+      // Hardening: verificar acesso ao paciente
+      const canAccess = await canAccessTdahPatient(ctx, current.rows[0].patient_id)
+      if (!canAccess) {
         const err = new Error('Registro DRC não encontrado') as any
         err.statusCode = 404
         throw err

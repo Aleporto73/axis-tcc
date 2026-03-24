@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { canAccessTdahPatient } from '@/src/database/with-role'
 import { Resend } from 'resend'
 import { tdahSessionSummaryTemplate } from '@/src/email/tdah-session-summary-template'
 
@@ -21,7 +22,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { content } = await req.json()
     if (!content) return NextResponse.json({ error: 'content obrigatório' }, { status: 400 })
 
-    const result = await withTenant(async ({ client, tenantId, userId }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId, userId } = ctx
       const sess = await client.query(
         `SELECT s.*, p.name as patient_name
          FROM tdah_sessions s
@@ -31,6 +33,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       )
       if (!sess.rows[0]) throw new Error('Sessão não encontrada')
       const session = sess.rows[0]
+
+      // Hardening: verificar acesso ao paciente
+      const canAccess = await canAccessTdahPatient(ctx, session.patient_id)
+      if (!canAccess) throw new Error('Sessão não encontrada')
 
       // Upsert resumo na mesma tabela session_summaries (com source_module)
       const existing = await client.query(
@@ -70,7 +76,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { summary_id, recipient_email, action } = await req.json()
     if (!summary_id || !action) return NextResponse.json({ error: 'summary_id e action obrigatórios' }, { status: 400 })
 
-    const result = await withTenant(async ({ client, tenantId, userId }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId, userId } = ctx
       const sum = await client.query(
         `SELECT ss.*, s.scheduled_at, s.duration_minutes, s.session_context,
                 p.name as patient_name, t.name as clinic_name
@@ -83,6 +90,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       )
       if (!sum.rows[0]) throw new Error('Resumo não encontrado')
       const s = sum.rows[0]
+
+      // Hardening: verificar acesso ao paciente da sessão do resumo
+      const sessForAccess = await client.query(
+        'SELECT patient_id FROM tdah_sessions WHERE id = $1 AND tenant_id = $2',
+        [sessionId, tenantId]
+      )
+      if (sessForAccess.rows[0]) {
+        const canAccess = await canAccessTdahPatient(ctx, sessForAccess.rows[0].patient_id)
+        if (!canAccess) throw new Error('Resumo não encontrado')
+      }
+
       const clinicName = s.clinic_name || 'AXIS TDAH'
 
       if (action === 'approve') {
@@ -136,7 +154,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: sessionId } = await params
-    const result = await withTenant(async ({ client, tenantId }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId } = ctx
+
+      // Hardening: verificar acesso ao paciente da sessão
+      const sessCheck = await client.query(
+        'SELECT patient_id FROM tdah_sessions WHERE id = $1 AND tenant_id = $2',
+        [sessionId, tenantId]
+      )
+      if (sessCheck.rows.length === 0) return { summary: null }
+      const canAccess = await canAccessTdahPatient(ctx, sessCheck.rows[0].patient_id)
+      if (!canAccess) return { summary: null }
+
       const res = await client.query(
         `SELECT * FROM session_summaries WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at DESC LIMIT 1`,
         [sessionId, tenantId]

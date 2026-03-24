@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH — API Eventos Clínicos
@@ -24,7 +25,8 @@ const VALID_CONTEXTS = new Set(['clinical', 'home', 'school'])
 // GET — Listar eventos de uma sessão
 export async function GET(request: NextRequest) {
   try {
-    const result = await withTenant(async ({ client, tenantId }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId } = ctx
       const { searchParams } = new URL(request.url)
       const sessionId = searchParams.get('session_id')
       const patientId = searchParams.get('patient_id')
@@ -32,6 +34,22 @@ export async function GET(request: NextRequest) {
 
       if (!sessionId && !patientId) {
         throw new Error('session_id ou patient_id é obrigatório')
+      }
+
+      // Hardening: verificar acesso ao paciente
+      if (patientId) {
+        const canAccess = await canAccessTdahPatient(ctx, patientId)
+        if (!canAccess) {
+          return { rows: [] }
+        }
+      } else if (sessionId) {
+        const sessCheck = await client.query(
+          'SELECT patient_id FROM tdah_sessions WHERE id = $1 AND tenant_id = $2',
+          [sessionId, tenantId]
+        )
+        if (sessCheck.rows.length === 0 || !(await canAccessTdahPatient(ctx, sessCheck.rows[0].patient_id))) {
+          return { rows: [] }
+        }
       }
 
       let q = `
@@ -66,14 +84,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ events: result.rows })
   } catch (error: any) {
-    if (error.message === 'Não autenticado') {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
     if (error.message?.includes('obrigatório')) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
-    console.error('[TDAH EVENTS GET] Erro:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -124,15 +139,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await withTenant(async ({ client, tenantId, userId }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId, userId } = ctx
       // Verificar sessão existe e está in_progress
       const session = await client.query(
-        `SELECT id, status, session_context FROM tdah_sessions
+        `SELECT id, status, session_context, patient_id FROM tdah_sessions
          WHERE id = $1 AND tenant_id = $2`,
         [session_id, tenantId]
       )
 
       if (session.rows.length === 0) {
+        throw new Error('Sessão não encontrada')
+      }
+
+      // Hardening: verificar acesso ao paciente desta sessão
+      const canAccess = await canAccessTdahPatient(ctx, session.rows[0].patient_id)
+      if (!canAccess) {
         throw new Error('Sessão não encontrada')
       }
 
@@ -171,16 +193,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ event: result }, { status: 201 })
   } catch (error: any) {
-    if (error.message === 'Não autenticado') {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
     if (error.message === 'Sessão não encontrada') {
       return NextResponse.json({ error: error.message }, { status: 404 })
     }
     if (error.message?.includes('Bible')) {
       return NextResponse.json({ error: error.message }, { status: 422 })
     }
-    console.error('[TDAH EVENTS POST] Erro:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { tdahPatientFilter } from '@/src/database/with-role'
+import { tdahPatientFilter, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH — API Plano TDAH (equivalente PEI do ABA)
@@ -127,13 +127,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const result = await withTenant(async ({ client, tenantId, userId }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId, userId } = ctx
       // Verificar paciente
       const patient = await client.query(
         'SELECT id FROM tdah_patients WHERE id = $1 AND tenant_id = $2 AND status = $3',
         [patient_id, tenantId, 'active']
       )
       if (patient.rows.length === 0) {
+        throw new Error('Paciente não encontrado ou inativo')
+      }
+
+      // Hardening: verificar acesso ao paciente
+      const canAccess = await canAccessTdahPatient(ctx, patient_id)
+      if (!canAccess) {
         throw new Error('Paciente não encontrado ou inativo')
       }
 

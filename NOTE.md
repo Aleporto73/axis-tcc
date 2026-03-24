@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 23/03/2026 (monitoramento interno implementado)
+## Atualizado: 24/03/2026 (CI/CD + testes autorização + docs operacionais)
 
 ---
 
@@ -458,6 +458,55 @@ AGUARDANDO:
 - `app/admin/components/AlertsPanel.tsx` (seção Erros de Sistema)
 
 **Migrations pendentes em produção:** 039, 040
+
+### Sessão Cowork — Documentação Operacional
+
+**2 documentos criados para operação em produção:**
+
+- [x] **CHECKLIST_RELEASE.md** — Pre-deploy (migrations, backup, env), deploy VPS (PM2, Nginx), post-deploy (health check, smoke tests), rollback
+- [x] **PLAYBOOK_INCIDENTE.md** — Classificação severidade (S1-S4), contatos, checklists de resposta (DB down, auth, webhook, dados corrompidos)
+
+**Arquivos novos:**
+- `docs/CHECKLIST_RELEASE.md`
+- `docs/PLAYBOOK_INCIDENTE.md`
+
+### Sessão Cowork — Testes de Autorização (56 testes, 3 módulos)
+
+**Suite completa de testes de autorização cobrindo TCC, ABA e TDAH. 449/449 testes passando.**
+
+- [x] **Guards base** — requireRole, requireAdmin, requireAdminOrSupervisor: verificam role e retornam RoleError
+- [x] **handleRouteError** — Classificação: RoleError→403, PlanGateError→403, TenantSelection→409, auth→401, tenant→404, generic→500
+- [x] **TCC** — Autorização por role nas rotas sessions, events, suggestions
+- [x] **ABA** — learnerFilter, sessionFilter, canAccessLearner com mock de client. requireFeature para 4 tiers (free/founders/clinica_100/clinica_250). Combo role+feature em claim-packets
+- [x] **TDAH** — tdahPatientFilter, tdahSessionFilter, canAccessTdahPatient com fallback created_by. Portal token UUID validation
+- [x] **Operadora gate** — Cobertura completa dos 4 tiers
+
+**Arquivos novos:**
+- `src/tests/authorization.test.ts` (56 testes)
+
+### Sessão Cowork — CI/CD GitHub Actions + Hardening Env Vars
+
+**Pipeline CI criado e iterativamente corrigido através de 5 falhas de build.**
+
+- [x] **GitHub Actions workflow** — 3 jobs: lint-and-typecheck (tsc --noEmit), test (vitest --exclude='e2e/**'), build (next build)
+- [x] **Fix 1: E2E exclusion** — `e2e/tdah-flow.spec.ts` usa Playwright incompatível com Vitest. Adicionado `--exclude='e2e/**'`
+- [x] **Fix 2: Env vars no build** — OPENAI_API_KEY como secret, placeholders para Redis/Google/DB/Supabase
+- [x] **Fix 3: process.env.X! crash** — 10 arquivos com `!` non-null assertion causavam `undefined.replace()` em runtime. Corrigido para `|| ''` em todas as ocorrências (zero `process.env.X!` restante)
+- [x] **Fix 4: Resend constructor crash** — `new Resend(undefined)` crashava na inicialização. 4 arquivos corrigidos com instanciação condicional + null guard antes de `.emails.send()`
+- [x] **Fix 5: Clerk publishable key** — Clerk valida formato da chave em build time, rejeitando placeholders. Trocado para `${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}`
+
+**Arquivos novos:**
+- `.github/workflows/ci.yml`
+
+**Arquivos modificados (env hardening):**
+- `app/api/aba/google/callback/route.ts`, `app/api/aba/google/route.ts` (`.replace()` fix)
+- `app/api/google/route.ts`, `callback/route.ts`, `webhook/route.ts`, `watch/route.ts`, `sync/route.ts`, `disconnect/route.ts`
+- `app/api/sessions/create/route.ts`, `app/api/cron/renew-webhook/route.ts`
+- `src/google/calendar-helpers.ts`
+- `app/api/aba/sessions/[id]/summary/route.ts`, `app/api/tdah/sessions/[id]/summary/route.ts` (Resend fix)
+- `app/api/demo/solicitar/route.ts`, `app/api/webhook/hotmart/route.ts` (Resend fix)
+
+**CI status:** Verde após adição do secret `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` no GitHub
 
 ---
 

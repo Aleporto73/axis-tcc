@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
-import { handleRouteError } from '@/src/database/with-role'
+import { handleRouteError, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH - API: Observações (Trials)
@@ -71,6 +71,14 @@ export async function POST(request: NextRequest) {
       )
 
       if (sessCheck.rows.length === 0) {
+        const err = new Error('Sessão não encontrada') as any
+        err.statusCode = 404
+        throw err
+      }
+
+      // Hardening: verificar se terapeuta tem acesso ao paciente desta sessão
+      const canAccess = await canAccessTdahPatient(ctx, sessCheck.rows[0].patient_id)
+      if (!canAccess) {
         const err = new Error('Sessão não encontrada') as any
         err.statusCode = 404
         throw err

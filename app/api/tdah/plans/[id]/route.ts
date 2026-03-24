@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
 // AXIS TDAH — API Plano TDAH por ID
@@ -24,7 +25,8 @@ export async function GET(
   try {
     const { id } = await params
 
-    const result = await withTenant(async ({ client, tenantId }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId } = ctx
       const plan = await client.query(
         `SELECT p.*, tp.name as patient_name
          FROM tdah_plans p
@@ -34,6 +36,12 @@ export async function GET(
       )
 
       if (plan.rows.length === 0) {
+        throw new Error('Plano não encontrado')
+      }
+
+      // Hardening: verificar acesso ao paciente deste plano
+      const canAccess = await canAccessTdahPatient(ctx, plan.rows[0].patient_id)
+      if (!canAccess) {
         throw new Error('Plano não encontrado')
       }
 
@@ -71,14 +79,11 @@ export async function GET(
 
     return NextResponse.json({ plan: result })
   } catch (error: any) {
-    if (error.message === 'Não autenticado') {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
     if (error.message === 'Plano não encontrado') {
       return NextResponse.json({ error: error.message }, { status: 404 })
     }
-    console.error('[TDAH PLAN GET] Erro:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -92,13 +97,20 @@ export async function PATCH(
     const body = await request.json()
     const { title, description, start_date, end_date, status, goals } = body
 
-    const result = await withTenant(async ({ client, tenantId, userId }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId, userId } = ctx
       // Verificar existência
       const check = await client.query(
-        'SELECT id, status FROM tdah_plans WHERE id = $1 AND tenant_id = $2',
+        'SELECT id, status, patient_id FROM tdah_plans WHERE id = $1 AND tenant_id = $2',
         [id, tenantId]
       )
       if (check.rows.length === 0) {
+        throw new Error('Plano não encontrado')
+      }
+
+      // Hardening: verificar acesso ao paciente deste plano
+      const canAccess = await canAccessTdahPatient(ctx, check.rows[0].patient_id)
+      if (!canAccess) {
         throw new Error('Plano não encontrado')
       }
 
@@ -175,16 +187,13 @@ export async function PATCH(
 
     return NextResponse.json({ plan: result })
   } catch (error: any) {
-    if (error.message === 'Não autenticado') {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
     if (error.message === 'Plano não encontrado') {
       return NextResponse.json({ error: error.message }, { status: 404 })
     }
     if (error.message?.includes('não permitida')) {
       return NextResponse.json({ error: error.message }, { status: 422 })
     }
-    console.error('[TDAH PLAN PATCH] Erro:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

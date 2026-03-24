@@ -1,5 +1,5 @@
 # AXIS TCC — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 23/03/2026 (monitoramento interno implementado)
+## Atualizado: 24/03/2026 (CI/CD + testes autorização + docs operacionais)
 
 ---
 
@@ -331,6 +331,16 @@
 - [x] **Admin API** — `GET/PATCH /api/admin/system-alerts` com filtros
 
 **Nota:** Webhook Hotmart (compartilhado TCC+ABA) e claim-packets (ABA) também instrumentados — ver NOTE.md
+
+### 2026-03-24 — Testes Autorização + CI/CD + Docs Operacionais
+
+**56 testes de autorização + CI/CD + hardening de env vars. 449/449 testes, CI verde.**
+
+- [x] **Testes autorização TCC** — Guards (requireRole, requireAdmin, requireAdminOrSupervisor), handleRouteError classification, role authorization em sessions/events/suggestions
+- [x] **CI/CD GitHub Actions** — 3 jobs: lint (tsc --noEmit), test (vitest), build (next build). Pipeline completo com secrets
+- [x] **process.env hardening** — 10 arquivos com `!` non-null assertion corrigidos para `|| ''`. Inclui rotas Google Calendar e sessions/create do TCC
+- [x] **Resend fix** — `app/api/demo/solicitar/route.ts` corrigido com instanciação condicional (Resend constructor crashava com undefined)
+- [x] **Docs operacionais** — `docs/CHECKLIST_RELEASE.md` (deploy) + `docs/PLAYBOOK_INCIDENTE.md` (resposta a incidentes)
 
 ---
 
