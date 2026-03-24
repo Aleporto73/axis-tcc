@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { canAccessLearner, handleRouteError } from '@/src/database/with-role'
+
+// =====================================================
+// AXIS ABA - API: Sessão Individual
+// GET — Detalhe com targets e behaviors
+// PATCH — Abrir/fechar sessão, atualizar campos V2
+//
+// Hardening P0:
+//   - canAccessLearner em GET e PATCH
+//   - open/close: SQL direto (functions PL/pgSQL não estão em migrations)
+//   - handleRouteError padronizado
+//   - 404 genérico para acesso negado
+// =====================================================
 
 // GET — Sessão individual com targets e behaviors
 export async function GET(
@@ -9,7 +22,8 @@ export async function GET(
   try {
     const { id } = await params
 
-    const result = await withTenant(async ({ client, tenantId }) => {
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId } = ctx
       const session = await client.query(
         `SELECT s.*, l.name as learner_name,
                 p_applied.name as applied_by_name
@@ -21,8 +35,12 @@ export async function GET(
       )
 
       if (session.rows.length === 0) {
-        throw new Error('Sessão não encontrada')
+        throw new Error('Não encontrado')
       }
+
+      // Hardening: verificar acesso ao learner
+      const canAccess = await canAccessLearner(ctx, session.rows[0].learner_id)
+      if (!canAccess) throw new Error('Não encontrado')
 
       const targets = await client.query(
         `SELECT st.*, lp.objective as protocol_objective,
@@ -72,13 +90,12 @@ export async function GET(
     })
 
     return NextResponse.json(result)
-  } catch (error: any) {
-    console.error('Erro ao buscar sessão ABA:', error)
-    if (error.message === 'Não autenticado') {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
-    if (error.message === 'Sessão não encontrada') {
-      return NextResponse.json({ error: error.message }, { status: 404 })
+  } catch (err: unknown) {
+    const { message, status } = handleRouteError(err)
+    if (status < 500) return NextResponse.json({ error: message }, { status })
+    // Erro genérico para 'Não encontrado' que não é capturado por handleRouteError
+    if (err instanceof Error && err.message === 'Não encontrado') {
+      return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
     }
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
@@ -103,17 +120,46 @@ export async function PATCH(
         )
       }
 
-      const result = await withTenant(async ({ client, tenantId, userId }) => {
+      const result = await withTenant(async (ctx) => {
+        const { client, tenantId, userId } = ctx
+
+        // Verificar sessão + acesso ao learner
+        const check = await client.query(
+          `SELECT id, learner_id, status FROM sessions_aba WHERE id = $1 AND tenant_id = $2`,
+          [id, tenantId]
+        )
+        if (check.rows.length === 0) throw new Error('Não encontrado')
+
+        const canAccess = await canAccessLearner(ctx, check.rows[0].learner_id)
+        if (!canAccess) throw new Error('Não encontrado')
+
+        const sess = check.rows[0]
+
         if (action === 'open') {
-          return await client.query(
-            'SELECT * FROM open_session_aba($1, $2)',
-            [tenantId, id]
+          // SQL direto: abrir sessão (substituindo open_session_aba que não está em migrations)
+          if (sess.status === 'in_progress') {
+            throw new Error('[AXIS ABA] Sessão já está aberta')
+          }
+          if (sess.status === 'completed') {
+            throw new Error('[AXIS ABA] Sessão já foi finalizada')
+          }
+          const res = await client.query(
+            `UPDATE sessions_aba SET status = 'in_progress', started_at = COALESCE(started_at, NOW())
+             WHERE id = $1 AND tenant_id = $2 RETURNING *`,
+            [id, tenantId]
           )
+          return res
         } else {
-          return await client.query(
-            'SELECT * FROM close_session_aba($1, $2)',
-            [id, userId || 'system']
+          // SQL direto: fechar sessão (substituindo close_session_aba)
+          if (sess.status !== 'in_progress') {
+            throw new Error('[AXIS ABA] Sessão não está em andamento')
+          }
+          const res = await client.query(
+            `UPDATE sessions_aba SET status = 'completed', completed_at = NOW()
+             WHERE id = $1 AND tenant_id = $2 RETURNING *`,
+            [id, tenantId]
           )
+          return res
         }
       })
 
@@ -122,22 +168,24 @@ export async function PATCH(
 
     // Atualizar campos V2 (duration_minutes_override, applied_by)
     if (duration_minutes_override !== undefined || applied_by !== undefined) {
-      const result = await withTenant(async ({ client, tenantId }) => {
+      const result = await withTenant(async (ctx) => {
+        const { client, tenantId } = ctx
         // Verificar que a sessão existe e pertence ao tenant
         const check = await client.query(
-          `SELECT id, status FROM sessions_aba WHERE id = $1 AND tenant_id = $2`,
+          `SELECT id, learner_id, status FROM sessions_aba WHERE id = $1 AND tenant_id = $2`,
           [id, tenantId]
         )
-        if (check.rows.length === 0) {
-          throw new Error('Sessão não encontrada')
-        }
+        if (check.rows.length === 0) throw new Error('Não encontrado')
+
+        // Hardening: verificar acesso ao learner
+        const canAccess = await canAccessLearner(ctx, check.rows[0].learner_id)
+        if (!canAccess) throw new Error('Não encontrado')
 
         const setClauses: string[] = []
         const vals: any[] = []
         let idx = 1
 
         if (duration_minutes_override !== undefined) {
-          // null para limpar override, number para setar
           setClauses.push(`duration_minutes_override = $${idx}`)
           vals.push(duration_minutes_override)
           idx++
@@ -166,16 +214,14 @@ export async function PATCH(
       { error: 'Nenhuma ação ou campo válido fornecido' },
       { status: 400 }
     )
-  } catch (error: any) {
-    console.error('Erro ao atualizar sessão ABA:', error)
-    if (error.message === 'Não autenticado') {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+  } catch (err: unknown) {
+    const { message, status } = handleRouteError(err)
+    if (status < 500) return NextResponse.json({ error: message }, { status })
+    if (err instanceof Error && err.message === 'Não encontrado') {
+      return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
     }
-    if (error.message === 'Sessão não encontrada') {
-      return NextResponse.json({ error: error.message }, { status: 404 })
-    }
-    if (error.message?.includes('[AXIS ABA]')) {
-      return NextResponse.json({ error: error.message }, { status: 422 })
+    if (err instanceof Error && err.message?.includes('[AXIS ABA]')) {
+      return NextResponse.json({ error: err.message }, { status: 422 })
     }
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
