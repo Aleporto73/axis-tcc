@@ -1,5 +1,5 @@
 # AXIS ABA — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 24/03/2026 (Regressão clínica TDAH 7→9 + P0 fixes)
+## Atualizado: 24/03/2026 (Regressão ABA 4.5→9.0 + migrations 042/043 + validação ponta a ponta)
 
 ---
 
@@ -409,6 +409,49 @@ AGUARDANDO:
 ---
 
 ## CONCLUIDO EM 24/03/2026
+
+### Sessão Cowork — Regressão ABA + P0 Fixes + Migrations + Validação (nota 4.5→9.0)
+
+**Regressão clínica ABA ponta a ponta: 14 etapas testadas, 7 quebras encontradas. Todas corrigidas. 480/480 testes.**
+
+**P0 Fixes (código alinhado ao schema, zero migrations de schema):**
+- [x] **P0-A CRÍTICO: session_summaries schema mismatch** — `summary/route.ts` ABA usava colunas inexistentes (`content`, `status`, `updated_at`, `created_by`). Reescrito para schema real: `summary_text`, `is_approved` (boolean), `sent_at`. source_module='aba'. Status derivado via CASE
+- [x] **P0-B ALTO: Ausência total de access control em 6 rotas [id]** — GET/PATCH sessions, POST trials, POST behaviors, POST/PUT/GET summary. Adicionado `canAccessLearner` em todas
+- [x] **P0-C ALTO: open/close session via DB functions inexistentes** — `open_session_aba()` e `close_session_aba()` nunca foram commitadas. Substituídas por SQL direto com guards de estado
+- [x] **P0-D: Error handling inconsistente** — Todas as rotas [id] agora usam `handleRouteError` + 404 genérico para acesso negado
+- [x] **Fix adicional: `completed_at` → `ended_at`** — Schema real (migration 007) usa `ended_at`, não `completed_at`
+
+**Migration 042 — DB Functions ABA (novo):**
+- [x] ENUM `aba_prompt_level` (7 níveis DTT: full_physical → independent)
+- [x] ENUM `aba_behavior_intensity` (4 níveis: low → severe)
+- [x] Function `record_target_trial()` — valida sessão/tenant, calcula score %, insere em session_targets
+- [x] Function `record_behavior_event()` — valida sessão/tenant, insere evento ABC em session_behaviors
+- [x] 4 colunas faltantes em `session_behaviors`: behavior_type, duration_seconds, location, recorded_at
+- [x] Tudo idempotente (CREATE OR REPLACE / IF NOT EXISTS)
+
+**Migration 043 — Fix portal_get_summaries (novo):**
+- [x] Function SECURITY DEFINER `portal_get_summaries()` usava `ss.content` (inexistente) e `ss.status = 'approved'` (inexistente). Corrigido para `ss.summary_text AS content` e `ss.sent_at IS NOT NULL`
+
+**Validação ponta a ponta: 10/10 etapas OK**
+- Criar learner → sessão → abrir → trials → behaviors → fechar → resumo → aprovar → enviar email → portal ABA
+
+**Arquivos criados:**
+- `scripts/migrations/042_aba_domain_functions.sql`
+- `scripts/migrations/043_fix_portal_summaries_schema.sql`
+- `docs/ABA_DB_FUNCTIONS.md`
+
+**Arquivos modificados:**
+- `app/api/aba/sessions/[id]/summary/route.ts` (reescrito — schema real + canAccessLearner + handleRouteError)
+- `app/api/aba/sessions/[id]/route.ts` (reescrito — canAccessLearner + SQL direto open/close + handleRouteError)
+- `app/api/aba/sessions/[id]/trials/route.ts` (canAccessLearner + handleRouteError)
+- `app/api/aba/sessions/[id]/behaviors/route.ts` (canAccessLearner + handleRouteError)
+
+**Notas de regressão clínica (todas validadas):**
+| Módulo | Pré-fix | Pós-fix |
+|--------|---------|---------|
+| TCC | 8.5 | 9.5 |
+| TDAH | 7.0 | 9.0 |
+| ABA | 4.5 | 9.0 |
 
 ### Sessão Cowork — Regressão Clínica TDAH + Correções P0 (nota 7→9)
 

@@ -1,5 +1,5 @@
 # AXIS TCC — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 24/03/2026 (Hardening TCC nota 9.0 + regressão clínica TDAH P0 fixes)
+## Atualizado: 24/03/2026 (Hardening TCC nota 9.5 — sem mudanças nesta sessão)
 
 ---
 

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import OpenAI from 'openai'
 import pool from '@/src/database/db'
+import { PoolClient } from 'pg'
 import { writeFile, unlink, mkdir, readFile } from 'fs/promises'
 import { exec } from 'child_process'
 import { promisify } from 'util'
@@ -10,9 +11,19 @@ import path from 'path'
 
 const execAsync = promisify(exec)
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// ── OpenAI: lazy init para não quebrar o módulo se a key estiver ausente ──
+let _openai: OpenAI | null = null
+
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    const key = process.env.OPENAI_API_KEY
+    if (!key) {
+      throw new Error('OPENAI_API_KEY não configurada no servidor. Verifique o .env e reinicie o PM2.')
+    }
+    _openai = new OpenAI({ apiKey: key })
+  }
+  return _openai
+}
 
 const CHUNK_DURATION = 300
 const MAX_DIRECT_SIZE = 5 * 1024 * 1024
@@ -69,7 +80,7 @@ async function transcribeChunk(filePath: string, chunkIndex: number, maxRetries:
       const fileBuffer = await readFile(filePath)
       const file = new File([fileBuffer], 'parte_' + chunkIndex + '.mp3', { type: 'audio/mpeg' })
 
-      const transcription = await openai.audio.transcriptions.create({
+      const transcription = await getOpenAI().audio.transcriptions.create({
         file: file,
         model: 'whisper-1',
         language: 'pt',
@@ -103,6 +114,26 @@ async function cleanupFiles(files: string[]) {
   }
 }
 
+// ── Helper: executa callback com SET app.tenant_id (RLS) ──
+async function withTenantClient<T>(
+  tenantId: string,
+  callback: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId])
+    const result = await callback(client)
+    await client.query('COMMIT')
+    return result
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
 // ── Verificar limite de transcrição para FREE ──
 async function checkTranscriptionLimit(userId: string): Promise<{
   tenantId: string
@@ -111,7 +142,7 @@ async function checkTranscriptionLimit(userId: string): Promise<{
   blocked: boolean
   month: string
 }> {
-  // Resolver tenant
+  // Resolver tenant (usa pool direto — queries de lookup por clerk_user_id, sem RLS)
   const profileRes = await pool.query(
     'SELECT tenant_id FROM profiles WHERE clerk_user_id = $1 AND is_active = true LIMIT 1',
     [userId]
@@ -123,46 +154,49 @@ async function checkTranscriptionLimit(userId: string): Promise<{
   }
   if (!tenantId) throw new Error('TENANT_NOT_FOUND')
 
-  // Verificar se é FREE ou PAGO
-  const licenseRes = await pool.query(
-    `SELECT hotmart_plan FROM user_licenses
-     WHERE tenant_id = $1 AND product_type = 'tcc' AND is_active = true LIMIT 1`,
-    [tenantId]
-  )
-  const isFree = !licenseRes.rows[0]?.hotmart_plan || licenseRes.rows[0].hotmart_plan === ''
+  // Verificar licença e uso — com RLS ativo
+  return withTenantClient(tenantId, async (client) => {
+    const licenseRes = await client.query(
+      `SELECT hotmart_plan FROM user_licenses
+       WHERE tenant_id = $1 AND product_type = 'tcc' AND is_active = true LIMIT 1`,
+      [tenantId]
+    )
+    const isFree = !licenseRes.rows[0]?.hotmart_plan || licenseRes.rows[0].hotmart_plan === ''
 
-  if (!isFree) {
-    return { tenantId, isFree: false, minutesUsed: 0, blocked: false, month: '' }
-  }
+    if (!isFree) {
+      return { tenantId, isFree: false, minutesUsed: 0, blocked: false, month: '' }
+    }
 
-  // Verificar uso do mês
-  const month = new Date().toISOString().slice(0, 7)
-  const usageRes = await pool.query(
-    'SELECT minutes_used FROM transcription_usage WHERE tenant_id = $1 AND month = $2',
-    [tenantId, month]
-  )
-  const minutesUsed = usageRes.rows[0]?.minutes_used || 0
+    const month = new Date().toISOString().slice(0, 7)
+    const usageRes = await client.query(
+      'SELECT minutes_used FROM transcription_usage WHERE tenant_id = $1 AND month = $2',
+      [tenantId, month]
+    )
+    const minutesUsed = usageRes.rows[0]?.minutes_used || 0
 
-  return {
-    tenantId,
-    isFree: true,
-    minutesUsed,
-    blocked: minutesUsed >= FREE_LIMIT_MINUTES,
-    month,
-  }
+    return {
+      tenantId,
+      isFree: true,
+      minutesUsed,
+      blocked: minutesUsed >= FREE_LIMIT_MINUTES,
+      month,
+    }
+  })
 }
 
-// ── Incrementar minutos usados ──
+// ── Incrementar minutos usados (com RLS) ──
 async function incrementUsage(tenantId: string, month: string, minutes: number) {
   if (minutes <= 0) return
-  await pool.query(
-    `INSERT INTO transcription_usage (tenant_id, month, minutes_used, updated_at)
-     VALUES ($1, $2, $3, NOW())
-     ON CONFLICT (tenant_id, month)
-     DO UPDATE SET minutes_used = transcription_usage.minutes_used + $3, updated_at = NOW()`,
-    [tenantId, month, minutes]
-  )
-  console.log('[TRANSCRIBE] Uso incrementado:', { tenantId, month, minutes })
+  await withTenantClient(tenantId, async (client) => {
+    await client.query(
+      `INSERT INTO transcription_usage (tenant_id, month, minutes_used, updated_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (tenant_id, month)
+       DO UPDATE SET minutes_used = transcription_usage.minutes_used + $3, updated_at = NOW()`,
+      [tenantId, month, minutes]
+    )
+    console.log('[TRANSCRIBE] Uso incrementado:', { tenantId, month, minutes })
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -215,7 +249,7 @@ export async function POST(request: NextRequest) {
 
     // Audio pequeno - transcreve direto sem streaming
     if (fileSize <= MAX_DIRECT_SIZE) {
-      const transcription = await openai.audio.transcriptions.create({
+      const transcription = await getOpenAI().audio.transcriptions.create({
         file: audioFile,
         model: 'whisper-1',
         language: 'pt',
@@ -229,16 +263,28 @@ export async function POST(request: NextRequest) {
         return new Response(JSON.stringify({ error: 'Transcricao vazia - verifique o audio' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
       }
 
-      const result = await pool.query(
-        'INSERT INTO transcripts (tenant_id, patient_id, session_id, session_date, text, processed) VALUES ($1, $2, $3, CURRENT_DATE, $4, false) RETURNING id, text, created_at',
-        [tenantId, patientId, sessionId, fullTranscription]
-      )
+      // INSERT + incremento com RLS ativo
+      const result = await withTenantClient(tenantId, async (client) => {
+        const res = await client.query(
+          'INSERT INTO transcripts (tenant_id, patient_id, session_id, session_date, text, processed) VALUES ($1, $2, $3, CURRENT_DATE, $4, false) RETURNING id, text, created_at',
+          [tenantId, patientId, sessionId, fullTranscription]
+        )
 
-      // ── INCREMENTAR USO (áudio pequeno: estimar ~2 min) ──
-      if (limitInfo.isFree) {
-        const estimatedMinutes = Math.max(1, Math.ceil(fileSize / (64 * 1024 / 8 * 60)))
-        await incrementUsage(tenantId, limitInfo.month, estimatedMinutes)
-      }
+        // ── INCREMENTAR USO (áudio pequeno: estimar ~2 min) ──
+        if (limitInfo.isFree) {
+          const estimatedMinutes = Math.max(1, Math.ceil(fileSize / (64 * 1024 / 8 * 60)))
+          await client.query(
+            `INSERT INTO transcription_usage (tenant_id, month, minutes_used, updated_at)
+             VALUES ($1, $2, $3, NOW())
+             ON CONFLICT (tenant_id, month)
+             DO UPDATE SET minutes_used = transcription_usage.minutes_used + $3, updated_at = NOW()`,
+            [tenantId, limitInfo.month, estimatedMinutes]
+          )
+          console.log('[TRANSCRIBE] Uso incrementado:', { tenantId, month: limitInfo.month, minutes: estimatedMinutes })
+        }
+
+        return res
+      })
 
       return new Response(JSON.stringify({ success: true, transcript: result.rows[0] }), { status: 200, headers: { 'Content-Type': 'application/json' } })
     }
@@ -338,15 +384,27 @@ export async function POST(request: NextRequest) {
 
           sendProgress({ type: 'status', message: 'Salvando transcricao...', percent: 95 })
 
-          const result = await pool.query(
-            'INSERT INTO transcripts (tenant_id, patient_id, session_id, session_date, text, processed) VALUES ($1, $2, $3, CURRENT_DATE, $4, false) RETURNING id, text, created_at',
-            [tenantId, patientId, sessionId, fullTranscription]
-          )
+          // INSERT + incremento com RLS ativo
+          const result = await withTenantClient(tenantId, async (client) => {
+            const res = await client.query(
+              'INSERT INTO transcripts (tenant_id, patient_id, session_id, session_date, text, processed) VALUES ($1, $2, $3, CURRENT_DATE, $4, false) RETURNING id, text, created_at',
+              [tenantId, patientId, sessionId, fullTranscription]
+            )
 
-          // ── INCREMENTAR USO (áudio grande: duração real) ──
-          if (isFree && durationMinutes > 0) {
-            await incrementUsage(tenantId, month, durationMinutes)
-          }
+            // ── INCREMENTAR USO (áudio grande: duração real) ──
+            if (isFree && durationMinutes > 0) {
+              await client.query(
+                `INSERT INTO transcription_usage (tenant_id, month, minutes_used, updated_at)
+                 VALUES ($1, $2, $3, NOW())
+                 ON CONFLICT (tenant_id, month)
+                 DO UPDATE SET minutes_used = transcription_usage.minutes_used + $3, updated_at = NOW()`,
+                [tenantId, month, durationMinutes]
+              )
+              console.log('[TRANSCRIBE] Uso incrementado:', { tenantId, month, minutes: durationMinutes })
+            }
+
+            return res
+          })
 
           sendProgress({
             type: 'done',
@@ -356,9 +414,12 @@ export async function POST(request: NextRequest) {
           })
 
           controller.close()
-        } catch (error) {
+        } catch (error: any) {
           console.error('[TRANSCRIBE] Erro ao transcrever:', error)
-          sendProgress({ type: 'error', message: 'Erro ao transcrever audio' })
+          const msg = error?.message?.includes('OPENAI_API_KEY')
+            ? 'Configuração do servidor incompleta: chave OpenAI ausente.'
+            : 'Erro ao transcrever audio'
+          sendProgress({ type: 'error', message: msg })
           controller.close()
         } finally {
           await cleanupFiles(filesToCleanup)
@@ -375,9 +436,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[TRANSCRIBE] Erro ao transcrever:', error)
     await cleanupFiles(filesToCleanup)
-    return new Response(JSON.stringify({ error: 'Erro ao transcrever audio' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+
+    // Erro claro se a API key estiver faltando
+    const msg = error?.message?.includes('OPENAI_API_KEY')
+      ? 'Configuração do servidor incompleta: chave OpenAI ausente. Contate o suporte.'
+      : 'Erro ao transcrever audio'
+
+    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }
 }
