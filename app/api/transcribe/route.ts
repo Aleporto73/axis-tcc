@@ -17,7 +17,7 @@ async function transcribeLocal(audioFile: File | Buffer, filename: string = 'aud
   const formData = new FormData()
 
   if (audioFile instanceof Buffer) {
-    const blob = new Blob([audioFile], { type: 'audio/mpeg' })
+    const blob = new Blob([new Uint8Array(audioFile)], { type: 'audio/mpeg' })
     formData.append('file', blob, filename)
   } else {
     formData.append('file', audioFile)
