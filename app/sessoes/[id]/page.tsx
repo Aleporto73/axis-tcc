@@ -81,7 +81,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const sendAudio = async (fd: FormData) => {
     try {
       setUploading(true)
-      setTranscribeProgress({ type: 'status', message: 'Enviando audio...', percent: 0 })
+      setTranscribeProgress({ type: 'status', message: 'Enviando áudio...', percent: 2 })
 
       const res = await fetch('/api/transcribe', { method: 'POST', body: fd })
 
@@ -376,6 +376,9 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                       Tempo estimado: ~{transcribeProgress.minutesLeft} min restante{transcribeProgress.minutesLeft > 1 ? 's' : ''}
                     </p>
                   )}
+                  <p className="mt-3 text-slate-400" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                    {'\uD83D\uDD12'} Processamos as conversas em infraestrutura própria, com padrão de segurança hospitalar e proteção adicional além da LGPD. Isso pode tornar o processamento um pouco mais demorado.
+                  </p>
                 </div>
               )}
 
