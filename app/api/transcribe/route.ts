@@ -15,24 +15,21 @@ const ASR_URL = process.env.ASR_SERVICE_URL || 'http://localhost:8000/v1/audio/t
 
 async function transcribeLocal(audioFile: File | Buffer, filename: string = 'audio.mp3'): Promise<string> {
   const formData = new FormData()
-
-  if (audioFile instanceof Buffer) {
-    const blob = new Blob([new Uint8Array(audioFile)], { type: 'audio/mpeg' })
-    formData.append('file', blob, filename)
+  let blob: Blob
+  if (Buffer.isBuffer(audioFile)) {
+    blob = new Blob([new Uint8Array(audioFile)], { type: 'audio/mpeg' })
   } else {
-    formData.append('file', audioFile)
+    blob = audioFile as Blob
   }
+  formData.append('file', blob, filename)
   formData.append('language', 'pt')
-
   const response = await fetch(ASR_URL, {
     method: 'POST',
     body: formData,
   })
-
   if (!response.ok) {
     throw new Error(`ASR Service erro: ${response.status} ${response.statusText}`)
   }
-
   const data = await response.json()
   return data.text || ''
 }
