@@ -23,10 +23,14 @@ async function transcribeLocal(audioFile: File | Buffer, filename: string = 'aud
   }
   formData.append('file', blob, filename)
   formData.append('language', 'pt')
+  const abortCtl = new AbortController()
+  const timeout = setTimeout(() => abortCtl.abort(), 30 * 60 * 1000)
   const response = await fetch(ASR_URL, {
     method: 'POST',
     body: formData,
+    signal: abortCtl.signal,
   })
+  clearTimeout(timeout)
   if (!response.ok) {
     throw new Error(`ASR Service erro: ${response.status} ${response.statusText}`)
   }
