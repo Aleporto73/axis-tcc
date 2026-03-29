@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import OpenAI from 'openai'
 import pool from '@/src/database/db'
 import { PoolClient } from 'pg'
 import { writeFile, unlink, mkdir, readFile } from 'fs/promises'
@@ -11,24 +10,37 @@ import path from 'path'
 
 const execAsync = promisify(exec)
 
-// ── OpenAI: lazy init para não quebrar o módulo se a key estiver ausente ──
-let _openai: OpenAI | null = null
+// ── ASR Local (faster-whisper via Docker) ──
+const ASR_URL = process.env.ASR_SERVICE_URL || 'http://localhost:8000/v1/audio/transcriptions'
 
-function getOpenAI(): OpenAI {
-  if (!_openai) {
-    const key = process.env.OPENAI_API_KEY
-    if (!key) {
-      throw new Error('OPENAI_API_KEY não configurada no servidor. Verifique o .env e reinicie o PM2.')
-    }
-    _openai = new OpenAI({ apiKey: key })
+async function transcribeLocal(audioFile: File | Buffer, filename: string = 'audio.mp3'): Promise<string> {
+  const formData = new FormData()
+
+  if (audioFile instanceof Buffer) {
+    const blob = new Blob([audioFile], { type: 'audio/mpeg' })
+    formData.append('file', blob, filename)
+  } else {
+    formData.append('file', audioFile)
   }
-  return _openai
+  formData.append('language', 'pt')
+
+  const response = await fetch(ASR_URL, {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!response.ok) {
+    throw new Error(`ASR Service erro: ${response.status} ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  return data.text || ''
 }
 
 const CHUNK_DURATION = 300
 const MAX_DIRECT_SIZE = 5 * 1024 * 1024
 const TEMP_DIR = '/tmp/axis-audio'
-const FREE_LIMIT_MINUTES = 120
+const FREE_LIMIT_MINUTES = 50  // 1 sessão demo para FREE
 
 async function ensureTempDir() {
   if (!existsSync(TEMP_DIR)) {
@@ -78,17 +90,8 @@ async function transcribeChunk(filePath: string, chunkIndex: number, maxRetries:
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const fileBuffer = await readFile(filePath)
-      const file = new File([fileBuffer], 'parte_' + chunkIndex + '.mp3', { type: 'audio/mpeg' })
-
-      const transcription = await getOpenAI().audio.transcriptions.create({
-        file: file,
-        model: 'whisper-1',
-        language: 'pt',
-        response_format: 'text',
-        prompt: 'cognicao, comportamento, emocao, ansiedade, depressao, TDAH, trauma, psicoterapia, terapeuta, paciente',
-      })
-
-      return transcription as unknown as string
+      const text = await transcribeLocal(Buffer.from(fileBuffer), 'parte_' + chunkIndex + '.mp3')
+      return text
     } catch (error) {
       console.error(`[TRANSCRIBE] Erro chunk ${chunkIndex}, tentativa ${attempt}/${maxRetries}:`, error)
       if (attempt < maxRetries) {
@@ -249,15 +252,7 @@ export async function POST(request: NextRequest) {
 
     // Audio pequeno - transcreve direto sem streaming
     if (fileSize <= MAX_DIRECT_SIZE) {
-      const transcription = await getOpenAI().audio.transcriptions.create({
-        file: audioFile,
-        model: 'whisper-1',
-        language: 'pt',
-        response_format: 'text',
-        prompt: 'cognicao, comportamento, emocao, ansiedade, depressao, TDAH, trauma, psicoterapia, terapeuta, paciente',
-      })
-
-      const fullTranscription = transcription as unknown as string
+      const fullTranscription = await transcribeLocal(audioFile)
 
       if (!fullTranscription || fullTranscription.trim().length === 0) {
         return new Response(JSON.stringify({ error: 'Transcricao vazia - verifique o audio' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
@@ -416,8 +411,8 @@ export async function POST(request: NextRequest) {
           controller.close()
         } catch (error: any) {
           console.error('[TRANSCRIBE] Erro ao transcrever:', error)
-          const msg = error?.message?.includes('OPENAI_API_KEY')
-            ? 'Configuração do servidor incompleta: chave OpenAI ausente.'
+          const msg = error?.message?.includes('ASR Service')
+            ? 'Serviço de transcrição indisponível. Verifique se o ASR está rodando.'
             : 'Erro ao transcrever audio'
           sendProgress({ type: 'error', message: msg })
           controller.close()
@@ -440,9 +435,9 @@ export async function POST(request: NextRequest) {
     console.error('[TRANSCRIBE] Erro ao transcrever:', error)
     await cleanupFiles(filesToCleanup)
 
-    // Erro claro se a API key estiver faltando
-    const msg = error?.message?.includes('OPENAI_API_KEY')
-      ? 'Configuração do servidor incompleta: chave OpenAI ausente. Contate o suporte.'
+    // Erro claro se o serviço ASR estiver fora
+    const msg = error?.message?.includes('ASR Service')
+      ? 'Serviço de transcrição indisponível. Verifique se o ASR está rodando.'
       : 'Erro ao transcrever audio'
 
     return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } })
