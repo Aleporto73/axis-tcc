@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 // =====================================================
 // Modal de limite de transcrição atingido
-// Aparece quando FREE atinge 120 min/mês
+// Aparece quando FREE atinge 50 min/mês
 // =====================================================
 
 const TCC_COLOR = '#1e3a5f'
@@ -30,7 +30,7 @@ export default function TranscriptionLimitModal({ onClose }: Props) {
           Limite de transcrição atingido
         </h2>
         <p className="text-sm text-slate-500 text-center mb-6 leading-relaxed">
-          Você utilizou seus 120 minutos gratuitos de transcrição este mês. Para continuar transcrevendo sessões, assine o AXIS TCC.
+          Você utilizou seus 50 minutos gratuitos de transcrição este mês. Para continuar transcrevendo sessões, assine o AXIS TCC.
         </p>
 
         {/* CTA */}
