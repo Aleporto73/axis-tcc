@@ -24,11 +24,11 @@ interface Session {
   google_meet_link: string | null
 }
 
-interface Transcript { id: string; text: string; created_at: string; processed: boolean }
+interface Transcript { id: string; text?: string; text_preview?: string; created_at: string; processed: boolean }
 interface TCCAnalysis { fatos: string[]; pensamentos: string[]; emocoes: string[] }
 interface MicroEvent { type: string; intensity: number; note: string; created_at: string }
 interface PipelineResult { event_created: boolean; cso_updated: boolean; suggestion_generated: boolean; flex_trend: string; micro_events: { confrontations: number; avoidances: number; adjustments: number; recoveries: number } }
-interface TranscribeProgress { type: string; current?: number; total?: number; percent?: number; minutesLeft?: number; message?: string; transcript?: Transcript }
+interface TranscriptionJob { job_id: string; status: string; transcript_id?: string; error_message?: string }
 
 export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -52,21 +52,68 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [savingMicro, setSavingMicro] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
-  const [transcribeProgress, setTranscribeProgress] = useState<TranscribeProgress | null>(null)
+  const [transcriptionJob, setTranscriptionJob] = useState<TranscriptionJob | null>(null)
   const [showLimitModal, setShowLimitModal] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => { if (isLoaded && userId) loadSession() }, [isLoaded, userId, id])
-  useEffect(() => { return () => { if (timerRef.current) clearInterval(timerRef.current) } }, [])
+  useEffect(() => { return () => { if (timerRef.current) clearInterval(timerRef.current); stopPolling() } }, [])
+
+  const stopPolling = () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null } }
+
+  const startPolling = (jobId: string) => {
+    stopPolling()
+    pollingRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/transcribe/status/${jobId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        setTranscriptionJob(data)
+
+        if (data.status === 'completed' && data.transcript_id) {
+          stopPolling()
+          // Buscar texto completo
+          const textRes = await fetch(`/api/transcribe/text/${data.transcript_id}`)
+          if (textRes.ok) {
+            const textData = await textRes.json()
+            setTranscript({ id: data.transcript_id, text: textData.text, created_at: textData.created_at, processed: textData.processed })
+          }
+          setTranscriptionJob(null)
+          setUploading(false)
+        } else if (data.status === 'failed') {
+          stopPolling()
+          setTranscriptionJob(data)
+          setUploading(false)
+        }
+      } catch (e) { console.error('[POLLING] Erro:', e) }
+    }, 5000)
+  }
 
   const loadSession = async () => {
     try {
       setLoading(true)
       const res = await fetch(`/api/sessions/${id}`)
-      if (res.ok) { const data = await res.json(); setSession(data.session); if (data.transcript) setTranscript(data.transcript) }
-      else router.push('/sessoes')
+      if (!res.ok) { router.push('/sessoes'); return }
+      const data = await res.json()
+      setSession(data.session)
+
+      // Transcript já pronta?
+      if (data.transcript) {
+        setTranscript(data.transcript)
+      }
+
+      // Job ativo? Iniciar polling
+      if (data.transcription_job) {
+        const job = data.transcription_job
+        setTranscriptionJob(job)
+        if (job.status === 'pending' || job.status === 'processing') {
+          setUploading(true)
+          startPolling(job.job_id)
+        }
+      }
     } catch (e) { console.error(e); alert('Erro ao carregar sessão') } finally { setLoading(false) }
   }
 
@@ -81,7 +128,6 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const sendAudio = async (fd: FormData) => {
     try {
       setUploading(true)
-      setTranscribeProgress({ type: 'status', message: 'Enviando áudio...', percent: 2 })
 
       const res = await fetch('/api/transcribe', { method: 'POST', body: fd })
 
@@ -90,86 +136,34 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
         const data = await res.json().catch(() => ({}))
         if (data.error === 'LIMIT_REACHED') {
           setShowLimitModal(true)
-          setTranscribeProgress(null)
           setUploading(false)
           return
         }
       }
 
-      const contentType = res.headers.get('content-type') || ''
-
-      // Audio pequeno - resposta JSON direta
-      if (contentType.includes('application/json')) {
-        if (res.ok) {
-          const data = await res.json()
-          setTranscript(data.transcript)
-          setTranscribeProgress(null)
-        } else {
-          const err = await res.json()
-          alert(err.error || 'Erro')
-          setTranscribeProgress(null)
-        }
+      // ── Conflito: já existe job ativo para esta sessão ──
+      if (res.status === 409) {
+        alert('Já existe uma transcrição em andamento para esta sessão.')
+        setUploading(false)
         return
       }
 
-      // Audio grande - resposta streaming com progresso
-      if (contentType.includes('text/event-stream')) {
-        const reader = res.body?.getReader()
-        const decoder = new TextDecoder()
-
-        if (!reader) {
-          alert('Erro ao ler resposta')
-          setTranscribeProgress(null)
-          return
-        }
-
-        let buffer = ''
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6))
-
-                if (data.type === 'progress' || data.type === 'status') {
-                  setTranscribeProgress(data)
-                }
-
-                if (data.type === 'done' && data.transcript) {
-                  setTranscript(data.transcript)
-                  setTranscribeProgress(null)
-                }
-
-                if (data.type === 'error') {
-                  alert(data.message || 'Erro na transcricao')
-                  setTranscribeProgress(null)
-                }
-              } catch (e) {
-                console.error('Erro ao parsear progresso:', e)
-              }
-            }
-          }
-        }
-
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erro ao enviar áudio' }))
+        alert(err.error || 'Erro ao enviar áudio')
+        setUploading(false)
         return
       }
 
-      // Fallback
-      alert('Resposta inesperada do servidor')
-      setTranscribeProgress(null)
+      const data = await res.json()
 
+      if (data.job_id) {
+        setTranscriptionJob({ job_id: data.job_id, status: 'pending' })
+        startPolling(data.job_id)
+      }
     } catch (e) {
       console.error(e)
       alert('Erro ao enviar audio')
-      setTranscribeProgress(null)
-    } finally {
       setUploading(false)
     }
   }
@@ -206,7 +200,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
     if (!transcript || !session) return
     try {
       setAnalyzing(true)
-      const res = await fetch('/api/analyze-tcc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transcript_id: transcript.id, text: transcript.text, session_id: session.id, patient_id: session.patient_id }) })
+      const res = await fetch('/api/analyze-tcc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transcript_id: transcript.id, session_id: session.id, patient_id: session.patient_id }) })
       if (res.ok) { const data = await res.json(); setAnalysis(data.analysis) }
     } catch (e) { console.error(e); alert('Erro ao analisar TCC') } finally { setAnalyzing(false) }
   }
@@ -356,36 +350,37 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
             <section className="mb-8 pb-8 border-b border-slate-100">
               <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4">Transcrição</h2>
               
-              {/* Barra de progresso */}
-              {transcribeProgress && (
+              {/* Progresso da transcrição (background job) */}
+              {transcriptionJob && (transcriptionJob.status === 'pending' || transcriptionJob.status === 'processing') && (
                 <div className="mb-4 p-4 bg-sky-50 rounded-lg border border-sky-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-sky-800">{transcribeProgress.message}</p>
-                    {transcribeProgress.percent !== undefined && (
-                      <span className="text-sm font-semibold text-sky-700">{transcribeProgress.percent}%</span>
-                    )}
-                  </div>
-                  <div className="w-full bg-sky-100 rounded-full h-2.5">
-                    <div 
-                      className="bg-sky-500 h-2.5 rounded-full transition-all duration-500" 
-                      style={{ width: `${transcribeProgress.percent || 0}%` }}
-                    ></div>
-                  </div>
-                  {transcribeProgress.minutesLeft !== undefined && transcribeProgress.minutesLeft > 0 && (
-                    <p className="text-xs text-sky-600 mt-2">
-                      Tempo estimado: ~{transcribeProgress.minutesLeft} min restante{transcribeProgress.minutesLeft > 1 ? 's' : ''}
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm font-medium text-sky-800">
+                      {transcriptionJob.status === 'pending' ? 'Aguardando processamento...' : 'Transcrevendo áudio...'}
                     </p>
-                  )}
-                  <p className="mt-3 text-slate-400" style={{ fontSize: '12px', lineHeight: '1.4' }}>
-                    {'\uD83D\uDD12'} Processamos as conversas em infraestrutura própria, com padrão de segurança hospitalar e proteção adicional além da LGPD. Isso pode tornar o processamento um pouco mais demorado.
+                  </div>
+                  <div className="w-full bg-sky-100 rounded-full h-2 overflow-hidden">
+                    <div className="bg-sky-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }} />
+                  </div>
+                  <p className="text-sm text-sky-700 mt-3">
+                    Você pode continuar usando o sistema normalmente. A transcrição será processada em segundo plano.
                   </p>
+                  <p className="mt-2 text-slate-400" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                    Processamos as conversas em infraestrutura própria, com padrão de segurança hospitalar e proteção adicional além da LGPD.
+                  </p>
+                </div>
+              )}
+              {transcriptionJob && transcriptionJob.status === 'failed' && (
+                <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm font-medium text-red-800">Erro na transcrição</p>
+                  <p className="text-sm text-red-600 mt-1">{transcriptionJob.error_message || 'Ocorreu um erro ao processar o áudio. Tente novamente.'}</p>
                 </div>
               )}
 
               {transcript ? (
                 <div>
                   <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 max-h-48 overflow-y-auto mb-4">
-                    <p className="whitespace-pre-wrap text-sm text-slate-700">{transcript.text}</p>
+                    <p className="whitespace-pre-wrap text-sm text-slate-700">{transcript.text || transcript.text_preview || 'Transcrição disponível'}</p>
                   </div>
                   <p className="text-xs text-slate-400 mb-4">Transcrito em {new Date(transcript.created_at).toLocaleString('pt-BR')}</p>
                   {!analysis && (
@@ -395,7 +390,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                     </button>
                   )}
                 </div>
-              ) : !transcribeProgress && (
+              ) : !uploading && !transcriptionJob && (
                 <div>
                   <p className="text-slate-400 italic mb-4 text-sm">Nenhuma transcrição</p>
                   <div className="flex gap-3">
