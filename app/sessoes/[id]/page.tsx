@@ -100,9 +100,25 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       const data = await res.json()
       setSession(data.session)
 
-      // Transcript já pronta?
+      // Transcript já pronta? Buscar texto completo se necessário
       if (data.transcript) {
-        setTranscript(data.transcript)
+        if (data.transcript.text) {
+          setTranscript(data.transcript)
+        } else if (data.transcript.id) {
+          try {
+            const textRes = await fetch(`/api/transcribe/text/${data.transcript.id}`)
+            if (textRes.ok) {
+              const textData = await textRes.json()
+              setTranscript({ ...data.transcript, text: textData.text })
+            } else {
+              setTranscript(data.transcript)
+            }
+          } catch {
+            setTranscript(data.transcript)
+          }
+        } else {
+          setTranscript(data.transcript)
+        }
       }
 
       // Job ativo? Iniciar polling
