@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import OpenAI from 'openai'
 import pool from '@/src/database/db'
+import { readTranscriptSmart } from '@/src/services/transcript-storage'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -23,7 +24,20 @@ export async function POST(request: NextRequest) {
     }
     const tenantId = tenantResult.rows[0].id
 
-    const { transcript_id, text, session_id, patient_id } = await request.json()
+    const { transcript_id, text: bodyText, session_id, patient_id } = await request.json()
+
+    // Resolver texto: usar body se fornecido, senão buscar do disco via transcript_id
+    let text = bodyText
+    if (!text && transcript_id) {
+      const tResult = await pool.query(
+        'SELECT transcript_path, text FROM transcripts WHERE id = $1 AND tenant_id = $2',
+        [transcript_id, tenantId]
+      )
+      if (tResult.rows[0]) {
+        text = await readTranscriptSmart(tResult.rows[0])
+      }
+    }
+
     if (!text) {
       return NextResponse.json({ error: 'Texto obrigatorio' }, { status: 400 })
     }
