@@ -154,45 +154,47 @@ async function updateHeartbeat(jobId: string): Promise<void> {
   })
 }
 
-// ── Processar job ──
+// ── Processar job (hardened: logs em cada etapa, cleanup garantido no finally) ──
 async function processJob(job: any): Promise<void> {
   const startTime = Date.now()
-  console.log(`[WORKER] Processando job ${job.id}:`, {
-    tenant: job.tenant_id,
-    session: job.session_id,
-    file: job.original_filename,
-    size: job.file_size_bytes,
-    attempt: job.attempts + 1,
-  })
+  const jid = job.id // shorthand para logs
+  let resultado = 'UNKNOWN'
+
+  console.log(`[JOB ${jid}] INÍCIO: tenant=${job.tenant_id} session=${job.session_id} file=${job.original_filename} size=${job.file_size_bytes} attempt=${(job.attempts || 0) + 1}/${job.max_attempts || 3}`)
 
   // Heartbeat periódico durante processamento
   const heartbeatTimer = setInterval(async () => {
     try {
-      await updateHeartbeat(job.id)
-    } catch (e) {
-      console.error(`[WORKER] Erro heartbeat job ${job.id}:`, e)
+      await updateHeartbeat(jid)
+    } catch (e: any) {
+      console.error(`[JOB ${jid}] Erro heartbeat: ${e.message}`)
     }
   }, HEARTBEAT_INTERVAL_MS)
 
   try {
     // 1. Ler áudio do disco
+    console.log(`[JOB ${jid}] Lendo áudio do disco...`)
     const audioBuffer = await readFile(job.audio_path)
+    console.log(`[JOB ${jid}] Áudio lido: ${audioBuffer.length} bytes`)
 
     // 2. Transcrever via ASR
+    console.log(`[JOB ${jid}] Chamando ASR...`)
     const text = await transcribeAudio(audioBuffer, job.original_filename || 'audio.webm')
+    console.log(`[JOB ${jid}] ASR retornou: ${text.length} chars`)
 
     if (!text || text.trim().length === 0) {
       throw new Error('Transcrição retornou vazia')
     }
 
-    // 3. Salvar transcript em disco + banco (com RLS)
+    // 3. Salvar transcript em disco
     const transcriptId = randomUUID()
-
-    // Salvar .txt em disco ANTES do INSERT — assim o path já nasce correto
+    console.log(`[JOB ${jid}] Salvando transcript no disco...`)
     const transcriptPath = await saveTranscript(job.tenant_id, transcriptId, text)
+    console.log(`[JOB ${jid}] Arquivo salvo: ${transcriptPath}`)
 
-    const transcriptResult = await withTenantClient(job.tenant_id, async (client) => {
-      // INSERT transcript já com id, path e preview corretos
+    // 4. INSERT no banco (com RLS tenant)
+    console.log(`[JOB ${jid}] Inserindo no banco...`)
+    await withTenantClient(job.tenant_id, async (client) => {
       await client.query(
         `INSERT INTO transcripts
          (id, tenant_id, patient_id, session_id, session_date, transcript_path, text_preview, char_count, processed)
@@ -218,65 +220,98 @@ async function processJob(job: any): Promise<void> {
            DO UPDATE SET minutes_used = transcription_usage.minutes_used + $3, updated_at = NOW()`,
           [job.tenant_id, month, estimatedMinutes]
         )
-        console.log(`[WORKER] Uso incrementado: ${estimatedMinutes} min (${month})`)
+        console.log(`[JOB ${jid}] Uso FREE incrementado: ${estimatedMinutes} min (${month})`)
       }
-
-      return { transcriptId }
     })
+    console.log(`[JOB ${jid}] INSERT ok: transcript_id=${transcriptId}`)
 
-    // 4. Marcar job como completed + limpar lock (via worker context)
-    await withWorkerClient(async (client) => {
-      await client.query(
-        `UPDATE transcription_jobs
-         SET status = 'completed',
-             progress = 100,
-             transcript_id = $1,
-             finished_at = NOW(),
-             locked_at = NULL,
-             worker_id = NULL,
-             heartbeat_at = NULL
-         WHERE id = $2`,
-        [transcriptResult.transcriptId, job.id]
-      )
-    })
+    // 5. Marcar job como completed
+    console.log(`[JOB ${jid}] Marcando completed...`)
+    try {
+      await withWorkerClient(async (client) => {
+        await client.query(
+          `UPDATE transcription_jobs
+           SET status = 'completed',
+               progress = 100,
+               transcript_id = $1,
+               finished_at = NOW(),
+               locked_at = NULL,
+               worker_id = NULL,
+               heartbeat_at = NULL
+           WHERE id = $2`,
+          [transcriptId, jid]
+        )
+      })
+    } catch (updateErr: any) {
+      console.error(`[JOB ${jid}] ERRO ao marcar completed no banco: ${updateErr.message}`)
+      // Não re-throw: o transcript já foi salvo, recovery vai tratar
+    }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1)
-    console.log(`[WORKER] Job ${job.id} concluído em ${duration}s (${text.length} chars)`)
+    resultado = 'COMPLETED'
+    console.log(`[JOB ${jid}] COMPLETED em ${duration}s (${text.length} chars)`)
 
   } catch (error: any) {
-    console.error(`[WORKER] Erro job ${job.id}:`, error.message)
+    console.error(`[JOB ${jid}] ERRO: ${error.message}`)
 
     const newAttempts = (job.attempts || 0) + 1
     const isFinal = newAttempts >= (job.max_attempts || 3)
 
-    await withWorkerClient(async (client) => {
-      await client.query(
-        `UPDATE transcription_jobs
-         SET status = $1,
-             error_message = $2,
-             attempts = $3,
-             finished_at = $4,
-             locked_at = NULL,
-             worker_id = NULL,
-             heartbeat_at = NULL
-         WHERE id = $5`,
-        [
-          isFinal ? 'failed' : 'pending',
-          error.message?.slice(0, 500) || 'Erro desconhecido',
-          newAttempts,
-          isFinal ? new Date() : null,
-          job.id,
-        ]
-      )
-    })
+    try {
+      await withWorkerClient(async (client) => {
+        await client.query(
+          `UPDATE transcription_jobs
+           SET status = $1,
+               error_message = $2,
+               attempts = $3,
+               finished_at = $4,
+               locked_at = NULL,
+               worker_id = NULL,
+               heartbeat_at = NULL
+           WHERE id = $5`,
+          [
+            isFinal ? 'failed' : 'pending',
+            error.message?.slice(0, 500) || 'Erro desconhecido',
+            newAttempts,
+            isFinal ? new Date() : null,
+            jid,
+          ]
+        )
+      })
+    } catch (updateErr: any) {
+      console.error(`[JOB ${jid}] ERRO CRÍTICO ao atualizar status no banco: ${updateErr.message}`)
+      // finally vai fazer cleanup de segurança
+    }
 
     if (isFinal) {
-      console.log(`[WORKER] Job ${job.id} FAILED definitivamente após ${newAttempts} tentativas`)
+      resultado = 'FAILED'
+      console.log(`[JOB ${jid}] FAILED definitivo após ${newAttempts} tentativas: ${error.message}`)
     } else {
-      console.log(`[WORKER] Job ${job.id} voltou para pending (tentativa ${newAttempts}/${job.max_attempts})`)
+      resultado = 'RETRY'
+      console.log(`[JOB ${jid}] RETRY (tentativa ${newAttempts}/${job.max_attempts || 3}): ${error.message}`)
     }
+
   } finally {
+    // CLEANUP GARANTIDO — mesmo se catch falhar
     clearInterval(heartbeatTimer)
+
+    // Safety net: limpar lock fields se job ainda estiver em processing
+    // (pode acontecer se o UPDATE do catch ou do try falhou)
+    try {
+      await withWorkerClient(async (client) => {
+        await client.query(
+          `UPDATE transcription_jobs
+           SET locked_at = NULL, worker_id = NULL, heartbeat_at = NULL
+           WHERE id = $1 AND status = 'processing'`,
+          [jid]
+        )
+      })
+    } catch (cleanupErr: any) {
+      console.error(`[JOB ${jid}] ERRO no cleanup de segurança: ${cleanupErr.message}`)
+    }
+
+    const totalDuration = ((Date.now() - startTime) / 1000).toFixed(1)
+    console.log(`[JOB ${jid}] FIM: ${resultado} (${totalDuration}s total)`)
   }
 }
 
