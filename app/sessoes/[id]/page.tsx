@@ -396,7 +396,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
 
               {transcript ? (
                 <div>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 max-h-48 overflow-y-auto mb-4">
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 max-h-96 overflow-y-auto mb-4">
                     <p className="whitespace-pre-wrap text-sm text-slate-700">{transcript.text || transcript.text_preview || 'Transcrição disponível'}</p>
                   </div>
                   <p className="text-xs text-slate-400 mb-4">Transcrito em {new Date(transcript.created_at).toLocaleString('pt-BR')}</p>
