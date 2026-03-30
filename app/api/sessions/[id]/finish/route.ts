@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 import { createSystemAlert } from '@/src/utils/system-alert'
+import { readTranscriptSmart } from '@/src/services/transcript-storage'
 import { processEvent } from '@/src/engines/cso'
 import { generateSuggestions } from '@/src/engines/suggestion'
 
@@ -53,7 +54,7 @@ export async function POST(
       // 3. Buscar transcrição e análise TCC
       const [transcriptResult, analysisResult] = await Promise.all([
         client.query(
-          'SELECT text FROM transcripts WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at DESC LIMIT 1',
+          'SELECT text, transcript_path FROM transcripts WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at DESC LIMIT 1',
           [id, tenantId]
         ),
         client.query(
