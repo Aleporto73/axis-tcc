@@ -9,6 +9,7 @@
  */
 
 import 'dotenv/config'
+import { randomUUID } from 'crypto'
 import { Pool, PoolClient } from 'pg'
 import { readFile } from 'fs/promises'
 import { transcribeAudio } from '../../src/services/asr'
@@ -160,25 +161,18 @@ async function processJob(job: any): Promise<void> {
     }
 
     // 3. Salvar transcript em disco + banco (com RLS)
+    const transcriptId = randomUUID()
+
+    // Salvar .txt em disco ANTES do INSERT — assim o path já nasce correto
+    const transcriptPath = await saveTranscript(job.tenant_id, transcriptId, text)
+
     const transcriptResult = await withTenantClient(job.tenant_id, async (client) => {
-      // INSERT transcript com path em disco
-      const res = await client.query(
-        `INSERT INTO transcripts
-         (tenant_id, patient_id, session_id, session_date, transcript_path, text_preview, char_count, processed)
-         VALUES ($1, $2, $3, CURRENT_DATE, $4, $5, $6, false)
-         RETURNING id, created_at`,
-        [job.tenant_id, job.patient_id, job.session_id, '', getPreview(text), text.length]
-      )
-
-      const transcriptId = res.rows[0].id
-
-      // Salvar .txt em disco
-      const transcriptPath = await saveTranscript(job.tenant_id, transcriptId, text)
-
-      // Atualizar transcript_path no banco
+      // INSERT transcript já com id, path e preview corretos
       await client.query(
-        'UPDATE transcripts SET transcript_path = $1 WHERE id = $2',
-        [transcriptPath, transcriptId]
+        `INSERT INTO transcripts
+         (id, tenant_id, patient_id, session_id, session_date, transcript_path, text_preview, char_count, processed)
+         VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, false)`,
+        [transcriptId, job.tenant_id, job.patient_id, job.session_id, transcriptPath, getPreview(text), text.length]
       )
 
       // Incrementar uso para FREE
