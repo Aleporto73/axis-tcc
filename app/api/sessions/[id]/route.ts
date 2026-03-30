@@ -33,7 +33,41 @@ export async function GET(
         return NextResponse.json({ error: 'Sessao nao encontrada' }, { status: 404 })
       }
 
-      return NextResponse.json({ session: queryResult.rows[0] })
+      // Buscar transcript existente (preview/metadados)
+      const transcriptResult = await client.query(
+        `SELECT id, text_preview, transcript_path, text, char_count, created_at, processed
+         FROM transcripts
+         WHERE session_id = $1 AND tenant_id = $2
+         ORDER BY created_at DESC LIMIT 1`,
+        [id, tenantId]
+      )
+
+      // Buscar job de transcrição mais recente
+      const jobResult = await client.query(
+        `SELECT id as job_id, status, progress, error_message, created_at
+         FROM transcription_jobs
+         WHERE session_id = $1 AND tenant_id = $2
+         ORDER BY created_at DESC LIMIT 1`,
+        [id, tenantId]
+      )
+
+      const transcript = transcriptResult.rows[0]
+        ? {
+            id: transcriptResult.rows[0].id,
+            // Compatibilidade legado: se não tem text_preview, usar text
+            text_preview: transcriptResult.rows[0].text_preview || transcriptResult.rows[0].text?.slice(0, 500) || '',
+            created_at: transcriptResult.rows[0].created_at,
+            processed: transcriptResult.rows[0].processed,
+          }
+        : null
+
+      const transcription_job = jobResult.rows[0] || null
+
+      return NextResponse.json({
+        session: queryResult.rows[0],
+        transcript,
+        transcription_job,
+      })
     })
 
     return result
