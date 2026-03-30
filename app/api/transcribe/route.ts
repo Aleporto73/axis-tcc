@@ -2,41 +2,12 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
 import { PoolClient } from 'pg'
-import { Agent, fetch as undiciFetch } from 'undici'
+import { writeFile, mkdir } from 'fs/promises'
+import path from 'path'
+import { randomUUID } from 'crypto'
 
-// ── ASR Local (faster-whisper via Docker) ──
-const ASR_URL = process.env.ASR_SERVICE_URL || 'http://localhost:8000/v1/audio/transcriptions'
-const FREE_LIMIT_MINUTES = 50  // 1 sessão demo para FREE
-
-// ── Transcrição via ASR local (undici Agent com timeout de 30 min) ──
-async function transcribeLocal(audioFile: File | Buffer, filename: string = 'audio.mp3'): Promise<string> {
-  const formData = new FormData()
-  let blob: Blob
-  if (Buffer.isBuffer(audioFile)) {
-    blob = new Blob([new Uint8Array(audioFile)], { type: 'audio/mpeg' })
-  } else {
-    blob = audioFile as Blob
-  }
-  formData.append('file', blob, filename)
-  formData.append('language', 'pt')
-
-  const dispatcher = new Agent({
-    headersTimeout: 30 * 60 * 1000,
-    bodyTimeout: 30 * 60 * 1000,
-  })
-
-  const response = await undiciFetch(ASR_URL, {
-    method: 'POST',
-    body: formData,
-    dispatcher,
-  })
-
-  if (!response.ok) {
-    throw new Error(`ASR Service erro: ${response.status} ${response.statusText}`)
-  }
-  const data = await response.json()
-  return data.text || ''
-}
+const FREE_LIMIT_MINUTES = 50
+const AUDIO_UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || '/var/lib/axis/audio-uploads'
 
 // ── Helper: executa callback com SET app.tenant_id (RLS) ──
 async function withTenantClient<T>(
@@ -66,7 +37,6 @@ async function checkTranscriptionLimit(userId: string): Promise<{
   blocked: boolean
   month: string
 }> {
-  // Resolver tenant (usa pool direto — queries de lookup por clerk_user_id, sem RLS)
   const profileRes = await pool.query(
     'SELECT tenant_id FROM profiles WHERE clerk_user_id = $1 AND is_active = true LIMIT 1',
     [userId]
@@ -78,7 +48,6 @@ async function checkTranscriptionLimit(userId: string): Promise<{
   }
   if (!tenantId) throw new Error('TENANT_NOT_FOUND')
 
-  // Verificar licença e uso — com RLS ativo
   return withTenantClient(tenantId, async (client) => {
     const licenseRes = await client.query(
       `SELECT hotmart_plan FROM user_licenses
@@ -108,36 +77,39 @@ async function checkTranscriptionLimit(userId: string): Promise<{
   })
 }
 
-// ── Incrementar minutos usados (com RLS) ──
-async function incrementUsage(tenantId: string, month: string, minutes: number) {
-  if (minutes <= 0) return
-  await withTenantClient(tenantId, async (client) => {
-    await client.query(
-      `INSERT INTO transcription_usage (tenant_id, month, minutes_used, updated_at)
-       VALUES ($1, $2, $3, NOW())
-       ON CONFLICT (tenant_id, month)
-       DO UPDATE SET minutes_used = transcription_usage.minutes_used + $3, updated_at = NOW()`,
-      [tenantId, month, minutes]
-    )
-    console.log('[TRANSCRIBE] Uso incrementado:', { tenantId, month, minutes })
-  })
-}
-
+/**
+ * POST /api/transcribe
+ *
+ * Fluxo assíncrono:
+ * 1. Auth + validar tenant
+ * 2. Checar limite FREE (50 min)
+ * 3. Salvar áudio em disco
+ * 4. Criar job pending em transcription_jobs
+ * 5. Responder imediatamente com job_id
+ *
+ * NÃO chama ASR. NÃO espera transcrição. O worker faz isso.
+ */
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return new Response(JSON.stringify({ error: 'Nao autenticado' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+      return new Response(
+        JSON.stringify({ error: 'Nao autenticado' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      )
     }
 
-    // ── VERIFICAR LIMITE ANTES DE TUDO ──
+    // ── VERIFICAR LIMITE ──
     let limitInfo: Awaited<ReturnType<typeof checkTranscriptionLimit>>
     try {
       limitInfo = await checkTranscriptionLimit(userId)
     } catch (e: any) {
       if (e.message === 'TENANT_NOT_FOUND') {
-        return new Response(JSON.stringify({ error: 'Tenant nao encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+        return new Response(
+          JSON.stringify({ error: 'Tenant nao encontrado' }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
+        )
       }
       throw e
     }
@@ -154,62 +126,72 @@ export async function POST(request: NextRequest) {
 
     const tenantId = limitInfo.tenantId
 
+    // ── VALIDAR FORM DATA ──
     const formData = await request.formData()
     const audioFile = formData.get('audio') as File
     const sessionId = formData.get('session_id') as string
     const patientId = formData.get('patient_id') as string
 
     if (!audioFile) {
-      return new Response(JSON.stringify({ error: 'Arquivo de audio obrigatorio' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+      return new Response(
+        JSON.stringify({ error: 'Arquivo de audio obrigatorio' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
     }
 
     if (!sessionId || !patientId) {
-      return new Response(JSON.stringify({ error: 'session_id e patient_id obrigatorios' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
-    }
-
-    console.log('[TRANSCRIBE] Iniciando transcrição:', { tenantId, sessionId, patientId, fileSize: audioFile.size })
-
-    // ── TRANSCREVER ÁUDIO INTEIRO ──
-    const fullTranscription = await transcribeLocal(audioFile)
-
-    if (!fullTranscription || fullTranscription.trim().length === 0) {
-      return new Response(JSON.stringify({ error: 'Transcricao vazia - verifique o audio' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
-    }
-
-    console.log('[TRANSCRIBE] Transcrição concluída, salvando...', { tenantId, chars: fullTranscription.length })
-
-    // ── INSERT + INCREMENTO COM RLS ATIVO ──
-    const result = await withTenantClient(tenantId, async (client) => {
-      const res = await client.query(
-        'INSERT INTO transcripts (tenant_id, patient_id, session_id, session_date, text, processed) VALUES ($1, $2, $3, CURRENT_DATE, $4, false) RETURNING id, text, created_at',
-        [tenantId, patientId, sessionId, fullTranscription]
+      return new Response(
+        JSON.stringify({ error: 'session_id e patient_id obrigatorios' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       )
+    }
 
-      // Incrementar uso para FREE (estimar minutos pelo tamanho do arquivo)
-      if (limitInfo.isFree) {
-        const estimatedMinutes = Math.max(1, Math.ceil(audioFile.size / (64 * 1024 / 8 * 60)))
+    // ── SALVAR ÁUDIO EM DISCO ──
+    const jobId = randomUUID()
+    const ext = path.extname(audioFile.name || 'audio.webm') || '.webm'
+    const audioDir = path.join(AUDIO_UPLOAD_DIR, tenantId)
+    await mkdir(audioDir, { recursive: true })
+    const audioPath = path.join(audioDir, `${jobId}${ext}`)
+
+    const arrayBuffer = await audioFile.arrayBuffer()
+    await writeFile(audioPath, Buffer.from(arrayBuffer))
+
+    console.log('[TRANSCRIBE] Áudio salvo:', { jobId, audioPath, size: audioFile.size })
+
+    // ── CRIAR JOB (com RLS) ──
+    // O unique index idx_tjobs_one_active_per_session impede duplicatas
+    try {
+      await withTenantClient(tenantId, async (client) => {
         await client.query(
-          `INSERT INTO transcription_usage (tenant_id, month, minutes_used, updated_at)
-           VALUES ($1, $2, $3, NOW())
-           ON CONFLICT (tenant_id, month)
-           DO UPDATE SET minutes_used = transcription_usage.minutes_used + $3, updated_at = NOW()`,
-          [tenantId, limitInfo.month, estimatedMinutes]
+          `INSERT INTO transcription_jobs
+           (id, tenant_id, session_id, patient_id, status, audio_path, original_filename, file_size_bytes)
+           VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7)`,
+          [jobId, tenantId, sessionId, patientId, audioPath, audioFile.name || 'audio.webm', audioFile.size]
         )
-        console.log('[TRANSCRIBE] Uso incrementado:', { tenantId, month: limitInfo.month, minutes: estimatedMinutes })
+      })
+    } catch (e: any) {
+      // Unique index violation = já existe job ativo para esta sessão
+      if (e.code === '23505' && e.constraint?.includes('one_active_per_session')) {
+        return new Response(
+          JSON.stringify({ error: 'Já existe uma transcrição em andamento para esta sessão.' }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } }
+        )
       }
+      throw e
+    }
 
-      return res
-    })
+    console.log('[TRANSCRIBE] Job criado:', { jobId, tenantId, sessionId })
 
-    return new Response(JSON.stringify({ success: true, transcript: result.rows[0] }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    return new Response(
+      JSON.stringify({ success: true, job_id: jobId, status: 'pending' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
 
   } catch (error: any) {
-    console.error('[TRANSCRIBE] Erro ao transcrever:', error)
-
-    const msg = error?.message?.includes('ASR Service')
-      ? 'Serviço de transcrição indisponível. Verifique se o ASR está rodando.'
-      : 'Erro ao transcrever audio'
-
-    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+    console.error('[TRANSCRIBE] Erro:', error)
+    return new Response(
+      JSON.stringify({ error: 'Erro ao criar job de transcrição' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
   }
 }
