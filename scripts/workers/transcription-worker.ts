@@ -8,6 +8,7 @@
  * Uso: npx tsx scripts/workers/transcription-worker.ts
  */
 
+import 'dotenv/config'
 import { Pool, PoolClient } from 'pg'
 import { readFile } from 'fs/promises'
 import { transcribeAudio } from '../../src/services/asr'
