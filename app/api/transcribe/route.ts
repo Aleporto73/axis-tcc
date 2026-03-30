@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
 import { PoolClient } from 'pg'
-import { Agent } from 'undici'
+import { Agent, fetch as undiciFetch } from 'undici'
 
 // ── ASR Local (faster-whisper via Docker) ──
 const ASR_URL = process.env.ASR_SERVICE_URL || 'http://localhost:8000/v1/audio/transcriptions'
@@ -25,10 +25,9 @@ async function transcribeLocal(audioFile: File | Buffer, filename: string = 'aud
     bodyTimeout: 30 * 60 * 1000,
   })
 
-  const response = await fetch(ASR_URL, {
+  const response = await undiciFetch(ASR_URL, {
     method: 'POST',
     body: formData,
-    // @ts-expect-error Node.js undici dispatcher
     dispatcher,
   })
 
