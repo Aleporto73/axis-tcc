@@ -100,23 +100,20 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       const data = await res.json()
       setSession(data.session)
 
-      // Transcript já pronta? Buscar texto completo se necessário
+      // Transcript: sempre buscar texto completo via endpoint dedicado
       if (data.transcript) {
-        const hasFullText = data.transcript.text && data.transcript.text.length > 600
-        if (hasFullText) {
+        if (data.transcript.id) {
+          // Setar preview imediato para não ficar vazio enquanto carrega
           setTranscript(data.transcript)
-        } else if (data.transcript.id) {
-          try {
-            const textRes = await fetch(`/api/transcribe/text/${data.transcript.id}`)
-            if (textRes.ok) {
-              const textData = await textRes.json()
-              setTranscript({ ...data.transcript, text: textData.text })
-            } else {
-              setTranscript(data.transcript)
-            }
-          } catch {
-            setTranscript(data.transcript)
-          }
+          // Buscar texto completo em paralelo
+          fetch(`/api/transcribe/text/${data.transcript.id}`)
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then(textData => {
+              if (textData.text) {
+                setTranscript(prev => prev ? { ...prev, text: textData.text } : prev)
+              }
+            })
+            .catch(() => { /* fallback: mantém preview já setado */ })
         } else {
           setTranscript(data.transcript)
         }
@@ -396,7 +393,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
 
               {transcript ? (
                 <div>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 max-h-96 overflow-y-auto mb-4">
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-4">
                     <p className="whitespace-pre-wrap text-sm text-slate-700">{transcript.text || transcript.text_preview || 'Transcrição disponível'}</p>
                   </div>
                   <p className="text-xs text-slate-400 mb-4">Transcrito em {new Date(transcript.created_at).toLocaleString('pt-BR')}</p>
