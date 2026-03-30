@@ -40,7 +40,7 @@ pool.on('error', (err) => {
   console.error('[WORKER] Pool error:', err.message)
 })
 
-// ── Helper RLS ──
+// ── Helper RLS: contexto de tenant (para tabelas clínicas: transcripts, etc.) ──
 async function withTenantClient<T>(
   tenantId: string,
   callback: (client: PoolClient) => Promise<T>
@@ -60,73 +60,98 @@ async function withTenantClient<T>(
   }
 }
 
-// ── Pegar próximo job com lock ──
+// ── Helper RLS: contexto de worker (para transcription_jobs cross-tenant) ──
+async function withWorkerClient<T>(
+  callback: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query("SELECT set_config('app.is_worker', 'true', true)")
+    const result = await callback(client)
+    await client.query('COMMIT')
+    return result
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
+// ── Pegar próximo job com lock (via worker context para bypass tenant RLS) ──
 async function claimJob(): Promise<any | null> {
-  const result = await pool.query(
-    `UPDATE transcription_jobs
-     SET status = 'processing',
-         started_at = NOW(),
-         locked_at = NOW(),
-         heartbeat_at = NOW(),
-         worker_id = $1
-     WHERE id = (
-       SELECT id FROM transcription_jobs
-       WHERE status = 'pending'
-       ORDER BY created_at ASC
-       LIMIT 1
-       FOR UPDATE SKIP LOCKED
-     )
-     RETURNING *`,
-    [WORKER_ID]
-  )
-  return result.rows[0] || null
+  return withWorkerClient(async (client) => {
+    const result = await client.query(
+      `UPDATE transcription_jobs
+       SET status = 'processing',
+           started_at = NOW(),
+           locked_at = NOW(),
+           heartbeat_at = NOW(),
+           worker_id = $1
+       WHERE id = (
+         SELECT id FROM transcription_jobs
+         WHERE status = 'pending'
+         ORDER BY created_at ASC
+         LIMIT 1
+         FOR UPDATE SKIP LOCKED
+       )
+       RETURNING *`,
+      [WORKER_ID]
+    )
+    return result.rows[0] || null
+  })
 }
 
-// ── Recovery de jobs travados ──
+// ── Recovery de jobs travados (via worker context) ──
 async function recoverStalledJobs(): Promise<void> {
-  const result = await pool.query(
-    `UPDATE transcription_jobs
-     SET status = 'pending',
-         locked_at = NULL,
-         worker_id = NULL,
-         heartbeat_at = NULL,
-         attempts = attempts + 1
-     WHERE status = 'processing'
-       AND heartbeat_at < NOW() - INTERVAL '${RECOVERY_TIMEOUT_MIN} minutes'
-       AND attempts < max_attempts
-     RETURNING id, attempts`
-  )
+  await withWorkerClient(async (client) => {
+    const result = await client.query(
+      `UPDATE transcription_jobs
+       SET status = 'pending',
+           locked_at = NULL,
+           worker_id = NULL,
+           heartbeat_at = NULL,
+           attempts = attempts + 1
+       WHERE status = 'processing'
+         AND heartbeat_at < NOW() - INTERVAL '${RECOVERY_TIMEOUT_MIN} minutes'
+         AND attempts < max_attempts
+       RETURNING id, attempts`
+    )
 
-  for (const row of result.rows) {
-    console.log(`[WORKER] Job travado recuperado: ${row.id} (tentativa ${row.attempts})`)
-  }
+    for (const row of result.rows) {
+      console.log(`[WORKER] Job travado recuperado: ${row.id} (tentativa ${row.attempts})`)
+    }
 
-  // Marcar como failed jobs que excederam max_attempts
-  const failedResult = await pool.query(
-    `UPDATE transcription_jobs
-     SET status = 'failed',
-         error_message = 'Excedeu número máximo de tentativas',
-         finished_at = NOW(),
-         locked_at = NULL,
-         worker_id = NULL,
-         heartbeat_at = NULL
-     WHERE status = 'processing'
-       AND heartbeat_at < NOW() - INTERVAL '${RECOVERY_TIMEOUT_MIN} minutes'
-       AND attempts >= max_attempts
-     RETURNING id`
-  )
+    // Marcar como failed jobs que excederam max_attempts
+    const failedResult = await client.query(
+      `UPDATE transcription_jobs
+       SET status = 'failed',
+           error_message = 'Excedeu número máximo de tentativas',
+           finished_at = NOW(),
+           locked_at = NULL,
+           worker_id = NULL,
+           heartbeat_at = NULL
+       WHERE status = 'processing'
+         AND heartbeat_at < NOW() - INTERVAL '${RECOVERY_TIMEOUT_MIN} minutes'
+         AND attempts >= max_attempts
+       RETURNING id`
+    )
 
-  for (const row of failedResult.rows) {
-    console.log(`[WORKER] Job marcado como failed (max attempts): ${row.id}`)
-  }
+    for (const row of failedResult.rows) {
+      console.log(`[WORKER] Job marcado como failed (max attempts): ${row.id}`)
+    }
+  })
 }
 
-// ── Atualizar heartbeat ──
+// ── Atualizar heartbeat (via worker context) ──
 async function updateHeartbeat(jobId: string): Promise<void> {
-  await pool.query(
-    'UPDATE transcription_jobs SET heartbeat_at = NOW() WHERE id = $1',
-    [jobId]
-  )
+  await withWorkerClient(async (client) => {
+    await client.query(
+      'UPDATE transcription_jobs SET heartbeat_at = NOW() WHERE id = $1',
+      [jobId]
+    )
+  })
 }
 
 // ── Processar job ──
@@ -199,19 +224,21 @@ async function processJob(job: any): Promise<void> {
       return { transcriptId }
     })
 
-    // 4. Marcar job como completed + limpar lock
-    await pool.query(
-      `UPDATE transcription_jobs
-       SET status = 'completed',
-           progress = 100,
-           transcript_id = $1,
-           finished_at = NOW(),
-           locked_at = NULL,
-           worker_id = NULL,
-           heartbeat_at = NULL
-       WHERE id = $2`,
-      [transcriptResult.transcriptId, job.id]
-    )
+    // 4. Marcar job como completed + limpar lock (via worker context)
+    await withWorkerClient(async (client) => {
+      await client.query(
+        `UPDATE transcription_jobs
+         SET status = 'completed',
+             progress = 100,
+             transcript_id = $1,
+             finished_at = NOW(),
+             locked_at = NULL,
+             worker_id = NULL,
+             heartbeat_at = NULL
+         WHERE id = $2`,
+        [transcriptResult.transcriptId, job.id]
+      )
+    })
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1)
     console.log(`[WORKER] Job ${job.id} concluído em ${duration}s (${text.length} chars)`)
@@ -222,24 +249,26 @@ async function processJob(job: any): Promise<void> {
     const newAttempts = (job.attempts || 0) + 1
     const isFinal = newAttempts >= (job.max_attempts || 3)
 
-    await pool.query(
-      `UPDATE transcription_jobs
-       SET status = $1,
-           error_message = $2,
-           attempts = $3,
-           finished_at = $4,
-           locked_at = NULL,
-           worker_id = NULL,
-           heartbeat_at = NULL
-       WHERE id = $5`,
-      [
-        isFinal ? 'failed' : 'pending',
-        error.message?.slice(0, 500) || 'Erro desconhecido',
-        newAttempts,
-        isFinal ? new Date() : null,
-        job.id,
-      ]
-    )
+    await withWorkerClient(async (client) => {
+      await client.query(
+        `UPDATE transcription_jobs
+         SET status = $1,
+             error_message = $2,
+             attempts = $3,
+             finished_at = $4,
+             locked_at = NULL,
+             worker_id = NULL,
+             heartbeat_at = NULL
+         WHERE id = $5`,
+        [
+          isFinal ? 'failed' : 'pending',
+          error.message?.slice(0, 500) || 'Erro desconhecido',
+          newAttempts,
+          isFinal ? new Date() : null,
+          job.id,
+        ]
+      )
+    })
 
     if (isFinal) {
       console.log(`[WORKER] Job ${job.id} FAILED definitivamente após ${newAttempts} tentativas`)
