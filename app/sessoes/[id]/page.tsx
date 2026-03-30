@@ -102,7 +102,8 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
 
       // Transcript já pronta? Buscar texto completo se necessário
       if (data.transcript) {
-        if (data.transcript.text) {
+        const hasFullText = data.transcript.text && data.transcript.text.length > 600
+        if (hasFullText) {
           setTranscript(data.transcript)
         } else if (data.transcript.id) {
           try {
