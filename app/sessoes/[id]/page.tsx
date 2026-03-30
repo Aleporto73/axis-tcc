@@ -38,6 +38,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [transcript, setTranscript] = useState<Transcript | null>(null)
   const [analysis, setAnalysis] = useState<TCCAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
+  const [transcriptExpanded, setTranscriptExpanded] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
@@ -408,8 +409,29 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
 
               {transcript ? (
                 <div>
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-4">
-                    <p className="whitespace-pre-wrap text-sm text-slate-700">{transcript.text || transcript.text_preview || 'Transcrição disponível'}</p>
+                  <div className="relative">
+                    <div className={`bg-slate-50 rounded-lg p-4 border border-slate-200 mb-2 overflow-hidden transition-all duration-300 ${transcriptExpanded ? '' : 'max-h-96'}`}>
+                      <p className="whitespace-pre-wrap text-sm text-slate-700">{transcript.text || transcript.text_preview || 'Transcrição disponível'}</p>
+                    </div>
+                    {!transcriptExpanded && (
+                      <div className="absolute bottom-2 left-0 right-0 h-20 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none rounded-b-lg" />
+                    )}
+                    <button
+                      onClick={() => setTranscriptExpanded(!transcriptExpanded)}
+                      className="w-full py-2 text-sm text-sky-600 hover:text-sky-800 font-medium flex items-center justify-center gap-1"
+                    >
+                      {transcriptExpanded ? (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                          Recolher transcrição
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                          Ver transcrição completa
+                        </>
+                      )}
+                    </button>
                   </div>
                   <p className="text-xs text-slate-400 mb-4">Transcrito em {new Date(transcript.created_at).toLocaleString('pt-BR')}</p>
                   {!analysis && (
