@@ -214,8 +214,23 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
     if (!transcript || !session) return
     try {
       setAnalyzing(true)
-      const res = await fetch('/api/analyze-tcc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transcript_id: transcript.id, session_id: session.id, patient_id: session.patient_id }) })
-      if (res.ok) { const data = await res.json(); setAnalysis(data.analysis) }
+      const res = await fetch('/api/analyze-tcc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript_id: transcript.id,
+          text: transcript.text || transcript.text_preview,
+          session_id: session.id,
+          patient_id: session.patient_id
+        })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAnalysis(data.analysis)
+      } else {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error || 'Erro ao analisar TCC')
+      }
     } catch (e) { console.error(e); alert('Erro ao analisar TCC') } finally { setAnalyzing(false) }
   }
 

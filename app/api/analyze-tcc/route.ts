@@ -1,48 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import OpenAI from 'openai'
-import pool from '@/src/database/db'
+import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 import { readTranscriptSmart } from '@/src/services/transcript-storage'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
+/**
+ * POST /api/analyze-tcc
+ *
+ * Extrai fatos, pensamentos, emocoes e comportamentos de uma transcricao TCC.
+ * Conforme Documento Mestre v2.1: Camada 2 (texto determinístico automatizado).
+ *
+ * Migration: withTenant (resolve tenant corretamente via cookie multi-tenant)
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-    }
+    const body = await request.json()
+    const { transcript_id, text: bodyText, session_id, patient_id } = body
 
-    const tenantResult = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      [userId]
-    )
-    if (tenantResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Tenant nao encontrado' }, { status: 404 })
-    }
-    const tenantId = tenantResult.rows[0].id
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId } = ctx
 
-    const { transcript_id, text: bodyText, session_id, patient_id } = await request.json()
-
-    // Resolver texto: usar body se fornecido, senão buscar do disco via transcript_id
-    let text = bodyText
-    if (!text && transcript_id) {
-      const tResult = await pool.query(
-        'SELECT transcript_path, text FROM transcripts WHERE id = $1 AND tenant_id = $2',
-        [transcript_id, tenantId]
-      )
-      if (tResult.rows[0]) {
-        text = await readTranscriptSmart(tResult.rows[0])
+      // Resolver texto: usar body se fornecido, senão buscar via transcript_id
+      let text = bodyText
+      if (!text && transcript_id) {
+        const tResult = await client.query(
+          'SELECT transcript_path, text, text_preview FROM transcripts WHERE id = $1 AND tenant_id = $2',
+          [transcript_id, tenantId]
+        )
+        if (tResult.rows[0]) {
+          try {
+            text = await readTranscriptSmart(tResult.rows[0])
+          } catch {
+            // Fallback: se disco falhar, usar text ou text_preview
+            text = tResult.rows[0].text || tResult.rows[0].text_preview || ''
+          }
+        }
       }
-    }
 
-    if (!text) {
-      return NextResponse.json({ error: 'Texto obrigatorio' }, { status: 400 })
-    }
+      if (!text) {
+        return NextResponse.json({ error: 'Texto obrigatorio' }, { status: 400 })
+      }
 
-    const prompt = `Voce e um assistente clinico especializado em Terapia Cognitivo-Comportamental (TCC), incluindo abordagens de 2a e 3a onda.
+      const prompt = `Voce e um assistente clinico especializado em Terapia Cognitivo-Comportamental (TCC), incluindo abordagens de 2a e 3a onda.
 
 CONTEXTO:
 A transcricao abaixo e de uma sessao entre um PSICOLOGO e um PACIENTE.
@@ -95,65 +98,67 @@ FORMATO (JSON valido, sem texto adicional):
 TEXTO DA SESSAO:
 ${text}`
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: 'Voce e um assistente clinico especializado em analise de sessoes de TCC. Responda apenas com JSON valido, sem texto adicional.' },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.2,
-      max_tokens: 1500
-    })
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'Voce e um assistente clinico especializado em analise de sessoes de TCC. Responda apenas com JSON valido, sem texto adicional.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.2,
+        max_tokens: 1500
+      })
 
-    const content = response.choices[0].message.content || '{}'
-    const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    
-    let analysis
-    try {
-      analysis = JSON.parse(cleanContent)
-    } catch {
-      analysis = { fatos: [], pensamentos: [], emocoes: [], comportamentos: [] }
-    }
+      const content = response.choices[0].message.content || '{}'
+      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
-    if (session_id && patient_id) {
-      // Validar que session e patient pertencem a este tenant
-      const sessionCheck = await pool.query(
-        'SELECT id FROM sessions WHERE id = $1 AND patient_id = $2 AND tenant_id = $3',
-        [session_id, patient_id, tenantId]
-      )
-      if (sessionCheck.rows.length > 0) {
-        await pool.query(
-          `INSERT INTO tcc_analyses (tenant_id, patient_id, session_id, facts, thoughts, emotions, behaviors, raw_transcription)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [
-            tenantId,
-            patient_id,
-            session_id,
-            JSON.stringify(analysis.fatos || []),
-            JSON.stringify(analysis.pensamentos || []),
-            JSON.stringify(analysis.emocoes || []),
-            JSON.stringify(analysis.comportamentos || []),
-            text
-          ]
+      let analysis
+      try {
+        analysis = JSON.parse(cleanContent)
+      } catch {
+        analysis = { fatos: [], pensamentos: [], emocoes: [], comportamentos: [] }
+      }
+
+      if (session_id && patient_id) {
+        const sessionCheck = await client.query(
+          'SELECT id FROM sessions WHERE id = $1 AND patient_id = $2 AND tenant_id = $3',
+          [session_id, patient_id, tenantId]
+        )
+        if (sessionCheck.rows.length > 0) {
+          await client.query(
+            `INSERT INTO tcc_analyses (tenant_id, patient_id, session_id, facts, thoughts, emotions, behaviors, raw_transcription)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [
+              tenantId,
+              patient_id,
+              session_id,
+              JSON.stringify(analysis.fatos || []),
+              JSON.stringify(analysis.pensamentos || []),
+              JSON.stringify(analysis.emocoes || []),
+              JSON.stringify(analysis.comportamentos || []),
+              text
+            ]
+          )
+        }
+      }
+
+      if (transcript_id) {
+        await client.query(
+          'UPDATE transcripts SET processed = true WHERE id = $1 AND tenant_id = $2',
+          [transcript_id, tenantId]
         )
       }
-    }
 
-    if (transcript_id) {
-      await pool.query(
-        'UPDATE transcripts SET processed = true WHERE id = $1 AND tenant_id = $2',
-        [transcript_id, tenantId]
-      )
-    }
-
-    return NextResponse.json({
-      success: true,
-      analysis,
-      tokens: response.usage?.total_tokens
+      return NextResponse.json({
+        success: true,
+        analysis,
+        tokens: response.usage?.total_tokens
+      })
     })
 
-  } catch (error) {
+    return result
+  } catch (error: any) {
     console.error('Erro ao analisar TCC:', error)
-    return NextResponse.json({ error: 'Erro ao analisar' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }
