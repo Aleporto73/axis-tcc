@@ -151,6 +151,16 @@ export function restoreClinicalTerms(text: string): string {
  * Usar word boundaries (\b) para evitar matches parciais.
  */
 const SAFE_CORRECTIONS: Array<[RegExp, string]> = [
+  // ─── Erros ASR identificados em testes 31/03/2026 ───
+  [/\bextraio\b/gi, 'estranho'],
+  [/\bsacudade\b/gi, 'faculdade'],
+  [/\bFulama\b/gi, 'fulano'],
+  [/\bCinja que\b/gi, 'Finja que'],
+  [/\bdesfuncionais\b/gi, 'disfuncionais'],
+  [/\bimpossível erro\b/gi, 'possível erro'],
+  [/\bAtenção vem primeiro\b/gi, 'A tensão vem primeiro'],
+  [/\biria sumir\b/gi, 'queria sumir'],
+  [/\btenha medo\b/gi, 'tenho medo'],
   // Erros reais observados no Whisper com áudio PT-BR
   [/\bcompareção social\b/gi, 'comparação social'],
   [/\bpensamento automáticos\b/gi, 'pensamentos automáticos'],
