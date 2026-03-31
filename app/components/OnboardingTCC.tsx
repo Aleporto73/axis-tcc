@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 
 // =====================================================
 // OnboardingTCC — Overlay client-side (3 telas)
@@ -15,6 +16,9 @@ import { useRouter } from 'next/navigation'
 // =====================================================
 
 const TCC_COLOR = '#1e3a5f'
+
+// Admins não passam pelo onboarding
+const ADMIN_EMAILS = ['porto.ar4@gmail.com', 'aleporto305@gmail.com']
 
 const LGPD_TERMS = `TERMO DE CONSENTIMENTO E RESPONSABILIDADE PROFISSIONAL
 
@@ -59,6 +63,7 @@ function formatCPF(value: string): string {
 
 export default function OnboardingTCC() {
   const router = useRouter()
+  const { user, isLoaded: userLoaded } = useUser()
   const [status, setStatus] = useState<'loading' | 'show' | 'hidden'>('loading')
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [accepted, setAccepted] = useState(false)
@@ -71,6 +76,15 @@ export default function OnboardingTCC() {
 
   // Check progress
   useEffect(() => {
+    if (!userLoaded) return
+
+    // Admin não vê onboarding
+    const email = user?.primaryEmailAddress?.emailAddress?.toLowerCase()?.trim()
+    if (email && ADMIN_EMAILS.includes(email)) {
+      setStatus('hidden')
+      return
+    }
+
     let cancelled = false
     async function check() {
       if (document.cookie.includes('axis_tcc_onboarding_done=1')) {
@@ -100,7 +114,7 @@ export default function OnboardingTCC() {
     }
     check()
     return () => { cancelled = true }
-  }, [])
+  }, [userLoaded, user])
 
   const handleSaveCpfCrp = async () => {
     setSaving(true)
