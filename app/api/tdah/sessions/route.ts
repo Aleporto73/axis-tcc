@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *`,
         [
-          ctx.tenantId, patient_id, ctx.userId, scheduled_at,
+          ctx.tenantId, patient_id, ctx.profileId, scheduled_at,
           session_context || 'clinical', sessionNumber,
           session_notes || null
         ]
