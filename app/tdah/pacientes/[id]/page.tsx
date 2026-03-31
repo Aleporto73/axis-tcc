@@ -549,7 +549,7 @@ export default function PacienteDetalhePage() {
           { label: 'Protocolos ativos', value: patient.active_protocols },
           { label: 'Status', value: patient.status === 'active' ? 'Ativo' : 'Inativo' },
         ].map(m => (
-          <div key={m.label} className="bg-white rounded-xl border border-slate-100 p-4" style={{ borderTopColor: TDAH_COLOR, borderTopWidth: '2px' }}>
+          <div key={m.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4" style={{ borderTopColor: TDAH_COLOR, borderTopWidth: '2px' }}>
             <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">{m.label}</p>
             <p className="text-2xl font-bold text-slate-800 mt-1">{m.value}</p>
           </div>
@@ -559,7 +559,7 @@ export default function PacienteDetalhePage() {
       {/* Info cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Dados clínicos */}
-        <div className="bg-white rounded-xl border border-slate-100 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Dados clínicos</h2>
           <dl className="space-y-3 text-sm">
             {patient.birth_date && (
@@ -596,7 +596,7 @@ export default function PacienteDetalhePage() {
         </div>
 
         {/* Dados escolares */}
-        <div className="bg-white rounded-xl border border-slate-100 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Dados escolares</h2>
           {patient.school_name ? (
             <dl className="space-y-3 text-sm">
@@ -630,7 +630,7 @@ export default function PacienteDetalhePage() {
       </div>
 
       {/* Responsáveis */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Responsáveis</h2>
           <button
@@ -748,7 +748,7 @@ export default function PacienteDetalhePage() {
       )}
 
       {/* DRC — Daily Report Card */}
-      <div className="bg-white rounded-xl border border-slate-100 p-4 mb-6 flex items-center justify-between">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
             🏫
@@ -773,7 +773,7 @@ export default function PacienteDetalhePage() {
       </div>
 
       {/* Layer AuDHD */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6" style={{ borderLeftColor: '#7c3aed', borderLeftWidth: '3px' }}>
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6" style={{ borderLeftColor: '#7c3aed', borderLeftWidth: '3px' }}>
         <div className="flex items-start justify-between mb-3">
           <div>
             <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2">
@@ -996,7 +996,7 @@ export default function PacienteDetalhePage() {
       )}
 
       {/* Sessões recentes */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Sessões recentes</h2>
           <Link href={`/tdah/sessoes?paciente=${patient.id}`} className="text-xs font-medium" style={{ color: TDAH_COLOR }}>
@@ -1036,7 +1036,7 @@ export default function PacienteDetalhePage() {
       </div>
 
       {/* Protocolos ativos */}
-      <div className="mt-6 bg-white rounded-xl border border-slate-100 p-5">
+      <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Protocolos</h2>
           <button
@@ -1090,7 +1090,7 @@ export default function PacienteDetalhePage() {
       </div>
 
       {/* Gráfico CSO-TDAH */}
-      <div className="mt-6 bg-white rounded-xl border border-slate-100 p-5">
+      <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-1.5">
           Evolução do Paciente
           <HelpTipTDAH tip="cso_geral" />

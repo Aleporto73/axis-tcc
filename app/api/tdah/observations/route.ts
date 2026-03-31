@@ -9,16 +9,16 @@ import { handleRouteError, canAccessTdahPatient } from '@/src/database/with-role
 // Sessão deve estar 'in_progress' para aceitar obs
 // =====================================================
 
-// PIS válidos (Bible §7.2)
-const VALID_PIS = ['independente', 'gestual', 'verbal', 'modelacao', 'fisica_parcial', 'fisica_total']
-// BSS válidos (Bible §7.3)
-const VALID_BSS = ['estavel', 'oscilante', 'instavel']
-// EXR válidos (Bible §8)
-const VALID_EXR = ['independente', 'apoio_minimo', 'apoio_significativo', 'nao_realiza']
-// SEN válidos (Bible §9.6)
-const VALID_SEN = ['sem_impacto', 'impacto_moderado', 'impacto_significativo']
-// TRF válidos (Bible §9.6)
-const VALID_TRF = ['transicao_fluida', 'com_resistencia', 'com_ruptura']
+// PIS válidos (Bible §7.2) — escala TDAH: independente/mínimo/moderado/total
+const VALID_PIS = ['independente', 'minimo', 'moderado', 'total']
+// BSS válidos (Bible §7.3) — escala TDAH: estável/leve/desregulado
+const VALID_BSS = ['estavel', 'leve', 'desregulado']
+// EXR válidos (Bible §8) — escala TDAH: excelente/adequado/prejudicado/severamente prejudicado
+const VALID_EXR = ['excelente', 'adequado', 'prejudicado', 'severamente_prejudicado']
+// SEN válidos (Bible §9.6) — escala TDAH: ausente/leve/moderado/severo
+const VALID_SEN = ['ausente', 'leve', 'moderado', 'severo']
+// TRF válidos (Bible §9.6) — escala TDAH: ausente/leve/moderado/severo
+const VALID_TRF = ['ausente', 'leve', 'moderado', 'severo']
 // RIG state (Bible §9.6.3)
 const VALID_RIG_STATE = ['balanced', 'rigidity_leaning', 'impulsivity_leaning', 'dual_risk']
 const VALID_RIG_SEVERITY = ['none', 'mild', 'moderate', 'high']

@@ -103,7 +103,7 @@ export default function AlertasTDAHPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {(['high', 'medium', 'low'] as const).map(sev => (
-          <div key={sev} className="bg-white rounded-xl border border-slate-100 p-4 flex items-center gap-3">
+          <div key={sev} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
             <span className="text-lg">{severityIcons[sev]}</span>
             <div>
               <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">{severityLabels[sev]}</p>
@@ -139,7 +139,7 @@ export default function AlertasTDAHPage() {
 
       {/* Alerts list */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-100 p-12 text-center">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
           <p className="text-sm text-slate-400">
             {alerts.length === 0
               ? 'Nenhum alerta clínico no momento. Seus pacientes estão bem!'

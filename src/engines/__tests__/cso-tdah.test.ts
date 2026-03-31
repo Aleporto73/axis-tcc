@@ -67,15 +67,15 @@ describe('CSO-TDAH Constants', () => {
     expect(MASTERY_SCORES.mastered).toBeGreaterThan(MASTERY_SCORES.active)
   })
 
-  it('prompt scale decresce de independente a física total', () => {
+  it('prompt scale decresce de independente a total', () => {
     expect(PROMPT_SCALE.independente).toBe(1.0)
-    expect(PROMPT_SCALE.fisica_total).toBe(0.0)
+    expect(PROMPT_SCALE.total).toBe(0.0)
   })
 
-  it('stability scale: estável=1, oscilante=0.5, instável=0', () => {
+  it('stability scale: estável=1, leve=0.5, desregulado=0', () => {
     expect(STABILITY_SCALE.estavel).toBe(1.0)
-    expect(STABILITY_SCALE.oscilante).toBe(0.5)
-    expect(STABILITY_SCALE.instavel).toBe(0.0)
+    expect(STABILITY_SCALE.leve).toBe(0.5)
+    expect(STABILITY_SCALE.desregulado).toBe(0.0)
   })
 })
 
@@ -139,13 +139,13 @@ describe('PIS-TDAH', () => {
     expect(calculatePisTdah(['independente', 'independente'])).toBe(100)
   })
 
-  it('100% física total = 0', () => {
-    expect(calculatePisTdah(['fisica_total', 'fisica_total'])).toBe(0)
+  it('100% total = 0', () => {
+    expect(calculatePisTdah(['total', 'total'])).toBe(0)
   })
 
   it('mix de prompts', () => {
-    // independente(1.0) + verbal(0.6) = 1.6/2 = 0.8 × 100 = 80
-    expect(calculatePisTdah(['independente', 'verbal'])).toBe(80)
+    // independente(1.0) + minimo(0.67) = 1.67/2 = 0.835 × 100 = 83.5
+    expect(calculatePisTdah(['independente', 'minimo'])).toBe(83.5)
   })
 })
 
@@ -158,13 +158,13 @@ describe('BSS-TDAH', () => {
     expect(calculateBssTdah(['estavel', 'estavel'])).toBe(100)
   })
 
-  it('100% instável = 0', () => {
-    expect(calculateBssTdah(['instavel', 'instavel'])).toBe(0)
+  it('100% desregulado = 0', () => {
+    expect(calculateBssTdah(['desregulado', 'desregulado'])).toBe(0)
   })
 
-  it('mix estável + oscilante', () => {
+  it('mix estável + leve', () => {
     // (1.0 + 0.5) / 2 × 100 = 75
-    expect(calculateBssTdah(['estavel', 'oscilante'])).toBe(75)
+    expect(calculateBssTdah(['estavel', 'leve'])).toBe(75)
   })
 })
 
@@ -221,13 +221,13 @@ describe('EXR', () => {
     expect(calculateExr([])).toBe(0)
   })
 
-  it('100% independente = 100', () => {
-    expect(calculateExr(['independente'])).toBe(100)
+  it('100% excelente = 100', () => {
+    expect(calculateExr(['excelente'])).toBe(100)
   })
 
   it('mix de níveis', () => {
-    // independente(1.0) + apoio_minimo(0.75) = 1.75/2 = 0.875 × 100 = 87.5
-    expect(calculateExr(['independente', 'apoio_minimo'])).toBe(87.5)
+    // excelente(1.0) + adequado(0.67) = 1.67/2 = 0.835 × 100 = 83.5
+    expect(calculateExr(['excelente', 'adequado'])).toBe(83.5)
   })
 })
 
@@ -276,22 +276,22 @@ describe('Executive Score', () => {
 // ─── Bloco 3: Layer AuDHD ────────────────────────
 
 describe('SEN', () => {
-  it('100% sem_impacto = 100', () => {
-    expect(calculateSen(['sem_impacto', 'sem_impacto'])).toBe(100)
+  it('100% ausente = 100', () => {
+    expect(calculateSen(['ausente', 'ausente'])).toBe(100)
   })
 
-  it('100% impacto_significativo = 0', () => {
-    expect(calculateSen(['impacto_significativo'])).toBe(0)
+  it('100% severo = 0', () => {
+    expect(calculateSen(['severo'])).toBe(0)
   })
 })
 
 describe('TRF', () => {
-  it('100% fluida = 100', () => {
-    expect(calculateTrf(['transicao_fluida'])).toBe(100)
+  it('100% ausente = 100', () => {
+    expect(calculateTrf(['ausente'])).toBe(100)
   })
 
-  it('mix fluida + ruptura', () => {
-    expect(calculateTrf(['transicao_fluida', 'com_ruptura'])).toBe(50)
+  it('mix ausente + severo', () => {
+    expect(calculateTrf(['ausente', 'severo'])).toBe(50)
   })
 })
 
@@ -523,18 +523,18 @@ describe('computeFullCsoTdah', () => {
     // Camada Base
     activeTargets: [{ score: 80, trials: 10 }],
     masteredTargets: [{ status: 'mastered' }],
-    promptLevels: ['independente', 'gestual'],
-    stabilityLevels: ['estavel', 'oscilante'],
+    promptLevels: ['independente', 'minimo'],
+    stabilityLevels: ['estavel', 'leve'],
     adherenceScores: [85, 90],
 
     // Camada Executiva
-    exrLevels: ['independente', 'apoio_minimo'],
+    exrLevels: ['excelente', 'adequado'],
     contextScores: [80, 85, 75],
 
     // Layer AuDHD
     audhdLayerStatus: 'active_core',
-    senLevels: ['sem_impacto', 'impacto_moderado'],
-    trfLevels: ['transicao_fluida', 'com_resistencia'],
+    senLevels: ['ausente', 'moderado'],
+    trfLevels: ['ausente', 'moderado'],
     rigRecords: [{
       rig_state: 'rigidity_leaning',
       rig_severity: 'mild',

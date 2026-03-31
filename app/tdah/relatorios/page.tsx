@@ -122,7 +122,7 @@ export default function RelatoriosPage() {
       </div>
 
       {/* Controls — hidden on print */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6 print:hidden">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6 print:hidden">
         <h1 className="text-lg font-semibold text-slate-800 mb-4">Relatório de Evolução TDAH</h1>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
@@ -171,7 +171,7 @@ export default function RelatoriosPage() {
             </button>
           </div>
 
-          <div ref={printRef} className="bg-white rounded-xl border border-slate-100 p-8 print:border-none print:shadow-none print:p-0">
+          <div ref={printRef} className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 print:border-none print:shadow-none print:p-0">
             {/* Header */}
             <div className="border-b-2 pb-4 mb-6" style={{ borderColor: TDAH_COLOR }}>
               <div className="flex items-start justify-between">

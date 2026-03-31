@@ -54,23 +54,21 @@ export type MasteryStatus =
 
 export type PromptLevel =
   | "independente"     // 1.00
-  | "gestual"          // 0.80
-  | "verbal"           // 0.60
-  | "modelacao"        // 0.40
-  | "fisica_parcial"   // 0.20
-  | "fisica_total";    // 0.00
+  | "minimo"           // 0.67
+  | "moderado"         // 0.33
+  | "total";           // 0.00
 
 /** BSS-TDAH: estabilidade comportamental (Bible §7.3) */
-export type StabilityLevel = "estavel" | "oscilante" | "instavel";
+export type StabilityLevel = "estavel" | "leve" | "desregulado";
 
 // ─── Tipos Camada Executiva ──────────────────────────
 
 /** EXR: regulação executiva funcional (Bible §8.2) — escala 4 pontos */
 export type ExrLevel =
-  | "independente"          // 1.00
-  | "apoio_minimo"          // 0.75
-  | "apoio_significativo"   // 0.40
-  | "nao_realiza";          // 0.00
+  | "excelente"                // 1.00
+  | "adequado"                 // 0.67
+  | "prejudicado"              // 0.33
+  | "severamente_prejudicado"; // 0.00
 
 /** CTX: consistência contextual (Bible §8.3) — 0–100 */
 export interface CtxInput {
@@ -83,11 +81,11 @@ export interface CtxInput {
 /** Estados da layer AuDHD (Bible §9.4) */
 export type AudhdLayerStatus = "off" | "active_core" | "active_full";
 
-/** SEN: carga sensorial (Bible §9.6.1) — escala 3 pontos */
-export type SenLevel = "sem_impacto" | "impacto_moderado" | "impacto_significativo";
+/** SEN: carga sensorial (Bible §9.6.1) — escala 4 pontos */
+export type SenLevel = "ausente" | "leve" | "moderado" | "severo";
 
-/** TRF: atrito em transição (Bible §9.6.2) — escala 3 pontos */
-export type TrfLevel = "transicao_fluida" | "com_resistencia" | "com_ruptura";
+/** TRF: atrito em transição (Bible §9.6.2) — escala 4 pontos */
+export type TrfLevel = "ausente" | "leve" | "moderado" | "severo";
 
 /** RIG: rigidez-impulsividade (Bible §9.6.3) — CATEGÓRICO, NÃO linear */
 export type RigState = "balanced" | "rigidity_leaning" | "impulsivity_leaning" | "dual_risk";
@@ -212,36 +210,36 @@ export const MASTERY_SCORES: Record<MasteryStatus, number> = {
 
 export const PROMPT_SCALE: Record<PromptLevel, number> = {
   independente: 1.0,
-  gestual: 0.8,
-  verbal: 0.6,
-  modelacao: 0.4,
-  fisica_parcial: 0.2,
-  fisica_total: 0.0,
+  minimo: 0.67,
+  moderado: 0.33,
+  total: 0.0,
 };
 
 export const STABILITY_SCALE: Record<StabilityLevel, number> = {
   estavel: 1.0,
-  oscilante: 0.5,
-  instavel: 0.0,
+  leve: 0.5,
+  desregulado: 0.0,
 };
 
 export const EXR_SCALE: Record<ExrLevel, number> = {
-  independente: 1.0,
-  apoio_minimo: 0.75,
-  apoio_significativo: 0.40,
-  nao_realiza: 0.0,
+  excelente: 1.0,
+  adequado: 0.67,
+  prejudicado: 0.33,
+  severamente_prejudicado: 0.0,
 };
 
 export const SEN_SCALE: Record<SenLevel, number> = {
-  sem_impacto: 1.0,
-  impacto_moderado: 0.5,
-  impacto_significativo: 0.0,
+  ausente: 1.0,
+  leve: 0.67,
+  moderado: 0.33,
+  severo: 0.0,
 };
 
 export const TRF_SCALE: Record<TrfLevel, number> = {
-  transicao_fluida: 1.0,
-  com_resistencia: 0.5,
-  com_ruptura: 0.0,
+  ausente: 1.0,
+  leve: 0.67,
+  moderado: 0.33,
+  severo: 0.0,
 };
 
 // ─── Helpers ──────────────────────────────────────────
@@ -298,8 +296,7 @@ export function calculatePisTdah(promptLevels: PromptLevel[]): number {
 
 /**
  * BSS-TDAH — Behavioral Stability Score (Bible §7.3)
- * Diferente do ABA: usa escala 3 pontos (estável/oscilante/instável)
- * ao invés de intensity × trendFactor
+ * Escala 3 pontos TDAH: estável / leve / desregulado
  */
 export function calculateBssTdah(stabilityLevels: StabilityLevel[]): number {
   if (stabilityLevels.length === 0) return 0;
@@ -336,7 +333,7 @@ export function calculateCoreScore(metrics: CoreMetrics): number | null {
 
 /**
  * EXR — Executive Regulation (Bible §8.2)
- * Escala 4 pontos: independente / apoio mínimo / apoio significativo / não realiza
+ * Escala 4 pontos TDAH: excelente / adequado / prejudicado / severamente prejudicado
  */
 export function calculateExr(exrLevels: ExrLevel[]): number {
   if (exrLevels.length === 0) return 0;
@@ -379,7 +376,7 @@ export function calculateExecutiveScore(metrics: ExecutiveMetrics): number | nul
 
 /**
  * SEN — Sensory Load (Bible §9.6.1)
- * Escala 3 pontos: sem impacto / impacto moderado / impacto significativo
+ * Escala 4 pontos TDAH: ausente / leve / moderado / severo
  */
 export function calculateSen(senLevels: SenLevel[]): number {
   if (senLevels.length === 0) return 0;
@@ -389,7 +386,7 @@ export function calculateSen(senLevels: SenLevel[]): number {
 
 /**
  * TRF — Transition Friction (Bible §9.6.2)
- * Escala 3 pontos: transição fluida / com resistência / com ruptura
+ * Escala 4 pontos TDAH: ausente / leve / moderado / severo
  */
 export function calculateTrf(trfLevels: TrfLevel[]): number {
   if (trfLevels.length === 0) return 0;

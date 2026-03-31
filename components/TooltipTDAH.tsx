@@ -31,7 +31,11 @@ export default function TooltipTDAH({ tip, children, icon = false, position }: T
     timerRef.current = setTimeout(() => {
       if (!position && wrapRef.current) {
         const rect = wrapRef.current.getBoundingClientRect()
-        setPos(rect.top < 80 ? 'bottom' : 'top')
+        const viewportH = window.innerHeight
+        // Se perto do topo → bottom; se perto do bottom → top
+        if (rect.top < 80) setPos('bottom')
+        else if (rect.bottom > viewportH - 80) setPos('top')
+        else setPos('top')
       }
       setVisible(true)
     }, 300)
@@ -63,10 +67,10 @@ export default function TooltipTDAH({ tip, children, icon = false, position }: T
         <div
           role="tooltip"
           className={`
-            absolute z-50 px-3 py-2 text-[11px] leading-relaxed font-normal
-            max-w-[280px] w-max rounded-md
+            absolute z-[9999] px-3 py-2 text-[11px] leading-relaxed font-normal
+            max-w-[220px] w-max rounded-md
             bg-[#E0F2F1] text-[#004D40] border border-[#80CBC4]
-            shadow-[0_2px_8px_rgba(0,0,0,0.1)]
+            shadow-[0_2px_8px_rgba(0,0,0,0.15)]
             pointer-events-none
             ${pos === 'top'
               ? 'bottom-full left-1/2 -translate-x-1/2 mb-2'

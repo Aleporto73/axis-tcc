@@ -216,7 +216,7 @@ export default function ProtocoloDetalhePage() {
       </div>
 
       {/* Status + Transições */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
           Ciclo de Vida do Protocolo
         </h2>
@@ -276,7 +276,7 @@ export default function ProtocoloDetalhePage() {
       {/* Info da biblioteca */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {(protocol.library_description || protocol.library_objective) && (
-          <div className="bg-white rounded-xl border border-slate-100 p-5">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Descrição</h2>
             {protocol.library_description && (
               <p className="text-sm text-slate-600 leading-relaxed mb-3">{protocol.library_description}</p>
@@ -290,7 +290,7 @@ export default function ProtocoloDetalhePage() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-slate-100 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Critérios</h2>
           {protocol.library_measurement && (
             <div className="mb-3">
@@ -312,14 +312,14 @@ export default function ProtocoloDetalhePage() {
 
       {/* Notas AuDHD */}
       {protocol.audhd_adaptation_notes && (
-        <div className="bg-white rounded-xl border border-slate-100 p-5 mb-6" style={{ borderLeftColor: '#7c3aed', borderLeftWidth: '3px' }}>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6" style={{ borderLeftColor: '#7c3aed', borderLeftWidth: '3px' }}>
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Adaptações AuDHD</h2>
           <p className="text-sm text-slate-600 leading-relaxed">{protocol.audhd_adaptation_notes}</p>
         </div>
       )}
 
       {/* Observações do protocolo */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Observações vinculadas</h2>
           <span className="text-[10px] text-slate-400">{observations.length} registros</span>

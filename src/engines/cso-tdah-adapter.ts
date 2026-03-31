@@ -142,19 +142,19 @@ export function observationsToInput(
 
 // Validators
 function isValidPromptLevel(v: string): boolean {
-  return ['independente', 'gestual', 'verbal', 'modelacao', 'fisica_parcial', 'fisica_total'].includes(v)
+  return ['independente', 'minimo', 'moderado', 'total'].includes(v)
 }
 function isValidStability(v: string): boolean {
-  return ['estavel', 'oscilante', 'instavel'].includes(v)
+  return ['estavel', 'leve', 'desregulado'].includes(v)
 }
 function isValidExr(v: string): boolean {
-  return ['independente', 'apoio_minimo', 'apoio_significativo', 'nao_realiza'].includes(v)
+  return ['excelente', 'adequado', 'prejudicado', 'severamente_prejudicado'].includes(v)
 }
 function isValidSen(v: string): boolean {
-  return ['sem_impacto', 'impacto_moderado', 'impacto_significativo'].includes(v)
+  return ['ausente', 'leve', 'moderado', 'severo'].includes(v)
 }
 function isValidTrf(v: string): boolean {
-  return ['transicao_fluida', 'com_resistencia', 'com_ruptura'].includes(v)
+  return ['ausente', 'leve', 'moderado', 'severo'].includes(v)
 }
 function isValidRigState(v: string): boolean {
   return ['balanced', 'rigidity_leaning', 'impulsivity_leaning', 'dual_risk'].includes(v)

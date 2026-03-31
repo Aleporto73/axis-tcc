@@ -85,7 +85,7 @@ export default async function TDAHLayout({ children }: { children: React.ReactNo
 
   return (
     <RoleProvider>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-[#f8f9fa]">
         <SidebarTDAH />
         <OnboardingTDAH />
         <main className="md:ml-20 min-h-screen pb-20 md:pb-8">

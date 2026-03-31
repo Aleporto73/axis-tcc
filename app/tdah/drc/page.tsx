@@ -217,7 +217,7 @@ export default function DRCPage() {
       </div>
 
       {/* Patient selector */}
-      <div className="bg-white rounded-xl border border-slate-100 p-4 mb-6">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6">
         <label className="block text-xs font-medium text-slate-600 mb-2">Paciente</label>
         <select
           value={selectedPatient}
@@ -235,7 +235,7 @@ export default function DRCPage() {
 
       {/* Content */}
       {!selectedPatient ? (
-        <div className="bg-white rounded-xl border border-slate-100 p-12 text-center">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
           <p className="text-sm text-slate-400">Selecione um paciente para ver os DRCs</p>
         </div>
       ) : loading ? (
@@ -243,14 +243,14 @@ export default function DRCPage() {
           {[1, 2, 3].map(i => <div key={i} className="animate-pulse bg-slate-50 rounded-xl h-20" />)}
         </div>
       ) : sortedDates.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-100 p-12 text-center">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
           <p className="text-sm text-slate-400 mb-2">Nenhum DRC registrado</p>
           <p className="text-[10px] text-slate-300">Clique em "+ Novo DRC" para começar o acompanhamento escolar</p>
         </div>
       ) : (
         <div className="space-y-6">
           {sortedDates.map(date => (
-            <div key={date} className="bg-white rounded-xl border border-slate-100 p-5">
+            <div key={date} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: TDAH_COLOR }}>
                   🏫

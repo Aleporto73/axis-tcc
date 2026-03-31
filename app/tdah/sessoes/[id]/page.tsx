@@ -77,36 +77,36 @@ const statusColors: Record<string, string> = { scheduled: 'bg-blue-50 text-blue-
 
 const PIS_OPTIONS = [
   { value: 'independente', label: 'Independente' },
-  { value: 'gestual', label: 'Gestual' },
-  { value: 'verbal', label: 'Verbal' },
-  { value: 'modelacao', label: 'Modelação' },
-  { value: 'fisica_parcial', label: 'Física parcial' },
-  { value: 'fisica_total', label: 'Física total' },
+  { value: 'minimo', label: 'Mínimo' },
+  { value: 'moderado', label: 'Moderado' },
+  { value: 'total', label: 'Total' },
 ]
 
 const BSS_OPTIONS = [
   { value: 'estavel', label: 'Estável' },
-  { value: 'oscilante', label: 'Oscilante' },
-  { value: 'instavel', label: 'Instável' },
+  { value: 'leve', label: 'Leve' },
+  { value: 'desregulado', label: 'Desregulado' },
 ]
 
 const EXR_OPTIONS = [
-  { value: 'independente', label: 'Independente' },
-  { value: 'apoio_minimo', label: 'Apoio mínimo' },
-  { value: 'apoio_significativo', label: 'Apoio significativo' },
-  { value: 'nao_realiza', label: 'Não realiza' },
+  { value: 'excelente', label: 'Excelente' },
+  { value: 'adequado', label: 'Adequado' },
+  { value: 'prejudicado', label: 'Prejudicado' },
+  { value: 'severamente_prejudicado', label: 'Severamente prejudicado' },
 ]
 
 const SEN_OPTIONS = [
-  { value: 'sem_impacto', label: 'Sem impacto' },
-  { value: 'impacto_moderado', label: 'Impacto moderado' },
-  { value: 'impacto_significativo', label: 'Impacto significativo' },
+  { value: 'ausente', label: 'Ausente' },
+  { value: 'leve', label: 'Leve' },
+  { value: 'moderado', label: 'Moderado' },
+  { value: 'severo', label: 'Severo' },
 ]
 
 const TRF_OPTIONS = [
-  { value: 'transicao_fluida', label: 'Transição fluida' },
-  { value: 'com_resistencia', label: 'Com resistência' },
-  { value: 'com_ruptura', label: 'Com ruptura' },
+  { value: 'ausente', label: 'Ausente' },
+  { value: 'leve', label: 'Leve' },
+  { value: 'moderado', label: 'Moderado' },
+  { value: 'severo', label: 'Severo' },
 ]
 
 const RIG_STATE_OPTIONS = [
@@ -156,6 +156,31 @@ const eventTypeLabels: Record<string, string> = {
   transition: 'Transição', sensory: 'Sensorial', behavioral: 'Comportamental',
   abc: 'ABC', task_avoidance: 'Esquiva', task_engagement: 'Engajamento',
   self_regulation: 'Autorregulação', other: 'Outro',
+}
+
+// Labels legíveis para valores do banco (novos + legado)
+const obsLabels: Record<string, string> = {
+  // PIS
+  independente: 'Independente', minimo: 'Mínimo', moderado: 'Moderado', total: 'Total',
+  gestual: 'Gestual', verbal: 'Verbal', modelacao: 'Modelação', fisica_parcial: 'Física parcial', fisica_total: 'Física total',
+  // BSS
+  estavel: 'Estável', leve: 'Leve', desregulado: 'Desregulado',
+  oscilante: 'Oscilante', instavel: 'Instável',
+  // EXR
+  excelente: 'Excelente', adequado: 'Adequado', prejudicado: 'Prejudicado', severamente_prejudicado: 'Severamente prejudicado',
+  apoio_minimo: 'Apoio mínimo', apoio_significativo: 'Apoio significativo', nao_realiza: 'Não realiza',
+  // SEN
+  ausente: 'Ausente', severo: 'Severo',
+  sem_impacto: 'Sem impacto', impacto_moderado: 'Impacto moderado', impacto_significativo: 'Impacto significativo',
+  // TRF
+  transicao_fluida: 'Transição fluida', com_resistencia: 'Com resistência', com_ruptura: 'Com ruptura',
+  // RIG
+  balanced: 'Equilibrado', rigidity_leaning: 'Tendência rigidez', impulsivity_leaning: 'Tendência impulsividade', dual_risk: 'Risco duplo',
+  none: 'Nenhuma', mild: 'Leve', moderate: 'Moderada', high: 'Alta',
+}
+function obsLabel(v: string | null): string {
+  if (!v) return ''
+  return obsLabels[v] || v.replace(/_/g, ' ')
 }
 
 function formatTime(iso: string): string {
@@ -276,8 +301,8 @@ export default function SessaoConduzirPage() {
       if (obs.protocol_code) line.push(obs.protocol_code)
       if (obs.task_description) line.push(obs.task_description)
       if (obs.sas_score != null) line.push(`atenção: ${obs.sas_score}/10`)
-      if (obs.pis_level) line.push(`dica: ${obs.pis_level}`)
-      if (obs.bss_level) line.push(`estabilidade: ${obs.bss_level}`)
+      if (obs.pis_level) line.push(`dica: ${obsLabel(obs.pis_level)}`)
+      if (obs.bss_level) line.push(`estabilidade: ${obsLabel(obs.bss_level)}`)
       parts.push('• ' + (line.length > 0 ? line.join(', ') : 'Observação registrada') + '.')
     }
     return parts.join('\n')
@@ -464,17 +489,17 @@ export default function SessaoConduzirPage() {
           {isOpen && (
             <>
               <button
-                onClick={() => setShowEventForm(true)}
-                className="px-4 py-2 text-sm font-medium rounded-lg border border-amber-400 text-amber-600 transition-colors hover:bg-amber-50"
-              >
-                + Evento
-              </button>
-              <button
                 onClick={() => setShowObsForm(true)}
                 className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors"
                 style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
               >
                 + Observação
+              </button>
+              <button
+                onClick={() => setShowEventForm(true)}
+                className="px-4 py-2 text-sm font-medium rounded-lg border border-amber-400 text-amber-600 transition-colors hover:bg-amber-50"
+              >
+                + Evento
               </button>
               <button
                 onClick={() => doAction('close')}
@@ -502,7 +527,7 @@ export default function SessaoConduzirPage() {
       )}
 
       {/* Observations list */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
           Observações ({observations.length})
         </h2>
@@ -541,32 +566,32 @@ export default function SessaoConduzirPage() {
                   )}
                   {obs.pis_level && (
                     <span className="text-[11px] px-2 py-0.5 rounded bg-blue-50 text-blue-700">
-                      PIS: {obs.pis_level}
+                      PIS: {obsLabel(obs.pis_level)}
                     </span>
                   )}
                   {obs.bss_level && (
                     <span className="text-[11px] px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">
-                      BSS: {obs.bss_level}
+                      BSS: {obsLabel(obs.bss_level)}
                     </span>
                   )}
                   {obs.exr_level && (
                     <span className="text-[11px] px-2 py-0.5 rounded bg-amber-50 text-amber-700">
-                      EXR: {obs.exr_level}
+                      EXR: {obsLabel(obs.exr_level)}
                     </span>
                   )}
                   {obs.sen_level && (
                     <span className="text-[11px] px-2 py-0.5 rounded bg-purple-50 text-purple-700">
-                      SEN: {obs.sen_level}
+                      SEN: {obsLabel(obs.sen_level)}
                     </span>
                   )}
                   {obs.trf_level && (
                     <span className="text-[11px] px-2 py-0.5 rounded bg-fuchsia-50 text-fuchsia-700">
-                      TRF: {obs.trf_level}
+                      TRF: {obsLabel(obs.trf_level)}
                     </span>
                   )}
                   {obs.rig_state && (
                     <span className="text-[11px] px-2 py-0.5 rounded bg-red-50 text-red-700">
-                      RIG: {obs.rig_state} ({obs.rig_severity})
+                      RIG: {obsLabel(obs.rig_state)} ({obsLabel(obs.rig_severity)})
                     </span>
                   )}
                 </div>
@@ -582,7 +607,7 @@ export default function SessaoConduzirPage() {
 
       {/* Events section */}
       {events.length > 0 && (
-        <div className="mt-4 bg-white rounded-xl border border-slate-100 p-5">
+        <div className="mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
             Eventos ({events.length})
           </h2>
@@ -616,7 +641,7 @@ export default function SessaoConduzirPage() {
 
       {/* Session notes */}
       {session.session_notes && (
-        <div className="mt-4 bg-white rounded-xl border border-slate-100 p-5">
+        <div className="mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Notas da sessão</h2>
           <p className="text-sm text-slate-600">{session.session_notes}</p>
         </div>

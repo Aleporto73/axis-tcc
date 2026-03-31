@@ -202,7 +202,7 @@ export default function CasaPage() {
         </div>
 
         {/* Patient selector */}
-        <div className="bg-white rounded-xl border border-slate-100 p-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6">
           <label className="block text-xs font-medium text-slate-600 mb-1">Paciente</label>
           <select value={selectedPatient} onChange={e => setSelectedPatient(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm">
@@ -237,7 +237,7 @@ export default function CasaPage() {
                 </div>
 
                 {routines.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-slate-100 p-12 text-center">
+                  <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
                     <p className="text-sm text-slate-400">Nenhuma rotina cadastrada para este paciente</p>
                   </div>
                 ) : (
@@ -303,7 +303,7 @@ export default function CasaPage() {
                 </div>
 
                 {economies.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-slate-100 p-12 text-center">
+                  <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
                     <p className="text-sm text-slate-400">Nenhum sistema de fichas cadastrado</p>
                   </div>
                 ) : (
