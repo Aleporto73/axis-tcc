@@ -181,7 +181,7 @@ export default function SessoesTDAHPage() {
     setSaving(true)
     setError(null)
     try {
-      const scheduled_at = `${form.scheduled_date}T${form.scheduled_time}:00`
+      const scheduled_at = new Date(`${form.scheduled_date}T${form.scheduled_time}:00`).toISOString()
       const res = await fetch('/api/tdah/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
