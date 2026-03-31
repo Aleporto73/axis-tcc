@@ -22,7 +22,7 @@ export async function GET(
       const { client, tenantId } = ctx
 
       const queryResult = await client.query(
-        `SELECT id, transcript_path, text, text_preview, char_count, created_at, processed
+        `SELECT id, final_path, transcript_path, raw_path, text, text_preview, char_count, char_count_final, created_at, processed
          FROM transcripts
          WHERE id = $1 AND tenant_id = $2`,
         [transcriptId, tenantId]

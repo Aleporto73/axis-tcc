@@ -77,7 +77,37 @@ If a modification may impact clinical engines, database integrity, or historical
 
 ---
 
-## Changelog — Sessão 01/04/2026
+## Changelog — Sessão 01/04/2026 (continuação)
+
+### Feature: Pipeline de pós-processamento de transcrição v1.0.0
+
+**Objetivo:** Melhorar legibilidade da transcrição sem alterar sentido clínico. Sem LLM, sem API externa, determinístico, reversível, versionado.
+
+**Arquivos criados:**
+- `scripts/migrations/047_transcript_postprocess.sql` — adiciona raw_path, final_path, char_count_raw, char_count_final, postprocess_version, asr_model + backfill legado
+- `src/services/transcript-postprocess.ts` — módulo com pipeline: cleanTechnicalNoise → protectClinicalTerms → applySafeDictionaryCorrections → restoreClinicalTerms. applyLightPunctuation existe mas NÃO roda na v1.0. buildPreview() centraliza regra de preview.
+
+**Arquivos alterados:**
+- `scripts/workers/transcription-worker.ts` — agora gera rawText + finalText, salva 2 arquivos em disco ({id}.raw.txt e {id}.final.txt), persiste todos os campos novos
+- `src/services/transcript-storage.ts` — readTranscriptSmart() agora prioriza final_path → transcript_path → raw_path → text legado, com logs de fallback. saveTranscript() inalterado.
+- `app/api/transcribe/text/[transcriptId]/route.ts` — query inclui final_path, raw_path
+- `app/api/analyze-tcc/route.ts` — query inclui final_path, raw_path
+
+**Contrato de persistência:**
+- transcript_path = aponta para final_path (compatibilidade legada)
+- final_path = fonte principal para UI e análise TCC
+- raw_path = texto bruto do ASR (auditoria)
+- text_preview = gerado a partir de final_text via buildPreview()
+- char_count / char_count_final = tamanho do final_text
+
+**Pipeline v1.0 (ordem fixa):**
+1. cleanTechnicalNoise — trim, espaços duplos, quebras de linha, aspas, travessões
+2. protectClinicalTerms — placeholders por ocorrência (preserva forma original)
+3. applySafeDictionaryCorrections — dicionário explícito de erros reais do Whisper
+4. restoreClinicalTerms — devolve termos originais
+5. applyLightPunctuation — NÃO ATIVA na v1.0 (risco clínico)
+
+---
 
 ### Fix: Upload de áudio > 10MB falhava (19MB MP3)
 
@@ -138,5 +168,4 @@ If a modification may impact clinical engines, database integrity, or historical
 
 **Alerta:** Qualquer endpoint de API que resolva tenant manualmente (`SELECT id FROM tenants WHERE clerk_user_id`) está quebrado para usuários multi-tenant. Todos os endpoints devem usar `withTenant()` do `src/database/with-tenant.ts`, que respeita o cookie `axis_active_tenant` e suporta múltiplos perfis.
 
-**Endpoints já migrados:** `/api/transcribe/text/[id]`, `/api/analyze-tcc`
-**Verificar:** outros endpoints em `app/api/` que ainda usem resolução manual.
+**Endpoints já m

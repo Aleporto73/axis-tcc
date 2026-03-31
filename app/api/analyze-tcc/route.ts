@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       let text = bodyText
       if (!text && transcript_id) {
         const tResult = await client.query(
-          'SELECT transcript_path, text, text_preview FROM transcripts WHERE id = $1 AND tenant_id = $2',
+          'SELECT final_path, transcript_path, raw_path, text, text_preview FROM transcripts WHERE id = $1 AND tenant_id = $2',
           [transcript_id, tenantId]
         )
         if (tResult.rows[0]) {

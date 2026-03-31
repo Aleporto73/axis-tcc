@@ -13,7 +13,8 @@ import { randomUUID } from 'crypto'
 import { Pool, PoolClient } from 'pg'
 import { readFile } from 'fs/promises'
 import { transcribeAudio } from '../../src/services/asr'
-import { saveTranscript, getPreview } from '../../src/services/transcript-storage'
+import { saveTranscript } from '../../src/services/transcript-storage'
+import { postProcessTranscript, buildPreview, POSTPROCESS_VERSION } from '../../src/services/transcript-postprocess'
 
 // ── Configuração ──
 const POLL_INTERVAL_MS = 5_000        // 5s entre checks
@@ -186,20 +187,40 @@ async function processJob(job: any): Promise<void> {
       throw new Error('Transcrição retornou vazia')
     }
 
-    // 3. Salvar transcript em disco
+    // 3. Pós-processamento: raw_text → final_text
     const transcriptId = randomUUID()
-    console.log(`[JOB ${jid}] Salvando transcript no disco...`)
-    const transcriptPath = await saveTranscript(job.tenant_id, transcriptId, text)
-    console.log(`[JOB ${jid}] Arquivo salvo: ${transcriptPath}`)
+    const rawText = text
+    console.log(`[JOB ${jid}] Pós-processando (pipeline ${POSTPROCESS_VERSION})...`)
+    const finalText = postProcessTranscript(rawText)
+    console.log(`[JOB ${jid}] Pós-processado: raw=${rawText.length} chars, final=${finalText.length} chars`)
 
-    // 4. INSERT no banco (com RLS tenant)
+    // 4. Salvar ambas versões em disco
+    console.log(`[JOB ${jid}] Salvando transcripts no disco...`)
+    const rawPath = await saveTranscript(job.tenant_id, `${transcriptId}.raw`, rawText)
+    const finalPath = await saveTranscript(job.tenant_id, `${transcriptId}.final`, finalText)
+    // transcript_path = final_path (compatibilidade com leitura legada)
+    const transcriptPath = finalPath
+    console.log(`[JOB ${jid}] Arquivos salvos: raw=${rawPath} final=${finalPath}`)
+
+    // 5. INSERT no banco (com RLS tenant)
     console.log(`[JOB ${jid}] Inserindo no banco...`)
     await withTenantClient(job.tenant_id, async (client) => {
       await client.query(
         `INSERT INTO transcripts
-         (id, tenant_id, patient_id, session_id, session_date, transcript_path, text_preview, char_count, processed)
-         VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, false)`,
-        [transcriptId, job.tenant_id, job.patient_id, job.session_id, transcriptPath, getPreview(text), text.length]
+         (id, tenant_id, patient_id, session_id, session_date,
+          transcript_path, raw_path, final_path,
+          text_preview, char_count, char_count_raw, char_count_final,
+          postprocess_version, asr_model, processed)
+         VALUES ($1, $2, $3, $4, CURRENT_DATE,
+                 $5, $6, $7,
+                 $8, $9, $10, $11,
+                 $12, $13, false)`,
+        [
+          transcriptId, job.tenant_id, job.patient_id, job.session_id,
+          transcriptPath, rawPath, finalPath,
+          buildPreview(finalText), finalText.length, rawText.length, finalText.length,
+          POSTPROCESS_VERSION, 'whisper-1'
+        ]
       )
 
       // Incrementar uso para FREE
