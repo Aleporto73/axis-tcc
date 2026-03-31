@@ -1,23 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import pool from '@/src/database/db'
+import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
+/**
+ * POST /api/events/create
+ *
+ * Cria micro-evento clínico (AVOIDANCE, CONFRONTATION, etc.).
+ * Conforme pipeline AXIS: Session → Events → CSO → Suggestion
+ *
+ * Migration: withTenant (resolve tenant corretamente via cookie multi-tenant)
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-    }
-
-    const tenantResult = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      [userId]
-    )
-    if (tenantResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Tenant nao encontrado' }, { status: 404 })
-    }
-    const tenantId = tenantResult.rows[0].id
-
     const body = await request.json()
     const { patient_id, event_type, payload, related_entity_id } = body
 
@@ -41,31 +35,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tipo de evento invalido' }, { status: 400 })
     }
 
-    const patientCheck = await pool.query(
-      'SELECT id FROM patients WHERE id = $1 AND tenant_id = $2',
-      [patient_id, tenantId]
-    )
-    if (patientCheck.rows.length === 0) {
-      return NextResponse.json({ error: 'Paciente nao encontrado' }, { status: 404 })
-    }
+    const result = await withTenant(async (ctx) => {
+      const { client, tenantId, userId } = ctx
 
-    const result = await pool.query(
-      `INSERT INTO events (tenant_id, patient_id, event_type, payload, source, related_entity_id)
-       VALUES ($1, $2, $3, $4, 'professional_input', $5)
-       RETURNING *`,
-      [tenantId, patient_id, event_type, JSON.stringify(payload || {}), related_entity_id || null]
-    )
+      // Verificar se paciente pertence ao tenant
+      const patientCheck = await client.query(
+        'SELECT id FROM patients WHERE id = $1 AND tenant_id = $2',
+        [patient_id, tenantId]
+      )
+      if (patientCheck.rows.length === 0) {
+        return NextResponse.json({ error: 'Paciente nao encontrado' }, { status: 404 })
+      }
 
-    // Audit log - EVENT_MARK
-    await pool.query(
-      `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata)
-       VALUES ($1, $2, 'human', 'EVENT_MARK', 'event', $3, $4)`,
-      [tenantId, userId, result.rows[0].id, JSON.stringify({ event_type })]
-    )
-    return NextResponse.json({ success: true, event: result.rows[0] })
+      // Inserir evento
+      const eventResult = await client.query(
+        `INSERT INTO events (tenant_id, patient_id, event_type, payload, source, related_entity_id)
+         VALUES ($1, $2, $3, $4, 'professional_input', $5)
+         RETURNING *`,
+        [tenantId, patient_id, event_type, JSON.stringify(payload || {}), related_entity_id || null]
+      )
 
-  } catch (error) {
+      // Audit log - EVENT_MARK
+      await client.query(
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata)
+         VALUES ($1, $2, 'human', 'EVENT_MARK', 'event', $3, $4)`,
+        [tenantId, userId, eventResult.rows[0].id, JSON.stringify({ event_type })]
+      )
+
+      return NextResponse.json({ success: true, event: eventResult.rows[0] })
+    })
+
+    return result
+  } catch (error: any) {
     console.error('[EVENTS] Erro ao criar evento:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

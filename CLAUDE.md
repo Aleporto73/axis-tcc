@@ -168,4 +168,36 @@ If a modification may impact clinical engines, database integrity, or historical
 
 **Alerta:** Qualquer endpoint de API que resolva tenant manualmente (`SELECT id FROM tenants WHERE clerk_user_id`) está quebrado para usuários multi-tenant. Todos os endpoints devem usar `withTenant()` do `src/database/with-tenant.ts`, que respeita o cookie `axis_active_tenant` e suporta múltiplos perfis.
 
-**Endpoints já m
+**Endpoints já migrados:** `/api/transcribe/text/[id]`, `/api/analyze-tcc`, `/api/sessions/[id]/finish`, `/api/events/create`
+
+**Endpoints pendentes:** `/api/transcribe` (POST), `/api/transcribe/status/[jobId]`
+
+---
+
+## Changelog — Sessão 31/03/2026 (continuação)
+
+### Bug fix: Micro-eventos não salvavam (BUG 1)
+
+**Problema:** Ao marcar micro-eventos na sessão (AVOIDANCE, CONFRONTATION, etc.), nada era salvo. Falha silenciosa.
+
+**Causa raiz:** `/api/events/create/route.ts` usava resolução manual de tenant (`SELECT id FROM tenants WHERE clerk_user_id = $1`) + queries diretas no `pool` sem RLS. Para multi-tenant, pegava tenant errado → `patientCheck` falhava → 404 silencioso.
+
+**Correção:** Reescrito para usar `withTenant()` com `handleRouteError()`. Todas as queries agora usam `client` da transação (não `pool` direto). Auth via `ctx.userId`.
+
+### Bug fix: CSO não atualizava + sugestão não gerada (BUGs 2&3)
+
+**Problema:** Ao finalizar sessão, o CSO não processava e nenhuma sugestão era gerada.
+
+**Causa raiz dupla:**
+1. Sem micro-eventos salvos (BUG 1), o finish calculava `totalFlex = 0` → `flexTrend = 'flat'` → CSO recebia payload vazio → resultado neutro → sugestão com confiança baixa → gate of silence.
+2. A query de transcrição no finish usava `SELECT text, transcript_path` — faltavam `final_path, raw_path, text_preview`. Sem esses campos, `readTranscriptSmart()` não conseguia ler o texto pós-processado.
+
+**Correções:**
+- `app/api/sessions/[id]/finish/route.ts` — query de transcrição agora inclui `text_preview, final_path, raw_path` para compatibilidade com `readTranscriptSmart()`.
+- BUG 1 corrigido acima resolve a causa raiz dos micro-eventos.
+
+### UX: Labels de flex_trend desalinhados no SessionReport
+
+**Problema:** O `SessionReport.tsx` comparava flex_trend com `'improving'`/`'declining'`, mas o finish endpoint gera `'up'`/`'down'`/`'flat'`. Valores nunca batiam → sempre mostrava "→ Estável".
+
+**Correção:** `app/components/SessionReport.tsx` — alinhado para usar `'up'`/`'down'`/`'flat'` com labels em português: "↑ Em evolução", "↓ Em declínio", "→ Estável"

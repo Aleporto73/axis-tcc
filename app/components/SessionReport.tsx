@@ -173,7 +173,7 @@ export default function SessionReport({ sessionId, onClose }: Props) {
             <div>
               <p className="text-xs text-neutral-500 mb-1">Tendência</p>
               <p className="text-lg font-semibold text-neutral-900">
-                {data.cso.flex_trend === 'improving' ? '↑ Melhora' : data.cso.flex_trend === 'declining' ? '↓ Declínio' : '→ Estável'}
+                {data.cso.flex_trend === 'up' ? '↑ Em evolução' : data.cso.flex_trend === 'down' ? '↓ Em declínio' : '→ Estável'}
               </p>
             </div>
           </div>

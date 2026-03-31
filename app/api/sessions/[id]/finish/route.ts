@@ -54,7 +54,7 @@ export async function POST(
       // 3. Buscar transcrição e análise TCC
       const [transcriptResult, analysisResult] = await Promise.all([
         client.query(
-          'SELECT text, transcript_path FROM transcripts WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at DESC LIMIT 1',
+          'SELECT text, text_preview, transcript_path, final_path, raw_path FROM transcripts WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at DESC LIMIT 1',
           [id, tenantId]
         ),
         client.query(
