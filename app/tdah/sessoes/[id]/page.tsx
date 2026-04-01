@@ -207,6 +207,9 @@ export default function SessaoConduzirPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Confirm dialog para fechar sem observações
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+
   // Resumo para responsáveis (padrão ABA)
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [summaryText, setSummaryText] = useState('')
@@ -472,55 +475,101 @@ export default function SessaoConduzirPage() {
           </p>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-2">
-          {isScheduled && (
-            <button
-              onClick={() => doAction('open')}
-              disabled={actionLoading}
-              className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-              style={{ backgroundColor: TDAH_COLOR }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
-            >
-              {actionLoading ? '...' : 'Abrir Sessão'}
-            </button>
-          )}
-          {isOpen && (
-            <>
+        {/* Action buttons — sessão agendada ou concluída */}
+        {!isOpen && (
+          <div className="flex gap-2">
+            {isScheduled && (
               <button
-                onClick={() => setShowObsForm(true)}
-                className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors"
-                style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
-              >
-                + Observação
-              </button>
-              <button
-                onClick={() => setShowEventForm(true)}
-                className="px-4 py-2 text-sm font-medium rounded-lg border border-amber-400 text-amber-600 transition-colors hover:bg-amber-50"
-              >
-                + Evento
-              </button>
-              <button
-                onClick={() => doAction('close')}
+                onClick={() => doAction('open')}
                 disabled={actionLoading}
-                className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                style={{ backgroundColor: TDAH_COLOR }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
               >
-                {actionLoading ? '...' : 'Fechar Sessão'}
+                {actionLoading ? '...' : 'Abrir Sessão'}
               </button>
-            </>
-          )}
-          {isClosed && (
-            <button
-              onClick={openSummaryModal}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-green-300 text-green-700 text-xs font-medium rounded-lg hover:bg-green-50 transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-              Enviar Resumo
-            </button>
-          )}
-        </div>
+            )}
+            {isClosed && (
+              <button
+                onClick={openSummaryModal}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-green-300 text-green-700 text-xs font-medium rounded-lg hover:bg-green-50 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                Enviar Resumo
+              </button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* ══════════ Trilha guiada — sessão em andamento ══════════ */}
+      {isOpen && (() => {
+        const hasProtocol = protocols.length > 0
+        const hasObs = observations.length > 0
+        const steps = [
+          { num: '①', label: 'Protocolo', done: hasProtocol, current: !hasProtocol, optional: false },
+          { num: '②', label: '+ Observação', done: hasObs, current: hasProtocol && !hasObs, optional: false },
+          { num: '③', label: '+ Evento', done: false, current: false, optional: true },
+          { num: '④', label: 'Fechar Sessão', done: false, current: hasObs, optional: false },
+        ]
+        return (
+          <div className="mb-6 bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div className="flex items-center gap-1 flex-wrap">
+              {steps.map((s, i) => {
+                const isLast = i === steps.length - 1
+                const isFuture = !s.done && !s.current && !s.optional
+                return (
+                  <div key={i} className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        if (i === 0 && !hasProtocol) {
+                          window.location.href = `/tdah/pacientes/${session.patient_id}#protocolos`
+                        } else if (i === 1) {
+                          setShowObsForm(true)
+                        } else if (i === 2) {
+                          setShowEventForm(true)
+                        } else if (i === 3) {
+                          if (!hasObs) {
+                            setShowCloseConfirm(true)
+                          } else {
+                            doAction('close')
+                          }
+                        }
+                      }}
+                      disabled={actionLoading && i === 3}
+                      className={`
+                        flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-all
+                        ${s.done
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : s.current
+                            ? 'border-2 font-semibold'
+                            : s.optional
+                              ? 'border border-amber-300 text-amber-600 hover:bg-amber-50'
+                              : isFuture
+                                ? 'border border-slate-200 text-slate-400 opacity-50'
+                                : 'border border-slate-200 text-slate-500 hover:bg-slate-50'
+                        }
+                      `}
+                      style={s.current ? { borderColor: TDAH_COLOR, color: TDAH_COLOR } : i === 3 && !isFuture && !s.done ? { borderColor: '#16a34a', color: '#16a34a' } : {}}
+                    >
+                      {s.done && <span className="text-green-500 text-xs">✓</span>}
+                      <span className={`text-xs ${s.done ? 'text-green-500' : ''}`}>{s.num}</span>
+                      <span>{actionLoading && i === 3 ? '...' : s.label}</span>
+                    </button>
+                    {s.optional && (
+                      <span className="text-[10px] text-amber-400 -ml-0.5 mr-1">opcional</span>
+                    )}
+                    {!isLast && (
+                      <span className={`text-slate-300 text-xs mx-0.5 ${isFuture ? 'opacity-50' : ''}`}>→</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-xs">{error}</div>
@@ -535,7 +584,7 @@ export default function SessaoConduzirPage() {
         {observations.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-sm text-slate-400">
-              {isOpen ? 'Clique em "+ Observação" para registrar' : 'Nenhuma observação registrada'}
+              {isOpen ? 'Use o passo ② na trilha acima para registrar' : 'Nenhuma observação registrada'}
             </p>
           </div>
         ) : (
@@ -644,6 +693,34 @@ export default function SessaoConduzirPage() {
         <div className="mt-4 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Notas da sessão</h2>
           <p className="text-sm text-slate-600">{session.session_notes}</p>
+        </div>
+      )}
+
+      {/* Modal: Confirmar fechar sem observações */}
+      {showCloseConfirm && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setShowCloseConfirm(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-slate-800 mb-2">Fechar sessão sem observações?</h3>
+            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+              Você não registrou nenhuma observação nesta sessão. O motor CSO-TDAH não terá dados para calcular o snapshot.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowCloseConfirm(false); setShowObsForm(true) }}
+                className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border-2 transition-colors"
+                style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
+              >
+                Registrar observação
+              </button>
+              <button
+                onClick={() => { setShowCloseConfirm(false); doAction('close') }}
+                disabled={actionLoading}
+                className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-50"
+              >
+                {actionLoading ? '...' : 'Fechar mesmo assim'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
