@@ -668,6 +668,46 @@
 - Botão "Imprimir / PDF" usa window.print()
 - Footer com engine version + disclaimer clínico
 
+### 31/03/2026 — Sessão 19
+- **Fix fuso horário na criação de sessões TDAH e ABA**
+  - Problema: sessões apareciam 3h atrasadas (UTC vs local)
+  - Causa: `scheduled_date` e `scheduled_time` eram concatenados sem timezone → interpretados como UTC
+  - Fix: `new Date(\`${date}T${time}:00\`).toISOString()` — JS interpreta como local e converte para UTC
+  - Arquivos: `app/tdah/sessoes/page.tsx`, `app/aba/sessoes/page.tsx`
+
+- **Skip onboarding TCC para admins**
+  - Emails admin (`porto.ar4@gmail.com`, `aleporto305@gmail.com`) pulam overlay de onboarding
+  - Usa `useUser()` do Clerk para checar email no client-side
+  - Arquivo: `app/components/OnboardingTCC.tsx`
+
+- **10 bugs corrigidos no módulo TDAH (enums, UI, tooltips, badges)**
+  - BUG 1: Botões invertidos — "+ Observação" agora antes de "+ Evento"
+  - BUGs 2-6: Enums alinhados com SKILL_TDAH.md Bible §7-§9:
+    - PIS: independente / minimo / moderado / total (antes: gestual/verbal/modelacao/fisico)
+    - BSS: estavel / leve / desregulado (antes: regulated/mild/dysregulated)
+    - EXR: excelente / adequado / prejudicado / severamente_prejudicado (antes: above/expected/below/impaired)
+    - SEN: ausente / leve / moderado / severo (antes: absent/mild/moderate/severe)
+    - TRF: ausente / leve / moderado / severo (antes: absent/mild/moderate/severe)
+  - BUG 7: Tooltip z-index z-50 → z-[9999], max-w 280→220px, detecção viewport-bottom
+  - BUG 8: Badges com labels legíveis (`obsLabels` record cobre valores novos + legado)
+  - BUG 9: Background layout TDAH bg-white → bg-[#f8f9fa]
+  - BUG 10: Cards em 11 páginas — border-slate-100 → border-gray-100 shadow-sm
+  - Atualização em 5 camadas: frontend form → API validation → DB CHECK constraints → engine types/scales → adapter validators → testes
+  - Migration 048: converte dados existentes + recria constraints com novos valores
+  - Arquivos-chave: `app/tdah/sessoes/[id]/page.tsx`, `src/engines/cso-tdah.ts`, `src/engines/cso-tdah-adapter.ts`, `app/api/tdah/observations/route.ts`, `components/TooltipTDAH.tsx`, `app/tdah/layout.tsx`, `scripts/migrations/048_fix_tdah_observation_enums.sql`
+
+- **BUG 11: Trilha guiada na sessão TDAH em andamento**
+  - Substituídos botões soltos por trail numerado sequencial ①②③④
+  - ① Protocolo (✓ verde se ativo, link para ficha se não)
+  - ② + Observação (teal highlight quando passo atual)
+  - ③ + Evento (opcional, amber)
+  - ④ Fechar Sessão (verde, diálogo de confirmação se 0 observações)
+  - Modal de confirmação: "Nenhuma observação registrada. Deseja fechar mesmo assim?"
+  - Estado visual: completed (verde ✓), current (teal pulsante), upcoming (cinza)
+  - Arquivo: `app/tdah/sessoes/[id]/page.tsx`
+
+- **Normalização line endings CRLF → LF** em 12 arquivos
+
 ---
 
 ## REGRAS IMUTÁVEIS (da BIBLE v2.5)
