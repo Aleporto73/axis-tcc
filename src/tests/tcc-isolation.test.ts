@@ -91,7 +91,7 @@ function setupWithTenantMock(opts: {
   noProfile?: boolean
   noTenant?: boolean
 }) {
-  const callSequence = [
+  const callSequence: Array<{ rows: any[] }> = [
     { rows: [] }, // BEGIN
     opts.noProfile ? { rows: [] } : { rows: [{ email: 'test@test.com' }] }, // email check
   ]
