@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import OpenAI from 'openai'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
+import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -74,24 +75,12 @@ interface ChatMsg {
 /* ─── handler ─── */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
+    return await withTenant(async (ctx) => {
     // Verificar licença TCC ativa
-    const pool = (await import('@/src/database/db')).default
-    const tenantRes = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      [userId]
-    )
-    if (tenantRes.rows.length === 0) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-    const licRes = await pool.query(
+    const licRes = await ctx.client.query(
       `SELECT id FROM user_licenses
        WHERE tenant_id = $1 AND product_type = 'tcc' AND is_active = true LIMIT 1`,
-      [tenantRes.rows[0].id]
+      [ctx.tenantId]
     )
     if (licRes.rows.length === 0) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
@@ -140,11 +129,10 @@ ${docs}`
       'Desculpe, não consegui processar sua pergunta.'
 
     return NextResponse.json({ reply })
+    }) // end withTenant
   } catch (error) {
     console.error('Erro no chat Ana:', error)
-    return NextResponse.json(
-      { error: 'Erro ao processar mensagem' },
-      { status: 500 }
-    )
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

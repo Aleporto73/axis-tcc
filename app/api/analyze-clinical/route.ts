@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import OpenAI from 'openai'
-import pool from '@/src/database/db'
+import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -9,22 +9,7 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
-    // Hardening: resolver tenant e verificar que usuário pertence a um tenant válido
-    const tenantResult = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      [userId]
-    )
-    if (tenantResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-    // tenantId disponível para futuro uso (rate limiting, audit, etc.)
-    const _tenantId = tenantResult.rows[0].id
-
+    return await withTenant(async (ctx) => {
     const { transcript, patientName } = await request.json()
 
     if (!transcript) {
@@ -122,8 +107,10 @@ Responda APENAS em JSON válido:
       interventions: parsed.interventions || '',
       current_state: parsed.current_state || '',
     })
+    }) // end withTenant
   } catch (error) {
     console.error('Erro na análise clínica:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

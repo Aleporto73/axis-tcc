@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import OpenAI from 'openai'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
+import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -74,11 +75,7 @@ interface ChatMsg {
 /* ─── handler ─── */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
+    return await withTenant(async (ctx) => {
     const body = await request.json()
     const message: string | undefined = body.message
     const history: ChatMsg[] = Array.isArray(body.history) ? body.history : []
@@ -122,11 +119,10 @@ ${docs}`
       'Desculpe, não consegui processar sua pergunta.'
 
     return NextResponse.json({ reply })
+    }) // end withTenant
   } catch (error) {
     console.error('Erro no chat Ana ABA:', error)
-    return NextResponse.json(
-      { error: 'Erro ao processar mensagem' },
-      { status: 500 }
-    )
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

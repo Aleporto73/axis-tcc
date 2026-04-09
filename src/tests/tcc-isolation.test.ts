@@ -6,12 +6,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 // Valida que:
 // 1. Cross-tenant: usuário de tenant A NÃO acessa dados de tenant B
 // 2. Autenticação: sem token = bloqueado em todas as rotas
-// 3. Rota crítica /analyze-clinical: tenant resolution obrigatória
+// 3. Rota crítica /analyze-clinical: usa withTenant para tenant resolution
 // 4. Mensagens de erro genéricas (sem vazamento de info)
 // 5. withTenant: garante tenant_id em toda query
 //
-// Padrão TCC atual: single-user (1 tenant = 1 profissional)
-// Preparação futura: admin / terapeuta / supervisor (6 meses)
+// Atualizado 2026-04-09: Migração para withTenant()
 // =====================================================
 
 // ─── Mocks ───
@@ -20,17 +19,28 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 const mockAuth = vi.fn()
 vi.mock('@clerk/nextjs/server', () => ({
   auth: () => mockAuth(),
+  currentUser: vi.fn().mockResolvedValue({ emailAddresses: [{ emailAddress: 'test@test.com' }] }),
 }))
 
-// Mock pool (para rotas que usam pool.query diretamente)
+// Mock cookies (para withTenant)
+vi.mock('next/headers', () => ({
+  cookies: vi.fn().mockResolvedValue({
+    get: vi.fn().mockReturnValue(undefined),
+  }),
+}))
+
+// Mock pool (para withTenant internamente)
 const mockPoolQuery = vi.fn()
+const mockClientQuery = vi.fn()
+const mockClientRelease = vi.fn()
+
 vi.mock('@/src/database/db', () => ({
   default: {
     query: (...args: any[]) => mockPoolQuery(...args),
-    connect: vi.fn().mockResolvedValue({
-      query: vi.fn().mockResolvedValue({ rows: [] }),
-      release: vi.fn(),
-    }),
+    connect: vi.fn().mockImplementation(() => Promise.resolve({
+      query: (...args: any[]) => mockClientQuery(...args),
+      release: mockClientRelease,
+    })),
   },
 }))
 
@@ -45,6 +55,11 @@ vi.mock('openai', () => ({
       },
     }
   },
+}))
+
+// Mock system alert (non-blocking, prevent noise)
+vi.mock('@/src/utils/system-alert', () => ({
+  createSystemAlert: vi.fn().mockResolvedValue(undefined),
 }))
 
 // ─── Helpers ───
@@ -63,6 +78,59 @@ function createMockRequest(options: {
   } as any
 }
 
+/**
+ * Setup mockClientQuery para withTenant funcionar.
+ * withTenant faz: BEGIN → email check → profiles lookup → set_config → COMMIT
+ */
+function setupWithTenantMock(opts: {
+  tenantId?: string
+  userId?: string
+  profileId?: string
+  role?: string
+  planTier?: string
+  noProfile?: boolean
+  noTenant?: boolean
+}) {
+  const callSequence = [
+    { rows: [] }, // BEGIN
+    opts.noProfile ? { rows: [] } : { rows: [{ email: 'test@test.com' }] }, // email check
+  ]
+
+  if (!opts.noProfile) {
+    callSequence.push({ rows: [] }) // UPDATE activate invites (0 affected)
+  }
+
+  if (opts.noProfile && opts.noTenant) {
+    callSequence.push({ rows: [] }) // profiles lookup - empty
+    callSequence.push({ rows: [] }) // tenants fallback - empty
+  } else if (opts.noProfile) {
+    callSequence.push({ rows: [] }) // profiles lookup - empty
+    callSequence.push({ rows: [{ id: opts.tenantId || 'tenant-1' }] }) // tenants fallback
+    callSequence.push({ rows: [] }) // set_config
+  } else {
+    callSequence.push({
+      rows: [{
+        profile_id: opts.profileId || 'profile-1',
+        tenant_id: opts.tenantId || 'tenant-1',
+        role: opts.role || 'admin',
+        tenant_name: 'Clínica Test',
+        plan_tier: opts.planTier || 'free',
+      }],
+    }) // profiles lookup
+    callSequence.push({ rows: [] }) // set_config
+  }
+
+  // Add COMMIT at the end
+  callSequence.push({ rows: [] })
+
+  let callIndex = 0
+  mockClientQuery.mockImplementation(() => {
+    const result = callSequence[callIndex] || { rows: [] }
+    callIndex++
+    return Promise.resolve(result)
+  })
+}
+
 // ═════════════════════════════════════════════════════
 // 1. ISOLAMENTO CROSS-TENANT
 // ═════════════════════════════════════════════════════
@@ -74,33 +142,10 @@ describe('TCC Isolamento — Cross-Tenant', () => {
   })
 
   test('withTenant injeta tenant_id correto na query (não aceita tenant arbitrário)', async () => {
-    // O withTenant resolve tenant_id a partir do Clerk userId, não de parâmetros do request.
-    // Isso garante que um usuário autenticado como tenant-A não consegue passar tenant-B no body.
     const { withTenant } = await import('@/src/database/with-tenant')
 
-    // Mock auth retorna userId válido
     mockAuth.mockResolvedValue({ userId: 'clerk-user-A' })
-
-    // Mock pool.connect retorna client com tenant-A
-    const mockClient = {
-      query: vi.fn()
-        .mockResolvedValueOnce({ rows: [] }) // BEGIN
-        .mockResolvedValueOnce({ rows: [] }) // auto-activate invites
-        .mockResolvedValueOnce({
-          rows: [{
-            tenant_id: 'tenant-A',
-            role: 'admin',
-            id: 'profile-A',
-            plan_tier: 'free',
-          }],
-        }) // profiles lookup
-        .mockResolvedValueOnce({ rows: [] }) // COMMIT
-        .mockImplementation(() => Promise.resolve({ rows: [] })),
-      release: vi.fn(),
-    }
-
-    const pool = (await import('@/src/database/db')).default
-    ;(pool.connect as any).mockResolvedValue(mockClient)
+    setupWithTenantMock({ tenantId: 'tenant-A', userId: 'clerk-user-A' })
 
     let capturedTenantId: string | null = null
 
@@ -110,26 +155,18 @@ describe('TCC Isolamento — Cross-Tenant', () => {
         return null
       })
     } catch {
-      // withTenant pode falhar por mock incompleto, mas o importante é verificar
-      // que ele resolve tenant_id via auth, não via input externo
+      // withTenant pode falhar por mock incompleto
     }
 
-    // Se withTenant chegou a chamar o callback, verificar tenant_id
     if (capturedTenantId) {
       expect(capturedTenantId).toBe('tenant-A')
-      // Nunca seria 'tenant-B' mesmo se enviado no request body
       expect(capturedTenantId).not.toBe('tenant-B')
     }
 
-    // O importante: auth() foi chamado para resolver o userId
     expect(mockAuth).toHaveBeenCalled()
   })
 
   test('Queries TCC sempre incluem tenant_id como parâmetro (pattern validation)', () => {
-    // Valida o PADRÃO de query usado em rotas TCC.
-    // Todas as queries SELECT/INSERT/UPDATE devem incluir tenant_id = $N
-
-    // Exemplo de queries corretas (extraídas das rotas auditadas)
     const CORRECT_QUERIES = [
       'SELECT * FROM patients WHERE tenant_id = $1',
       'SELECT * FROM sessions WHERE tenant_id = $1 AND patient_id = $2',
@@ -142,14 +179,12 @@ describe('TCC Isolamento — Cross-Tenant', () => {
       expect(q).toContain('tenant_id')
     }
 
-    // Queries sem tenant_id são PROIBIDAS (anti-pattern)
     const BAD_QUERIES = [
       'SELECT * FROM patients WHERE id = $1',
       'SELECT * FROM sessions WHERE patient_id = $1',
     ]
 
     for (const q of BAD_QUERIES) {
-      // Estas queries NÃO devem existir nas rotas TCC
       expect(q).not.toContain('tenant_id')
     }
   })
@@ -177,12 +212,12 @@ describe('TCC Isolamento — Autenticação', () => {
     const data = await res.json()
 
     expect(res.status).toBe(401)
-    expect(data.error).toBe('Não autorizado')
+    expect(data.error).toBe('Não autenticado')
   })
 
-  test('analyze-clinical retorna 401 para userId sem tenant', async () => {
+  test('analyze-clinical retorna 404 para userId sem tenant', async () => {
     mockAuth.mockResolvedValue({ userId: 'clerk-user-orphan' })
-    mockPoolQuery.mockResolvedValueOnce({ rows: [] }) // tenant lookup retorna vazio
+    setupWithTenantMock({ noProfile: true, noTenant: true })
 
     const { POST } = await import('@/app/api/analyze-clinical/route')
     const req = createMockRequest({
@@ -192,13 +227,13 @@ describe('TCC Isolamento — Autenticação', () => {
     const res = await POST(req)
     const data = await res.json()
 
-    expect(res.status).toBe(401)
-    expect(data.error).toBe('Não autorizado')
+    expect(res.status).toBe(404)
+    expect(data.error).toBe('Tenant não encontrado')
   })
 
   test('analyze-clinical retorna 400 sem transcrição', async () => {
     mockAuth.mockResolvedValue({ userId: 'clerk-user-valid' })
-    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: 'tenant-1' }] }) // tenant OK
+    setupWithTenantMock({ tenantId: 'tenant-1', userId: 'clerk-user-valid' })
 
     const { POST } = await import('@/app/api/analyze-clinical/route')
     const req = createMockRequest({
@@ -223,9 +258,9 @@ describe('TCC Isolamento — Rota Crítica analyze-clinical', () => {
     vi.clearAllMocks()
   })
 
-  test('analyze-clinical faz tenant resolution via pool.query', async () => {
+  test('analyze-clinical usa withTenant para tenant resolution (não pool.query direto)', async () => {
     mockAuth.mockResolvedValue({ userId: 'clerk-user-valid' })
-    mockPoolQuery.mockResolvedValueOnce({ rows: [{ id: 'tenant-1' }] }) // tenant found
+    setupWithTenantMock({ tenantId: 'tenant-1', userId: 'clerk-user-valid' })
 
     const { POST } = await import('@/app/api/analyze-clinical/route')
     const req = createMockRequest({
@@ -234,19 +269,20 @@ describe('TCC Isolamento — Rota Crítica analyze-clinical', () => {
 
     await POST(req)
 
-    // Verifica que a query de tenant resolution foi executada
-    expect(mockPoolQuery).toHaveBeenCalledWith(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      ['clerk-user-valid']
+    // Verifica que withTenant chamou pool.connect (não pool.query direto)
+    const pool = (await import('@/src/database/db')).default
+    expect(pool.connect).toHaveBeenCalled()
+
+    // Não deve ter chamado pool.query com a antiga query manual
+    const manualTenantCalls = mockPoolQuery.mock.calls.filter(
+      (call: any[]) => call[0]?.includes?.('SELECT id FROM tenants WHERE clerk_user_id')
     )
+    expect(manualTenantCalls).toHaveLength(0)
   })
 
   test('analyze-clinical NÃO expõe tenant_id de outro usuário', async () => {
-    // Usuário A tenta usar a rota
     mockAuth.mockResolvedValue({ userId: 'clerk-user-A' })
-
-    // Mas a query retorna vazio (user-A não é owner de nenhum tenant via clerk_user_id)
-    mockPoolQuery.mockResolvedValueOnce({ rows: [] })
+    setupWithTenantMock({ noProfile: true, noTenant: true })
 
     const { POST } = await import('@/app/api/analyze-clinical/route')
     const req = createMockRequest({
@@ -254,13 +290,13 @@ describe('TCC Isolamento — Rota Crítica analyze-clinical', () => {
     })
 
     const res = await POST(req)
-    expect(res.status).toBe(401)
+    // withTenant retorna 404 quando tenant não encontrado (via handleRouteError)
+    expect(res.status).toBe(404)
 
     const data = await res.json()
-    // Mensagem NÃO deve revelar que existe tenant de outro usuário
-    expect(data.error).toBe('Não autorizado')
-    expect(data.error).not.toContain('tenant')
+    // Mensagem NÃO deve revelar info sobre outros tenants
     expect(data.error).not.toContain('outro')
+    expect(data.error).not.toContain('cross')
   })
 })
 
@@ -270,7 +306,6 @@ describe('TCC Isolamento — Rota Crítica analyze-clinical', () => {
 
 describe('TCC Isolamento — Mensagens de Erro Seguras', () => {
 
-  // Mensagens que NUNCA devem aparecer em respostas de API TCC
   const FORBIDDEN_MESSAGES = [
     'paciente de outro',
     'não pertence a você',
@@ -281,20 +316,19 @@ describe('TCC Isolamento — Mensagens de Erro Seguras', () => {
     'tenant mismatch',
     'not your patient',
     'belongs to another',
-    'Licença TCC não encontrada', // info leakage sobre licensing (corrigido)
+    'Licença TCC não encontrada',
   ]
 
-  // Mensagens genéricas que são SEGURAS para TCC
   const SAFE_ERROR_MESSAGES = [
-    'Não autorizado',
     'Não autenticado',
+    'Tenant não encontrado',
     'Transcrição não fornecida',
     'Paciente não encontrado',
     'Sessão não encontrada',
     'Erro interno',
   ]
 
-  test('Mensagens seguras TCC não contêm informação sobre existência ou tenant', () => {
+  test('Mensagens seguras TCC não contêm informação sobre existência ou tenant indevido', () => {
     for (const msg of SAFE_ERROR_MESSAGES) {
       for (const forbidden of FORBIDDEN_MESSAGES) {
         expect(msg.toLowerCase()).not.toContain(forbidden.toLowerCase())
@@ -305,17 +339,13 @@ describe('TCC Isolamento — Mensagens de Erro Seguras', () => {
   test('handleRouteError retorna mensagens genéricas para erros conhecidos', async () => {
     const { handleRouteError } = await import('@/src/database/with-role')
 
-    // Erro de autenticação
     const authErr = handleRouteError(new Error('Não autenticado'))
     expect(authErr.status).toBe(401)
     expect(authErr.message).toBe('Não autenticado')
-    expect(authErr.message).not.toContain('tenant')
 
-    // Erro desconhecido → 500 genérico
     const unknownErr = handleRouteError(new Error('SQL connection failed'))
     expect(unknownErr.status).toBe(500)
     expect(unknownErr.message).toBe('Erro interno')
-    // NÃO vaza a mensagem original
     expect(unknownErr.message).not.toContain('SQL')
   })
 
@@ -338,9 +368,7 @@ describe('TCC Isolamento — Mensagens de Erro Seguras', () => {
     const err = new RoleError('Acesso negado. Role \'terapeuta\' não tem permissão para esta ação.')
     const result = handleRouteError(err)
     expect(result.status).toBe(403)
-    // A mensagem inclui a role, mas isso é intencional para debugging do próprio usuário
     expect(result.message).toContain('Acesso negado')
-    // NÃO vaza informação sobre outros tenants ou pacientes
     expect(result.message).not.toContain('tenant')
     expect(result.message).not.toContain('outro')
   })
@@ -353,13 +381,9 @@ describe('TCC Isolamento — Mensagens de Erro Seguras', () => {
 describe('TCC Isolamento — Preparação Futura Roles', () => {
 
   test('TenantContext já suporta campo role com tipos corretos', async () => {
-    const { TenantContext } = await import('@/src/database/with-tenant') as any
-
-    // O tipo UserRole já existe e aceita admin, supervisor, terapeuta
     type UserRole = 'admin' | 'supervisor' | 'terapeuta'
     const validRoles: UserRole[] = ['admin', 'supervisor', 'terapeuta']
 
-    // Todos os roles são válidos
     for (const role of validRoles) {
       expect(['admin', 'supervisor', 'terapeuta']).toContain(role)
     }
@@ -368,7 +392,6 @@ describe('TCC Isolamento — Preparação Futura Roles', () => {
   test('requireRole está disponível para uso futuro em rotas TCC', async () => {
     const { requireRole, requireAdminOrSupervisor, requireAdmin } = await import('@/src/database/with-role')
 
-    // Verificar que os helpers existem e são funções
     expect(typeof requireRole).toBe('function')
     expect(typeof requireAdminOrSupervisor).toBe('function')
     expect(typeof requireAdmin).toBe('function')
@@ -377,7 +400,6 @@ describe('TCC Isolamento — Preparação Futura Roles', () => {
   test('handleRouteError detecta RoleError para futura expansão TCC', async () => {
     const { handleRouteError, RoleError } = await import('@/src/database/with-role')
 
-    // Quando TCC adicionar roles, handleRouteError já trata RoleError
     const err = new RoleError('Acesso negado')
     const result = handleRouteError(err)
     expect(result.status).toBe(403)

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { randomUUID, randomBytes, createHmac } from 'crypto'
-import pool from '@/src/database/db'
-
-// Pool: shared (Auditoria TCC P0 — unified pool)
+import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
@@ -27,95 +25,84 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
-    }
-
-    const tenantResult = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
-      [userId]
-    )
-    if (tenantResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Tenant nao encontrado' }, { status: 404 })
-    }
-    const tenantId = tenantResult.rows[0].id
-
-    const connResult = await pool.query(
-      'SELECT * FROM calendar_connections WHERE tenant_id = $1 AND provider = $2',
-      [tenantId, 'google']
-    )
-    if (connResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Google Calendar nao conectado' }, { status: 400 })
-    }
-
-    const conn = connResult.rows[0]
-    let accessToken = conn.access_token
-
-    if (new Date(conn.token_expiry) < new Date()) {
-      accessToken = await refreshAccessToken(conn.refresh_token)
-      if (!accessToken) {
-        return NextResponse.json({ error: 'Erro ao renovar token' }, { status: 401 })
-      }
-      await pool.query(
-        'UPDATE calendar_connections SET access_token = $1, token_expiry = $2, updated_at = NOW() WHERE id = $3',
-        [accessToken, new Date(Date.now() + 3600 * 1000), conn.id]
+    return await withTenant(async (ctx) => {
+      const connResult = await ctx.client.query(
+        'SELECT * FROM calendar_connections WHERE tenant_id = $1 AND provider = $2',
+        [ctx.tenantId, 'google']
       )
-    }
-
-    const channelId = randomUUID()
-    const expiration = Date.now() + 7 * 24 * 60 * 60 * 1000
-
-    // Auditoria ABA P0: gerar token secreto para validação HMAC no webhook
-    const webhookSecret = randomBytes(32).toString('hex')
-    const channelToken = createHmac('sha256', webhookSecret).update(channelId).digest('hex')
-
-    const watchResponse = await fetch(
-      'https://www.googleapis.com/calendar/v3/calendars/primary/events/watch',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + accessToken,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: channelId,
-          type: 'web_hook',
-          address: WEBHOOK_URL,
-          expiration: expiration,
-          token: channelToken,
-        }),
+      if (connResult.rows.length === 0) {
+        return NextResponse.json({ error: 'Google Calendar nao conectado' }, { status: 400 })
       }
-    )
 
-    if (!watchResponse.ok) {
-      const errorData = await watchResponse.text()
-      console.error('[WATCH] Erro ao registrar:', errorData)
-      return NextResponse.json({ error: 'Erro ao registrar webhook', details: errorData }, { status: 500 })
-    }
+      const conn = connResult.rows[0]
+      let accessToken = conn.access_token
 
-    const watchData = await watchResponse.json()
+      if (new Date(conn.token_expiry) < new Date()) {
+        accessToken = await refreshAccessToken(conn.refresh_token)
+        if (!accessToken) {
+          return NextResponse.json({ error: 'Erro ao renovar token' }, { status: 401 })
+        }
+        await ctx.client.query(
+          'UPDATE calendar_connections SET access_token = $1, token_expiry = $2, updated_at = NOW() WHERE id = $3',
+          [accessToken, new Date(Date.now() + 3600 * 1000), conn.id]
+        )
+      }
 
-    await pool.query(
-      `UPDATE calendar_connections
-       SET webhook_channel_id = $1, webhook_resource_id = $2, webhook_expiration = $3, webhook_token = $4, updated_at = NOW()
-       WHERE id = $5`,
-      [watchData.id, watchData.resourceId, new Date(parseInt(watchData.expiration)), webhookSecret, conn.id]
-    )
+      const channelId = randomUUID()
+      const expiration = Date.now() + 7 * 24 * 60 * 60 * 1000
 
-    await pool.query(
-      `INSERT INTO axis_audit_logs (tenant_id, user_id, action, metadata)
-       VALUES ($1, $2, 'GOOGLE_WEBHOOK_REGISTERED', $3)`,
-      [tenantId, userId, JSON.stringify({ channel_id: watchData.id, expiration: watchData.expiration })]
-    )
+      // Auditoria ABA P0: gerar token secreto para validação HMAC no webhook
+      const webhookSecret = randomBytes(32).toString('hex')
+      const channelToken = createHmac('sha256', webhookSecret).update(channelId).digest('hex')
 
-    return NextResponse.json({
-      success: true,
-      channel_id: watchData.id,
-      expiration: new Date(parseInt(watchData.expiration)).toISOString()
+      const watchResponse = await fetch(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events/watch',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: channelId,
+            type: 'web_hook',
+            address: WEBHOOK_URL,
+            expiration: expiration,
+            token: channelToken,
+          }),
+        }
+      )
+
+      if (!watchResponse.ok) {
+        const errorData = await watchResponse.text()
+        console.error('[WATCH] Erro ao registrar:', errorData)
+        return NextResponse.json({ error: 'Erro ao registrar webhook', details: errorData }, { status: 500 })
+      }
+
+      const watchData = await watchResponse.json()
+
+      await ctx.client.query(
+        `UPDATE calendar_connections
+         SET webhook_channel_id = $1, webhook_resource_id = $2, webhook_expiration = $3, webhook_token = $4, updated_at = NOW()
+         WHERE id = $5`,
+        [watchData.id, watchData.resourceId, new Date(parseInt(watchData.expiration)), webhookSecret, conn.id]
+      )
+
+      await ctx.client.query(
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, action, metadata)
+         VALUES ($1, $2, 'GOOGLE_WEBHOOK_REGISTERED', $3)`,
+        [ctx.tenantId, ctx.userId, JSON.stringify({ channel_id: watchData.id, expiration: watchData.expiration })]
+      )
+
+      return NextResponse.json({
+        success: true,
+        channel_id: watchData.id,
+        expiration: new Date(parseInt(watchData.expiration)).toISOString()
+      })
     })
   } catch (error) {
     console.error('[WATCH] Erro:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }
