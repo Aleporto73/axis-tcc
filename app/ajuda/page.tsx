@@ -665,9 +665,7 @@ export default function AjudaPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por tema..."
             className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-colors shadow-sm"
-            style={{
-              '--tw-ring-color': `${brandAccent}40`,
-            }}
+            style={{ '--tw-ring-color': `${brandAccent}40` } as React.CSSProperties}
           />
           {search && (
             <button
@@ -785,9 +783,7 @@ export default function AjudaPage() {
                 rows={2}
                 disabled={isLoading}
                 className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-colors disabled:opacity-50"
-                style={{
-                  '--tw-ring-color': `${brandAccent}40`,
-                }}
+                style={{ '--tw-ring-color': `${brandAccent}40` } as React.CSSProperties}
               />
               <button
                 onClick={handleSend}
