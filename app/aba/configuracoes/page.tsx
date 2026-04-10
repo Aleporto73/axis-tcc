@@ -1188,10 +1188,4 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
     timeoutId = setTimeout(() => fn(...args), delay)
   }
 }
-eturn (...args: Parameters<T>) => {
-    clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => fn(...args), delay)
-  }
-}
-}
-}
+
