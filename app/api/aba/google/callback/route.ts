@@ -77,42 +77,8 @@ export async function GET(request: NextRequest) {
     )
 
     if (profileResult.rows.length === 0) {
-      // Fallback: tentar tenants (compatibilidade migração)
-      const tenantResult = await pool.query(
-        'SELECT id FROM tenants WHERE clerk_user_id = $1',
-        [state]
-      )
-
-      if (tenantResult.rows.length === 0) {
-        console.error('[ABA_GOOGLE_CALLBACK] Profile/Tenant não encontrado para userId:', state)
-        return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=tenant_error')
-      }
-
-      // Fallback: usar tenantId como profileId (pré-migração)
-      const tenantId = tenantResult.rows[0].id
-      const tokenExpiry = new Date(Date.now() + expires_in * 1000)
-
-      await pool.query(
-        `INSERT INTO calendar_connections
-          (tenant_id, user_id, provider, calendar_id, access_token, refresh_token, token_expiry, scope)
-         VALUES ($1, $2, 'google', 'primary', $3, $4, $5, $6)
-         ON CONFLICT (tenant_id, user_id, provider)
-         DO UPDATE SET
-           access_token = EXCLUDED.access_token,
-           refresh_token = COALESCE(EXCLUDED.refresh_token, calendar_connections.refresh_token),
-           token_expiry = EXCLUDED.token_expiry,
-           scope = EXCLUDED.scope,
-           updated_at = NOW()`,
-        [tenantId, state, access_token, refresh_token, tokenExpiry, scope]
-      )
-
-      await pool.query(
-        `INSERT INTO axis_audit_logs (tenant_id, user_id, action, metadata)
-         VALUES ($1, $2, 'GOOGLE_CALENDAR_CONNECTED', $3)`,
-        [tenantId, state, JSON.stringify({ google_email: userInfo.email, product: 'axis_aba', mode: 'fallback' })]
-      )
-
-      return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=success')
+      console.error('[ABA_GOOGLE_CALLBACK] Profile não encontrado para userId:', state)
+      return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=tenant_error')
     }
 
     // Fluxo principal: multi-terapeuta via profiles

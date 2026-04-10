@@ -1039,15 +1039,23 @@ export default function PacienteDetalhePage() {
       <div className="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Protocolos</h2>
-          <button
-            onClick={() => { fetchLibrary(); setShowLibrary(true) }}
-            className="text-xs font-medium px-3 py-1 rounded-lg border transition-colors"
-            style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
-          >
-            + Ativar Protocolo
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/tdah/planos"
+              className="text-xs font-medium px-3 py-1 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-colors"
+            >
+              Ver Plano
+            </Link>
+            <button
+              onClick={() => { fetchLibrary(); setShowLibrary(true) }}
+              className="text-xs font-medium px-3 py-1 rounded-lg border transition-colors"
+              style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+            >
+              + Ativar Protocolo
+            </button>
+          </div>
         </div>
 
         {loadingProtocols ? (

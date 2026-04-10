@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { UserButton } from '@clerk/nextjs'
@@ -7,10 +8,14 @@ import { useRole } from './RoleProvider'
 
 // =====================================================
 // AXIS TDAH - Sidebar Role-Aware (Multi-Terapeuta)
-// Cor primária: #0d7377 (green-teal)
+// Cor primaria: #0d7377 (green-teal)
+// v2 — Refatorada: 14 itens -> 9 pontos visuais
+//   - Escola + Familia + Casa -> submenu "Contextos"
+//   - Alertas removido do nav (acessivel via dashboard)
+//   - Plano removido do nav (acessivel via ficha paciente)
 // admin: tudo + Equipe
 // supervisor: tudo (sem Equipe)
-// terapeuta: Painel, Pacientes (seus), Sessões (suas)
+// terapeuta: Painel, Pacientes (seus), Sessoes (suas)
 // =====================================================
 
 const TDAH_COLOR = '#0d7377'
@@ -18,13 +23,31 @@ const TDAH_COLOR = '#0d7377'
 export default function SidebarTDAH() {
   const pathname = usePathname()
   const { role, canManageTeam, loading } = useRole()
+  const [contextOpen, setContextOpen] = useState(false)
+  const contextRef = useRef<HTMLDivElement>(null)
+
+  // Fechar popover ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (contextRef.current && !contextRef.current.contains(e.target as Node)) {
+        setContextOpen(false)
+      }
+    }
+    if (contextOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [contextOpen])
 
   const isActive = (path: string) => {
     if (path === '/tdah') return pathname === '/tdah'
     return pathname === path || pathname.startsWith(path + '/')
   }
 
-  // Ícones SVG
+  // Contextos: qualquer rota filha ativa marca o grupo
+  const isContextActive = isActive('/tdah/escola') || isActive('/tdah/familia') || isActive('/tdah/casa')
+
+  // Icones SVG
   const icons = {
     painel: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,19 +69,9 @@ export default function SidebarTDAH() {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
       </svg>
     ),
-    plano: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
     relatorios: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
-    alertas: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
     ),
     equipe: (
@@ -96,29 +109,40 @@ export default function SidebarTDAH() {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     ),
+    contextos: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="5" r="2" strokeWidth={1.5} />
+        <circle cx="5" cy="18" r="2" strokeWidth={1.5} />
+        <circle cx="19" cy="18" r="2" strokeWidth={1.5} />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 7v4m0 0l-5.5 5m5.5-5l5.5 5" />
+      </svg>
+    ),
   }
 
-  // Itens de navegação baseados no role
-  const allNavItems = [
+  // Itens de navegacao principal (sem Escola/Familia/Casa/Alertas/Plano)
+  const mainNavItems = [
     { href: '/tdah', label: 'Painel', icon: icons.painel, roles: ['admin', 'supervisor', 'terapeuta'] },
     { href: '/tdah/pacientes', label: 'Pacientes', icon: icons.pacientes, roles: ['admin', 'supervisor', 'terapeuta'] },
-    { href: '/tdah/sessoes', label: 'Sessões', icon: icons.sessoes, roles: ['admin', 'supervisor', 'terapeuta'] },
+    { href: '/tdah/sessoes', label: 'Sessoes', icon: icons.sessoes, roles: ['admin', 'supervisor', 'terapeuta'] },
     { href: '/tdah/drc', label: 'DRC', icon: icons.protocolos, roles: ['admin', 'supervisor', 'terapeuta'] },
+    // "Contextos" vai aqui como item especial (popover)
+    { href: '/tdah/relatorios', label: 'Relatorios', icon: icons.relatorios, roles: ['admin', 'supervisor', 'terapeuta'] },
+  ]
+
+  // Subitens do popover Contextos (com roles individuais)
+  const contextItems = [
     { href: '/tdah/escola', label: 'Escola', icon: icons.escola, roles: ['admin', 'supervisor'] },
-    { href: '/tdah/familia', label: 'Família', icon: icons.familia, roles: ['admin', 'supervisor'] },
+    { href: '/tdah/familia', label: 'Familia', icon: icons.familia, roles: ['admin', 'supervisor'] },
     { href: '/tdah/casa', label: 'Casa', icon: icons.casa, roles: ['admin', 'supervisor', 'terapeuta'] },
-    { href: '/tdah/planos', label: 'Plano', icon: icons.plano, roles: ['admin', 'supervisor'] },
-    { href: '/tdah/alertas', label: 'Alertas', icon: icons.alertas, roles: ['admin', 'supervisor', 'terapeuta'] },
-    { href: '/tdah/relatorios', label: 'Relatórios', icon: icons.relatorios, roles: ['admin', 'supervisor', 'terapeuta'] },
-    { href: '/tdah/equipe', label: 'Equipe', icon: icons.equipe, roles: ['admin'] },
   ]
 
   // Filtrar por role
-  const navItems = loading
-    ? allNavItems.filter(item => item.roles.includes('admin'))
-    : allNavItems.filter(item => role && item.roles.includes(role))
+  const currentRole = loading ? 'admin' : role
+  const filteredNav = mainNavItems.filter(item => currentRole && item.roles.includes(currentRole))
+  const filteredContexts = contextItems.filter(item => currentRole && item.roles.includes(currentRole))
+  const showContexts = filteredContexts.length > 0
 
-  // Estilos dinâmicos com cor TDAH
+  // Estilos dinamicos com cor TDAH
   const activeClass = (path: string) =>
     isActive(path)
       ? 'shadow-sm'
@@ -130,6 +154,25 @@ export default function SidebarTDAH() {
       : {}
 
   const activeIndicatorStyle = { backgroundColor: TDAH_COLOR }
+
+  // Indicador lateral reutilizavel
+  const ActiveIndicator = ({ show, direction = 'left' }: { show: boolean; direction?: 'left' | 'top' }) => {
+    if (!show) return null
+    if (direction === 'top') {
+      return (
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 w-5 h-[3px] rounded-b-full"
+          style={activeIndicatorStyle}
+        />
+      )
+    }
+    return (
+      <div
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 rounded-r-full"
+        style={activeIndicatorStyle}
+      />
+    )
+  }
 
   return (
     <>
@@ -147,7 +190,7 @@ export default function SidebarTDAH() {
 
         {/* Nav Icons */}
         <nav className="flex flex-col items-center gap-4 flex-1">
-          {navItems.filter(item => item.href !== '/tdah/equipe' && item.href !== '/tdah/configuracoes').map((item) => (
+          {filteredNav.slice(0, 4).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -155,18 +198,69 @@ export default function SidebarTDAH() {
               className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${activeClass(item.href)}`}
               style={activeStyle(item.href)}
             >
-              {isActive(item.href) && (
-                <div
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 rounded-r-full"
-                  style={activeIndicatorStyle}
-                />
+              <ActiveIndicator show={isActive(item.href)} />
+              {item.icon}
+            </Link>
+          ))}
+
+          {/* Contextos — popover */}
+          {showContexts && (
+            <div ref={contextRef} className="relative">
+              <button
+                onClick={() => setContextOpen(prev => !prev)}
+                title="Contextos"
+                className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${
+                  isContextActive ? 'shadow-sm' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                }`}
+                style={isContextActive ? { color: TDAH_COLOR, backgroundColor: `${TDAH_COLOR}15` } : {}}
+              >
+                <ActiveIndicator show={isContextActive} />
+                {icons.contextos}
+              </button>
+
+              {/* Popover */}
+              {contextOpen && (
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 bg-white rounded-xl border border-slate-100 shadow-md py-2 px-1 z-50 min-w-[160px]">
+                  {/* Seta */}
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-y-[6px] border-y-transparent border-r-[6px] border-r-white" style={{ filter: 'drop-shadow(-1px 0 1px rgba(0,0,0,0.05))' }} />
+
+                  {filteredContexts.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setContextOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 text-sm ${
+                        isActive(item.href)
+                          ? 'font-medium'
+                          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                      }`}
+                      style={isActive(item.href) ? { color: TDAH_COLOR, backgroundColor: `${TDAH_COLOR}0D` } : {}}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
               )}
+            </div>
+          )}
+
+          {/* Relatorios (apos Contextos) */}
+          {filteredNav.slice(4).map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.label}
+              className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${activeClass(item.href)}`}
+              style={activeStyle(item.href)}
+            >
+              <ActiveIndicator show={isActive(item.href)} />
               {item.icon}
             </Link>
           ))}
         </nav>
 
-        {/* Bottom: Equipe (admin) + Settings + User */}
+        {/* Bottom: Equipe (admin) + Ajuda + Config + User */}
         <div className="flex flex-col items-center gap-4">
           {canManageTeam && (
             <Link
@@ -175,12 +269,7 @@ export default function SidebarTDAH() {
               className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${activeClass('/tdah/equipe')}`}
               style={activeStyle('/tdah/equipe')}
             >
-              {isActive('/tdah/equipe') && (
-                <div
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 rounded-r-full"
-                  style={activeIndicatorStyle}
-                />
-              )}
+              <ActiveIndicator show={isActive('/tdah/equipe')} />
               {icons.equipe}
             </Link>
           )}
@@ -190,26 +279,16 @@ export default function SidebarTDAH() {
             className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${activeClass('/tdah/ajuda')}`}
             style={activeStyle('/tdah/ajuda')}
           >
-            {isActive('/tdah/ajuda') && (
-              <div
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 rounded-r-full"
-                style={activeIndicatorStyle}
-              />
-            )}
+            <ActiveIndicator show={isActive('/tdah/ajuda')} />
             {icons.ajuda}
           </Link>
           <Link
             href="/tdah/configuracoes"
-            title="Configurações TDAH"
+            title="Configuracoes TDAH"
             className={`relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 ${activeClass('/tdah/configuracoes')}`}
             style={activeStyle('/tdah/configuracoes')}
           >
-            {isActive('/tdah/configuracoes') && (
-              <div
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[17px] w-[3px] h-5 rounded-r-full"
-                style={activeIndicatorStyle}
-              />
-            )}
+            <ActiveIndicator show={isActive('/tdah/configuracoes')} />
             {icons.config}
           </Link>
           <UserButton
@@ -226,10 +305,16 @@ export default function SidebarTDAH() {
         </div>
       </aside>
 
-      {/* Mobile Bottom Nav */}
+      {/* Mobile Bottom Nav — 5 itens fixos */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-100 z-40 px-1 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
         <div className="flex justify-around items-center">
-          {navItems.filter(item => item.href !== '/tdah/equipe').slice(0, 4).map((item) => (
+          {[
+            { href: '/tdah', label: 'Painel', icon: icons.painel },
+            { href: '/tdah/pacientes', label: 'Pacientes', icon: icons.pacientes },
+            { href: '/tdah/sessoes', label: 'Sessoes', icon: icons.sessoes },
+            { href: '/tdah/drc', label: 'DRC', icon: icons.protocolos },
+            { href: '/tdah/configuracoes', label: 'Config', icon: icons.config },
+          ].map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -240,34 +325,11 @@ export default function SidebarTDAH() {
               }`}
               style={isActive(item.href) ? { color: TDAH_COLOR } : {}}
             >
-              {isActive(item.href) && (
-                <div
-                  className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 w-5 h-[3px] rounded-b-full"
-                  style={activeIndicatorStyle}
-                />
-              )}
+              <ActiveIndicator show={isActive(item.href)} direction="top" />
               {item.icon}
               <span className="text-[9px] font-medium leading-none truncate">{item.label}</span>
             </Link>
           ))}
-          <Link
-            href="/tdah/configuracoes"
-            className={`relative flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[3.5rem] ${
-              isActive('/tdah/configuracoes')
-                ? ''
-                : 'text-slate-400'
-            }`}
-            style={isActive('/tdah/configuracoes') ? { color: TDAH_COLOR } : {}}
-          >
-            {isActive('/tdah/configuracoes') && (
-              <div
-                className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-0.5 w-5 h-[3px] rounded-b-full"
-                style={activeIndicatorStyle}
-              />
-            )}
-            {icons.config}
-            <span className="text-[9px] font-medium leading-none">Config</span>
-          </Link>
         </div>
       </nav>
     </>

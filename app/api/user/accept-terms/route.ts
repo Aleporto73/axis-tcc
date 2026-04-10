@@ -1,43 +1,45 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import pool from '@/src/database/db'
+import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
 export async function POST() {
   try {
-    const { userId } = await auth()
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
-    }
+    const result = await withTenant(async (ctx) => {
+      // Atualiza o tenant ativo com a data de aceite
+      const res = await ctx.client.query(
+        `UPDATE tenants
+         SET terms_accepted_at = NOW()
+         WHERE id = $1
+         RETURNING id, terms_accepted_at`,
+        [ctx.tenantId]
+      )
 
-    // Atualiza o tenant com a data de aceite
-    const result = await pool.query(
-      `UPDATE tenants 
-       SET terms_accepted_at = NOW() 
-       WHERE clerk_user_id = $1 
-       RETURNING id, terms_accepted_at`,
-      [userId]
-    )
+      if (res.rows.length === 0) {
+        const err = new Error('Tenant nao encontrado') as any
+        err.statusCode = 404
+        throw err
+      }
 
-    if (result.rows.length === 0) {
-      return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 })
-    }
+      // Registra na auditoria
+      await ctx.client.query(
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, metadata)
+         VALUES ($1, $2, 'human', 'TERMS_ACCEPTED', $3)`,
+        [ctx.tenantId, ctx.userId, JSON.stringify({ accepted_at: res.rows[0].terms_accepted_at })]
+      )
 
-    // Registra na auditoria
-    await pool.query(
-      `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, metadata)
-       VALUES ($1, $2, 'human', 'TERMS_ACCEPTED', $3)`,
-      [result.rows[0].id, userId, JSON.stringify({ accepted_at: result.rows[0].terms_accepted_at })]
-    )
-
-    return NextResponse.json({ 
-      success: true, 
-      termsAccepted: true,
-      acceptedAt: result.rows[0].terms_accepted_at 
+      return res.rows[0]
     })
 
-  } catch (error) {
-    console.error('Erro ao aceitar termos:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    return NextResponse.json({
+      success: true,
+      termsAccepted: true,
+      acceptedAt: result.terms_accepted_at,
+    })
+  } catch (error: any) {
+    if (error?.statusCode) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

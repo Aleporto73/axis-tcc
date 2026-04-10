@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text()
-      console.error('[GOOGLE_CALLBACK] Erro ao trocar código:', errorData)
+      console.error('[GOOGLE_CALLBACK] Erro ao trocar codigo:', errorData)
       return NextResponse.redirect(BASE_URL + '/configuracoes?google=token_error')
     }
 
@@ -50,37 +50,42 @@ export async function GET(request: NextRequest) {
     })
     const userInfo = await userInfoResponse.json()
 
-    const tenantResult = await pool.query(
-      'SELECT id FROM tenants WHERE clerk_user_id = $1',
+    // Resolver profile via clerk_user_id (multi-tenant safe)
+    // OAuth callback: state = clerk_user_id, sem cookies de sessao
+    const profileResult = await pool.query(
+      `SELECT p.id AS profile_id, p.tenant_id
+       FROM profiles p
+       WHERE p.clerk_user_id = $1 AND p.is_active = true
+       LIMIT 1`,
       [state]
     )
 
-    if (tenantResult.rows.length === 0) {
-      console.error('[GOOGLE_CALLBACK] Tenant não encontrado para userId:', state)
+    if (profileResult.rows.length === 0) {
+      console.error('[GOOGLE_CALLBACK] Profile nao encontrado para userId:', state)
       return NextResponse.redirect(BASE_URL + '/configuracoes?google=tenant_error')
     }
 
-    const tenantId = tenantResult.rows[0].id
+    const { profile_id, tenant_id: tenantId } = profileResult.rows[0]
     const tokenExpiry = new Date(Date.now() + expires_in * 1000)
 
     await pool.query(
-      `INSERT INTO calendar_connections 
+      `INSERT INTO calendar_connections
         (tenant_id, user_id, provider, calendar_id, access_token, refresh_token, token_expiry, scope)
       VALUES ($1, $2, 'google', 'primary', $3, $4, $5, $6)
-      ON CONFLICT (tenant_id, user_id, provider) 
-      DO UPDATE SET 
+      ON CONFLICT (tenant_id, user_id, provider)
+      DO UPDATE SET
         access_token = EXCLUDED.access_token,
         refresh_token = COALESCE(EXCLUDED.refresh_token, calendar_connections.refresh_token),
         token_expiry = EXCLUDED.token_expiry,
         scope = EXCLUDED.scope,
         updated_at = NOW()`,
-      [tenantId, state, access_token, refresh_token, tokenExpiry, scope]
+      [tenantId, profile_id, access_token, refresh_token, tokenExpiry, scope]
     )
 
     await pool.query(
       `INSERT INTO axis_audit_logs (tenant_id, user_id, action, metadata)
       VALUES ($1, $2, 'GOOGLE_CALENDAR_CONNECTED', $3)`,
-      [tenantId, state, JSON.stringify({ google_email: userInfo.email })]
+      [tenantId, state, JSON.stringify({ google_email: userInfo.email, profile_id, product: 'axis_tcc' })]
     )
 
     return NextResponse.redirect(BASE_URL + '/configuracoes?google=success')

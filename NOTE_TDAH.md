@@ -710,6 +710,52 @@
 
 ---
 
+## Changelog — Sessão 10/04/2026
+
+### Auditoria completa AXIS TDAH (pré-venda)
+
+**Arquivo criado:** `docs/AUDIT_TDAH_2026-04-10.md` — mapeamento de 35+ features funcionais, TODOs, bugs, features não implementadas, gaps de segurança/LGPD.
+
+### 4 Fixes P0/P1
+
+1. **Audit log — sessão fechada (P0)**: `app/api/tdah/sessions/[id]/route.ts` — 3 cenários: com snapshot, sem observações, erro de snapshot. Campos: patient_id, session_context, cso_score, cso_band, observations_count, events_count.
+2. **Audit log — transição protocolo (P0)**: `app/api/tdah/protocols/[id]/route.ts` — registra from_status, to_status, protocol_code, reason.
+3. **canAccessTdahPatient no scores (P1)**: `app/api/tdah/scores/route.ts` — substituído EXISTS subquery frágil por check direto via canAccessTdahPatient.
+4. **Texto desatualizado equipe (P1)**: `app/tdah/equipe/page.tsx` — atualizado para refletir N:N via tdah_patient_therapists (Migration 038).
+
+### Visual — Card TDAH no Hub
+
+`app/hub/page.tsx` — opacidade teal aumentada (bgActive 0.06, borderActive 0.30) + shadowActive com cor teal para peso visual igual aos cards TCC/ABA.
+
+### Bloco final pré-venda (6 tarefas)
+
+1. **npm audit**: 17 vulnerabilidades (2 critical, 4 high). Documentado — rodar `npm audit fix` na máquina real.
+2. **Migração rotas withTenant**: 3 rotas migradas:
+   - `app/api/google/callback/route.ts` — tenants → profiles (multi-tenant safe)
+   - `app/api/aba/google/callback/route.ts` — removido fallback tenants (só profiles)
+   - `app/api/user/accept-terms/route.ts` — migrado para withTenant() completo
+3. **Portal família expandido**: `app/api/familia/[token]/route.ts` — adicionadas queries para tdah_routines (ativas) e tdah_token_economy (saldo + config), conforme Bible §18.
+4. **Token reuse verificado**: `app/api/tdah/familia/tokens/route.ts` já implementa check de token ativo existente antes de INSERT.
+5. **E2E test**: Configuração correta — playwright em devDeps, e2e/ excluído do tsconfig, CI não roda E2E (apenas tsc + vitest + build).
+6. **Migration gaps documentados**: `scripts/migrations/MIGRATION_GAPS.md` — gaps 008-010 (consolidação pré-007) e 041 (pulado no dev).
+
+### Refactor: SidebarTDAH v2 (14 itens -> 9 pontos visuais)
+
+**Objetivo:** Reduzir poluição visual para público clínico 40+, não tech-native.
+
+**Mudanças:**
+1. **Submenu "Contextos"**: Escola + Família + Casa agrupados em popover (ícone rede 3 nós). Click abre popover à direita. Indicador ativo quando qualquer rota filha está ativa. Click outside fecha.
+2. **Alertas removido do nav**: Acessível via card "Ver todos" no dashboard (`app/tdah/dashboard/page.tsx` linha 166 — já existia).
+3. **Plano removido do nav**: Acessível via ficha do paciente. Adicionado botão "Ver Plano" na seção Protocolos (`app/tdah/pacientes/[id]/page.tsx`).
+4. **Mobile bottom nav**: Fixado em 5 itens (Painel, Pacientes, Sessões, DRC, Config).
+
+**Nav desktop final (9 pontos visuais):**
+Painel | Pacientes | Sessões | DRC | Contextos [popover] | Relatórios || Equipe (admin) | Ajuda | Config | Avatar
+
+**Arquivos alterados:** `app/components/SidebarTDAH.tsx`, `app/tdah/pacientes/[id]/page.tsx`
+
+---
+
 ## REGRAS IMUTÁVEIS (da BIBLE v2.5)
 
 1. Backbone compartilhado. Motor clínico derivado.

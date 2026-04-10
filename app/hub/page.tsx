@@ -43,6 +43,7 @@ const PRODUCTS = [
     btnHover: '#2a2f6e',
     btnInactiveBg: 'rgba(26, 31, 78, 0.08)',
     btnInactiveText: '#1a1f4e',
+    shadowActive: undefined as string | undefined,
   },
   {
     id: 'aba',
@@ -61,6 +62,7 @@ const PRODUCTS = [
     btnHover: '#2a2f6e',
     btnInactiveBg: 'rgba(196, 120, 90, 0.10)',
     btnInactiveText: '#1a1f4e',
+    shadowActive: undefined as string | undefined,
   },
   {
     id: 'tdah',
@@ -71,14 +73,16 @@ const PRODUCTS = [
     hrefInactive: '/produto/tdah',
     accent: '#0d7377',
     accentLight: '#34b3b8',
-    bgActive: 'rgba(13, 115, 119, 0.04)',
-    bgInactive: 'rgba(13, 115, 119, 0.02)',
-    borderActive: 'rgba(13, 115, 119, 0.22)',
-    borderInactive: 'rgba(13, 115, 119, 0.08)',
+    bgActive: 'rgba(13, 115, 119, 0.06)',
+    bgInactive: 'rgba(13, 115, 119, 0.03)',
+    borderActive: 'rgba(13, 115, 119, 0.30)',
+    borderInactive: 'rgba(13, 115, 119, 0.12)',
     btnBg: '#0d7377',
     btnHover: '#0a5c5f',
     btnInactiveBg: 'rgba(13, 115, 119, 0.10)',
     btnInactiveText: '#0d7377',
+    // Teal needs higher opacity than navy/terracotta for equal visual weight
+    shadowActive: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(13,115,119,0.08)',
   },
 ]
 
@@ -180,7 +184,7 @@ export default function HubPage() {
                   background: licensed ? product.bgActive : product.bgInactive,
                   border: `1.5px solid ${licensed ? product.borderActive : product.borderInactive}`,
                   boxShadow: licensed
-                    ? '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)'
+                    ? (product.shadowActive ?? '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)')
                     : '0 1px 2px rgba(0,0,0,0.02)',
                 }}
               >

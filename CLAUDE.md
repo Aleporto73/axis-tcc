@@ -77,6 +77,38 @@ If a modification may impact clinical engines, database integrity, or historical
 
 ---
 
+## Changelog — Sessão 10/04/2026
+
+### Auditoria completa + Bloco pré-venda AXIS TDAH
+
+**Relatório:** `docs/AUDIT_TDAH_2026-04-10.md` — 35+ features mapeadas, gaps de segurança identificados.
+
+**Fixes P0/P1 aplicados:**
+- Audit logs adicionados em: session close (`tdah_session_closed`), protocol transitions (`tdah_protocol_transition`)
+- `canAccessTdahPatient` aplicado em `/api/tdah/scores` (antes usava EXISTS subquery frágil)
+- Texto da página equipe atualizado para refletir N:N (Migration 038)
+
+**Migração de rotas (withTenant):**
+- `/api/google/callback` — tenants → profiles (multi-tenant safe)
+- `/api/aba/google/callback` — removido fallback tenants
+- `/api/user/accept-terms` — migrado para withTenant() completo
+- `/api/user/tenant` — documentado como exceção legítima (é o resolver)
+
+**Portal família expandido:**
+- `app/api/familia/[token]/route.ts` — adicionadas queries para `tdah_routines` e `tdah_token_economy` (Bible §18)
+
+**Documentação:**
+- `scripts/migrations/MIGRATION_GAPS.md` — gaps 008-010, 041
+
+**Endpoints sem withTenant() restantes (exceções legítimas):**
+- `/api/webhook/hotmart` — webhook externo, sem auth Clerk
+- `/api/webhook/clerk` — webhook externo
+- `/api/cron/*` — jobs internos
+- `/api/escola/[token]`, `/api/familia/[token]` — portais públicos via token
+- `/api/user/tenant` — é o próprio resolver de tenant
+
+---
+
 ## Changelog — Sessão 01/04/2026 (continuação)
 
 ### Feature: Pipeline de pós-processamento de transcrição v1.0.0

@@ -58,8 +58,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     if (error?.statusCode) {
       return NextResponse.json({ error: error.message }, { status: error.statusCode })
-    }
-    const { message, status } = handleRouteError(error)
+    }    const { message, status } = handleRouteError(error)
     return NextResponse.json({ error: message }, { status })
   }
 }
