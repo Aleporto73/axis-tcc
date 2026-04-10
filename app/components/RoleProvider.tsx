@@ -14,6 +14,17 @@ import { getOperadoraAccess, OperadoraAccess } from '@/src/lib/operadora-gate'
 
 export type UserRole = 'admin' | 'supervisor' | 'terapeuta'
 
+interface ProductLimitInfo {
+  plan: string
+  max_patients: number
+}
+
+interface ProductLimits {
+  tcc: ProductLimitInfo
+  aba: ProductLimitInfo
+  tdah: ProductLimitInfo
+}
+
 interface ProfileData {
   id: string
   tenant_id: string
@@ -24,6 +35,8 @@ interface ProfileData {
   crp_uf?: string
   tenant_name?: string
   tenant_plan?: string
+  max_patients?: number            // legacy (global) — prefer product_limits
+  product_limits?: ProductLimits   // per-product limits
   is_active: boolean
 }
 
@@ -122,3 +135,4 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     </RoleContext.Provider>
   )
 }
+

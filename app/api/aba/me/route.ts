@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant, TenantSelectionRequired } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import { getProductLimit } from '@/src/database/product-limits'
 
 // =====================================================
 // AXIS — API: Perfil do Usuário Logado
@@ -50,7 +51,21 @@ export async function GET() {
         }
       }
 
-      return profile.rows[0]
+      // Per-product limits (substitui tenants.max_patients global)
+      const [tccLimit, abaLimit, tdahLimit] = await Promise.all([
+        getProductLimit(ctx.client, ctx.tenantId, 'tcc'),
+        getProductLimit(ctx.client, ctx.tenantId, 'aba'),
+        getProductLimit(ctx.client, ctx.tenantId, 'tdah'),
+      ])
+
+      return {
+        ...profile.rows[0],
+        product_limits: {
+          tcc:  { plan: tccLimit.plan,  max_patients: tccLimit.maxPatients },
+          aba:  { plan: abaLimit.plan,  max_patients: abaLimit.maxPatients },
+          tdah: { plan: tdahLimit.plan, max_patients: tdahLimit.maxPatients },
+        },
+      }
     })
 
     return NextResponse.json({ profile: result })
@@ -112,3 +127,4 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: message }, { status })
   }
 }
+

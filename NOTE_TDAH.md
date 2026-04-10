@@ -124,6 +124,16 @@
 
 ---
 
+## 10/04/2026 — Fix Crítico: Isolamento de Planos
+
+**Problema:** `tenants.max_patients` é global — comprar ABA founders vazava 100 pacientes para TDAH free.
+
+**Solução:** `src/database/product-limits.ts` → `getProductLimit()` lê de `user_licenses` por produto.
+
+**Arquivos:** product-limits.ts (novo), tdah/patients/route.ts, aba/learners/route.ts, patients/create/route.ts, aba/me/route.ts, RoleProvider.tsx, tdah/pacientes/page.tsx, aba/configuracoes/page.tsx, tdah/configuracoes/page.tsx
+
+---
+
 ## CONCLUIDO EM 23/03/2026
 
 ### Sessão Cowork — Auditoria Técnica TDAH (score 6.4 → ~8.5)

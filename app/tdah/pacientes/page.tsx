@@ -163,8 +163,8 @@ export default function PacientesTDAHPage() {
           {isAdmin && (
             <button
               onClick={() => {
-                const isFree = !profile?.tenant_plan || profile.tenant_plan === 'free'
-                if (isFree && patients.length >= 1) {
+                const maxPatients = profile?.product_limits?.tdah?.max_patients ?? profile?.max_patients ?? 1
+                if (patients.length >= maxPatients) {
                   setShowUpgrade(true)
                 } else {
                   setShowModal(true)

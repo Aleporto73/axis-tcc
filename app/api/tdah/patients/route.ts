@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { requireAdminOrSupervisor, handleRouteError, tdahPatientFilter } from '@/src/database/with-role'
+import { getProductLimit } from '@/src/database/product-limits'
 
 // =====================================================
 // AXIS TDAH - API: Pacientes (Multi-Terapeuta)
@@ -68,24 +69,20 @@ export async function POST(request: NextRequest) {
       // Terapeuta não pode criar pacientes
       requireAdminOrSupervisor(ctx)
 
-      // ─── Enforcement de limite do plano ───
-      const [tenantRes, countRes] = await Promise.all([
-        ctx.client.query(
-          'SELECT max_patients, plan_tier FROM tenants WHERE id = $1',
-          [ctx.tenantId]
-        ),
+      // ─── Enforcement de limite do plano (per-product via user_licenses) ───
+      const [limit, countRes] = await Promise.all([
+        getProductLimit(ctx.client, ctx.tenantId, 'tdah'),
         ctx.client.query(
           `SELECT COUNT(*)::int as total FROM tdah_patients WHERE tenant_id = $1 AND status = 'active' AND deleted_at IS NULL`,
           [ctx.tenantId]
         ),
       ])
 
-      const maxPatients = tenantRes.rows[0]?.max_patients ?? 1
       const currentCount = countRes.rows[0]?.total ?? 0
 
-      if (currentCount >= maxPatients) {
+      if (currentCount >= limit.maxPatients) {
         const err = new Error('PLAN_LIMIT_REACHED') as any
-        err.planLimit = { current: currentCount, max: maxPatients, plan: tenantRes.rows[0]?.plan_tier || 'free' }
+        err.planLimit = { current: currentCount, max: limit.maxPatients, plan: limit.plan }
         throw err
       }
 

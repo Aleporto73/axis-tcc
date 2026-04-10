@@ -3,20 +3,20 @@ import pool from '@/src/database/db'
 import { rateLimit } from '@/src/middleware/rate-limit'
 
 // =====================================================
-// AXIS TDAH — API Publica: Portal Familia
+// AXIS TDAH — API Pública: Portal Familia
 // GET — Validar token + retornar dados do paciente
 // POST — Aceitar consentimento LGPD
-// SEM autenticacao Clerk — acesso via token
+// SEM autenticação Clerk — acesso via token
 // Visibility: Progresso resumido, DRC, sessoes, rotinas, token economy
 // No Scores CSO-TDAH, No Snapshots, No Layer AuDHD
 //
-// Seguranca (Auditoria P1):
-//   - Rate limit: 30 req/min por IP (portal publico)
-//   - Token: 256-bit random, expiracao validada
+// Segurança (Auditoria P1):
+//   - Rate limit: 30 req/min por IP (portal público)
+//   - Token: 256-bit random, expiração validada
 //   - Access log: append-only (tdah_family_access_log)
 // =====================================================
 
-// Rate limit config para portais publicos
+// Rate limit config para portais públicos
 const PORTAL_RATE_LIMIT = { limit: 30, windowMs: 60_000, prefix: 'portal-familia' }
 
 async function validateToken(token: string) {
@@ -55,15 +55,15 @@ export async function GET(
 
     const { token } = await params
 
-    // Validacao basica do formato do token (hex 64 chars)
+    // Validação básica do formato do token (hex 64 chars)
     if (!/^[a-f0-9]{64}$/i.test(token)) {
-      return NextResponse.json({ error: 'Token invalido' }, { status: 400 })
+      return NextResponse.json({ error: 'Token inválido' }, { status: 400 })
     }
     const tokenData = await validateToken(token)
 
     if (!tokenData) {
       return NextResponse.json(
-        { error: 'Token invalido, expirado ou revogado' },
+        { error: 'Token inválido, expirado ou revogado' },
         { status: 401 }
       )
     }
@@ -121,7 +121,7 @@ export async function GET(
             AND drc_date >= CURRENT_DATE - INTERVAL '30 days'`,
           [patientId, tenantId]
         ),
-        // Sessoes futuras (proximas 5)
+        // Sessões futuras (próximas 5)
         client.query(
           `SELECT id, scheduled_at, session_context, status
           FROM tdah_sessions
@@ -132,7 +132,7 @@ export async function GET(
           LIMIT 5`,
           [patientId, tenantId]
         ),
-        // Sessoes recentes (ultimas 10 completadas)
+        // Sessões recentes (últimas 10 completadas)
         client.query(
           `SELECT id, scheduled_at, session_context, duration_minutes, status
           FROM tdah_sessions
@@ -142,7 +142,7 @@ export async function GET(
           LIMIT 10`,
           [patientId, tenantId]
         ),
-        // Resumos de sessao enviados (schema real: learner_id, sent_at)
+        // Resumos de sessão enviados (schema real: learner_id, sent_at)
         client.query(
           `SELECT id, session_id, summary_text, sent_at, created_at
           FROM session_summaries
@@ -173,7 +173,7 @@ export async function GET(
           ORDER BY routine_type, routine_name`,
           [patientId, tenantId]
         ),
-        // Token economy — saldo e configuracao (Bible S18, Protocolo E06)
+        // Token economy — saldo e configuração (Bible S18, Protocolo E06)
         client.query(
           `SELECT te.id, te.system_name, te.token_type, te.token_label,
             te.target_behaviors, te.reinforcers, te.current_balance, te.status
@@ -237,14 +237,14 @@ export async function POST(
     const { token } = await params
 
     if (!/^[a-f0-9]{64}$/i.test(token)) {
-      return NextResponse.json({ error: 'Token invalido' }, { status: 400 })
+      return NextResponse.json({ error: 'Token inválido' }, { status: 400 })
     }
 
     const body = await request.json()
     const { accept_consent } = body
 
     if (!accept_consent) {
-      return NextResponse.json({ error: 'Consentimento nao aceito' }, { status: 400 })
+      return NextResponse.json({ error: 'Consentimento não aceito' }, { status: 400 })
     }
 
     const client = await pool.connect()
@@ -258,7 +258,7 @@ export async function POST(
       )
 
       if (res.rows.length === 0) {
-        return NextResponse.json({ error: 'Token invalido ou consentimento ja aceito' }, { status: 400 })
+        return NextResponse.json({ error: 'Token inválido ou consentimento ja aceito' }, { status: 400 })
       }
 
       return NextResponse.json({ success: true, message: 'Consentimento registrado' })

@@ -77,6 +77,33 @@ If a modification may impact clinical engines, database integrity, or historical
 
 ---
 
+## Changelog — Sessão 10/04/2026 (continuação)
+
+### Fix CRÍTICO: Isolamento de planos entre produtos
+
+**Problema:** `tenants.max_patients` é GLOBAL. Comprar ABA founders (max_patients=100) fazia TDAH free ter 100 pacientes também. Todos os gates de criação de paciente/aprendiz liam de `tenants.max_patients` em vez de `user_licenses` por produto.
+
+**Solução:** Criado `src/database/product-limits.ts` com `getProductLimit(client, tenantId, productType)`:
+- Lê de `user_licenses WHERE product_type = $2 AND is_active = true`
+- Mapeia `hotmart_plan` → limite: free=1, founders_50=50, founders=100, clinica_100=100, clinica_250=250
+- TCC mantém regra histórica: qualquer plano pago = ilimitado (999999)
+- Fallback: sem licença ativa = free (1 paciente)
+
+**Arquivos alterados:**
+- `src/database/product-limits.ts` — CRIADO. Helper centralizado.
+- `app/api/tdah/patients/route.ts` — POST: usa `getProductLimit('tdah')` em vez de `tenants.max_patients`
+- `app/api/aba/learners/route.ts` — POST: usa `getProductLimit('aba')` em vez de `tenants.max_patients`
+- `app/api/patients/create/route.ts` — POST: unificado para usar `getProductLimit('tcc')` (antes fazia query manual em user_licenses)
+- `app/api/aba/me/route.ts` — GET: retorna `product_limits: { tcc, aba, tdah }` com `{ plan, max_patients }` por produto
+- `app/components/RoleProvider.tsx` — Adicionadas interfaces `ProductLimitInfo`, `ProductLimits`, campo `product_limits` em `ProfileData`
+- `app/tdah/pacientes/page.tsx` — Frontend gate usa `profile?.product_limits?.tdah?.max_patients`
+- `app/aba/configuracoes/page.tsx` — Seção "Meu Plano" usa `product_limits.aba`
+- `app/tdah/configuracoes/page.tsx` — Seção "Meu Plano" usa `product_limits.tdah`, fetchPlan corrigido (antes chamava /api/aba/plan inexistente)
+
+**Webhook Hotmart:** Continua atualizando `tenants.max_patients` (backward compat + admin view), mas gates de criação agora leem de `user_licenses`.
+
+---
+
 ## Changelog — Sessão 10/04/2026
 
 ### Auditoria completa + Bloco pré-venda AXIS TDAH

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { getProductLimit } from '@/src/database/product-limits'
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,24 +8,17 @@ export async function POST(request: NextRequest) {
     const { name, email, phone, birth_date, notes } = body
 
     const result = await withTenant(async (ctx) => {
-      // Verificar limite de pacientes do plano TCC
-      // Regra v1.x: FREE (sem hotmart_plan) = 1 paciente, PRO (com hotmart_plan) = ilimitado
-      const licenseResult = await ctx.client.query(
-        `SELECT hotmart_plan FROM user_licenses
-         WHERE tenant_id = $1 AND product_type = 'tcc' AND is_active = true
-         LIMIT 1`,
-        [ctx.tenantId]
-      )
-      const isPro = licenseResult.rows[0]?.hotmart_plan != null
-      const maxPatients = isPro ? 999999 : 1
-
-      const countResult = await ctx.client.query(
-        'SELECT COUNT(*)::int AS total FROM patients WHERE tenant_id = $1',
-        [ctx.tenantId]
-      )
+      // ─── Enforcement de limite do plano (per-product via user_licenses) ───
+      const [limit, countResult] = await Promise.all([
+        getProductLimit(ctx.client, ctx.tenantId, 'tcc'),
+        ctx.client.query(
+          'SELECT COUNT(*)::int AS total FROM patients WHERE tenant_id = $1',
+          [ctx.tenantId]
+        ),
+      ])
       const currentCount = countResult.rows[0]?.total ?? 0
 
-      if (currentCount >= maxPatients) {
+      if (currentCount >= limit.maxPatients) {
         const err = new Error('PLAN_LIMIT_REACHED') as any
         err.statusCode = 403
         throw err

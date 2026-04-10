@@ -212,10 +212,11 @@ export default function ConfiguracoesABAPage() {
           name: p.name || '',
           crp: crpFormatted,
         })
-        // Dados do plano para seção "Meu Plano"
+        // Dados do plano para seção "Meu Plano" (per-product via product_limits)
+        const abaLimits = p.product_limits?.aba
         setPlanData({
-          plan_tier: p.tenant_plan || 'free',
-          max_patients: p.max_patients || 1,
+          plan_tier: abaLimits?.plan || p.tenant_plan || 'free',
+          max_patients: abaLimits?.max_patients || p.max_patients || 1,
           learner_count: p.learner_count || 0,
         })
       }
@@ -1186,4 +1187,11 @@ function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
     clearTimeout(timeoutId)
     timeoutId = setTimeout(() => fn(...args), delay)
   }
+}
+eturn (...args: Parameters<T>) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn(...args), delay)
+  }
+}
+}
 }

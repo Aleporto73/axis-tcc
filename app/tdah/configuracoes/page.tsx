@@ -124,6 +124,13 @@ export default function ConfiguracoesTDAHPage() {
         const p = data.profile
         const crpFormatted = p.crp_uf && p.crp ? `${p.crp_uf}/${p.crp}` : p.crp || ''
         setProfileForm({ name: p.name || '', crp: crpFormatted })
+        // Dados do plano TDAH (per-product via product_limits)
+        const tdahLimits = p.product_limits?.tdah
+        setPlanData({
+          plan_tier: tdahLimits?.plan || p.tenant_plan || 'free',
+          max_patients: tdahLimits?.max_patients || p.max_patients || 1,
+          patient_count: 0,  // será preenchido pelo fetchPlan se necessário
+        })
       }
     } catch { /* silent */ }
     setProfileLoading(false)
@@ -175,10 +182,11 @@ export default function ConfiguracoesTDAHPage() {
 
   const fetchPlan = async () => {
     try {
-      const res = await fetch('/api/aba/plan')
+      // Buscar contagem de pacientes TDAH para exibir progresso do plano
+      const res = await fetch('/api/tdah/patients?active=true')
       if (res.ok) {
         const data = await res.json()
-        setPlanData(data)
+        setPlanData(prev => prev ? { ...prev, patient_count: data.patients?.length ?? 0 } : prev)
       }
     } catch { /* silent */ }
   }
@@ -439,3 +447,4 @@ export default function ConfiguracoesTDAHPage() {
     </div>
   )
 }
+
