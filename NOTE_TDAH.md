@@ -124,6 +124,26 @@
 
 ---
 
+## 10/04/2026 — 4 Bugs Rodada de Teste
+
+**BUG 1: Tooltips cortados no modal de observação**
+- `components/TooltipTDAH.tsx` reescrito: `position: absolute` → `position: fixed` com `getBoundingClientRect()`
+- Tooltip agora escapa de containers com `overflow-y-auto` (modais)
+- Ajuste horizontal automático para não sair da viewport
+
+**BUG 2: "summary_text" column does not exist** — já estava corrigido (P0-A de sessão anterior). Rota usa schema real (migration 007+024).
+
+**BUG 3: Hub fundo branco** — `app/hub/page.tsx`: bg-neutral-50 → bg-[#f4f5f7], shadow-sm no header, shadow sutil nos cards inativos.
+
+**BUG 4: CI TypeScript — 34 erros corrigidos**
+- `aba/layout.tsx` e `tdah/layout.tsx`: narrowing `userId` e `tenantId` após `redirect()` (TS2345)
+- `middleware.ts`: tipo `NextRequest` explícito no param `req` (TS18046)
+- `push/send/route.ts`: tipos explícitos em forEach callback (TS7006)
+- 26x `onMouseEnter/Leave` com `React.MouseEvent<HTMLElement>` em produto/*, tdah/*, demo/*
+- 2x `<style jsx global>` com `@ts-expect-error` em demo relatorios
+
+---
+
 ## 10/04/2026 — Fix Crítico: Isolamento de Planos
 
 **Problema:** `tenants.max_patients` é global — comprar ABA founders vazava 100 pacientes para TDAH free.

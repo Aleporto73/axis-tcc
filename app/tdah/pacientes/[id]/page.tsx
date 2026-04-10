@@ -525,8 +525,8 @@ export default function PacienteDetalhePage() {
             onClick={openEdit}
             className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors"
             style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '')}
           >
             Editar
           </button>
@@ -534,8 +534,8 @@ export default function PacienteDetalhePage() {
             onClick={() => router.push(`/tdah/sessoes?novo=true&paciente=${patient.id}`)}
             className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
             style={{ backgroundColor: TDAH_COLOR }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
+            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
+            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
           >
             + Nova Sessão
           </button>
@@ -637,8 +637,8 @@ export default function PacienteDetalhePage() {
             onClick={() => setShowGuardianForm(true)}
             className="text-xs font-medium px-3 py-1 rounded-lg border transition-colors"
             style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '')}
           >
             + Adicionar
           </button>
@@ -765,8 +765,8 @@ export default function PacienteDetalhePage() {
           href={`/tdah/drc?paciente=${patient.id}`}
           className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
           style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+          onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+          onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '')}
         >
           Ver DRCs
         </Link>
@@ -1050,8 +1050,8 @@ export default function PacienteDetalhePage() {
               onClick={() => { fetchLibrary(); setShowLibrary(true) }}
               className="text-xs font-medium px-3 py-1 rounded-lg border transition-colors"
               style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '')}
             >
               + Ativar Protocolo
             </button>
@@ -1206,7 +1206,7 @@ export default function PacienteDetalhePage() {
                               className="px-3 py-1 text-xs text-white rounded-lg transition-colors disabled:opacity-50"
                               style={{ backgroundColor: TDAH_COLOR }}
                               onMouseEnter={e => { if (activating !== lp.id) e.currentTarget.style.backgroundColor = '#0a5c5f' }}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
+                              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
                             >
                               {activating === lp.id ? '...' : 'Ativar'}
                             </button>

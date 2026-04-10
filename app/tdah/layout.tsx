@@ -33,11 +33,12 @@ async function logAccessDenied(
 }
 
 export default async function TDAHLayout({ children }: { children: React.ReactNode }) {
-  const { userId } = await auth()
+  const { userId: rawUserId } = await auth()
 
-  if (!userId) {
+  if (!rawUserId) {
     redirect('/')
   }
+  const userId = rawUserId as string
 
   // Resolver tenant via profiles (novo modelo) → fallback tenants (compatibilidade)
   let tenantId: string | null = null
@@ -60,13 +61,14 @@ export default async function TDAHLayout({ children }: { children: React.ReactNo
   if (!tenantId) {
     redirect('/hub')
   }
+  const resolvedTenantId = tenantId as string
 
   // Verificar licença TDAH por tenant_id
   let hasLicense = true
   try {
     const licenseResult = await pool.query(
       'SELECT is_active FROM user_licenses WHERE tenant_id = $1 AND product_type = $2 AND is_active = true LIMIT 1',
-      [tenantId, 'tdah']
+      [resolvedTenantId, 'tdah']
     )
     if (licenseResult.rows.length > 0) {
       hasLicense = true
@@ -79,7 +81,7 @@ export default async function TDAHLayout({ children }: { children: React.ReactNo
   }
 
   if (!hasLicense) {
-    await logAccessDenied(tenantId, userId, 'no_active_license')
+    await logAccessDenied(resolvedTenantId, userId, 'no_active_license')
     redirect('/hub')
   }
 

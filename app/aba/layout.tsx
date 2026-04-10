@@ -34,11 +34,12 @@ async function logAccessDenied(
 }
 
 export default async function ABALayout({ children }: { children: React.ReactNode }) {
-  const { userId } = await auth()
+  const { userId: rawUserId } = await auth()
 
-  if (!userId) {
+  if (!rawUserId) {
     redirect('/')
   }
+  const userId = rawUserId as string
 
   // Resolver tenant via profiles (novo modelo) → fallback tenants (compatibilidade)
   let tenantId: string | null = null
@@ -61,13 +62,15 @@ export default async function ABALayout({ children }: { children: React.ReactNod
   if (!tenantId) {
     redirect('/hub')
   }
+  // Após redirect(), TS não sabe que tenantId é string — narrow explícito
+  const resolvedTenantId = tenantId as string
 
   // Verificar licença ABA por tenant_id (não clerk_user_id — suporta auto-provisioning)
   let hasLicense = true
   try {
     const licenseResult = await pool.query(
       'SELECT is_active FROM user_licenses WHERE tenant_id = $1 AND product_type = $2 AND is_active = true LIMIT 1',
-      [tenantId, 'aba']
+      [resolvedTenantId, 'aba']
     )
     if (licenseResult.rows.length > 0) {
       hasLicense = true
@@ -80,7 +83,7 @@ export default async function ABALayout({ children }: { children: React.ReactNod
   }
 
   if (!hasLicense) {
-    await logAccessDenied(tenantId, userId, 'no_active_license')
+    await logAccessDenied(resolvedTenantId, userId, 'no_active_license')
     redirect('/hub')
   }
 

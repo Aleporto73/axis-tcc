@@ -172,8 +172,8 @@ export default function PacientesTDAHPage() {
               }}
               className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
               style={{ backgroundColor: TDAH_COLOR }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
             >
               + Novo Paciente
             </button>
@@ -207,8 +207,8 @@ export default function PacientesTDAHPage() {
                 href={`/tdah/pacientes/${p.id}`}
                 className="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-slate-200 hover:shadow-sm transition-all cursor-pointer gap-3"
                 style={{ ['--hover-border' as any]: `${TDAH_COLOR}4D` }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = `${TDAH_COLOR}4D`)}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = '')}
+                onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.borderColor = `${TDAH_COLOR}4D`)}
+                onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.borderColor = '')}
               >
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: TDAH_LIGHT }}>
@@ -423,8 +423,8 @@ export default function PacientesTDAHPage() {
               <button onClick={handleSubmit} disabled={saving}
                 className="px-5 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
                 style={{ backgroundColor: TDAH_COLOR }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}>
+                onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
+                onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}>
                 {saving ? 'Salvando...' : 'Cadastrar'}
               </button>
             </div>

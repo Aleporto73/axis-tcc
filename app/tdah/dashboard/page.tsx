@@ -120,16 +120,16 @@ export default function TDAHDashboard() {
           <Link href="/tdah/pacientes"
             className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors"
             style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = TDAH_LIGHT)}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = TDAH_LIGHT)}
+            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '')}
           >
             Pacientes
           </Link>
           <Link href="/tdah/sessoes"
             className="px-4 py-2 text-xs font-medium text-white rounded-lg transition-colors"
             style={{ backgroundColor: TDAH_COLOR }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
+            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '#0a5c5f')}
+            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = TDAH_COLOR)}
           >
             Sessões
           </Link>

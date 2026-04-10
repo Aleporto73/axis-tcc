@@ -7,6 +7,9 @@ import { TOOLTIPS_TDAH, TooltipTDAHKey } from '@/lib/tooltips-tdah'
 // AXIS TDAH — Tooltip Educativo
 // Espelho do Tooltip ABA, com paleta teal (#0d7377).
 // Delay 300ms, posição auto (top/bottom), seta, ícone ?.
+//
+// Usa position: fixed + getBoundingClientRect() para
+// escapar de containers com overflow (ex: modais).
 // =====================================================
 
 interface TooltipTDAHProps {
@@ -24,18 +27,32 @@ export default function TooltipTDAH({ tip, children, icon = false, position }: T
   const text = TOOLTIPS_TDAH[tip]
   const [visible, setVisible] = useState(false)
   const [pos, setPos] = useState<'top' | 'bottom'>(position || 'top')
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wrapRef = useRef<HTMLSpanElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
 
   const show = useCallback(() => {
     timerRef.current = setTimeout(() => {
-      if (!position && wrapRef.current) {
+      if (wrapRef.current) {
         const rect = wrapRef.current.getBoundingClientRect()
         const viewportH = window.innerHeight
-        // Se perto do topo → bottom; se perto do bottom → top
-        if (rect.top < 80) setPos('bottom')
-        else if (rect.bottom > viewportH - 80) setPos('top')
-        else setPos('top')
+
+        // Determina posição top/bottom
+        let finalPos = position || 'top'
+        if (!position) {
+          if (rect.top < 80) finalPos = 'bottom'
+          else if (rect.bottom > viewportH - 80) finalPos = 'top'
+        }
+        setPos(finalPos as 'top' | 'bottom')
+
+        // Calcula coordenadas fixed
+        const centerX = rect.left + rect.width / 2
+        const topY = finalPos === 'top'
+          ? rect.top - 8   // mb-2 equivalent
+          : rect.bottom + 8 // mt-2 equivalent
+
+        setCoords({ top: topY, left: centerX })
       }
       setVisible(true)
     }, 300)
@@ -44,11 +61,34 @@ export default function TooltipTDAH({ tip, children, icon = false, position }: T
   const hide = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
     setVisible(false)
+    setCoords(null)
   }, [])
 
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [])
+
+  // Ajusta posição horizontal se o tooltip sairia da viewport
+  useEffect(() => {
+    if (visible && tooltipRef.current && coords) {
+      const tt = tooltipRef.current.getBoundingClientRect()
+      const vw = window.innerWidth
+      let adjustedLeft = coords.left
+
+      // Evita sair pela direita
+      if (coords.left + tt.width / 2 > vw - 8) {
+        adjustedLeft = vw - tt.width / 2 - 8
+      }
+      // Evita sair pela esquerda
+      if (coords.left - tt.width / 2 < 8) {
+        adjustedLeft = tt.width / 2 + 8
+      }
+
+      if (adjustedLeft !== coords.left) {
+        setCoords(prev => prev ? { ...prev, left: adjustedLeft } : prev)
+      }
+    }
+  }, [visible, coords])
 
   return (
     <span
@@ -63,20 +103,17 @@ export default function TooltipTDAH({ tip, children, icon = false, position }: T
           ?
         </span>
       )}
-      {visible && (
+      {visible && coords && (
         <div
+          ref={tooltipRef}
           role="tooltip"
-          className={`
-            absolute z-[9999] px-3 py-2 text-[11px] leading-relaxed font-normal
-            max-w-[220px] w-max rounded-md
-            bg-[#E0F2F1] text-[#004D40] border border-[#80CBC4]
-            shadow-[0_2px_8px_rgba(0,0,0,0.15)]
-            pointer-events-none
-            ${pos === 'top'
-              ? 'bottom-full left-1/2 -translate-x-1/2 mb-2'
-              : 'top-full left-1/2 -translate-x-1/2 mt-2'
-            }
-          `}
+          className="fixed z-[9999] px-3 py-2 text-[11px] leading-relaxed font-normal max-w-[220px] w-max rounded-md bg-[#E0F2F1] text-[#004D40] border border-[#80CBC4] shadow-[0_2px_8px_rgba(0,0,0,0.15)] pointer-events-none"
+          style={{
+            left: `${coords.left}px`,
+            top: pos === 'top' ? undefined : `${coords.top}px`,
+            bottom: pos === 'top' ? `${window.innerHeight - coords.top}px` : undefined,
+            transform: 'translateX(-50%)',
+          }}
         >
           {text}
           {/* Seta */}

@@ -128,8 +128,8 @@ export default function ProdutoABAPage() {
               href="/sign-up?produto=aba"
               className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: coralLight }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coral)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coralLight)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = coral)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = coralLight)}
             >
               Utilizar com 1 aprendiz real
             </Link>
@@ -371,8 +371,8 @@ export default function ProdutoABAPage() {
               href="/demo"
               className="inline-block px-6 py-3 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: coralLight }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coral)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coralLight)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = coral)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = coralLight)}
             >
               Ver relatório completo
             </Link>
@@ -758,8 +758,8 @@ export default function ProdutoABAPage() {
               target="_blank"
               className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: coral }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coralHover)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coral)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = coralHover)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = coral)}
             >
               Entrar como Fundador
             </a>
@@ -800,8 +800,8 @@ export default function ProdutoABAPage() {
               href="/sign-up?produto=aba"
               className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: coralLight }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = coral)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = coralLight)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = coral)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = coralLight)}
             >
               Utilizar com 1 aprendiz real
             </Link>

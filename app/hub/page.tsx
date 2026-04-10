@@ -107,7 +107,7 @@ export default function HubPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-50">
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f5f7]">
         <div className="text-center">
           <div className="h-10 w-10 mx-auto mb-4 rounded-full border-2 border-neutral-200 border-t-tcc-700 animate-spin" role="status" aria-label="Carregando" />
           <p className="text-sm text-neutral-500">Carregando módulos...</p>
@@ -148,9 +148,9 @@ export default function HubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-[#f4f5f7]">
       {/* Header */}
-      <header className="bg-white border-b border-neutral-200">
+      <header className="bg-white border-b border-neutral-200 shadow-sm">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
           <Image
             src="/axis.png"
@@ -184,8 +184,8 @@ export default function HubPage() {
                   background: licensed ? product.bgActive : product.bgInactive,
                   border: `1.5px solid ${licensed ? product.borderActive : product.borderInactive}`,
                   boxShadow: licensed
-                    ? (product.shadowActive ?? '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)')
-                    : '0 1px 2px rgba(0,0,0,0.02)',
+                    ? (product.shadowActive ?? '0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.05)')
+                    : '0 1px 3px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.02)',
                 }}
               >
                 {/* Top accent line */}

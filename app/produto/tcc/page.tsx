@@ -108,8 +108,8 @@ export default function ProdutoTCCPage() {
               href="/sign-up?produto=tcc"
               className="inline-flex px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: lilas }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = lilasLight)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = lilas)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = lilasLight)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = lilas)}
             >
               Começar com 1 paciente real
             </Link>
@@ -339,8 +339,8 @@ export default function ProdutoTCCPage() {
               href="/sign-up?produto=tcc"
               className="inline-block px-6 py-3 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: azul }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = azulHover)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = azul)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = azulHover)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = azul)}
             >
               Gerar seu primeiro relatório
             </Link>
@@ -587,8 +587,8 @@ export default function ProdutoTCCPage() {
               rel="noopener noreferrer"
               className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: azul }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = azulHover)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = azul)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = azulHover)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = azul)}
             >
               Assinar Profissional
             </a>
@@ -610,8 +610,8 @@ export default function ProdutoTCCPage() {
               href="/sign-up?produto=tcc"
               className="inline-flex px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: lilas }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = lilasLight)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = lilas)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = lilasLight)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = lilas)}
             >
               Começar com 1 paciente real
             </Link>

@@ -521,6 +521,7 @@ function DemoAnaChatTDAH() {
         </div>
       </div>
 
+      {/* @ts-expect-error next/style-jsx */}
       <style jsx global>{`
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(8px); }

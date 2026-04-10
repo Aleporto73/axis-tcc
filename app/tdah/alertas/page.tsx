@@ -93,8 +93,8 @@ export default function AlertasTDAHPage() {
         <Link href="/tdah"
           className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors"
           style={{ borderColor: TDAH_COLOR, color: TDAH_COLOR }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+          onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = `${TDAH_COLOR}0D`)}
+          onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = '')}
         >
           Voltar ao Painel
         </Link>

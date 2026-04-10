@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     const response = await admin.messaging().sendEachForMulticast(message)
 
     const invalidTokens: string[] = []
-    response.responses.forEach((resp, idx) => {
+    response.responses.forEach((resp: any, idx: number) => {
       if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
         invalidTokens.push(tokens[idx])
       }

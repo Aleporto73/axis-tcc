@@ -746,6 +746,7 @@ function DemoAnaChat() {
       </div>
 
       {/* Keyframes for fade-slide animation */}
+      {/* @ts-expect-error next/style-jsx */}
       <style jsx global>{`
         @keyframes fadeSlideIn {
           from {

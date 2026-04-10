@@ -119,8 +119,8 @@ export default function ProdutoTDAHPage() {
               href="/sign-up?produto=tdah"
               className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: tealLight }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = teal)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = tealLight)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = teal)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = tealLight)}
             >
               Começar com 1 paciente real
             </Link>
@@ -550,8 +550,8 @@ export default function ProdutoTDAHPage() {
               target="_blank"
               className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-colors"
               style={{ backgroundColor: teal }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = tealHover)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = teal)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = tealHover)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = teal)}
             >
               Entrar como Fundador
             </a>
@@ -587,8 +587,8 @@ export default function ProdutoTDAHPage() {
               href="/sign-up?produto=tdah"
               className="px-7 py-3.5 rounded-lg text-white text-base font-semibold transition-colors"
               style={{ backgroundColor: tealLight }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = teal)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = tealLight)}
+              onMouseEnter={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = teal)}
+              onMouseLeave={(e: React.MouseEvent<HTMLElement>) => (e.currentTarget.style.backgroundColor = tealLight)}
             >
               Começar com 1 paciente real
             </Link>
