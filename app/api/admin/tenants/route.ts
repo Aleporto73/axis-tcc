@@ -40,7 +40,12 @@ export async function GET() {
         COALESCE(pat.count, 0)::int as patient_count,
         COALESCE(s.count, 0)::int as session_count
       FROM tenants t
-      LEFT JOIN profiles p ON p.tenant_id = t.id AND p.role = 'admin'
+      LEFT JOIN LATERAL (
+        SELECT * FROM profiles
+        WHERE tenant_id = t.id AND role = 'admin'
+        ORDER BY created_at ASC
+        LIMIT 1
+      ) p ON true
       LEFT JOIN user_licenses ul ON ul.tenant_id = t.id
       LEFT JOIN (SELECT tenant_id, COUNT(*) as count FROM patients GROUP BY tenant_id) pat ON t.id = pat.tenant_id
       LEFT JOIN (SELECT tenant_id, COUNT(*) as count FROM sessions GROUP BY tenant_id) s ON t.id = s.tenant_id
