@@ -20,7 +20,7 @@ export async function GET() {
     }
 
     const result = await pool.query(`
-      SELECT
+      SELECT DISTINCT ON (t.id)
         t.id,
         COALESCE(p.name, t.name) as name,
         COALESCE(p.email, t.email) as email,
@@ -42,9 +42,9 @@ export async function GET() {
       FROM tenants t
       LEFT JOIN profiles p ON p.tenant_id = t.id AND p.role = 'admin'
       LEFT JOIN user_licenses ul ON ul.tenant_id = t.id
-      LEFT JOIN (SELECT tenant_id, COUNT(*) FROM patients GROUP BY tenant_id) pat ON t.id = pat.tenant_id
-      LEFT JOIN (SELECT tenant_id, COUNT(*) FROM sessions GROUP BY tenant_id) s ON t.id = s.tenant_id
-      ORDER BY t.created_at DESC
+      LEFT JOIN (SELECT tenant_id, COUNT(*) as count FROM patients GROUP BY tenant_id) pat ON t.id = pat.tenant_id
+      LEFT JOIN (SELECT tenant_id, COUNT(*) as count FROM sessions GROUP BY tenant_id) s ON t.id = s.tenant_id
+      ORDER BY t.id, ul.is_active DESC NULLS LAST, ul.hotmart_plan DESC NULLS LAST, t.created_at DESC
     `)
 
     return NextResponse.json({ tenants: result.rows })
