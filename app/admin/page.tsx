@@ -23,6 +23,8 @@ interface Tenant {
   crp: string;
   crp_uf: string;
   role: string;
+  product_type: string;
+  hotmart_plan: string | null;
   trial_status: string;
   trial_start: string;
   trial_end: string;
@@ -102,6 +104,15 @@ export default function AdminPage() {
       case 'expired': return 'Expirado';
       case 'blocked': return 'Bloqueado';
       default: return status;
+    }
+  };
+
+  const productColor = (product: string) => {
+    switch (product) {
+      case 'TCC': return 'bg-blue-100 text-blue-700';
+      case 'ABA': return 'bg-emerald-100 text-emerald-700';
+      case 'TDAH': return 'bg-purple-100 text-purple-700';
+      default: return 'bg-neutral-100 text-neutral-500';
     }
   };
 
@@ -187,6 +198,7 @@ export default function AdminPage() {
               <thead className="bg-neutral-50 border-b border-neutral-200">
                 <tr>
                   <th className="text-left px-4 py-3 text-sm font-medium text-neutral-600">Profissional</th>
+                  <th className="text-left px-4 py-3 text-sm font-medium text-neutral-600">Produto</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-neutral-600">CRP</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-neutral-600">Status</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-neutral-600">Trial</th>
@@ -201,6 +213,11 @@ export default function AdminPage() {
                     <td className="px-4 py-3">
                       <p className="font-medium text-neutral-900">{t.name}</p>
                       <p className="text-sm text-neutral-500">{t.email}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${productColor(t.product_type)}`}>
+                        {t.product_type || '-'}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-700">
                       {t.crp ? `${t.crp}/${t.crp_uf || ''}` : '-'}

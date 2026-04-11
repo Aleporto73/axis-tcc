@@ -20,14 +20,29 @@ export async function GET() {
     }
 
     const result = await pool.query(`
-      SELECT 
-        t.id, t.name, t.email, t.crp, t.crp_uf, t.role,
-        t.trial_status, t.trial_start, t.trial_end,
+      SELECT
+        t.id,
+        COALESCE(p.name, t.name) as name,
+        COALESCE(p.email, t.email) as email,
+        p.crp,
+        p.crp_uf,
+        t.role,
+        COALESCE(UPPER(ul.product_type), '-') as product_type,
+        ul.hotmart_plan,
+        CASE
+          WHEN ul.is_active = true AND ul.hotmart_plan IS NOT NULL THEN 'paid'
+          WHEN ul.is_active = true AND ul.hotmart_plan IS NULL THEN 'trial'
+          WHEN ul.is_active = false THEN 'expired'
+          ELSE COALESCE(t.trial_status, 'trial')
+        END as trial_status,
+        t.trial_start, t.trial_end,
         t.max_patients, t.max_sessions, t.is_admin, t.created_at,
-        COALESCE(p.count, 0)::int as patient_count,
+        COALESCE(pat.count, 0)::int as patient_count,
         COALESCE(s.count, 0)::int as session_count
       FROM tenants t
-      LEFT JOIN (SELECT tenant_id, COUNT(*) FROM patients GROUP BY tenant_id) p ON t.id = p.tenant_id
+      LEFT JOIN profiles p ON p.tenant_id = t.id AND p.role = 'admin'
+      LEFT JOIN user_licenses ul ON ul.tenant_id = t.id
+      LEFT JOIN (SELECT tenant_id, COUNT(*) FROM patients GROUP BY tenant_id) pat ON t.id = pat.tenant_id
       LEFT JOIN (SELECT tenant_id, COUNT(*) FROM sessions GROUP BY tenant_id) s ON t.id = s.tenant_id
       ORDER BY t.created_at DESC
     `)
