@@ -27,7 +27,7 @@ export async function GET() {
         p.crp,
         p.crp_uf,
         t.role,
-        COALESCE(UPPER(ul.product_type), '-') as product_type,
+        COALESCE(UPPER(ul.product_type::text), '-') as product_type,
         ul.hotmart_plan,
         CASE
           WHEN ul.is_active = true AND ul.hotmart_plan IS NOT NULL THEN 'paid'
