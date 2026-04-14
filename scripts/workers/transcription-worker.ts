@@ -23,7 +23,31 @@ const RECOVERY_CHECK_INTERVAL = 5     // a cada 5 loops, checar jobs travados
 const RECOVERY_TIMEOUT_MIN = 20       // job travado = sem heartbeat há 20 min
 const FREE_LIMIT_MINUTES = 50
 
+const ASR_HEALTH_URL =
+  (process.env.ASR_SERVICE_URL || 'http://localhost:8000').replace(/\/v1\/.*$/, '') + '/health'
+const ASR_HEALTH_TIMEOUT_MS = 5_000    // 5s timeout no health check
+const ASR_DOWN_ALERT_THRESHOLD = 3     // alertar após 3 checks consecutivos com falha
+
 const WORKER_ID = `worker-${process.pid}-${Date.now()}`
+let asrDownCount = 0                   // contador de checks consecutivos com ASR down
+
+// ── Health check do ASR ──
+async function checkASRHealth(): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), ASR_HEALTH_TIMEOUT_MS)
+    try {
+      const res = await fetch(ASR_HEALTH_URL, { signal: controller.signal })
+      if (!res.ok) return false
+      const data = (await res.json()) as { status?: string; model_loaded?: boolean }
+      return data.status === 'ok' && data.model_loaded === true
+    } finally {
+      clearTimeout(timeout)
+    }
+  } catch {
+    return false
+  }
+}
 
 // ── Pool do banco (separado do Next.js) ──
 const pool = new Pool({
@@ -187,6 +211,27 @@ async function processJob(job: any): Promise<void> {
   }, HEARTBEAT_INTERVAL_MS)
 
   try {
+    // 0. Health check — verificar se ASR está vivo ANTES de processar
+    const asrOk = await checkASRHealth()
+    if (!asrOk) {
+      const backoffMin = Math.max(2, (job.attempts || 0) + 1) * 2
+      console.log(`[JOB ${jid}] ASR indisponível — job volta pra fila (backoff ${backoffMin}min, attempts inalterado)`)
+      clearInterval(heartbeatTimer)
+      await withWorkerClient(async (client) => {
+        await client.query(
+          `UPDATE transcription_jobs
+           SET status = 'pending',
+               locked_at = $1,
+               worker_id = NULL,
+               heartbeat_at = NULL
+           WHERE id = $2`,
+          [new Date(Date.now() + backoffMin * 60 * 1000), jid]
+        )
+      })
+      resultado = 'ASR_UNAVAILABLE'
+      return
+    }
+
     // 1. Ler áudio do disco
     console.log(`[JOB ${jid}] Lendo áudio do disco...`)
     const audioBuffer = await readFile(job.audio_path)
@@ -370,9 +415,22 @@ async function main(): Promise<void> {
     try {
       loopCount++
 
-      // Recovery periódico
+      // Recovery periódico + health check do ASR
       if (loopCount % RECOVERY_CHECK_INTERVAL === 0) {
         await recoverStalledJobs()
+
+        // Health check periódico do ASR
+        const healthy = await checkASRHealth()
+        if (!healthy) {
+          asrDownCount++
+          console.log(`[WORKER] ASR health check FALHOU (${asrDownCount}/${ASR_DOWN_ALERT_THRESHOLD} consecutivos)`)
+          if (asrDownCount >= ASR_DOWN_ALERT_THRESHOLD) {
+            console.error(`[WORKER] ALERTA: ASR down há mais de ${ASR_DOWN_ALERT_THRESHOLD * RECOVERY_CHECK_INTERVAL * POLL_INTERVAL_MS / 60000} minutos — verificar container asr-service`)
+          }
+        } else if (asrDownCount > 0) {
+          console.log(`[WORKER] ASR recuperado após ${asrDownCount} checks com falha`)
+          asrDownCount = 0
+        }
       }
 
       // Tentar pegar um job
