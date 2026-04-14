@@ -273,7 +273,7 @@ async function processJob(job: any): Promise<void> {
     console.log(`[JOB ${jid}] COMPLETED em ${duration}s (${text.length} chars)`)
 
   } catch (error: any) {
-    console.error(`[JOB ${jid}] ERRO: ${error.message}`)
+    console.error(`[JOB ${jid}] ERRO: ${error.message}`, error.cause ? `| Cause: ${JSON.stringify(error.cause)}` : '', error.stack || '')
 
     const newAttempts = (job.attempts || 0) + 1
     const isFinal = newAttempts >= (job.max_attempts || 3)
@@ -292,7 +292,11 @@ async function processJob(job: any): Promise<void> {
            WHERE id = $5`,
           [
             isFinal ? 'failed' : 'pending',
-            error.message?.slice(0, 500) || 'Erro desconhecido',
+            [
+              error.message || 'Erro desconhecido',
+              error.cause ? `Cause: ${JSON.stringify(error.cause)}` : '',
+              error.stack ? `Stack: ${error.stack.slice(0, 800)}` : '',
+            ].filter(Boolean).join('\n\n').slice(0, 2000),
             newAttempts,
             isFinal ? new Date() : null,
             jid,

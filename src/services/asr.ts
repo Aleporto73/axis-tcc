@@ -7,9 +7,6 @@
  * Usa undici fetch + FormData do mesmo pacote para evitar
  * conflito de tipos entre global FormData e undici FormData.
  * Agent com timeout de 30 minutos para áudios longos.
- *
- * Nota: body usa `as any` porque undici.FormData e o tipo BodyInit
- * divergem em [Symbol.toStringTag] nesta versão — funciona em runtime.
  */
 
 import { Agent, fetch, FormData } from 'undici'
@@ -22,9 +19,7 @@ export async function transcribeAudio(
   filename: string = 'audio.mp3'
 ): Promise<string> {
   const formData = new FormData()
-  const blob = new Blob([new Uint8Array(audioBuffer)], {
-    type: 'audio/mpeg',
-  })
+  const blob = new Blob([new Uint8Array(audioBuffer)], { type: 'audio/mpeg' })
   formData.append('file', blob, filename)
   formData.append('language', 'pt')
 
@@ -40,7 +35,8 @@ export async function transcribeAudio(
   })
 
   if (!response.ok) {
-    throw new Error(`ASR Service erro: ${response.status} ${response.statusText}`)
+    const errorBody = await response.text().catch(() => '')
+    throw new Error(`ASR Service erro: ${response.status} ${response.statusText} — ${errorBody}`)
   }
 
   const data = (await response.json()) as { text?: string }
