@@ -81,8 +81,21 @@ async function withWorkerClient<T>(
 }
 
 // ── Pegar próximo job com lock (via worker context para bypass tenant RLS) ──
+// GUARD: se já existe job em processing (mesmo de outro worker/restart),
+// não pega novo — ASR é single-thread, 2 requests simultâneos = falha.
 async function claimJob(): Promise<any | null> {
   return withWorkerClient(async (client) => {
+    // Guard: ASR single-thread — nunca processar 2 jobs ao mesmo tempo
+    const processing = await client.query(
+      `SELECT id, worker_id, started_at FROM transcription_jobs
+       WHERE status = 'processing' LIMIT 1`
+    )
+    if (processing.rows.length > 0) {
+      const p = processing.rows[0]
+      console.log(`[WORKER] ASR ocupado — job ${p.id} em processing (worker=${p.worker_id}, started=${p.started_at}). Aguardando.`)
+      return null
+    }
+
     const result = await client.query(
       `UPDATE transcription_jobs
        SET status = 'processing',
@@ -93,6 +106,7 @@ async function claimJob(): Promise<any | null> {
        WHERE id = (
          SELECT id FROM transcription_jobs
          WHERE status = 'pending'
+           AND (locked_at IS NULL OR locked_at <= NOW())
          ORDER BY created_at ASC
          LIMIT 1
          FOR UPDATE SKIP LOCKED
@@ -278,6 +292,9 @@ async function processJob(job: any): Promise<void> {
     const newAttempts = (job.attempts || 0) + 1
     const isFinal = newAttempts >= (job.max_attempts || 3)
 
+    // Backoff: 2min × attempts (2min, 4min, 6min) — dá tempo do ASR terminar
+    const backoffMinutes = isFinal ? 0 : newAttempts * 2
+
     try {
       await withWorkerClient(async (client) => {
         await client.query(
@@ -286,10 +303,10 @@ async function processJob(job: any): Promise<void> {
                error_message = $2,
                attempts = $3,
                finished_at = $4,
-               locked_at = NULL,
+               locked_at = $5,
                worker_id = NULL,
                heartbeat_at = NULL
-           WHERE id = $5`,
+           WHERE id = $6`,
           [
             isFinal ? 'failed' : 'pending',
             [
@@ -299,6 +316,8 @@ async function processJob(job: any): Promise<void> {
             ].filter(Boolean).join('\n\n').slice(0, 2000),
             newAttempts,
             isFinal ? new Date() : null,
+            // Backoff: locked_at no futuro impede claimJob de pegar antes da hora
+            isFinal ? null : new Date(Date.now() + backoffMinutes * 60 * 1000),
             jid,
           ]
         )
@@ -313,7 +332,7 @@ async function processJob(job: any): Promise<void> {
       console.log(`[JOB ${jid}] FAILED definitivo após ${newAttempts} tentativas: ${error.message}`)
     } else {
       resultado = 'RETRY'
-      console.log(`[JOB ${jid}] RETRY (tentativa ${newAttempts}/${job.max_attempts || 3}): ${error.message}`)
+      console.log(`[JOB ${jid}] RETRY (tentativa ${newAttempts}/${job.max_attempts || 3}, backoff ${backoffMinutes}min): ${error.message}`)
     }
 
   } finally {
