@@ -30,11 +30,11 @@ interface ClinicalReportProps {
 }
 
 const REPORT_FIELDS = [
-  { key: 'objectives', label: 'Objetivos da sessao', required: true },
+  { key: 'objectives', label: 'Objetivos da Sessão', required: true },
   { key: 'summary', label: 'Resumo', required: true },
-  { key: 'intervention', label: 'Intervencao do psicologo', required: true },
-  { key: 'observations', label: 'Observacoes clinicas', required: false },
-  { key: 'closing', label: 'Encerramento / Tarefa de casa', required: false },
+  { key: 'intervention', label: 'Intervenção do Psicólogo', required: true },
+  { key: 'observations', label: 'Observações Clínicas', required: false },
+  { key: 'closing', label: 'Encerramento / Tarefa de Casa', required: false },
 ] as const
 
 export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, onReportLoaded }: ClinicalReportProps) {
@@ -154,7 +154,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       <section className="mb-8 pb-8 border-b border-slate-100">
         <div className="flex items-center gap-2 mb-4">
           <FileText className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Relatorio Clinico</h2>
+          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Relatório Clínico</h2>
         </div>
         <div className="space-y-3">
           <div className="h-4 bg-slate-100 rounded animate-pulse w-3/4" />
@@ -171,9 +171,9 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       <section className="mb-8 pb-8 border-b border-slate-100">
         <div className="flex items-center gap-2 mb-4">
           <FileText className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Relatorio Clinico</h2>
+          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Relatório Clínico</h2>
         </div>
-        <p className="text-sm text-slate-400 italic mb-4">Nenhum relatorio gerado para esta sessao.</p>
+        <p className="text-sm text-slate-400 italic mb-4">Nenhum relatório gerado para esta sessão.</p>
         {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
         {canGenerate && (
           <button
@@ -182,11 +182,11 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
             aria-label="Gerar relatorio clinico com IA"
           >
             <RefreshCw className="w-4 h-4" />
-            Gerar Relatorio
+            Gerar Relatório
           </button>
         )}
         {!canGenerate && (
-          <p className="text-xs text-slate-400">Adicione uma transcricao ou analise TCC para gerar o relatorio.</p>
+          <p className="text-xs text-slate-400">Adicione uma transcrição ou análise TCC para gerar o relatório.</p>
         )}
       </section>
     )
@@ -198,14 +198,14 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       <section className="mb-8 pb-8 border-b border-slate-100">
         <div className="flex items-center gap-2 mb-4">
           <FileText className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Relatorio Clinico</h2>
+          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Relatório Clínico</h2>
         </div>
         <div className="bg-white border border-blue-200 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-medium text-indigo-700">Gerando relatorio...</p>
+            <p className="text-sm font-medium text-indigo-700">Gerando relatório...</p>
           </div>
-          <p className="text-xs text-slate-500 mb-4">Analisando transcricao e extraindo insights</p>
+          <p className="text-xs text-slate-500 mb-4">Analisando transcrição e extraindo insights</p>
           <div className="space-y-3">
             {REPORT_FIELDS.map(f => (
               <div key={f.key}>
@@ -226,7 +226,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Relatorio Clinico</h2>
+          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Relatório Clínico</h2>
           <span
             className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${
               report!.status === 'final'
@@ -264,7 +264,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
               maxLength={120}
               value={getFieldValue('headline')}
               onChange={(e) => handleFieldChange('headline', e.target.value)}
-              placeholder="1 frase-sintese da sessao (max 120 caracteres)"
+              placeholder="1 frase-síntese da sessão (máx 120 caracteres)"
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-blue-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
             />
             <p className="text-xs text-slate-400 mt-1">{getFieldValue('headline').length}/120</p>
@@ -310,7 +310,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
         {/* Footer IA */}
         {report!.generated_by === 'ai' && (
           <p className="text-xs text-slate-400 italic border-t border-slate-100 pt-3 mt-4">
-            Relatorio assistido por IA — conteudo revisado e aprovado pelo profissional responsavel
+            Relatório assistido por IA — conteúdo revisado e aprovado pelo profissional responsável
           </p>
         )}
       </div>
