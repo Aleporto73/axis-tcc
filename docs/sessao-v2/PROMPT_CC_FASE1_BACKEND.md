@@ -58,8 +58,8 @@ ALTER TABLE session_reports ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON session_reports
   USING (tenant_id = current_setting('app.current_tenant')::uuid);
 
-CREATE POLICY worker_access ON session_reports
-  USING (current_setting('app.current_tenant', true) IS NULL);
+-- NOTA: verificar se o codebase usa 'app.current_tenant' ou 'app.tenant_id' e alinhar.
+-- worker_access REMOVIDO por segurança — geração IA usa withTenant() com tenant_id explícito.
 ```
 
 **Aplicar na VPS:**
@@ -140,7 +140,7 @@ Este é o endpoint principal — chama OpenAI para gerar o relatório + insights
 **Fluxo interno:**
 1. `withTenant()` → verificar sessão pertence ao tenant
 2. Buscar transcrição completa: query na tabela `transcripts` WHERE `session_id = $1` AND `tenant_id = $2`
-3. Buscar análise TCC: verificar se existe em `tcc_analyses` (se a tabela existir — verificar primeiro com try/catch)
+3. **AUTO-ANÁLISE:** Buscar análise TCC em `tcc_analyses`. Se NÃO existir, chamar internamente a lógica de `/api/analyze-tcc` (server-side, reutilizar a função/lógica, não fazer fetch HTTP para si mesmo). Isso garante que o relatório sempre tem dados ricos mesmo que o profissional não tenha clicado "Analisar TCC" antes.
 4. Buscar micro-eventos: query na tabela `events` WHERE `related_entity_id = $1` (session_id)
 5. Buscar dados do paciente: JOIN sessions → patients para nome
 6. Buscar relatório da sessão anterior: query `session_reports` JOIN `sessions` WHERE patient_id e session_number < current, ORDER BY session_number DESC LIMIT 1
@@ -174,9 +174,14 @@ REGRA HEADLINE:
 - NUNCA invente síntese genérica tipo "Sessão produtiva com bons avanços"
 
 REGRA TÉCNICAS:
-- techniques_used: SOMENTE técnicas que aparecem EXPLICITAMENTE na transcrição como ações do profissional
-- techniques_suggested: técnicas que PODERIAM ser úteis na próxima sessão baseado nos padrões observados
-- NUNCA misturar o que foi feito com o que poderia ser feito
+- techniques_identified: SOMENTE técnicas que aparecem EXPLICITAMENTE na transcrição como ações realizadas na sessão
+- Use linguagem neutra ("identificadas na sessão"), NÃO avaliativa ("utilizadas pelo profissional")
+- NÃO sugira técnicas para próxima sessão — sugestões vêm de outro sistema
+
+REGRA DISTORÇÕES:
+- Distorções são POSSIBILIDADES baseadas na transcrição, não afirmações
+- Sempre inclua um exemplo concreto extraído da transcrição
+- O frontend exibirá com disclaimer "requer validação do profissional"
 
 DADOS DA SESSÃO:
 - Paciente: {nome}
@@ -203,15 +208,14 @@ Responda APENAS com JSON válido, sem markdown:
   "headline": "1 frase-síntese da sessão, máx 120 chars. Se não houver padrão claro, retorne string vazia.",
   "objectives": "objetivos abordados na sessão",
   "summary": "resumo narrativo da sessão",
-  "intervention": "intervenções e estratégias utilizadas pelo profissional",
+  "intervention": "intervenções e estratégias identificadas na sessão",
   "observations": "observações clínicas relevantes (comportamentos, padrões, sinais)",
   "closing": "encerramento, tarefa de casa, plano de continuidade",
   "insights": {
     "emotions": [{"name": "nome da emoção em português", "intensity": 0.0}],
     "topics": ["tópico1", "tópico2"],
     "distortions": [{"type": "tipo_em_inglês", "label": "Nome em português", "example": "frase exemplo da sessão"}],
-    "techniques_used": ["técnica que o profissional usou"],
-    "techniques_suggested": ["técnica sugerida para próxima sessão"]
+    "techniques_identified": ["técnica identificada na sessão"]
   }
 }
 ```

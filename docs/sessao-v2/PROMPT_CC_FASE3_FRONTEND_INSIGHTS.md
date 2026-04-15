@@ -20,8 +20,7 @@ interface InsightsPanelProps {
     emotions?: { name: string; intensity: number }[]
     topics?: string[]
     distortions?: { type: string; label: string; example: string }[]
-    techniques_used?: string[]
-    techniques_suggested?: string[]
+    techniques_identified?: string[]
   } | null
   microEvents?: { type: string; intensity: number; note: string; created_at: string }[]
   cso?: {
@@ -34,7 +33,7 @@ interface InsightsPanelProps {
 }
 ```
 
-**Estrutura: accordion com 7 seções, TODAS colapsadas por padrão.**
+**Estrutura: accordion com 6 seções, TODAS colapsadas por padrão.**
 
 Se `openSection` é passado, abrir essa seção automaticamente.
 
@@ -59,26 +58,23 @@ Se `openSection` é passado, abrir essa seção automaticamente.
 - Label: "Tópicos da sessão"
 
 ### Seção 3: Distorções cognitivas
+- **Disclaimer obrigatório no topo da seção:** `text-xs text-amber-600 italic mb-2` → "Possíveis distorções identificadas — requer validação do profissional"
 - Lista com ícone + nome + exemplo
 - Ícone: ⚡ (usar Lucide `Zap`)
 - Exemplo em itálico, entre aspas
 - Estilo: `bg-orange-50 rounded-lg p-3 border border-orange-100`
-- Label: "Distorções cognitivas"
+- Label: "Possíveis distorções cognitivas"
 
-### Seção 4: Técnicas utilizadas
+### Seção 4: Técnicas identificadas na sessão
 - Chips verdes
 - Ícone: ✅ (usar Lucide `CheckCircle`)
 - Estilo: `bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-3 py-1`
-- Label: "Técnicas utilizadas na sessão"
+- Label: "Técnicas identificadas na sessão"
+- **Linguagem neutra** — NÃO usar "utilizadas pelo profissional" (evita tom de avaliação)
 
-### Seção 5: Técnicas sugeridas
-- Chips azuis
-- Ícone: 💡 (usar Lucide `Lightbulb`)
-- Estilo: `bg-sky-50 text-sky-700 border border-sky-200 rounded-full px-3 py-1`
-- Label: "Sugestões para próxima sessão"
-- Subtitle: `text-xs text-slate-400` → "Baseado nos padrões observados"
+**NOTA: Seção "Técnicas sugeridas" foi REMOVIDA. Sugestões vêm exclusivamente do Suggestion Engine.**
 
-### Seção 6: Micro-eventos
+### Seção 5: Micro-eventos
 - Dados já existentes (vindos da página pai)
 - Manter visual atual: 4 badges com contagem
   - 🔴 EVITOU: `bg-red-100 text-red-700`
@@ -87,7 +83,7 @@ Se `openSection` é passado, abrir essa seção automaticamente.
   - 🟢 RECUPEROU: `bg-emerald-100 text-emerald-700`
 - Label: "Micro-eventos 3ª Onda"
 
-### Seção 7: CSO / Flex Trend
+### Seção 6: CSO / Flex Trend
 - Dados já existentes (vindos do pipeline)
 - Card com 3 métricas + tendência
 - Ativação, Rigidez, Carga emocional (barras)

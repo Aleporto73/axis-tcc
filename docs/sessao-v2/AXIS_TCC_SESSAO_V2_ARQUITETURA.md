@@ -1,7 +1,7 @@
 # AXIS TCC — Sessão v2: Arquitetura de 2 Camadas
 
 **Data:** 15/04/2026
-**Versão:** 1.3 FINAL (8 ajustes de percepção + 3 ajustes de consistência)
+**Versão:** 2.0 FINAL (11 ajustes de percepção + consistência + segurança clínica)
 **Status:** Aprovado para execução
 
 ---
@@ -38,8 +38,7 @@ A página `/sessoes/[id]` será reestruturada em **4 blocos verticais** no mesmo
 │  • Emoções (com intensidade + badges)   │
 │  • Tópicos extraídos (tags clicáveis)   │
 │  • Distorções cognitivas                │
-│  • Técnicas utilizadas                  │
-│  • Técnicas sugeridas (próxima sessão)  │
+│  • Técnicas identificadas na sessão    │
 │  • Micro-eventos (EVITOU/ENFRENTOU/...) │
 │  • CSO / Flex Trend / Recovery Time     │
 ├─────────────────────────────────────────┤
@@ -173,15 +172,15 @@ CREATE TABLE session_reports (
 CREATE INDEX idx_session_reports_tenant ON session_reports(tenant_id);
 CREATE INDEX idx_session_reports_session ON session_reports(session_id);
 
--- RLS
+-- RLS (alinhar com padrão existente do projeto — verificar se usa app.current_tenant ou app.tenant_id)
 ALTER TABLE session_reports ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY tenant_isolation ON session_reports
   USING (tenant_id = current_setting('app.current_tenant')::uuid);
 
--- Worker access (para geração IA)
-CREATE POLICY worker_access ON session_reports
-  USING (current_setting('app.current_tenant', true) IS NULL);
+-- NOTA: worker_access REMOVIDO por segurança.
+-- A geração IA deve receber tenant_id explícito via withTenant(), não via policy aberta.
+-- Verificar no codebase se o padrão é 'app.current_tenant' ou 'app.tenant_id' e alinhar.
 ```
 
 ### 2.6 API — Novos endpoints
@@ -284,27 +283,26 @@ RODAPÉ
 
 **Propósito:** 3 indicadores-chave visíveis sem precisar abrir o accordion de Insights. Funciona como "teaser" que convida a explorar mais.
 
-**Visual:** 1 linha horizontal com 3 chips, sempre visível após o relatório existir.
+**Visual:** 1 linha horizontal com até 2 chips, sempre visível após o relatório existir.
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  🔴 Evitação (2)  ·  😰 Ansiedade 0.8  ·  ⚡ Catastrofização  │
+│  🔴 Evitação (2)  ·  😰 Ansiedade 0.8               │
 └──────────────────────────────────────────────────────┘
 ```
 
-**Regras de seleção dos 3 sinais:**
+**Regras de seleção (máx 2 sinais):**
 1. **Micro-evento dominante** — o tipo com maior contagem (EVITOU/ENFRENTOU/AJUSTOU/RECUPEROU)
 2. **Emoção com maior intensidade** — do array `insights.emotions`
-3. **Primeira distorção cognitiva** — do array `insights.distortions`
+
+**Distorções cognitivas NÃO aparecem no Preview** — são interpretativas e requerem validação do profissional. Ficam apenas dentro do accordion de Insights com disclaimer.
 
 **Thresholds de relevância mínima (não mostrar ruído):**
 - Micro-evento: só aparece se contagem >= 2
 - Emoção: só aparece se intensidade >= 0.5
-- Distorção: só aparece se tiver exemplo concreto (campo `example` não vazio)
 - Se 0 sinais passam no threshold → não exibir o preview (esconder componente)
-- Se 1 sinal passa → exibir só 1 chip (não forçar 3)
-- Se 2 passam → exibir 2
-- Máximo: 3 chips
+- Se 1 sinal passa → exibir só 1 chip
+- Máximo: 2 chips
 
 Se algum não existir (ex: sem micro-eventos), mostra apenas os disponíveis que passaram no threshold.
 
@@ -354,14 +352,19 @@ MEDO  ████░░░░░░ 0.4    CONFIANÇA ███░░░░░�
 
 #### 3.1.3 Distorções cognitivas
 
-**Fonte:** NOVO — extraído pela IA
+**Fonte:** NOVO — extraído pela IA (INTERPRETATIVO — requer validação)
 **Visual:** lista com ícone + nome + exemplo da sessão
+**Disclaimer obrigatório:** texto fixo acima da lista
 
 ```
+⚠️ "Possíveis distorções identificadas — requer validação do profissional"
+
 ⚡ Catastrofização — "Se eu falar, vai ser o fim"
 🔮 Leitura mental — "Ela deve estar pensando que sou fraca"
 ⚖️ Pensamento tudo-ou-nada — "Nunca consigo fazer nada certo"
 ```
+
+**Nota de segurança clínica:** identificar distorções é ato interpretativo que cabe ao profissional em supervisão. A IA sugere possibilidades baseadas na transcrição, nunca afirma. O disclaimer é obrigatório e não pode ser removido.
 
 **Implementação:** campo adicional no prompt:
 ```json
@@ -374,25 +377,21 @@ MEDO  ████░░░░░░ 0.4    CONFIANÇA ███░░░░░�
 #### 3.1.4 Técnicas TCC utilizadas
 
 **Fonte:** NOVO — extraído da transcrição (o que o profissional efetivamente fez)
+#### 3.1.4 Técnicas identificadas na sessão
+
+**Fonte:** NOVO — extraído da transcrição (o que aconteceu na sessão)
 **Visual:** chips/tags verdes
+**Linguagem:** "identificadas na sessão", NÃO "utilizadas pelo profissional" (evita tom de avaliação)
 
 ```
 ✅ Reestruturação cognitiva  ✅ Exposição gradual  ✅ Registro de pensamentos
 ```
 
-#### 3.1.5 Técnicas TCC sugeridas (próxima sessão)
+**NOTA:** `techniques_suggested` (técnicas sugeridas para próxima sessão) foi REMOVIDO da geração IA.
+Sugestões de ação futura vêm exclusivamente do Suggestion Engine (determinístico, 12 regras, gate of silence).
+Isso evita duas fontes de sugestão potencialmente contraditórias.
 
-**Fonte:** NOVO — sugerido pela IA com base no que falta / no padrão do paciente
-**Visual:** chips/tags azuis, com label "Sugestão para próxima sessão"
-
-```
-💡 Dessensibilização sistemática  💡 Técnica de relaxamento progressivo
-```
-
-**Separação obrigatória:** nunca misturar "o que fez" com "o que poderia fazer".
-Isso evita que o profissional interprete como crítica ao seu trabalho.
-
-#### 3.1.7 Micro-eventos
+#### 3.1.5 Micro-eventos
 
 **Fonte:** dados já existentes (tabela events)
 **Visual:** como já está hoje, mas dentro do accordion
@@ -437,8 +436,7 @@ ALTER TABLE session_reports ADD COLUMN insights JSONB DEFAULT '{}';
   "distortions": [
     { "type": "catastrophizing", "label": "Catastrofização", "example": "Se eu falar..." }
   ],
-  "techniques_used": ["reestruturação cognitiva", "exposição gradual"],
-  "techniques_suggested": ["dessensibilização sistemática", "relaxamento progressivo"],
+  "techniques_identified": ["reestruturação cognitiva", "exposição gradual"],
   "ai_model": "gpt-4o-mini",
   "generated_at": "2026-04-15T12:00:00Z"
 }
@@ -502,19 +500,19 @@ Se nenhum dos dois existe → não faz sentido gerar relatório narrativo.
 
 ## 6. DECISÃO: "ANALISAR TCC" vs "GERAR RELATÓRIO"
 
-### Opção A — Dois botões separados (recomendado para v1)
-- "Analisar TCC" → gera fatos/pensamentos/emoções (como hoje)
-- "Gerar Relatório" → gera relatório narrativo + insights (usa análise TCC se existir)
+### Opção A — Dois botões, mas com auto-análise (DECISÃO FINAL)
+- "Analisar TCC" → gera fatos/pensamentos/emoções (como hoje, mantido para backward compat)
+- "Gerar Relatório" → **SE análise TCC não existe, roda internamente primeiro** → depois gera relatório narrativo + insights
 
-**Vantagem:** backward compatible, profissional pode analisar sem gerar relatório.
+**Fluxo interno do "Gerar Relatório":**
+1. Verificar se `tcc_analyses` existe para esta sessão
+2. Se NÃO existe → chamar endpoint `/api/analyze-tcc` internamente (server-side, não frontend)
+3. Usar resultado da análise como input para geração do relatório
+4. Profissional não precisa saber que são dois processos
 
-### Opção B — Botão único "Gerar Relatório" (futuro)
-- Um botão faz tudo: analisa + gera relatório + extrai insights
-- "Analisar TCC" vira step interno, invisível
+**Vantagem:** melhor UX (1 clique faz tudo), backward compatible (Analisar TCC continua existindo para quem quer só a análise), relatório sempre tem dados ricos.
 
-**Risco:** perde granularidade para profissionais que só querem a análise.
-
-**→ Recomendação: Opção A para lançamento. Migrar para B depois com feedback.**
+**Botão "Analisar TCC" permanece visível** — profissional pode usar sem gerar relatório. Mas "Gerar Relatório" não depende dele ter sido clicado antes.
 
 ---
 
@@ -605,16 +603,15 @@ Responda APENAS com JSON válido, sem markdown:
     "emotions": [{"name": "...", "intensity": 0.0-1.0}],
     "topics": ["..."],
     "distortions": [{"type": "...", "label": "...", "example": "..."}],
-    "techniques_used": ["técnicas que o profissional efetivamente utilizou na sessão"],
-    "techniques_suggested": ["técnicas sugeridas para a próxima sessão com base nos padrões observados"]
+    "techniques_identified": ["técnicas identificadas na sessão a partir da transcrição"]
   }
 }
 ```
 
-**REGRA CRÍTICA sobre técnicas:**
-- `techniques_used`: SOMENTE técnicas que aparecem EXPLICITAMENTE na transcrição como ações do profissional
-- `techniques_suggested`: técnicas que PODERIAM ser úteis na próxima sessão, baseado nos padrões observados
-- NUNCA misturar: "o que fez" ≠ "o que poderia fazer"
+**REGRAS CRÍTICAS:**
+- `techniques_identified`: SOMENTE técnicas que aparecem EXPLICITAMENTE na transcrição. Linguagem neutra ("identificadas"), não avaliativa ("utilizadas pelo profissional").
+- `techniques_suggested` foi REMOVIDO — sugestões vêm do Suggestion Engine (determinístico).
+- `distortions`: são POSSIBILIDADES, não afirmações. O frontend exibe com disclaimer obrigatório.
 
 **Uma chamada API → relatório completo + insights. Sem chamadas extras.**
 
@@ -626,17 +623,18 @@ Responda APENAS com JSON válido, sem markdown:
 |---------|------------|-------------|
 | Insight principal (headline) | ❌ | ✅ 1 frase-síntese no topo |
 | Relatório da sessão | ✅ Gerado | ✅ Gerado + editável |
-| Preview de sinais rápidos | ❌ | ✅ 3 indicadores sempre visíveis |
+| Preview de sinais rápidos | ❌ | ✅ 2 indicadores sempre visíveis |
 | Tópicos | ✅ Tags | ✅ Tags |
 | Emoções | ✅ Badges simples | ✅ Badges + intensidade |
-| Distorções cognitivas | ❌ | ✅ Com exemplo da sessão |
-| Técnicas utilizadas | ❌ | ✅ O que o profissional fez |
-| Técnicas sugeridas | ❌ | ✅ O que pode fazer na próxima |
+| Distorções cognitivas | ❌ | ✅ Com exemplo + disclaimer validação |
+| Técnicas identificadas | ❌ | ✅ Linguagem neutra, sem julgamento |
 | Micro-eventos 3ª Onda | ❌ | ✅ EVITOU/ENFRENTOU/AJUSTOU/RECUPEROU |
 | CSO / Flex Trend | ❌ | ✅ Índice longitudinal |
 | Transcrição self-hosted | ❌ (paga API) | ✅ Custo zero |
 | Exportação PDF (só relatório) | ✅ | ✅ Padrão CFP limpo |
 | Análise estrutural (avançado) | ❌ | ✅ Fatos/Pensamentos/Emoções |
+| Sugestões determinísticas | ❌ | ✅ Suggestion Engine com gate of silence |
 
 **Resultado:** o AXIS entrega tudo que a concorrente entrega + 8 features que ela não tem.
-O relatório é limpo. Os insights são acessíveis sem poluir. O avançado está lá pra quem quiser.
+O relatório é limpo. Os insights são acessíveis sem poluir. Distorções vêm com disclaimer.
+Sugestões têm fonte única de verdade (Suggestion Engine), não IA generativa.

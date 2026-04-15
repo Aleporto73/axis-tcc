@@ -130,7 +130,6 @@ Criar arquivo: `app/components/SignalsPreview.tsx`
 interface SignalsPreviewProps {
   insights: {
     emotions?: { name: string; intensity: number }[]
-    distortions?: { type: string; label: string; example: string }[]
   } | null
   microEvents?: { type: string; count: number }[]
   onClickSignal?: (section: string) => void  // para abrir accordion no insight correspondente
@@ -140,13 +139,13 @@ interface SignalsPreviewProps {
 **Lógica de thresholds:**
 - Emoção: só aparece se `intensity >= 0.5`
 - Micro-evento: só aparece se `count >= 2`
-- Distorção: só aparece se `example` não vazio
-- Máximo 3 chips
+- **Distorções NÃO aparecem no Preview** (são interpretativas, ficam só no accordion com disclaimer)
+- Máximo 2 chips
 - Se 0 sinais passam → componente não renderiza (retorna null)
 
 **Visual:** 1 linha horizontal com chips:
 ```
-🔴 Evitação (2)  ·  😰 Ansiedade 0.8  ·  ⚡ Catastrofização
+🔴 Evitação (2)  ·  😰 Ansiedade 0.8
 ```
 
 **Estilo:**
@@ -158,7 +157,6 @@ interface SignalsPreviewProps {
 **Cores dos chips:**
 - Micro-evento: `bg-red-50 text-red-700 border border-red-200`
 - Emoção: `bg-amber-50 text-amber-700 border border-amber-200`
-- Distorção: `bg-violet-50 text-violet-700 border border-violet-200`
 
 ---
 
