@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
 import SessionReport from '../../components/SessionReport'
+import ClinicalReport from '../../components/ClinicalReport'
+import SignalsPreview from '../../components/SignalsPreview'
 import TranscriptionLimitModal from '@/app/tcc/components/TranscriptionLimitModal'
 
 interface Session {
@@ -55,6 +57,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
   const [transcriptionJob, setTranscriptionJob] = useState<TranscriptionJob | null>(null)
   const [showLimitModal, setShowLimitModal] = useState(false)
+  const [clinicalReport, setClinicalReport] = useState<{ insights?: { emotions?: { name: string; intensity: number }[] } } | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -465,6 +468,27 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                 </div>
               )}
             </section>
+
+            {/* Relatório Clínico — Sessão v2 */}
+            <ClinicalReport
+              sessionId={id}
+              hasTranscript={!!transcript?.text || !!transcript?.text_preview}
+              hasAnalysis={!!analysis}
+              onReportLoaded={(r) => setClinicalReport(r)}
+            />
+
+            {/* Preview de Sinais */}
+            {clinicalReport?.insights && (
+              <SignalsPreview
+                insights={clinicalReport.insights as { emotions?: { name: string; intensity: number }[] }}
+                microEvents={microEvents.reduce<{ type: string; count: number }[]>((acc, ev) => {
+                  const existing = acc.find(a => a.type === ev.type)
+                  if (existing) existing.count++
+                  else acc.push({ type: ev.type, count: 1 })
+                  return acc
+                }, [])}
+              />
+            )}
 
             {/* Análise TCC */}
             {analysis && (
