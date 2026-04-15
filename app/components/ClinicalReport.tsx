@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { FileText, Pencil, Check, Download, RefreshCw, X, Plus } from 'lucide-react'
 
 interface ReportData {
@@ -45,6 +45,8 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
   const [editedFields, setEditedFields] = useState<Record<string, string>>({})
   const [loadingReport, setLoadingReport] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const onReportLoadedRef = useRef(onReportLoaded)
+  onReportLoadedRef.current = onReportLoaded
 
   const fetchReport = useCallback(async () => {
     try {
@@ -53,13 +55,13 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       if (!res.ok) return
       const data = await res.json()
       setReport(data.report)
-      onReportLoaded?.(data.report)
+      onReportLoadedRef.current?.(data.report)
     } catch {
       // silencioso - componente mostra estado vazio
     } finally {
       setLoadingReport(false)
     }
-  }, [sessionId, onReportLoaded])
+  }, [sessionId])
 
   useEffect(() => {
     fetchReport()
@@ -80,7 +82,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       }
       const data = await res.json()
       setReport(data.report)
-      onReportLoaded?.(data.report)
+      onReportLoadedRef.current?.(data.report)
     } catch {
       setError('Erro de conexao ao gerar relatorio')
     } finally {
@@ -103,7 +105,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       if (res.ok) {
         const data = await res.json()
         setReport(data.report)
-        onReportLoaded?.(data.report)
+        onReportLoadedRef.current?.(data.report)
         setEditMode(false)
         setEditedFields({})
       }
@@ -125,7 +127,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       if (res.ok) {
         const data = await res.json()
         setReport(data.report)
-        onReportLoaded?.(data.report)
+        onReportLoadedRef.current?.(data.report)
       }
     } catch {
       setError('Erro ao aprovar')

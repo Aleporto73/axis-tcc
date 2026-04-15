@@ -36,9 +36,13 @@ export default function SignalsPreview({ insights, microEvents, onClickSignal }:
     }
   }
 
-  // 2. Emocao com maior intensidade (>= 0.5)
+  // 2. Emocao com maior intensidade (>= 0.5 na escala 0-1)
   if (insights?.emotions && insights.emotions.length > 0) {
-    const top = insights.emotions
+    const normalized = insights.emotions.map(e => ({
+      ...e,
+      intensity: e.intensity > 1 ? e.intensity / 10 : e.intensity,
+    }))
+    const top = normalized
       .filter(e => e.intensity >= 0.5)
       .sort((a, b) => b.intensity - a.intensity)[0]
     if (top) {
