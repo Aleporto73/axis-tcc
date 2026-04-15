@@ -9,6 +9,7 @@ import SessionReport from '../../components/SessionReport'
 import ClinicalReport from '../../components/ClinicalReport'
 import SignalsPreview from '../../components/SignalsPreview'
 import InsightsPanel from '../../components/InsightsPanel'
+import AnalyticalStructure from '../../components/AnalyticalStructure'
 import TranscriptionLimitModal from '@/app/tcc/components/TranscriptionLimitModal'
 
 interface Session {
@@ -506,60 +507,8 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
               openSection={openInsightSection}
             />
 
-            {/* Análise TCC */}
-            {analysis && (
-              <section className="mb-8 pb-8 border-b border-slate-100">
-                <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4">Análise TCC</h2>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-sky-50 rounded-lg p-4 border border-sky-200">
-                    <h3 className="font-medium text-sky-800 mb-3 text-sm">Fatos</h3>
-                    <ul className="space-y-2">{analysis.fatos.map((f,i) => <li key={i} className="text-sm bg-white rounded p-2 border border-sky-100">{f}</li>)}</ul>
-                  </div>
-                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-                    <h3 className="font-medium text-amber-800 mb-3 text-sm">Pensamentos</h3>
-                    <ul className="space-y-2">{analysis.pensamentos.map((p,i) => <li key={i} className="text-sm bg-white rounded p-2 border border-amber-100">{p}</li>)}</ul>
-                  </div>
-                  <div className="bg-rose-50 rounded-lg p-4 border border-rose-200">
-                    <h3 className="font-medium text-rose-800 mb-3 text-sm">Emoções</h3>
-                    <ul className="space-y-2">{analysis.emocoes.map((e,i) => <li key={i} className="text-sm bg-white rounded p-2 border border-rose-100">{e}</li>)}</ul>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* Pipeline Result */}
-            {pipelineResult && (
-              <section className="mb-8 pb-8 border-b border-slate-100">
-                <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4">Pipeline TCC Processado</h2>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    {pipelineResult.event_created ? <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> : <span className="w-4 h-4 rounded-full bg-slate-200" />}
-                    <span className="text-slate-600">Evento SESSION_END criado</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {pipelineResult.cso_updated ? <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> : <span className="w-4 h-4 rounded-full bg-slate-200" />}
-                    <span className="text-slate-600">CSO atualizado</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {pipelineResult.suggestion_generated ? <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> : <span className="w-4 h-4 rounded-full bg-slate-200" />}
-                    <span className="text-slate-600">Sugestão gerada</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${pipelineResult.flex_trend === 'up' ? 'bg-emerald-50 text-emerald-700' : pipelineResult.flex_trend === 'down' ? 'bg-amber-50 text-amber-700' : 'bg-slate-50 text-slate-600'}`}>
-                      Flexibilidade: {pipelineResult.flex_trend}
-                    </span>
-                  </div>
-                </div>
-                {(pipelineResult.micro_events.confrontations + pipelineResult.micro_events.avoidances + pipelineResult.micro_events.adjustments + pipelineResult.micro_events.recoveries) > 0 && (
-                  <div className="mt-4 flex gap-3 text-xs">
-                    <span className="px-2 py-1 bg-emerald-50 rounded border border-emerald-200 text-emerald-700">Enfrentou: {pipelineResult.micro_events.confrontations}</span>
-                    <span className="px-2 py-1 bg-amber-50 rounded border border-amber-200 text-amber-700">Evitou: {pipelineResult.micro_events.avoidances}</span>
-                    <span className="px-2 py-1 bg-sky-50 rounded border border-sky-200 text-sky-700">Ajustou: {pipelineResult.micro_events.adjustments}</span>
-                    <span className="px-2 py-1 bg-violet-50 rounded border border-violet-200 text-violet-700">Recuperou: {pipelineResult.micro_events.recoveries}</span>
-                  </div>
-                )}
-              </section>
-            )}
+            {/* Estrutura Analítica — Fatos/Pensamentos/Emoções em accordion */}
+            <AnalyticalStructure analysis={analysis} />
 
             {/* Finalizar */}
             {session.status === 'em_andamento' && (
