@@ -365,7 +365,30 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
               </>
             )}
             <button
-              onClick={() => window.open(`/api/sessions/${sessionId}/report/export-pdf`, '_blank')}
+              onClick={async () => {
+                try {
+                  const res = await fetch(`/api/sessions/${sessionId}/report/export-pdf`, { method: 'POST' })
+                  if (!res.ok) {
+                    const data = await res.json().catch(() => ({}))
+                    alert(data.error || 'Erro ao exportar PDF')
+                    return
+                  }
+                  const blob = await res.blob()
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  const disposition = res.headers.get('Content-Disposition') || ''
+                  const match = disposition.match(/filename="?([^"]+)"?/)
+                  a.download = match ? match[1] : `relatorio_sessao.pdf`
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(url)
+                } catch (e) {
+                  console.error('Erro ao exportar PDF:', e)
+                  alert('Erro ao exportar PDF')
+                }
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
               aria-label="Exportar relatorio em PDF"
             >
