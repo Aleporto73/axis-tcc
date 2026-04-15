@@ -8,6 +8,7 @@ import Sidebar from '../../components/Sidebar'
 import SessionReport from '../../components/SessionReport'
 import ClinicalReport from '../../components/ClinicalReport'
 import SignalsPreview from '../../components/SignalsPreview'
+import InsightsPanel from '../../components/InsightsPanel'
 import TranscriptionLimitModal from '@/app/tcc/components/TranscriptionLimitModal'
 
 interface Session {
@@ -57,7 +58,8 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
   const [transcriptionJob, setTranscriptionJob] = useState<TranscriptionJob | null>(null)
   const [showLimitModal, setShowLimitModal] = useState(false)
-  const [clinicalReport, setClinicalReport] = useState<{ insights?: { emotions?: { name: string; intensity: number }[] } } | null>(null)
+  const [clinicalReport, setClinicalReport] = useState<{ insights?: { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } } | null>(null)
+  const [openInsightSection, setOpenInsightSection] = useState<string | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -480,15 +482,29 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
             {/* Preview de Sinais */}
             {clinicalReport?.insights && (
               <SignalsPreview
-                insights={clinicalReport.insights as { emotions?: { name: string; intensity: number }[] }}
+                insights={clinicalReport.insights as { emotions?: { name: string; intensity: number }[]; distortions?: { type: string; label: string; example: string }[] }}
                 microEvents={microEvents.reduce<{ type: string; count: number }[]>((acc, ev) => {
                   const existing = acc.find(a => a.type === ev.type)
                   if (existing) existing.count++
                   else acc.push({ type: ev.type, count: 1 })
                   return acc
                 }, [])}
+                onClickSignal={setOpenInsightSection}
               />
             )}
+
+            {/* Insights AXIS — Sessão v2 */}
+            <InsightsPanel
+              insights={clinicalReport?.insights as { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } | null ?? null}
+              microEvents={microEvents}
+              cso={pipelineResult ? {
+                activation_level: null,
+                cognitive_rigidity: null,
+                emotional_load: null,
+                flex_trend: pipelineResult.flex_trend || null,
+              } : null}
+              openSection={openInsightSection}
+            />
 
             {/* Análise TCC */}
             {analysis && (
