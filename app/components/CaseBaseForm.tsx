@@ -127,7 +127,7 @@ export default function CaseBaseForm({ patientId }: CaseBaseFormProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
       {/* Header colapsavel */}
       <button
         onClick={() => setCollapsed(!collapsed)}
@@ -135,7 +135,7 @@ export default function CaseBaseForm({ patientId }: CaseBaseFormProps) {
       >
         <div>
           <h3 className="text-lg font-semibold text-slate-900 text-left">Base do Caso</h3>
-          <p className="text-xs text-slate-400 text-left">Formulacao TCC do paciente</p>
+          <p className="text-xs text-slate-400 text-left">Formulação TCC do paciente</p>
         </div>
         <svg
           className={`w-5 h-5 text-slate-400 transition-transform ${collapsed ? '' : 'rotate-180'}`}
@@ -161,15 +161,15 @@ export default function CaseBaseForm({ patientId }: CaseBaseFormProps) {
             />
           </div>
 
-          {/* Padrao identificado */}
+          {/* Padrão identificado */}
           <div>
             <label className="block text-xs uppercase text-slate-500 tracking-wide font-medium mb-1">
-              Padrao identificado
+              Padrão identificado
             </label>
             <textarea
               value={data.identified_pattern}
               onChange={(e) => handleChange('identified_pattern', e.target.value)}
-              placeholder="Evitacao / enfrentamento / ruminacao / controle"
+              placeholder="Evitação / enfrentamento / ruminação / controle"
               className="w-full border border-slate-200 rounded-lg p-3 text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
@@ -182,7 +182,7 @@ export default function CaseBaseForm({ patientId }: CaseBaseFormProps) {
             <textarea
               value={data.triggers}
               onChange={(e) => handleChange('triggers', e.target.value)}
-              placeholder="Situacoes que disparam o padrao"
+              placeholder="Situações que disparam o padrão"
               className="w-full border border-slate-200 rounded-lg p-3 text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
@@ -190,13 +190,13 @@ export default function CaseBaseForm({ patientId }: CaseBaseFormProps) {
           {/* Crenca central */}
           <div>
             <label className="block text-xs uppercase text-slate-500 tracking-wide font-medium mb-1">
-              Crenca central (hipotese)
+              Crença central (hipótese)
             </label>
             <textarea
               value={data.core_belief}
               onChange={(e) => handleChange('core_belief', e.target.value)}
-              placeholder="Formulacao do caso"
-              title="Hipotese do profissional — a IA trata este campo como input subjetivo, nao como diagnostico."
+              placeholder="Formulação do caso"
+              title="Hipótese do profissional — a IA trata este campo como input subjetivo, não como diagnóstico."
               className="w-full border border-slate-200 rounded-lg p-3 text-sm min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
