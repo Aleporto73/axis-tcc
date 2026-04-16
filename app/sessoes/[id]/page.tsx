@@ -12,6 +12,7 @@ import InsightsPanel from '../../components/InsightsPanel'
 import AnalyticalStructure from '../../components/AnalyticalStructure'
 import TranscriptionLimitModal from '@/app/tcc/components/TranscriptionLimitModal'
 import TranscriptView from './components/TranscriptView'
+import ClinicalContext from './components/ClinicalContext'
 
 interface Session {
   id: string
@@ -358,6 +359,9 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
             </div>
 
             {showReport && <SessionReport sessionId={id} onClose={() => setShowReport(false)} />}
+
+            {/* Contexto Clínico — sessão anterior */}
+            <ClinicalContext sessionId={id} />
 
             {/* Micro-eventos */}
             {session.status === 'em_andamento' && (

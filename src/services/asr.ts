@@ -48,10 +48,10 @@ function createDispatcher() {
  * Retorna texto completo + array de segments com timestamps.
  *
  * Robust parsing:
- * - Se o server suporta verbose_json → retorna text + segments
- * - Se o server ignora o param → retorna text + segments vazio
- * - Se text vier vazio mas segments existirem → reconstrói text
- * - Se tudo vier vazio → lança erro
+ * - Se o server suporta verbose_json -> retorna text + segments
+ * - Se o server ignora o param -> retorna text + segments vazio
+ * - Se text vier vazio mas segments existirem -> reconstrói text
+ * - Se tudo vier vazio -> lança erro
  */
 export async function transcribeAudioWithSegments(
   audioBuffer: Buffer,
