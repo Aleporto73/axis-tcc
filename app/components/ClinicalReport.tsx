@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { FileText, Pencil, Check, Download, RefreshCw, X, Plus } from 'lucide-react'
+import { jsPDF } from 'jspdf'
 
 interface ReportData {
   id: string
@@ -367,23 +368,118 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
             <button
               onClick={async () => {
                 try {
+                  // 1. Buscar metadados do servidor + atualizar export_count
                   const res = await fetch(`/api/sessions/${sessionId}/report/export-pdf`, { method: 'POST' })
                   if (!res.ok) {
                     const data = await res.json().catch(() => ({}))
                     alert(data.error || 'Erro ao exportar PDF')
                     return
                   }
-                  const blob = await res.blob()
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-                  const disposition = res.headers.get('Content-Disposition') || ''
-                  const match = disposition.match(/filename="?([^"]+)"?/)
-                  a.download = match ? match[1] : `relatorio_sessao.pdf`
-                  document.body.appendChild(a)
-                  a.click()
-                  document.body.removeChild(a)
-                  URL.revokeObjectURL(url)
+                  const meta = await res.json()
+
+                  // 2. Gerar PDF client-side com jsPDF
+                  const doc = new jsPDF()
+                  const w = doc.internal.pageSize.getWidth()
+                  const margin = 20
+                  const contentW = w - margin * 2
+                  let y = 20
+
+                  const strip = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                  const addText = (text: string, x: number, yPos: number, opts: { size?: number; style?: string; color?: [number, number, number]; maxWidth?: number } = {}) => {
+                    doc.setFontSize(opts.size || 10)
+                    doc.setFont('helvetica', opts.style || 'normal')
+                    doc.setTextColor(...(opts.color || [51, 51, 51]))
+                    if (opts.maxWidth) doc.text(strip(text), x, yPos, { maxWidth: opts.maxWidth })
+                    else doc.text(strip(text), x, yPos)
+                  }
+                  const checkPage = (needed: number) => { if (y + needed > 275) { doc.addPage(); y = 20 } }
+                  const drawLine = () => { doc.setDrawColor(200, 200, 200); doc.line(margin, y, w - margin, y); y += 6 }
+
+                  // Header
+                  addText('AXIS Clinico', margin, y, { size: 16, style: 'bold', color: [30, 30, 80] })
+                  y += 6
+                  addText('Relatorio de Sessao', margin, y, { size: 11, color: [100, 100, 100] })
+                  y += 8
+                  drawLine()
+
+                  // Professional
+                  addText(`Profissional: ${meta.professional.name || 'Profissional'}`, margin, y, { size: 10 })
+                  y += 5
+                  if (meta.professional.crp) {
+                    const crpLabel = meta.professional.crp_uf
+                      ? `CRP: ${meta.professional.crp}/${meta.professional.crp_uf}`
+                      : `CRP: ${meta.professional.crp}`
+                    addText(crpLabel, margin, y, { size: 10 })
+                    y += 5
+                  }
+                  y += 3
+                  doc.setDrawColor(220, 220, 220); doc.line(margin, y, w - margin, y); y += 5
+
+                  // Session info
+                  addText(`Paciente: ${meta.patient.name || '-'}`, margin, y, { size: 10 })
+                  y += 5
+                  const dateStr = meta.session.date ? new Date(meta.session.date).toLocaleDateString('pt-BR') : '-'
+                  const sessLabel = meta.session.number
+                    ? `Sessao: #${meta.session.number} - ${strip(dateStr)}`
+                    : `Sessao: ${strip(dateStr)}`
+                  addText(sessLabel, margin, y, { size: 10 })
+                  y += 5
+                  if (meta.session.duration) {
+                    addText(`Duracao: ${meta.session.duration} minutos`, margin, y, { size: 10 })
+                    y += 5
+                  }
+                  if (meta.session.type) {
+                    const typeLabels: Record<string, string> = { presencial: 'Presencial', online: 'Online', hibrida: 'Hibrida' }
+                    addText(`Modalidade: ${typeLabels[meta.session.type] || meta.session.type}`, margin, y, { size: 10 })
+                    y += 5
+                  }
+                  y += 3
+                  drawLine()
+
+                  // Headline
+                  if (report!.headline && report!.headline.trim()) {
+                    checkPage(15)
+                    addText(report!.headline.trim(), margin, y, { size: 14, style: 'bold', color: [30, 30, 80] })
+                    y += 10
+                  }
+
+                  // Sections
+                  const sections = [
+                    { num: '1', title: 'OBJETIVOS DA SESSAO', content: report!.objectives },
+                    { num: '2', title: 'RESUMO', content: report!.summary },
+                    { num: '3', title: 'INTERVENCAO DO PSICOLOGO', content: report!.intervention },
+                    { num: '4', title: 'OBSERVACOES CLINICAS', content: report!.observations },
+                    { num: '5', title: 'ENCERRAMENTO / TAREFA DE CASA', content: report!.closing },
+                  ]
+
+                  for (const section of sections) {
+                    if (!section.content || !section.content.trim()) continue
+                    checkPage(25)
+                    addText(`${section.num}. ${section.title}`, margin, y, { size: 11, style: 'bold', color: [30, 30, 80] })
+                    y += 6
+                    const lines = doc.splitTextToSize(strip(section.content.trim()), contentW)
+                    for (const line of lines) {
+                      checkPage(6)
+                      addText(line, margin, y, { size: 10 })
+                      y += 5
+                    }
+                    y += 5
+                  }
+
+                  // Footer
+                  checkPage(25)
+                  y += 5
+                  drawLine()
+                  addText('Relatorio assistido por IA - conteudo revisado e aprovado pelo profissional responsavel.', margin, y, { size: 8, style: 'italic', color: [140, 140, 140] })
+                  y += 5
+                  const now = new Date()
+                  addText(`Exportado em: ${strip(now.toLocaleDateString('pt-BR'))} ${strip(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))}`, margin, y, { size: 8, color: [140, 140, 140] })
+                  y += 4
+                  addText('AXIS Clinico - axisclinico.com', margin, y, { size: 8, color: [140, 140, 140] })
+
+                  // 3. Download
+                  const fileName = `relatorio_sessao_${meta.session.number || 'x'}_${meta.session.date ? new Date(meta.session.date).toISOString().slice(0, 10) : 'sem-data'}.pdf`
+                  doc.save(fileName)
                 } catch (e) {
                   console.error('Erro ao exportar PDF:', e)
                   alert('Erro ao exportar PDF')
