@@ -17,15 +17,24 @@ interface PreviousSession {
   scheduled_at: string
 }
 
+interface CaseBase {
+  chief_complaint: string | null
+  identified_pattern: string | null
+  triggers: string | null
+  core_belief: string | null
+}
+
 interface ContextData {
   has_previous: boolean
   previous_session: PreviousSession | null
   cso: CSOData | null
   headline: string | null
+  case_base: CaseBase | null
 }
 
 interface ClinicalContextProps {
   sessionId: string
+  patientId?: string
   onEvolutionLoaded?: (evolution: any) => void
 }
 
@@ -49,7 +58,7 @@ function TrendIndicator({ trend }: { trend: string | null }) {
   }
 }
 
-export default function ClinicalContext({ sessionId, onEvolutionLoaded }: ClinicalContextProps) {
+export default function ClinicalContext({ sessionId, patientId, onEvolutionLoaded }: ClinicalContextProps) {
   const [context, setContext] = useState<ContextData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -89,15 +98,34 @@ export default function ClinicalContext({ sessionId, onEvolutionLoaded }: Clinic
 
   // Sem contexto ou erro → fallback primeira sessão
   if (!context || !context.has_previous) {
+    const firstSessionCaseBase = context?.case_base
+    const firstHasCaseBase = !!(firstSessionCaseBase?.identified_pattern?.trim())
     return (
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 mb-6">
-        <p className="text-lg font-semibold text-slate-900">Contexto Clínico</p>
+        <div className="flex items-center gap-2">
+          <p className="text-lg font-semibold text-slate-900">Contexto Clínico</p>
+          {!firstHasCaseBase && patientId && (
+            <a
+              href={`/pacientes/${patientId}`}
+              className="bg-amber-100 text-amber-700 text-xs rounded-full px-2 py-0.5 hover:bg-amber-200 transition-colors"
+            >
+              Base do caso incompleta
+            </a>
+          )}
+        </div>
         <p className="text-sm text-slate-600 mt-1">Primeira sessão do paciente</p>
+        {firstHasCaseBase && (
+          <div className="mt-2">
+            <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Foco do tratamento</p>
+            <p className="text-slate-700 text-sm font-medium">{firstSessionCaseBase!.identified_pattern}</p>
+          </div>
+        )}
       </div>
     )
   }
 
-  const { previous_session, cso, headline } = context
+  const { previous_session, cso, headline, case_base } = context
+  const hasCaseBase = !!(case_base?.identified_pattern?.trim())
   const prevDate = previous_session
     ? new Date(previous_session.scheduled_at).toLocaleDateString('pt-BR')
     : null
@@ -121,24 +149,50 @@ export default function ClinicalContext({ sessionId, onEvolutionLoaded }: Clinic
         )}
       </div>
 
-      {/* Headline da sessão anterior */}
+      {/* R1: Foco do tratamento (Base do Caso) OU Headline da sessão anterior */}
       <div className="mb-3">
-        <p
-          className="text-xs text-slate-400 uppercase tracking-wider mb-0.5"
-          title="Este é o assunto da última sessão, não necessariamente o foco do tratamento."
-        >
-          Último tema da sessão anterior
-        </p>
-        <p className="text-slate-500 italic text-sm truncate max-w-xl">
-          {headline || 'Foco não definido'}
-        </p>
+        {hasCaseBase ? (
+          <>
+            <p
+              className="text-xs text-slate-400 uppercase tracking-wider mb-0.5"
+              title="Padrão identificado na Base do Caso"
+            >
+              Foco do tratamento
+            </p>
+            <p className="text-slate-700 text-sm font-medium truncate max-w-xl">
+              {case_base!.identified_pattern}
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 mb-0.5">
+              <p
+                className="text-xs text-slate-400 uppercase tracking-wider"
+                title="Este Ã© o assunto da Ãºltima sessÃ£o, nÃ£o necessariamente o foco do tratamento."
+              >
+                Ãltimo tema da sessÃ£o anterior
+              </p>
+              {patientId && (
+                <a
+                  href={`/pacientes/${patientId}`}
+                  className="bg-amber-100 text-amber-700 text-xs rounded-full px-2 py-0.5 hover:bg-amber-200 transition-colors"
+                >
+                  Base do caso incompleta
+                </a>
+              )}
+            </div>
+            <p className="text-slate-500 italic text-sm truncate max-w-xl">
+              {headline || 'Foco nÃ£o definido'}
+            </p>
+          </>
+        )}
       </div>
 
-      {/* CSO — 4 dimensões */}
+      {/* CSO â 4 dimensÃµes */}
       {cso ? (
         <div className="grid grid-cols-4 gap-3">
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Ativação</p>
+            <p className="text-xs text-slate-400 uppercase tracking-wider">AtivaÃ§Ã£o</p>
             <p className="font-mono font-medium text-sm text-slate-900">
               {formatCSOValue(cso.activation_level)}
             </p>
@@ -150,7 +204,7 @@ export default function ClinicalContext({ sessionId, onEvolutionLoaded }: Clinic
             </p>
           </div>
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Adesão tarefas</p>
+            <p className="text-xs text-slate-400 uppercase tracking-wider">AdesÃ£o tarefas</p>
             <p className="font-mono font-medium text-sm text-slate-900">
               {formatCSOValue(cso.task_adherence)}
             </p>

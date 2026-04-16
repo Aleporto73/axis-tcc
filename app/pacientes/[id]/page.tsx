@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
 import EvolutionReport from '../../components/EvolutionReport'
+import CaseBaseForm from '../../components/CaseBaseForm'
 
 interface Patient {
   id: string
@@ -350,7 +351,9 @@ export default function PatientDetailPage() {
         </main>
       </div>
     )
-  }return (
+  }
+
+  return (
     <div className="min-h-screen bg-white">
       <Sidebar />
       <main className="md:ml-20 min-h-screen pb-20 md:pb-8">
@@ -460,6 +463,9 @@ export default function PatientDetailPage() {
                 <EvolutionReport patientId={id} sessionsCount={sessions.filter(s => s.status === "finalizada").length} onClose={() => setShowEvolution(false)} />
               </div>
             )}
+
+            {/* Base do Caso TCC — Fase 10 */}
+            <CaseBaseForm patientId={id} />
 
             {/* Histórico de Sessões */}
             <section>
@@ -642,10 +648,12 @@ export default function PatientDetailPage() {
                   </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
+        </div>
+      </main>
     </div>
   )
 }

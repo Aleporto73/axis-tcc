@@ -363,7 +363,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
             {showReport && <SessionReport sessionId={id} onClose={() => setShowReport(false)} />}
 
             {/* Contexto Clínico — sessão anterior */}
-            <ClinicalContext sessionId={id} onEvolutionLoaded={setEvolution} />
+            <ClinicalContext sessionId={id} patientId={session.patient_id} onEvolutionLoaded={setEvolution} />
 
             {/* Evolução CSO — deltas + timeline */}
             <EvolutionPanel evolution={evolution} />

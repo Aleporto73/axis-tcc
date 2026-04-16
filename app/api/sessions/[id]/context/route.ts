@@ -39,6 +39,15 @@ export async function GET(
 
       const { patient_id, session_number } = sessionResult.rows[0]
 
+      // 1b. Buscar Base do Caso do paciente (Fase 10)
+      const caseBaseResult = await client.query(
+        `SELECT chief_complaint, identified_pattern, triggers, core_belief
+         FROM case_bases
+         WHERE patient_id = $1 AND tenant_id = $2`,
+        [patient_id, tenantId]
+      )
+      const case_base = caseBaseResult.rows.length > 0 ? caseBaseResult.rows[0] : null
+
       // 2. Buscar sessão anterior (finalizada, do mesmo paciente, session_number menor)
       const prevSessionResult = await client.query(
         `SELECT s.id, s.session_number, s.scheduled_at, s.cso_id
@@ -60,6 +69,7 @@ export async function GET(
             previous_session: null,
             cso: null,
             headline: null,
+            case_base,
           },
           evolution: null,
         })
@@ -169,6 +179,7 @@ export async function GET(
           },
           cso,
           headline,
+          case_base,
         },
         evolution,
       })
