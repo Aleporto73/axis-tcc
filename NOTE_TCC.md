@@ -1,5 +1,5 @@
 # AXIS TCC — NOTE DE PROJETO (fonte unica de verdade)
-## Atualizado: 24/03/2026 (Hardening TCC nota 9.5 — sem mudanças nesta sessão)
+## Atualizado: 16/04/2026 (Sessao v2 — 6 fases concluidas)
 
 ---
 
@@ -51,6 +51,9 @@
 | /api/demo/* | ✅ | Demo mode com dados publicos |
 | /api/webhook/* | ✅ | Hotmart (product-aware TCC+ABA) + Clerk webhooks |
 | /api/cron/* | ✅ | Reminders + renew-webhook |
+| /api/sessions/[id]/report | ✅ | **Sessao v2**: GET/PUT relatorio clinico (UPSERT parcial) |
+| /api/sessions/[id]/report/generate | ✅ | **Sessao v2**: POST gera relatorio + insights via GPT-4o-mini (auto-analise TCC) |
+| /api/sessions/[id]/report/export-pdf | ✅ | **Sessao v2**: POST retorna metadados para PDF client-side + atualiza export_count |
 | /api/chat-ana | ✅ | GPT-4o-mini com historico (10 turnos) + license gate |
 
 ### UI / PAGES — 100% ✅
@@ -58,7 +61,7 @@
 |---|---|---|
 | /dashboard | ✅ | Dashboard com KPIs + graficos CSO longitudinais + error state |
 | /sessoes | ✅ | Lista + filtros + paginacao + modal nova sessao |
-| /sessoes/[id] | ✅ | Detalhe com eventos (classes estaticas Tailwind corrigidas) |
+| /sessoes/[id] | ✅ | **Sessao v2**: 4 blocos verticais (Transcricao, Relatorio Clinico IA, Insights AXIS, Estrutura Analitica) + PDF export |
 | /pacientes | ✅ | Lista + Toast feedback + busca |
 | /pacientes/[id] | ✅ | Perfil com interfaces TS tipadas + edit modal corrigido (full_name mismatch fix) |
 | /relatorio/[id] | ✅ | Relatorio evolucao (PDF via jsPDF) — acentos corrigidos com stripAccents() |
@@ -78,6 +81,10 @@
 | Sidebar.tsx | ✅ | Design tokens tcc- migrados (0 hex hardcoded) |
 | EvolutionReport.tsx | ✅ | app/components/EvolutionReport.tsx |
 | SessionReport.tsx | ✅ | Acentos corrigidos (Relatório, Sessão, etc.) |
+| ClinicalReport.tsx | ✅ | **Sessao v2**: Relatorio clinico IA (gerar/editar/aprovar/exportar PDF) + audit logs |
+| SignalsPreview.tsx | ✅ | **Sessao v2**: Chips de sinais-chave (emocoes, micro-eventos) com thresholds |
+| InsightsPanel.tsx | ✅ | **Sessao v2**: Accordion 6 secoes (emocoes, topicos, distorcoes, tecnicas, micro-eventos, CSO) |
+| AnalyticalStructure.tsx | ✅ | **Sessao v2**: Fatos/Pensamentos/Emocoes em accordion colapsado |
 | Toast.tsx | ✅ | Componente de feedback reutilizavel |
 | (demais 12 componentes) | ✅ | Onboarding, Push, Terms, Error, Skeleton, etc. |
 
@@ -345,6 +352,56 @@
 - [x] **process.env hardening** — 10 arquivos com `!` non-null assertion corrigidos para `|| ''`. Inclui rotas Google Calendar e sessions/create do TCC
 - [x] **Resend fix** — `app/api/demo/solicitar/route.ts` corrigido com instanciação condicional (Resend constructor crashava com undefined)
 - [x] **Docs operacionais** — `docs/CHECKLIST_RELEASE.md` (deploy) + `docs/PLAYBOOK_INCIDENTE.md` (resposta a incidentes)
+
+### 2026-04-15/16 — Sessao v2: Reestruturacao completa da pagina de sessao (6 fases)
+
+**Motivacao:** Reclamacao de usuarios do concorrente que nao migravam — interface de sessao era muito tecnica e expunha dados brutos (pipeline, CSO numerico). Redesenhado para 4 blocos verticais com camada narrativa IA.
+
+**Fase 1 — Backend:**
+- [x] Migration 049: tabela `session_reports` (relatorio clinico + insights JSONB, RLS, append-only)
+- [x] API GET/PUT `/api/sessions/[id]/report` (fetch + UPSERT parcial)
+- [x] API POST `/api/sessions/[id]/report/generate` (GPT-4o-mini com anti-hallucination prompt, auto-analise TCC, SHA256 hash do prompt, UPSERT)
+
+**Fase 2 — Frontend Relatorio Clinico:**
+- [x] `ClinicalReport.tsx` — 4 estados visuais (vazio, gerando/skeleton, view, edit), headline com destaque azul, 5 campos editaveis, badge draft/final, botoes regenerar/aprovar/exportar
+- [x] `SignalsPreview.tsx` — max 2 chips entre relatorio e insights, thresholds (emocao >= 0.5, micro-evento >= 2), normalizacao intensidade 0-10 → 0-1
+- [x] Fix: infinite re-render loop (useRef pattern para callback prop)
+
+**Fase 3 — Frontend Insights Panel:**
+- [x] `InsightsPanel.tsx` — accordion 6 secoes (emocoes com barras coloridas, topicos #tags, distorcoes com disclaimer obrigatorio, tecnicas identificadas, micro-eventos 3a onda, CSO/flex trend)
+- [x] Conexao SignalsPreview → InsightsPanel via `openInsightSection` state compartilhado
+
+**Fase 4 — Migracao Analitico + Limpeza:**
+- [x] `AnalyticalStructure.tsx` — Fatos/Pensamentos/Emocoes migrados de grid-cols-3 para accordion colapsado (sky/amber/rose)
+- [x] Pipeline Result removido da UI (dados continuam no backend)
+
+**Fase 5 — Exportacao PDF:**
+- [x] Tentativa server-side com pdfkit falhou (Turbopack nao resolve .afm fonts)
+- [x] Migrado para client-side com jsPDF (mesmo padrao do relatorio longitudinal)
+- [x] Endpoint `export-pdf` retorna JSON com metadados (profissional, sessao, paciente) + atualiza export_count
+- [x] PDF: A4, Helvetica, stripAccents, header AXIS, 5 secoes numeradas, footer disclaimer IA
+
+**Fase 6 — Polish Final:**
+- [x] Tooltips explicativos em todos os componentes v2
+- [x] Loading states: skeleton no "gerando", "Gerando PDF..." disabled no export
+- [x] Footer seguranca sempre visivel (removido condicional `generated_by === 'ai'`)
+- [x] Audit logs: REPORT_GENERATE, REPORT_EDIT, REPORT_APPROVE, REPORT_EXPORT (4 actions adicionadas ao /api/audit)
+
+**Arquivos criados:**
+- `scripts/migrations/049_session_reports.sql`
+- `app/api/sessions/[id]/report/route.ts` (reescrito)
+- `app/api/sessions/[id]/report/generate/route.ts`
+- `app/api/sessions/[id]/report/export-pdf/route.ts`
+- `app/components/ClinicalReport.tsx`
+- `app/components/SignalsPreview.tsx`
+- `app/components/InsightsPanel.tsx`
+- `app/components/AnalyticalStructure.tsx`
+
+**Arquivos modificados:**
+- `app/sessoes/[id]/page.tsx` (integracoes v2, remocao pipeline result e grid analitico)
+- `app/api/audit/route.ts` (3 novas actions)
+
+**Migrations pendentes em producao:** 049
 
 ### 2026-03-24 — Hardening TCC (isolamento acesso nota 9.0)
 
