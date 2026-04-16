@@ -653,6 +653,7 @@ export default function PatientDetailPage() {
         </div>
       )}
         </div>
+        </div>
       </main>
     </div>
   )
