@@ -9,8 +9,10 @@ import { handleRouteError } from '@/src/database/with-role'
  * - Último CSO (4 dimensões + flex_trend)
  * - Headline do relatório anterior
  * - Número e data da sessão anterior
+ * - Evolution: deltas CSO entre as 2 últimas sessões + timeline (até 5)
  *
  * Se não houver sessão anterior → retorna fallbacks.
+ * Se houver < 2 sessões com CSO → evolution = null
  * Padrão: withTenant (RLS compliance)
  */
 export async function GET(
@@ -58,7 +60,8 @@ export async function GET(
             previous_session: null,
             cso: null,
             headline: null,
-          }
+          },
+          evolution: null,
         })
       }
 
@@ -99,6 +102,63 @@ export async function GET(
         headline = reportResult.rows[0].headline || null
       }
 
+      // 5. Evolution: últimas 5 sessões finalizadas com CSO + headlines (timeline + delta)
+      let evolution = null
+
+      const timelineResult = await client.query(
+        `SELECT s.id, s.session_number, s.scheduled_at, s.cso_id,
+                cs.activation_level, cs.cognitive_rigidity,
+                cs.emotional_load, cs.task_adherence,
+                sr.headline
+         FROM sessions s
+         LEFT JOIN clinical_states cs ON cs.id = s.cso_id AND cs.tenant_id = $2
+         LEFT JOIN session_reports sr ON sr.session_id = s.id AND sr.tenant_id = $2
+         WHERE s.patient_id = $1
+           AND s.tenant_id = $2
+           AND s.session_number < $3
+           AND s.status = 'finalizada'
+         ORDER BY s.session_number DESC
+         LIMIT 5`,
+        [patient_id, tenantId, session_number]
+      )
+
+      if (timelineResult.rows.length >= 2) {
+        // Timeline: ordenar cronologicamente (ASC) para exibicao
+        const timeline = timelineResult.rows
+          .reverse()
+          .map((r: any) => ({
+            session_number: r.session_number,
+            scheduled_at: r.scheduled_at,
+            cso: r.cso_id ? {
+              activation_level: r.activation_level != null ? parseFloat(r.activation_level) : null,
+              cognitive_rigidity: r.cognitive_rigidity != null ? parseFloat(r.cognitive_rigidity) : null,
+              emotional_load: r.emotional_load != null ? parseFloat(r.emotional_load) : null,
+              task_adherence: r.task_adherence != null ? parseFloat(r.task_adherence) : null,
+            } : null,
+            headline: r.headline || null,
+          }))
+
+        // Delta: entre as 2 sessoes mais recentes que TEM CSO
+        const withCso = timeline.filter((s: any) => s.cso !== null)
+        let delta = null
+        if (withCso.length >= 2) {
+          const recent = withCso[withCso.length - 1].cso!
+          const prev = withCso[withCso.length - 2].cso!
+          delta = {
+            activation_level: recent.activation_level != null && prev.activation_level != null
+              ? parseFloat((recent.activation_level - prev.activation_level).toFixed(3)) : null,
+            cognitive_rigidity: recent.cognitive_rigidity != null && prev.cognitive_rigidity != null
+              ? parseFloat((recent.cognitive_rigidity - prev.cognitive_rigidity).toFixed(3)) : null,
+            emotional_load: recent.emotional_load != null && prev.emotional_load != null
+              ? parseFloat((recent.emotional_load - prev.emotional_load).toFixed(3)) : null,
+            task_adherence: recent.task_adherence != null && prev.task_adherence != null
+              ? parseFloat((recent.task_adherence - prev.task_adherence).toFixed(3)) : null,
+          }
+        }
+
+        evolution = { delta, timeline }
+      }
+
       return NextResponse.json({
         context: {
           has_previous: true,
@@ -109,7 +169,8 @@ export async function GET(
           },
           cso,
           headline,
-        }
+        },
+        evolution,
       })
     })
 

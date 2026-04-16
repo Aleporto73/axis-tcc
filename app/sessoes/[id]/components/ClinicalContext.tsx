@@ -26,6 +26,7 @@ interface ContextData {
 
 interface ClinicalContextProps {
   sessionId: string
+  onEvolutionLoaded?: (evolution: any) => void
 }
 
 function formatCSOValue(val: number | null): string {
@@ -48,7 +49,7 @@ function TrendIndicator({ trend }: { trend: string | null }) {
   }
 }
 
-export default function ClinicalContext({ sessionId }: ClinicalContextProps) {
+export default function ClinicalContext({ sessionId, onEvolutionLoaded }: ClinicalContextProps) {
   const [context, setContext] = useState<ContextData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -61,7 +62,10 @@ export default function ClinicalContext({ sessionId }: ClinicalContextProps) {
         const res = await fetch(`/api/sessions/${sessionId}/context`)
         if (!res.ok) throw new Error(`${res.status}`)
         const data = await res.json()
-        if (!cancelled) setContext(data.context)
+        if (!cancelled) {
+          setContext(data.context)
+          if (onEvolutionLoaded) onEvolutionLoaded(data.evolution ?? null)
+        }
       } catch (err) {
         console.error('[ClinicalContext] Erro:', err)
         if (!cancelled) setContext(null)
@@ -159,7 +163,7 @@ export default function ClinicalContext({ sessionId }: ClinicalContextProps) {
           </div>
         </div>
       ) : (
-        <p className="text-sm text-slate-400">CSO ainda não calculado</p>
+        <p className="text-sm text-slate-400">CSO ainda nao calculado</p>
       )}
     </div>
   )

@@ -13,6 +13,7 @@ import AnalyticalStructure from '../../components/AnalyticalStructure'
 import TranscriptionLimitModal from '@/app/tcc/components/TranscriptionLimitModal'
 import TranscriptView from './components/TranscriptView'
 import ClinicalContext from './components/ClinicalContext'
+import EvolutionPanel from './components/EvolutionPanel'
 
 interface Session {
   id: string
@@ -64,6 +65,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [clinicalReport, setClinicalReport] = useState<{ insights?: { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } } | null>(null)
   const [openInsightSection, setOpenInsightSection] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'transcricao' | 'relatorio' | 'anotacoes'>('relatorio')
+  const [evolution, setEvolution] = useState<any>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -361,7 +363,10 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
             {showReport && <SessionReport sessionId={id} onClose={() => setShowReport(false)} />}
 
             {/* Contexto Clínico — sessão anterior */}
-            <ClinicalContext sessionId={id} />
+            <ClinicalContext sessionId={id} onEvolutionLoaded={setEvolution} />
+
+            {/* Evolução CSO — deltas + timeline */}
+            <EvolutionPanel evolution={evolution} />
 
             {/* Micro-eventos */}
             {session.status === 'em_andamento' && (
@@ -605,7 +610,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* Modal limite de transcrição */}
+      {/* Modal limite de transcricao */}
       {showLimitModal && (
         <TranscriptionLimitModal onClose={() => setShowLimitModal(false)} />
       )}
