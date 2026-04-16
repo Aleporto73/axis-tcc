@@ -12,7 +12,7 @@ import 'dotenv/config'
 import { randomUUID } from 'crypto'
 import { Pool, PoolClient } from 'pg'
 import { readFile } from 'fs/promises'
-import { transcribeAudio } from '../../src/services/asr'
+import { transcribeAudioWithSegments, ASRSegment } from '../../src/services/asr'
 import { saveTranscript } from '../../src/services/transcript-storage'
 import { postProcessTranscript, buildPreview, POSTPROCESS_VERSION } from '../../src/services/transcript-postprocess'
 
@@ -237,10 +237,12 @@ async function processJob(job: any): Promise<void> {
     const audioBuffer = await readFile(job.audio_path)
     console.log(`[JOB ${jid}] Áudio lido: ${audioBuffer.length} bytes`)
 
-    // 2. Transcrever via ASR
-    console.log(`[JOB ${jid}] Chamando ASR...`)
-    const text = await transcribeAudio(audioBuffer, job.original_filename || 'audio.webm')
-    console.log(`[JOB ${jid}] ASR retornou: ${text.length} chars`)
+    // 2. Transcrever via ASR (verbose_json — retorna text + segments)
+    console.log(`[JOB ${jid}] Chamando ASR (verbose_json)...`)
+    const asrResult = await transcribeAudioWithSegments(audioBuffer, job.original_filename || 'audio.webm')
+    const text = asrResult.text
+    const asrSegments = asrResult.segments
+    console.log(`[JOB ${jid}] ASR retornou: ${text.length} chars, ${asrSegments.length} segments`)
 
     if (!text || text.trim().length === 0) {
       throw new Error('Transcrição retornou vazia')
@@ -281,6 +283,44 @@ async function processJob(job: any): Promise<void> {
           POSTPROCESS_VERSION, 'whisper-1'
         ]
       )
+
+      // 5b. Salvar segments (se existirem) — falha NÃO quebra o job
+      if (asrSegments.length > 0) {
+        try {
+          // Batch INSERT via unnest — 4 arrays paralelos, seguro contra SQL injection
+          const indexes: number[] = []
+          const starts: number[] = []
+          const ends: number[] = []
+          const texts: string[] = []
+
+          for (let i = 0; i < asrSegments.length; i++) {
+            indexes.push(i)
+            starts.push(asrSegments[i].start)
+            ends.push(asrSegments[i].end)
+            texts.push(asrSegments[i].text)
+          }
+
+          await client.query(
+            `INSERT INTO transcript_segments
+               (id, transcript_id, tenant_id, segment_index, start_seconds, end_seconds, text)
+             SELECT
+               gen_random_uuid(),
+               $1::uuid,
+               $2::uuid,
+               idx,
+               s,
+               e,
+               t
+             FROM unnest($3::int[], $4::numeric[], $5::numeric[], $6::text[])
+               AS x(idx, s, e, t)`,
+            [transcriptId, job.tenant_id, indexes, starts, ends, texts]
+          )
+          console.log(`[JOB ${jid}] ${asrSegments.length} segments salvos`)
+        } catch (segErr: any) {
+          // Falha nos segments NÃO deve quebrar o job — log e continua
+          console.error(`[JOB ${jid}] WARN: Erro ao salvar segments (job continua): ${segErr.message}`)
+        }
+      }
 
       // Incrementar uso para FREE
       const licenseRes = await client.query(
