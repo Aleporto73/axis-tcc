@@ -100,7 +100,7 @@ export default function InsightsPanel({ insights, microEvents, cso, openSection 
     <section className="mb-8">
       <div className="flex items-center gap-2 mb-3">
         <Activity className="w-4 h-4 text-slate-400" />
-        <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide">Insights AXIS</h2>
+        <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide" title="An\u00e1lise inteligente extra\u00edda da transcri\u00e7\u00e3o. Diferencial exclusivo AXIS.">Insights AXIS</h2>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
