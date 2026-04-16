@@ -16,7 +16,7 @@ export async function POST(
   try {
     const { id } = await params
 
-    const result = await withTenant(async (ctx) => {
+    const result = await withTenant<NextResponse>(async (ctx) => {
       const { client, tenantId, userId } = ctx
 
       // 1. Buscar sessao + paciente
@@ -99,7 +99,8 @@ export async function POST(
     return result
   } catch (error) {
     console.error('Erro ao exportar PDF:', error)
-    return handleRouteError(error)
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
