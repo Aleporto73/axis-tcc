@@ -23,7 +23,7 @@ export async function POST(
       const sessionResult = await client.query(
         `SELECT s.id, s.session_number, s.session_type, s.scheduled_at,
                 s.started_at, s.duration_minutes,
-                p.name AS patient_name
+                p.full_name AS patient_name
          FROM sessions s
          JOIN patients p ON p.id = s.patient_id
          WHERE s.id = $1 AND s.tenant_id = $2`,
