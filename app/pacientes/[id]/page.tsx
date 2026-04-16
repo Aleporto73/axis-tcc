@@ -351,9 +351,7 @@ export default function PatientDetailPage() {
         </main>
       </div>
     )
-  }
-
-  return (
+  }return (
     <div className="min-h-screen bg-white">
       <Sidebar />
       <main className="md:ml-20 min-h-screen pb-20 md:pb-8">
@@ -652,9 +650,6 @@ export default function PatientDetailPage() {
           </div>
         </div>
       )}
-        </div>
-        </div>
-      </main>
     </div>
   )
 }
