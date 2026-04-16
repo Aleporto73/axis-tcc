@@ -648,7 +648,7 @@ export default function PatientDetailPage() {
                   </button>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
