@@ -11,6 +11,7 @@ import SignalsPreview from '../../components/SignalsPreview'
 import InsightsPanel from '../../components/InsightsPanel'
 import AnalyticalStructure from '../../components/AnalyticalStructure'
 import TranscriptionLimitModal from '@/app/tcc/components/TranscriptionLimitModal'
+import TranscriptView from './components/TranscriptView'
 
 interface Session {
   id: string
@@ -42,7 +43,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [transcript, setTranscript] = useState<Transcript | null>(null)
   const [analysis, setAnalysis] = useState<TCCAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
-  const [transcriptExpanded, setTranscriptExpanded] = useState(false)
+  // transcriptExpanded removido — TranscriptView cuida internamente
   const [finishing, setFinishing] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
@@ -61,6 +62,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [showLimitModal, setShowLimitModal] = useState(false)
   const [clinicalReport, setClinicalReport] = useState<{ insights?: { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } } | null>(null)
   const [openInsightSection, setOpenInsightSection] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'transcricao' | 'relatorio' | 'anotacoes'>('relatorio')
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -124,6 +126,13 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
         } else {
           setTranscript(data.transcript)
         }
+      }
+
+      // Tab default: Transcrição se tem transcript, senão Relatório
+      if (data.transcript?.id) {
+        setActiveTab('transcricao')
+      } else {
+        setActiveTab('relatorio')
       }
 
       // Job ativo? Iniciar polling
@@ -382,133 +391,163 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
               </section>
             )}
 
-            {/* Transcrição */}
-            <section className="mb-8 pb-8 border-b border-slate-100">
-              <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4">Transcrição</h2>
-              
-              {/* Progresso da transcrição (background job) */}
-              {transcriptionJob && (transcriptionJob.status === 'pending' || transcriptionJob.status === 'processing') && (
-                <div className="mb-4 p-4 bg-sky-50 rounded-lg border border-sky-200">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm font-medium text-sky-800">
-                      {transcriptionJob.status === 'pending' ? 'Aguardando processamento...' : 'Transcrevendo áudio...'}
+            {/* ═══ Tabs ═══ */}
+            <nav className="flex gap-6 border-b border-slate-200 mb-8">
+              <button
+                onClick={() => setActiveTab('transcricao')}
+                className={`py-3 text-sm font-medium transition-colors relative ${
+                  activeTab === 'transcricao'
+                    ? 'text-slate-900 border-b-2 border-tcc-700'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Transcrição
+              </button>
+              <button
+                onClick={() => setActiveTab('relatorio')}
+                className={`py-3 text-sm font-medium transition-colors relative ${
+                  activeTab === 'relatorio'
+                    ? 'text-slate-900 border-b-2 border-tcc-700'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Relatório
+              </button>
+              <button
+                onClick={() => setActiveTab('anotacoes')}
+                className={`py-3 text-sm font-medium transition-colors relative ${
+                  activeTab === 'anotacoes'
+                    ? 'text-slate-900 border-b-2 border-tcc-700'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Anotações
+              </button>
+            </nav>
+
+            {/* ═══ Tab: Transcrição ═══ */}
+            {activeTab === 'transcricao' && (
+              <section className="mb-8 pb-8 border-b border-slate-100">
+                {/* Progresso da transcrição (background job) */}
+                {transcriptionJob && (transcriptionJob.status === 'pending' || transcriptionJob.status === 'processing') && (
+                  <div className="mb-4 p-4 bg-sky-50 rounded-lg border border-sky-200">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm font-medium text-sky-800">
+                        {transcriptionJob.status === 'pending' ? 'Aguardando processamento...' : 'Transcrevendo áudio...'}
+                      </p>
+                    </div>
+                    <div className="w-full bg-sky-100 rounded-full h-2 overflow-hidden">
+                      <div className="bg-sky-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }} />
+                    </div>
+                    <p className="text-sm text-sky-700 mt-3">
+                      Você pode continuar usando o sistema normalmente. A transcrição será processada em segundo plano.
+                    </p>
+                    <p className="mt-2 text-slate-400" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                      Processamos as conversas em infraestrutura própria, com padrão de segurança hospitalar e proteção adicional além da LGPD.
                     </p>
                   </div>
-                  <div className="w-full bg-sky-100 rounded-full h-2 overflow-hidden">
-                    <div className="bg-sky-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }} />
+                )}
+                {transcriptionJob && transcriptionJob.status === 'failed' && (
+                  <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-200">
+                    <p className="text-sm font-medium text-red-800">Erro na transcrição</p>
+                    <p className="text-sm text-red-600 mt-1">{transcriptionJob.error_message || 'Ocorreu um erro ao processar o áudio. Tente novamente.'}</p>
                   </div>
-                  <p className="text-sm text-sky-700 mt-3">
-                    Você pode continuar usando o sistema normalmente. A transcrição será processada em segundo plano.
-                  </p>
-                  <p className="mt-2 text-slate-400" style={{ fontSize: '12px', lineHeight: '1.4' }}>
-                    Processamos as conversas em infraestrutura própria, com padrão de segurança hospitalar e proteção adicional além da LGPD.
-                  </p>
-                </div>
-              )}
-              {transcriptionJob && transcriptionJob.status === 'failed' && (
-                <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-200">
-                  <p className="text-sm font-medium text-red-800">Erro na transcrição</p>
-                  <p className="text-sm text-red-600 mt-1">{transcriptionJob.error_message || 'Ocorreu um erro ao processar o áudio. Tente novamente.'}</p>
-                </div>
-              )}
+                )}
 
-              {transcript ? (
-                <div>
-                  <div className="relative">
-                    <div className={`bg-slate-50 rounded-lg p-4 border border-slate-200 mb-2 overflow-hidden transition-all duration-300 ${transcriptExpanded ? '' : 'max-h-96'}`}>
-                      <p className="whitespace-pre-wrap text-sm text-slate-700">{transcript.text || transcript.text_preview || 'Transcrição disponível'}</p>
-                    </div>
-                    {!transcriptExpanded && (
-                      <div className="absolute bottom-2 left-0 right-0 h-20 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none rounded-b-lg" />
+                {transcript ? (
+                  <div>
+                    <TranscriptView
+                      transcriptId={transcript.id}
+                      fallbackText={transcript.text || transcript.text_preview}
+                    />
+                    <p className="text-xs text-slate-400 mt-4 mb-4">Transcrito em {new Date(transcript.created_at).toLocaleString('pt-BR')}</p>
+                    {!analysis && (
+                      <button onClick={handleTCC} disabled={analyzing} className="flex items-center gap-2 px-5 py-2.5 bg-violet-500 text-white rounded-lg hover:bg-violet-600 disabled:opacity-50 transition-colors text-sm font-medium">
+                        {analyzing ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>}
+                        {analyzing ? 'Analisando...' : 'Analisar TCC'}
+                      </button>
                     )}
-                    <button
-                      onClick={() => setTranscriptExpanded(!transcriptExpanded)}
-                      className="w-full py-2 text-sm text-sky-600 hover:text-sky-800 font-medium flex items-center justify-center gap-1"
-                    >
-                      {transcriptExpanded ? (
-                        <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-                          Recolher transcrição
-                        </>
+                  </div>
+                ) : !uploading && !transcriptionJob && (
+                  <div>
+                    <p className="text-slate-400 italic mb-4 text-sm">Nenhuma transcrição</p>
+                    <div className="flex gap-3">
+                      {!isRecording ? (
+                        <button onClick={startRec} disabled={uploading} className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100 disabled:opacity-50 transition-colors text-sm font-medium">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                          Gravar
+                        </button>
                       ) : (
-                        <>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                          Ver transcrição completa
-                        </>
+                        <button onClick={stopRec} className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-lg animate-pulse text-sm font-medium">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" /></svg>
+                          Parar ({fmtTime(recordingTime)})
+                        </button>
                       )}
-                    </button>
+                      <label className={`flex items-center gap-2 px-5 py-2.5 bg-sky-50 text-sky-600 border border-sky-200 rounded-lg cursor-pointer hover:bg-sky-100 transition-colors text-sm font-medium ${uploading ? 'opacity-50' : ''}`}>
+                        {uploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Enviando"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
+                        {uploading ? 'Enviando...' : 'Upload'}
+                        <input type="file" accept="audio/*" onChange={handleUpload} disabled={uploading} className="hidden" />
+                      </label>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-400 mb-4">Transcrito em {new Date(transcript.created_at).toLocaleString('pt-BR')}</p>
-                  {!analysis && (
-                    <button onClick={handleTCC} disabled={analyzing} className="flex items-center gap-2 px-5 py-2.5 bg-violet-500 text-white rounded-lg hover:bg-violet-600 disabled:opacity-50 transition-colors text-sm font-medium">
-                      {analyzing ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>}
-                      {analyzing ? 'Analisando...' : 'Analisar TCC'}
-                    </button>
-                  )}
-                </div>
-              ) : !uploading && !transcriptionJob && (
-                <div>
-                  <p className="text-slate-400 italic mb-4 text-sm">Nenhuma transcrição</p>
-                  <div className="flex gap-3">
-                    {!isRecording ? (
-                      <button onClick={startRec} disabled={uploading} className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100 disabled:opacity-50 transition-colors text-sm font-medium">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                        Gravar
-                      </button>
-                    ) : (
-                      <button onClick={stopRec} className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-lg animate-pulse text-sm font-medium">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" /></svg>
-                        Parar ({fmtTime(recordingTime)})
-                      </button>
-                    )}
-                    <label className={`flex items-center gap-2 px-5 py-2.5 bg-sky-50 text-sky-600 border border-sky-200 rounded-lg cursor-pointer hover:bg-sky-100 transition-colors text-sm font-medium ${uploading ? 'opacity-50' : ''}`}>
-                      {uploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Enviando"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
-                      {uploading ? 'Enviando...' : 'Upload'}
-                      <input type="file" accept="audio/*" onChange={handleUpload} disabled={uploading} className="hidden" />
-                    </label>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* Relatório Clínico — Sessão v2 */}
-            <ClinicalReport
-              sessionId={id}
-              hasTranscript={!!transcript?.text || !!transcript?.text_preview}
-              hasAnalysis={!!analysis}
-              onReportLoaded={(r) => setClinicalReport(r)}
-            />
-
-            {/* Preview de Sinais */}
-            {clinicalReport?.insights && (
-              <SignalsPreview
-                insights={clinicalReport.insights as { emotions?: { name: string; intensity: number }[]; distortions?: { type: string; label: string; example: string }[] }}
-                microEvents={microEvents.reduce<{ type: string; count: number }[]>((acc, ev) => {
-                  const existing = acc.find(a => a.type === ev.type)
-                  if (existing) existing.count++
-                  else acc.push({ type: ev.type, count: 1 })
-                  return acc
-                }, [])}
-                onClickSignal={setOpenInsightSection}
-              />
+                )}
+              </section>
             )}
 
-            {/* Insights AXIS — Sessão v2 */}
-            <InsightsPanel
-              insights={clinicalReport?.insights as { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } | null ?? null}
-              microEvents={microEvents}
-              cso={pipelineResult ? {
-                activation_level: null,
-                cognitive_rigidity: null,
-                emotional_load: null,
-                flex_trend: pipelineResult.flex_trend || null,
-              } : null}
-              openSection={openInsightSection}
-            />
+            {/* ═══ Tab: Relatório ═══ */}
+            {activeTab === 'relatorio' && (
+              <>
+                {/* Relatório Clínico — Sessão v2 */}
+                <ClinicalReport
+                  sessionId={id}
+                  hasTranscript={!!transcript?.text || !!transcript?.text_preview}
+                  hasAnalysis={!!analysis}
+                  onReportLoaded={(r) => setClinicalReport(r)}
+                />
 
-            {/* Estrutura Analítica — Fatos/Pensamentos/Emoções em accordion */}
-            <AnalyticalStructure analysis={analysis} />
+                {/* Preview de Sinais */}
+                {clinicalReport?.insights && (
+                  <SignalsPreview
+                    insights={clinicalReport.insights as { emotions?: { name: string; intensity: number }[]; distortions?: { type: string; label: string; example: string }[] }}
+                    microEvents={microEvents.reduce<{ type: string; count: number }[]>((acc, ev) => {
+                      const existing = acc.find(a => a.type === ev.type)
+                      if (existing) existing.count++
+                      else acc.push({ type: ev.type, count: 1 })
+                      return acc
+                    }, [])}
+                    onClickSignal={setOpenInsightSection}
+                  />
+                )}
+
+                {/* Insights AXIS — Sessão v2 */}
+                <InsightsPanel
+                  insights={clinicalReport?.insights as { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } | null ?? null}
+                  microEvents={microEvents}
+                  cso={pipelineResult ? {
+                    activation_level: null,
+                    cognitive_rigidity: null,
+                    emotional_load: null,
+                    flex_trend: pipelineResult.flex_trend || null,
+                  } : null}
+                  openSection={openInsightSection}
+                />
+
+                {/* Estrutura Analítica — Fatos/Pensamentos/Emoções em accordion */}
+                <AnalyticalStructure analysis={analysis} />
+              </>
+            )}
+
+            {/* ═══ Tab: Anotações ═══ */}
+            {activeTab === 'anotacoes' && (
+              <section className="mb-8 pb-8">
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <svg className="w-12 h-12 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  <p className="text-slate-400 text-sm">Funcionalidade em breve</p>
+                  <p className="text-slate-300 text-xs mt-1">Anotações livres durante e após a sessão</p>
+                </div>
+              </section>
+            )}
 
             {/* Finalizar */}
             {session.status === 'em_andamento' && (

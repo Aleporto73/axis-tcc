@@ -12,7 +12,7 @@ import 'dotenv/config'
 import { randomUUID } from 'crypto'
 import { Pool, PoolClient } from 'pg'
 import { readFile } from 'fs/promises'
-import { transcribeAudioWithSegments, ASRSegment } from '../../src/services/asr'
+import { transcribeAudioWithSegments, ASRSegment, ASRResult } from '../../src/services/asr'
 import { saveTranscript } from '../../src/services/transcript-storage'
 import { postProcessTranscript, buildPreview, POSTPROCESS_VERSION } from '../../src/services/transcript-postprocess'
 
@@ -239,12 +239,22 @@ async function processJob(job: any): Promise<void> {
 
     // 2. Transcrever via ASR (verbose_json — retorna text + segments)
     console.log(`[JOB ${jid}] Chamando ASR (verbose_json)...`)
-    const asrResult = await transcribeAudioWithSegments(audioBuffer, job.original_filename || 'audio.webm')
+    let asrResult: ASRResult
+    try {
+      asrResult = await transcribeAudioWithSegments(audioBuffer, job.original_filename || 'audio.webm')
+    } catch (asrErr: any) {
+      console.error(`[JOB ${jid}] ASR ERRO: ${asrErr.message}`)
+      throw asrErr
+    }
     const text = asrResult.text
     const asrSegments = asrResult.segments
     console.log(`[JOB ${jid}] ASR retornou: ${text.length} chars, ${asrSegments.length} segments`)
+    if (text.length > 0) {
+      console.log(`[JOB ${jid}] ASR text preview: "${text.slice(0, 200)}"`)
+    }
 
     if (!text || text.trim().length === 0) {
+      console.error(`[JOB ${jid}] ERRO: text vazio. segments=${asrSegments.length}`)
       throw new Error('Transcrição retornou vazia')
     }
 
@@ -285,6 +295,7 @@ async function processJob(job: any): Promise<void> {
       )
 
       // 5b. Salvar segments (se existirem) — falha NÃO quebra o job
+      console.log(`[JOB ${jid}] Segments a salvar: ${asrSegments.length}`)
       if (asrSegments.length > 0) {
         try {
           // Batch INSERT via unnest — 4 arrays paralelos, seguro contra SQL injection
