@@ -1,6 +1,6 @@
 # AXIS ABA — NOTE ativo
 
-**Atualizado:** 2026-04-17 (noite — Fase 1 + Fase 2 aplicadas)
+**Atualizado:** 2026-04-17 (noite — Fase 1 + Fase 2 + Local dropdown)
 **Produto:** AXIS ABA (Applied Behavior Analysis)
 **Motor:** CSO-ABA v2.6.1 (congelado)
 **Bible:** AXIS_ABA_BIBLE v2.6.1 + v2.7.0 Operadora Ready
@@ -50,8 +50,6 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 ### Melhorias UX (público 50+)
 - [ ] Google Places Autocomplete no endereço de Locais (hoje pede lat/long
   manual — impraticável para psicólogo 50+)
-- [ ] Campo "Local" na Nova Sessão: dropdown dos Locais cadastrados
-  (hoje aceita texto livre → quebra GPS/compliance)
 - [ ] Recorrência de sessões — levantar o que incomoda
 - [ ] Vazio inteligente na aba Trials: botão "Criar Protocolo" quando
   aprendiz não tem protocolo cadastrado
@@ -75,6 +73,54 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 - [ ] **Objetivo:** prevenir nova leva de schema mismatch. A sessão 17/04
   descobriu que os 480 testes Vitest mockados não detectam schema mismatch
   entre código e DB real.
+
+---
+
+## APLICADO EM 2026-04-17 (noite) — Local dropdown Nova Sessão ABA
+
+Campo "Local" no modal de Nova Sessão ABA aceitava texto livre. Para tenants
+operadora isso quebrava compliance GPS: `declared_site_id` ficava `NULL`,
+integrity scanner flagava `MISSING_GEO`, e o haversine check em
+`geo-classifier.ts`/`presence-proofs` não tinha referência para validar.
+
+### Fix — `app/aba/sessoes/page.tsx`
+- **UI condicional via `operadora.serviceSites`:**
+  - Tenants operadora (founders/clinica_100/clinica_250): dropdown
+    obrigatório populado de `/api/aba/service-sites` (filtrado por
+    `is_active`).
+  - Tenants free: input texto livre mantido (retrocompat).
+- **Empty state:** quando operadora não tem nenhum site cadastrado, bloco
+  amber com CTA "Cadastre um Local →" apontando para
+  `/aba/configuracoes#locais`.
+- **Labels PT-BR** para `site_type` (Clínica, Domicílio, Escola, Telehealth,
+  Comunidade, Outro) via `siteTypeLabels`.
+
+### Fix — `app/api/aba/sessions/route.ts`
+- POST aceita **dois caminhos** no body:
+  - `service_site_id` (novo, operadora): valida que site pertence ao tenant
+    e está ativo, deriva `service_mode` de `site_type`
+    (clinic/community/other → presencial; home → domiciliar; school →
+    escolar; telehealth → telehealth), e popula
+    `declared_site_id` + `service_mode` + `location` (derivada de
+    `site_name`).
+  - `location` (legado, free): string livre, `declared_site_id` e
+    `service_mode` ficam `NULL` (comportamento anterior).
+- Helper `deriveServiceMode(siteType)` isolado no topo do arquivo.
+- Novo handler de erro 404 para "Local de atendimento não encontrado
+  ou inativo".
+
+### Fix — `app/aba/configuracoes/page.tsx`
+- `<section id="locais">` + `scroll-mt-24` na section do
+  `ServiceSitesManager` para servir de âncora ao CTA do empty state.
+
+### Impacto
+- Sessões novas em tenants operadora passam automaticamente a integrar
+  `declared_site_id` → scanner de integridade deixa de flagar `MISSING_GEO`
+  (para sessões novas; sessões antigas permanecem flagadas até backfill
+  manual, se desejado).
+- Free tenants inalterados — path legado preservado.
+- Sem migration (colunas `declared_site_id`, `service_mode`, `location` já
+  existem em `sessions_aba`).
 
 ---
 
