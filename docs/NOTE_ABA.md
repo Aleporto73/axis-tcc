@@ -1,6 +1,6 @@
 # AXIS ABA — NOTE ativo
 
-**Atualizado:** 2026-04-17
+**Atualizado:** 2026-04-17 (tarde)
 **Produto:** AXIS ABA (Applied Behavior Analysis)
 **Motor:** CSO-ABA v2.6.1 (congelado)
 **Bible:** AXIS_ABA_BIBLE v2.6.1 + v2.7.0 Operadora Ready
@@ -27,11 +27,13 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 ## PENDÊNCIAS (próxima sessão)
 
 ### Bugs
-- [ ] **`session_summaries` schema mismatch** — 5 arquivos usam `summary_text`
-  e `is_approved` (schema real: `content` + `status`). Afeta "Enviar Resumo
-  aos Pais" em `/aba` e `/tdah`. Padrão idêntico aos 17 do `audit_logs`
-  resolvidos em 17/04 → provável oportunidade de **schema sweep** em toda
-  a camada.
+- [ ] **`session_summaries` schema mismatch — metade TDAH** — corrigido em ABA
+  em 17/04 tarde (ver CONCLUÍDO abaixo). Falta aplicar o mesmo fix em
+  `/api/tdah/lgpd/delete/route.ts:244` (UPDATE session_summaries) — fica para
+  chat TDAH.
+  **Atenção:** o diagnóstico original estava INVERTIDO — schema canônico é
+  `summary_text` + `is_approved` (migration 007). Quem está quebrado são as
+  rotas LGPD que usam `content`/`status`. Ver ARCHIVE TCC Contradição #3.
 
 ### Melhorias UX (público 50+)
 - [ ] Google Places Autocomplete no endereço de Locais (hoje pede lat/long
@@ -43,11 +45,8 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
   aprendiz não tem protocolo cadastrado
 
 ### Ops
-- [ ] Remover `ensureLgpdColumns()` de `/api/aba/lgpd/delete` e `/api/tdah/lgpd/delete`
-  (colunas já existem via migrations 003/007; `ALTER TABLE` falha por
-  permissão Supabase e polui logs)
-- [ ] Corrigir warning em `next.config.ts`: `experimental.middlewareClientMaxBodySize`
-  → `experimental.proxyClientMaxBodySize`
+- [ ] Remover `ensureLgpdColumns()` de `/api/tdah/lgpd/delete/route.ts`
+  (metade ABA resolvida em 17/04 tarde; colunas já existem via 003/007)
 - [ ] Rotacionar `AXIS_ENCRYPTION_KEY` mensalmente (exposta no chat de 17/04)
 
 ### Infra (P1) — lição 17/04
@@ -56,6 +55,53 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 - [ ] **Objetivo:** prevenir nova leva de schema mismatch. A sessão 17/04
   descobriu que os 480 testes Vitest mockados não detectam schema mismatch
   entre código e DB real.
+
+---
+
+## CONCLUÍDO EM 2026-04-17 (tarde) — LGPD fixes + next.config
+
+Sessão de limpeza pós-destravamento v2.7.0. 4 fixes em 3 commits. Escopo ABA-only
+(versões TDAH dos bugs cross-módulo ficam para outro chat).
+
+### P0-1 — LGPD delete não anonimizava resumos dos pais
+- **Arquivo:** `app/api/aba/lgpd/delete/route.ts:466`
+- **Bug:** `UPDATE session_summaries SET content = '[ANONIMIZADO]'` — coluna
+  `content` não existe (schema canônico via migration 007 é `summary_text`).
+  SAVEPOINT engolia o erro → **LGPD delete não anonimizava resumos.**
+- **Fix:** `content` → `summary_text`. 3 linhas (comentário + SQL).
+- **Origem do diagnóstico:** ARCHIVE TCC Contradição #3 (sessão TCC de ontem
+  já tinha detectado que pendência original estava invertida).
+
+### P1-1 — LGPD export não gerava aba "Resumos" (2 blocos, não 1)
+- **Arquivo:** `app/api/aba/lgpd/export/route.ts`
+- **Bug parte 1 (linhas 193-196):** SELECT pedia `content, status` (inexistentes)
+  → `safeQuery` retornava `[]` silenciosamente → aba "Resumos" do Excel
+  **nunca era gerada**. Mais grave do que o ARCHIVE sinalizou.
+- **Bug parte 2 (linhas 532-533):** formatador Excel referenciava `s.content`
+  e `s.status` → campos `undefined` → células em branco.
+- **Fix:** SELECT usa `summary_text, is_approved`; formatador lê o mesmo e
+  converte boolean para label PT-BR (`"Aprovado"`/`"Pendente"`).
+
+### P1-5 — Remoção de `ensureLgpdColumns()` (dead code poluindo logs)
+- **Arquivo:** `app/api/aba/lgpd/delete/route.ts`
+- **Bug:** função rodava `ALTER TABLE tenants ADD COLUMN IF NOT EXISTS` em 4
+  call sites; user `axis_app` do Supabase não tem permissão de ALTER → falhas
+  silenciosas via SAVEPOINT, mas poluindo logs.
+- **Fix:** função + 4 call sites removidos (~23 linhas). Colunas existem desde
+  migration 003 (reforço em 007). `PoolClient` e `safeExec` continuam em uso
+  por outros helpers — zero imports órfãos.
+
+### P2-3 — Warning deprecado em `next.config.ts`
+- **Arquivo:** `next.config.ts:9`
+- **Fix:** `experimental.middlewareClientMaxBodySize` → `experimental.proxyClientMaxBodySize`.
+  Uma linha. Next.js 16 renomeou a chave.
+
+### Validação pendente (funcional)
+- [ ] Rodar LGPD delete em tenant de dev e confirmar que `summary_text` vira
+  `'[ANONIMIZADO]'` em todos os summaries
+- [ ] Rodar LGPD export em tenant com summaries e confirmar que aba "Resumos"
+  aparece com boolean formatado
+- [ ] Subir `npm run dev` e confirmar que warning deprecado sumiu dos logs
 
 ---
 
