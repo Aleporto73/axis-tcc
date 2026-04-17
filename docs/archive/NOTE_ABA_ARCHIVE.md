@@ -1,0 +1,1116 @@
+# AXIS ABA — NOTE ARCHIVE (historico consolidado)
+
+**Ultima atualizacao:** 2026-04-17
+**Fonte viva:** [/docs/NOTE_ABA.md](../NOTE_ABA.md)
+**Sessao mais recente:** [/docs/sessoes/2026-04-17_ABA_fix_operadora_v270.md](../sessoes/2026-04-17_ABA_fix_operadora_v270.md)
+
+> Este arquivo contem o changelog historico e material de referencia consolidado
+> do NOTE_ABA.md que nao faz parte do texto ativo. Consulta esporadica, nao
+> carrega em sessao normal.
+>
+> Origem dos conteudos:
+> - Secoes 1-15: copia literal do NOTE.md (snapshot 24/03/2026)
+> - Changelog abril: importado do CLAUDE.md (sessoes 31/03, 01/04, 10/04)
+> - Sessao 17/04: importada de /docs/sessoes/2026-04-17_ABA_fix_operadora_v270.md
+
+---
+
+## CONTRADIÇÕES REGISTRADAS (sinalizadas na migração 17/04)
+
+Ao migrar o NOTE_ABA.md antigo para este archive, 4 afirmações foram
+identificadas como contraditorias com a realidade descoberta em 17/04/2026.
+Preservadas aqui por fidelidade historica, mas NAO reproduzidas no NOTE ativo:
+
+1. **"ONDE ESTAMOS" marca v2.7.0 Operadora Ready como 100% funcional** —
+   realidade: toda a camada estava inacessivel em producao por 3 bugs
+   encadeados (AXIS_ENCRYPTION_KEY ausente, GUC name mismatch em 5 policies
+   RLS, schema mismatch em 17 INSERTs de axis_audit_logs + record_target_trial
+   duplicate). Apenas ficou funcional depois dos fixes de 17/04.
+
+2. **"v2.7.0 OPERADORA READY" afirma "384 testes passando"** — 480/480
+   testes Vitest passavam, mas todos mockados, e justamente por isso
+   NAO detectaram os 5 bugs reais. Licao aprendida: necessario adicionar
+   infra de test DB real (docker-compose + pg + migrations).
+
+3. **Transcricao OpenAI listada como 20% (stub)** — realidade abril/2026:
+   pipeline de pos-processamento v1.0.0 funcional, worker de transcricao,
+   migration 047. Ver sessoes 01/04 e 31/03 neste archive.
+
+4. **Logica `max_patients` do Hotmart** — era `tenants.max_patients` global.
+   Virou `user_licenses` por-produto em 10/04/2026. Ver
+   `src/database/product-limits.ts` e sessao 10/04 (continuacao).
+
+---
+
+## SNAPSHOT — ONDE ESTAMOS (verificado em 10/03/2026)
+
+> Status das features em 10/03/2026. Preservado como historia. NAO refletir
+> sem validacao cruzada com o codigo atual.
+
+## ONDE ESTAMOS (verificado no codigo em 10/03/2026)
+
+### CORE ENGINE
+| Area | % | Status |
+|---|---|---|
+| Motor CSO-ABA v2.6.1 | 100% | 4 dimensoes (SAS, PIS, BSS, TCM), bandas, formula fixa 25% cada |
+| Maquina de estados (protocolos) | 100% | 10 estados, transicoes validadas por trigger, audit imutavel |
+| Multi-tenant + RBAC | 100% | tenant_id em tudo, admin/supervisor/terapeuta, learnerFilter. Multi-clinica: 1 usuario pode pertencer a N tenants (cookie-based routing, auto-ativacao convites, tela selecao clinica). Migration 018 |
+| Audit log imutavel | 100% | axis_audit_logs append-only, metadata JSONB |
+| Regressao automatica | 100% | Detecta queda >15pts ou mudanca de banda, alerta no dashboard |
+
+### MODULOS CLINICOS
+| Area | % | Status |
+|---|---|---|
+| Portal familia | 100% | Token 90d, consent LGPD, dados filtrados (nunca mostra CSO/trials). UI completa: conquistas, proximas sessoes, resumos, habilidades. Sem login (token-based by design). SECURITY DEFINER functions para bypass RLS. UPSERT consent/access |
+| Push notifications (FCM) | 100% | Lembretes 24h + 10min, cron 60s, token auto-cleanup |
+| Google Calendar | 100% | Sync bidirecional. ABA: 7 rotas dedicadas. Multi-terapeuta. Helpers compartilhados com TCC. **Verificação Google Brand aprovada — botões ativos em produção** |
+| PDF reports | 100% | Logo AXIS, CSO, protocolos, acentos OK, codigo autenticidade |
+| CID (Classificacao Diagnostica) | 100% | CIDSelector com CID-10/CID-11, catalogo 50+ codigos, 6 grupos, busca, entrada manual, cross-mapping |
+| Dashboard ABA | 100% | KPIs com cores pasteis + tooltips educativos + grafico CSO SVG + alertas regressao (vermelho) + alertas sondas pendentes (ciano). Acesso rapido: Aprendizes, Sessoes, Relatorios, PEI, Biblioteca |
+| Sessao Duration V2 | 100% | Cronometro por trial (play/pause/reset), applied_by UUID FK profiles, duration_minutes_override editavel, duracao ativa (soma trials). Migration 016 |
+| PEI (Plano Educacional) | 100% | Tela completa + API CRUD (GET/POST/PATCH) + vinculo protocolo + transicoes status (draft/active/completed/archived) + audit log + sidebar. Botao "Vincular ao PEI" condicional |
+| Biblioteca de Protocolos | 100% | 15 protocolos seed, API GET /api/aba/library com filtro dominio, UI modal "Usar da Biblioteca" no create protocol. EBP mapeado por ebp_practice_id (FK) |
+| Generalizacao tab | 100% | Grid 3x2 funcional (UI + API + auto-transicao). Badge progresso na lista de protocolos. Labels renomeados: Pessoa (variacao) + Ambiente (contexto). Tooltips atualizados |
+| Manutencao/sondas | 100% | Auto-criacao 3 sondas (2-6-12sem) ao entrar em maintenance. Auto-transicao maintained quando 3/3 passam. Regressao auto (<70%). Badge progresso no perfil aprendiz ("proxima sonda em Xd"). Cancelamento em cascata. Migration 017 (maintenance_started_at). UI: avaliar, sondas canceladas, grids responsivos |
+| Transcricao sessao (OpenAI) | 20% | Stub existe |
+
+### UI / UX
+| Area | % | Status |
+|---|---|---|
+| SidebarABA | 100% | Role-aware (admin/supervisor/terapeuta), sem badges, logo circulo "ABA" |
+| Central de Ajuda | 100% | 8 secoes accordion + busca + highlight, glossario ABA completo, secao Multiplas Clinicas, alertas dashboard explicados |
+| Chat Ana (IA) | 100% | API OpenAI (gpt-4o-mini), personality prompt, carrega SKILL_ABA.md |
+| Demo publica | 100% | /demo com tarja coral, layout dedicado, relatorios com chat simulado |
+| Landing ABA premium | 100% | /produto/aba — hero, ciclo ABA, relatorio mockup, chat Ana mockup |
+| Landing institucional | 100% | /app/page.tsx — TCC + ABA, Psiform Tecnologia, schema.org |
+| Pagina de precos | 100% | /aba/precos — 4 cards (Free / Founders / Clinica 100 / Clinica 250) com tooltips 50+ e features operadora |
+| Mobile responsivo | 100% | Bottom nav mobile, grids sm: breakpoints em 7 telas internas + páginas públicas responsivas |
+| Onboarding clinica | 100% | v3: overlay client-side (LGPD → escolha), sem redirect server-side |
+
+### COMERCIAL / BILLING (Hotmart)
+| Area | % | Status |
+|---|---|---|
+| Webhook Hotmart | 100% | v2.1: 7 eventos + auto-provisioning + UPSERT + email pos-compra. Produtos: 7285432, 7291024. Offers: u2t04kz5, 5hz0et4m (Founders), iwqieqxc (100), gona25or (250) |
+| Webhook Clerk | 100% | user.created → ativa TODOS pending profiles (hotmart + equipe). Svix signature. Loop multi-profile |
+| Gate de licenca (layout.tsx) | 100% | Bloqueia /aba/* sem licenca ativa → redireciona /hub |
+| API licencas (/api/user/licenses) | 100% | Verifica ativas + nao-expiradas por tenant/user |
+| UpgradeModal | 100% | Dispara no free (>1 aprendiz). Links Hotmart reais. Tela "Meu Plano" nas configuracoes |
+| Middleware | 100% | Clerk auth, rotas publicas corretas (/produto, /demo, /portal, webhook) |
+| Cadastro ABA | 100% | /sign-up?produto=aba diferencia ABA vs TCC |
+| Testes automatizados | 75% | Vitest 480/480 passando (CSO engine, lifecycle, webhook, authorization, isolation TDAH/TCC, schema-contract). Coverage incompleta mas core + segurança cobertos |
+
+### INFRAESTRUTURA
+| Area | % | Status |
+|---|---|---|
+| PostgreSQL multi-tenant | 100% | Todas tabelas com tenant_id, indices |
+| Redis cache | 100% | Dashboard 5min TTL |
+| Clerk auth | 100% | Production Pro ($25/mes). Multi-tenant provider. Invitation flow. Webhook user.created. Email templates PT-BR. Logo configurado |
+| Firebase (storage + FCM) | 100% | Admin SDK |
+| Resend email | 100% | 3 templates (session-summary, purchase-upgrade, purchase-new-user). From: AXIS ABA <noreply@axisclinico.com>. Dominio verificado (DKIM+SPF). API key producao ativa na VPS |
+| PM2 producao | 100% | ecosystem.config.cjs |
+
+---
+
+---
+
+## MODELO COMERCIAL — detalhes historicos
+
+## MODELO COMERCIAL (Hotmart)
+
+**Empresa:** Psiform Tecnologia
+**URL producao:** axisclinico.com
+
+**Produtos Hotmart:**
+- ABA: ID `7285432` e ID `7291024` (ambos mapeados para 'aba' no webhook)
+- TCC: ID `7299808`
+
+**Planos ABA (landing page /produto/aba — 4 colunas):**
+| Plano | Preco | Aprendizes | Oferta Hotmart | Link |
+|---|---|---|---|---|
+| 1 Aprendiz | Gratuito | 1 | N/A | /sign-up?produto=aba |
+| Clinica 100 — Founders | R$147/mes | 100 | `u2t04kz5` | pay.hotmart.com/H104663812P?off=u2t04kz5 |
+| Clinica 100 | R$247/mes | 100 | `iwqieqxc` | pay.hotmart.com/H104663812P?off=iwqieqxc |
+| Clinica 250 | R$497/mes | 250 | `gona25or` | pay.hotmart.com/H104663812P?off=gona25or |
+
+**Planos ABA (onboarding — 4 tiers internos):**
+| Tier | Pacientes | Sessoes | Preco |
+|---|---|---|---|
+| trial | 5 | 15 | Gratis 30 dias |
+| starter | 15 | 60 | R$97/mes |
+| professional | 50 | 200 | R$197/mes |
+| clinic | 999 | 9999 | R$497/mes |
+
+> **DIVERGENCIA**: Landing tem 4 planos (Free/Founders R$147/Regular R$247/250 R$497). Onboarding tem 4 tiers diferentes (trial/starter/pro/clinic). Precisa alinhar.
+
+**Fluxo comercial implementado (testado 08/03/2026 com email.paciente.x@gmail.com):**
+1. Usuario se cadastra (Clerk) com ?produto=aba
+2. Onboarding: seleciona plan_tier → salva em tenants (plan_tier, max_patients, max_sessions)
+3. Free: 1 aprendiz. UpgradeModal dispara se tentar criar mais
+4. Compra Hotmart → webhook POST /api/webhook/hotmart → UPSERT user_licenses + email pos-compra via Resend
+5. Layout ABA verifica user_licenses.is_active → redireciona /hub se nao tem
+6. Cancelamento/reembolso → webhook desativa licenca automaticamente
+7. **Auto-provisioning** (compra antes de cadastrar): webhook cria Clerk Invitation + pending tenant/profile/license → buyer aceita email → Clerk webhook user.created ativa tudo
+8. **Pagina obrigado**: /obrigado com 3 passos + botao /hub (URL configurada no Hotmart)
+
+---
+
+---
+
+## CONCLUIDOS PRE-BETA
+
+## CONCLUIDO EM 28/02/2026 (verificado no codigo)
+
+- [x] Central de Ajuda completa (7 secoes + busca + highlight)
+- [x] Chat Ana funcional com API OpenAI (gpt-4o-mini + SKILL_ABA.md)
+- [x] Chat Ana simulado na demo (pagina relatorios)
+- [x] Landing page ABA premium refatorada (/produto/aba)
+- [x] Bloco Ciclo ABA (Generalizacao 3x2, Manutencao 2-6-12)
+- [x] Bloco "Veja na pratica" com botao para demo
+- [x] Tabela de planos com 4 colunas + Free/Founders
+- [x] Botoes coral solido
+- [x] Landing institucional /app/page.tsx (TCC + ABA, schema.org)
+- [x] Middleware corrigido (rotas publicas: /produto, /demo, /portal, webhook)
+- [x] Diferenciacao cadastro ABA vs TCC (?produto=aba)
+- [x] Tarja demo com cor coral e texto ajustado
+- [x] Badges ABA/ADM removidos da sidebar (agora e circulo "ABA")
+- [x] Logo sidebar ABA corrigido
+
+---
+
+## O QUE JA FUNCIONA NO BILLING (verificado)
+
+- [x] Webhook Hotmart completo (7 eventos, idempotente, audit log)
+- [x] Gate de acesso no layout.tsx (sem licenca → /hub)
+- [x] API de verificacao de licencas (/api/user/licenses)
+- [x] UpgradeModal no limite free (1 aprendiz)
+- [x] Onboarding com selecao de plano (4 tiers, salva limites)
+- [x] Landing page com 3 links Hotmart funcionais (Founders, Regular, 250)
+- [x] Pagina de precos com 3 planos
+- [x] Middleware exempta webhook de Clerk auth
+
+---
+
+## PENDENCIAS PARA BETA COMERCIAL
+
+### P0 — Bloqueantes para vender
+
+- [x] **Migration user_licenses**: 006_add_user_licenses.sql (tabela, indices, seed, migracao tiers antigos) ✅ 03/03
+- [x] **Alinhar planos**: tiers unificados → free/founders/clinica_100/clinica_250 em onboarding, setup API, tenant creation, migration ✅ 03/03
+- [x] **UpgradeModal links**: botoes linkam direto pro checkout Hotmart (Founders R$147 + Clinica 250 R$497) ✅ 03/03
+- [x] **Enforcement max_patients**: API POST learners verifica limite, retorna PLAN_LIMIT_REACHED, frontend abre UpgradeModal ✅ 03/03
+- [x] **Bug fix /api/aba/me**: agora retorna plan_tier (antes retornava plan que era sempre 'standard') ✅ 03/03
+- [x] **Licenca free automatica**: novo tenant ja nasce com user_licenses (AUTO_FREE_TIER) ✅ 03/03
+- [x] **Termos de uso + Privacidade**: /termos e /privacidade criados, LGPD, middleware atualizado, links no footer ✅ 03/03
+- [x] **Testar fluxo cadastro ABA**: verificado em producao com email.paciente.x@gmail.com ✅ 08/03
+- [x] **Testar checkout Hotmart**: fluxo completo testado (FREE → compra → webhook → licenca ativa → email) ✅ 08/03
+- [x] **Rodar migration 006**: executada no banco de producao ✅
+- [x] **Rodar migrations 011/012/013**: 011 (CID) e 013 (ENUM) ja aplicadas, 012 (timestamps lifecycle) rodada manualmente ✅ 09/03
+
+### P1 — Importantes para beta
+
+- [x] **Tela "Meu Plano"**: secao nas configuracoes com badge plano, barra progresso aprendizes, botao upgrade Hotmart. API /api/aba/me retorna max_patients + learner_count ✅ 08/03
+- [x] **UserButton simplificado**: "Gerenciar conta" escondido em SidebarABA e Sidebar TCC (publico 50+ — menos opcoes) ✅ 08/03
+- [x] **Email pos-compra**: 2 templates (upgrade + novo usuario) em src/email/purchase-template.ts. Enviados no webhook ✅ 08/03
+- [x] **Auto-provisioning**: comprou antes de cadastrar → Clerk Invitation + pending profile/license ✅ 05/03
+- [x] **Popup "Ativar lembretes"**: condicionado a pos-onboarding + rotas de produto ✅ 06/03
+- [x] **Testes criticos**: CSO engine (44 testes), state machine (57 testes), webhook Hotmart (25 testes) — 279/279 passando ✅ 10/03
+- [x] **Backup automatizado**: pg_dump cron diario 3h, rotacao 7d, /root/backups/axis-tcc/ ✅ 10/03
+- [x] **Resend API key producao**: trocada para re_live_ na VPS. Emails funcionando ✅ 08/03
+- [x] **Biblioteca de Protocolos**: seed 15 protocolos, API listagem, UI seletor ao criar protocolo ✅ 09/03
+
+### P2 — Pos-lancamento
+
+- [x] Generalizacao UI completa (regra 3x2 validada — grid, API, auto-transicao, badge progresso) ✅ 08/03. Labels renomeados variacao→pessoa, contexto→ambiente ✅ 09/03
+- [x] Manutencao/sondas completa (auto-create, auto-maintained, regressao, badge, UI) ✅ 10/03
+- [ ] Transcricao OpenAI integrada
+- [ ] Dashboard analytics avancado (tendencias, predicao)
+- [x] Multi-clinica (terapeuta em mais de um tenant) ✅ 10/03 — migration 018, cookie-based routing, auto-ativacao convites, tela selecao, FK fix
+- [ ] App mobile (React Native)
+- [ ] Skill SEO (buscar skill pronta + customizar)
+- [ ] Real-time (WebSocket)
+- [ ] Portal Familia com login (atualmente token-based — funcional mas sem conta de pai)
+
+---
+
+---
+
+## HISTORICO DE DECISOES
+
+| Data | Decisao | Motivo |
+|---|---|---|
+| 2026-02-23 | Hotmart em vez de Stripe | Mercado BR, boleto, PIX nativo |
+| 2026-02-23 | Free tier = 1 aprendiz | Reduzir friccao, demonstrar valor |
+| 2026-02-25 | Portal familia token-based | UX simples, sem login para responsaveis |
+| 2026-02-28 | Chat Ana com gpt-4o-mini | Custo baixo, respostas rapidas, personality prompt |
+| 2026-02-28 | Landing com 4 colunas de planos | Founders como diferencial |
+| 2026-03-03 | Foco AxisABA primeiro para beta | Mais maduro, mercado definido, TCC depois |
+| 2026-03-04 | Onboarding de 8→2 etapas | Reducao de friccao, acolhimento emocional pos-compra, sem dependencias de tabelas complexas |
+| 2026-03-04 | APIs onboarding independentes | Setup e progress so usam tenants+profiles, tolerante a tabelas faltantes |
+| 2026-03-05 | Onboarding refeito como overlay client-side | Redirect server-side dependia de x-pathname (middleware) que nao existe em client-side navigation do Next.js App Router → tela branca. Solucao: overlay z-[9999] que checa API, sem nenhum redirect no layout |
+| 2026-03-05 | Migration 007 full ABA repair | ~20 tabelas ABA criadas (faltavam no banco), UNIQUE constraint em learner_therapists corrigida |
+| 2026-03-05 | Auto-provisioning via Clerk Invitation | Buyer sem conta → invitation email + pending tenant/profile/license. Melhor UX para publico 50+ (evita "esqueci senha") |
+| 2026-03-05 | Licencas resolvidas por tenant_id | clerk_user_id mismatch com pending_hotmart_* quebrava Hub e gate. Corrigido para tenant_id em 3 arquivos |
+| 2026-03-06 | Login redireciona para /hub | Botao "Entrar" sem ?produto ia direto pro TCC. Agora sem param → /hub (usuario escolhe) |
+| 2026-03-06 | Onboarding TCC restrito a rotas TCC | Aparecia "Bem-vindo ao AXIS TCC" para usuarios ABA. Agora so renderiza em /dashboard, /sessoes, /pacientes |
+| 2026-03-06 | Push notification pos-onboarding | "Ativar lembretes" aparecia no primeiro acesso. Agora so apos onboarding completo e em rotas de produto |
+| 2026-03-06 | Excluir trial em sessao ativa | Nao tinha como apagar trial errado. Agora tem lixeira com confirmacao (so sessao in_progress, audit log) |
+| 2026-03-06 | Clerk migrado para producao | IDs mudaram — profiles e tenants atualizados no banco com novos clerk_user_id |
+| 2026-03-07 | CID-10/CID-11 implementado | CIDSelector componente, catalogo 50+ codigos, 6 grupos, busca, entrada manual, cross-mapping. Migration 011 (cid_system, cid_label) |
+| 2026-03-07 | Resend from corrigido | Todos os from trocados de onboarding@resend.dev para AXIS ABA <noreply@axisclinico.com>. Dominio verificado (DKIM+SPF) |
+| 2026-03-07 | Dropdown email resumo corrigido | Bug: "Outro email..." sumia ao digitar. Fix: state summaryCustomEmail separado do valor. Sentinel __custom__ no select |
+| 2026-03-07 | Nome clinica editavel | Configuracoes: campo nome agora editavel (admin/supervisor). PUT /api/aba/settings |
+| 2026-03-07 | Local sessao pre-fill | Nova sessao pre-preenche "Local" com nome da clinica (tenant_name via useRole) |
+| 2026-03-07 | Botao PEI condicional | "Vincular ao PEI" so aparece se existem goals cadastrados (progressive disclosure) |
+| 2026-03-07 | Botao "Agendar Sessao" | Estado vazio de sessoes no perfil do aprendiz agora tem botao que redireciona para /aba/sessoes?novo=true |
+| 2026-03-08 | UPSERT em user_licenses | INSERT falhava com duplicate key quando FREE comprava pago. ON CONFLICT uq_user_product DO UPDATE resolve |
+| 2026-03-08 | Clerk webhook user.created | pending_hotmart_* nunca era resolvido. Webhook Svix atualiza clerk_user_id + ativa profile |
+| 2026-03-08 | 2 produtos Hotmart ABA | IDs 7285432 e 7291024 ambos mapeados para 'aba'. OFFER_TO_PLAN com 4 ofertas |
+| 2026-03-08 | Clerk Production Pro | $25/mes — necessario para Invitation flow + email templates customizaveis PT-BR |
+| 2026-03-08 | Pagina /obrigado | Thank You Page no Hotmart → axisclinico.com/obrigado com 3 passos e link /hub |
+| 2026-03-08 | Tela "Meu Plano" | Secao dedicada em configuracoes: badge, barra progresso, upgrade Hotmart. Removido campo Plano da secao Clinica |
+| 2026-03-08 | UserButton simplificado | "Gerenciar conta" escondido — publico 50+, trocar email quebra vinculo licenca |
+| 2026-03-08 | Badge progresso Generalizacao | Subquery CASE WHEN na API retorna gen_cells_passed. Badge ambar/verde na lista protocolos |
+| 2026-03-09 | HelpTip wrapper div | Tooltip component tem span.relative que capturava posicionamento absoluto. Fix: envolver HelpTip em div.absolute |
+| 2026-03-09 | Migration 012 manual | Tabela _migrations nao existia no banco (migrations rodadas manualmente). 011 e 013 ja estavam aplicadas. 012 rodada com ALTER TABLE (3 colunas novas, 2 ja existiam) |
+| 2026-03-09 | Portal SECURITY DEFINER | RLS com forced=true impede queries sem tenant_id. Portal e publico (sem auth). Solucao: 7 functions SECURITY DEFINER que rodam como owner, bypassing RLS. Migration 014 |
+| 2026-03-09 | applied_by UUID FK profiles | Campo "quem aplicou" em trials e sessoes usa UUID FK para profiles (nao VARCHAR livre). Evita bagunca de nomes (Joao, joao, JOAO). Migration 016 |
+| 2026-03-09 | Session Duration V2 | Duracao anterior era ended_at - started_at (incluia ociosidade). V2: cronometro por trial (opcional), soma ativa, override manual. Campos novos: duration_seconds, duration_minutes_override, applied_by |
+| 2026-03-10 | Auto-schedule em maintenance (nao mastered) | Bible S3: sondas sao criadas ao entrar em maintenance (pos-mastered_validated), nao em mastered. Trigger corrigido |
+| 2026-03-10 | Auto-maintained quando 3/3 passam | Transicao automatica de maintenance→maintained quando todas as 3 sondas (2-6-12sem) tem result=passed. Audit log AUTO_MAINTAINED |
+| 2026-03-10 | PEI state machine | PEI plans agora tem lifecycle: draft→active→completed→archived. PATCH endpoint com validacao de transicoes. Audit PEI_STATUS_CHANGED |
+| 2026-03-10 | maintenance_started_at separado de maintained_at | maintained_at = quando TODAS sondas passaram (fim). maintenance_started_at = quando entrou em maintenance (inicio sondas). Sao momentos distintos |
+| 2026-03-10 | Multi-clinica (migration 018) | profiles.clerk_user_id UNIQUE impedia 1 user em N tenants. Drop UNIQUE, add compound (clerk_user_id, tenant_id). Cookie-based routing com auto-ativacao |
+| 2026-03-10 | Google Calendar desabilitado no beta | Verificacao Google Brand pendente. Botao desabilitado visualmente, codigo 100% funcional. ~~Reativar quando aprovado~~ → REATIVADO 20/03/2026 |
+| 2026-03-10 | Mensagem Hotmart na exclusao | Ao excluir conta, orienta usuario a cancelar assinatura em hotmart.com. Sem mencao a contato AXIS |
+
+---
+
+---
+
+## PROXIMOS PASSOS (atualizado 10/03/2026)
+
+### Concluidos
+1. ~~Criar migration user_licenses~~ ✅ 03/03
+2. ~~Alinhar planos~~ ✅ 03/03
+3. ~~UpgradeModal → Hotmart~~ ✅ 03/03
+4. ~~Enforcement max_patients~~ ✅ 03/03
+5. ~~Bug fix /api/aba/me plan_tier~~ ✅ 03/03
+6. ~~Licenca free automatica no cadastro~~ ✅ 03/03
+7. ~~Termos de uso + Privacidade~~ ✅ 03/03
+8. ~~Onboarding v3 overlay client-side~~ ✅ 05/03
+9. ~~CID-10/CID-11~~ ✅ 07/03
+10. ~~Resend from + API key producao~~ ✅ 07-08/03
+11. ~~Hotmart 4 bugs (UPSERT + Clerk webhook + is_active + offer)~~ ✅ 08/03
+12. ~~Email pos-compra + pagina /obrigado~~ ✅ 08/03
+13. ~~Clerk Production Pro + PT-BR emails + logo~~ ✅ 08/03
+14. ~~Teste fluxo completo~~ ✅ 08/03
+15. ~~Rodar migrations 011/012/013~~ ✅ 09/03
+16. ~~**Tela "Meu Plano"**~~ ✅ 08/03
+17. ~~**Bug tooltips + cores pasteis Painel ABA**~~ ✅ 09/03
+
+### Pendente
+18. ~~**Backup automatizado**: pg_dump cron + rotacao 7 dias~~ ✅ 09/03 (cron 3am diario, rotacao 7d)
+19. ~~**Biblioteca de Protocolos**: seed + API + UI~~ ✅ 09/03
+20. ~~**Deploy producao**: migration 014/015/016 + build + pm2 restart~~ ✅ 09/03
+21. ~~**Deploy migrations 017 + 018** (maintenance_started_at + multi_tenant_profiles) + build + pm2 restart~~ ✅ 10/03
+22. ~~**Teste end-to-end** fluxo completo com conta nova (incluir multi-clinica)~~ ✅ 10/03
+23. **LANCAMENTO BETA PUBLICO** — quarta 12/03/2026 ✅ PRONTO
+
+### STATUS GERAL PARA LANCAMENTO: 100% — Beta comercial pronto para venda
+
+AGUARDANDO:
+- [x] ~~Verificacao Google Brand (3-6 semanas)~~ → ✅ APROVADO 20/03/2026 — botões Google Calendar reativados em TCC, ABA e TDAH
+
+---
+
+---
+
+## v2.7.0 OPERADORA READY — NARRATIVA DE IMPLEMENTACAO (20/03/2026)
+
+> Snapshot do escopo v2.7.0 na data de merge. Ver tambem changelog
+> 2026-04-17 para correcoes criticas descobertas em producao.
+
+## v2.7.0 OPERADORA READY (implementado 20/03/2026)
+
+> Camada institucional auditavel sobre o motor clinico CSO-ABA v2.6.1 (CONGELADO).
+> Ref: skill_axis_aba_v270.md (Bible v2.7.0)
+
+### Migrations
+| # | Arquivo | Conteudo |
+|---|---------|----------|
+| 035 | `035_operadora_sprint2_institutional.sql` | learner_coverage_profiles, claim_packets, claim_packet_items, payer_submissions, provider_credentials + ALTER learner_therapists |
+| 036 | `036_operadora_sprint3_integrity.sql` | integrity_flags + partial unique index para UPSERT |
+| 037 | `037_operadora_sprint4_payer_profiles.sql` | payer_requirement_profiles + FK coverage→payer |
+
+### APIs Criadas (Sprint 1-4)
+| Rota | Metodos | Sprint |
+|------|---------|--------|
+| `/api/aba/service-sites` | GET, POST | 0 |
+| `/api/aba/service-sites/[id]` | GET, PATCH | 0 |
+| `/api/aba/presence-proofs` | GET, POST | 1 |
+| `/api/aba/attestations` | GET, POST | 1 |
+| `/api/aba/evidence-bundles` | GET, POST | 1 |
+| `/api/aba/attachments` | GET, POST | 1 |
+| `/api/aba/coverage-profiles` | GET, POST | 2 |
+| `/api/aba/coverage-profiles/[id]` | GET, PATCH | 2 |
+| `/api/aba/claim-packets` | GET, POST | 2 |
+| `/api/aba/claim-packets/[id]` | GET, PATCH | 2 |
+| `/api/aba/provider-credentials` | GET, POST | 2 |
+| `/api/aba/provider-credentials/[id]` | GET, PATCH | 2 |
+| `/api/aba/integrity-flags` | GET, POST(scan) | 3 |
+| `/api/aba/integrity-flags/[id]` | GET, PATCH | 3 |
+| `/api/aba/payer-profiles` | GET, POST | 4 |
+| `/api/aba/payer-profiles/[id]` | GET, PATCH | 4 |
+
+### Componentes UI
+| Componente | Localizacao | Sprint |
+|-----------|-------------|--------|
+| `ServiceSitesManager` | Configuracoes | 0 |
+| `GPSCheckIn` | Sessao detalhe | 1 |
+| `SessionAttachments` | Sessao detalhe | 1 |
+| `EvidenceCard` | Sessao detalhe | 1 |
+| `CoverageProfilesManager` | Aprendiz detalhe (tab Cobertura) | 2 |
+| `ProviderCredentialsManager` | Configuracoes | 2 |
+| `IntegrityDashboard` | Configuracoes | 3 |
+| `PayerRequirementsManager` | Configuracoes | 4 |
+
+### Engines/Lib
+| Arquivo | Funcao |
+|---------|--------|
+| `src/lib/geo-classifier.ts` | Classificacao GPS (valid/warning/exception) |
+| `src/lib/session-close-hook.ts` | Hook pos-fechamento (auto-attestation + magic_link + bundle) |
+| `src/engines/integrity-scanner.ts` | 10 regras de deteccao + UPSERT + auto-resolve |
+
+### Jobs Operacionais (`scripts/jobs/`)
+| Job | Frequencia | Acao |
+|-----|-----------|------|
+| `purge_geo.sql` | Mensal | Anonimiza GPS/IP > 2 anos (LGPD) |
+| `scan_integrity.sh` | Diario 5h | Recalcula flags via API |
+| `check_expiration.sql` | Diario 5:15h | Flags conselhos/coberturas vencendo |
+| `expire_attestations.sql` | Diario 5:30h | Expira atestacoes pendentes > deadline |
+
+### LGPD Ampliada
+- Export v4.0: 10 abas novas no Excel (presenca, atestacoes, bundles, anexos, coberturas, packets, credenciais, flags, pagadores, sites)
+- Delete v2.0: 12 etapas novas de anonimizacao para tabelas v2.7.0
+- Retencao: Geo 2a, Bundles/Atestacoes 7a, Flags/Submissions 5a
+
+### Tooltips Adicionados
+`presenca_gps`, `presenca_anexos`, `evidencia_bundle`, `credenciais_equipe`, `cobertura_pagador`, `integridade_painel`, `integridade_flag`, `integridade_scan`, `perfil_pagador`
+
+### Testes
+384 testes passando. 4 erros TS pre-existentes (validator.ts, AdminCharts.tsx recharts). 0 erros novos.
+
+---
+
+---
+
+# CHANGELOG — SESSOES (cronologico reverso)
+
+## SESSAO 2026-04-17 (madrugada) — Desbloqueio Operadora Ready
+
+> Bugs reportados por Bianca Cruvinel (beta): criar Local de Atendimento
+> e Registrar Trial quebrados em producao.
+
+**Detalhes completos:** [/docs/sessoes/2026-04-17_ABA_fix_operadora_v270.md](../sessoes/2026-04-17_ABA_fix_operadora_v270.md)
+
+
+**Resumo rapido:** 5 bugs encadeados em v2.7.0 Operadora foram corrigidos:
+1. ChunkLoadError PM2 (rebuild Turbopack)
+2. AXIS_ENCRYPTION_KEY ausente em .env.production
+3. GUC name mismatch em 5 RLS policies → migration 052
+4. Schema mismatch `category`/`actor_id` em 17 INSERTs axis_audit_logs
+5. Funcao record_target_trial duplicada → migration 053
+
+**Licao principal:** todos os 480 testes Vitest mockados passavam verdes.
+Proxima sessao: infra de test DB real.
+
+---
+
+## SESSAO 2026-04-10 (continuacao) — Isolamento de planos por produto
+
+## Changelog — Sessão 10/04/2026 (continuação)
+
+### Fix CRÍTICO: Isolamento de planos entre produtos
+
+**Problema:** `tenants.max_patients` é GLOBAL. Comprar ABA founders (max_patients=100) fazia TDAH free ter 100 pacientes também. Todos os gates de criação de paciente/aprendiz liam de `tenants.max_patients` em vez de `user_licenses` por produto.
+
+**Solução:** Criado `src/database/product-limits.ts` com `getProductLimit(client, tenantId, productType)`:
+- Lê de `user_licenses WHERE product_type = $2 AND is_active = true`
+- Mapeia `hotmart_plan` → limite: free=1, founders_50=50, founders=100, clinica_100=100, clinica_250=250
+- TCC mantém regra histórica: qualquer plano pago = ilimitado (999999)
+- Fallback: sem licença ativa = free (1 paciente)
+
+**Arquivos alterados:**
+- `src/database/product-limits.ts` — CRIADO. Helper centralizado.
+- `app/api/tdah/patients/route.ts` — POST: usa `getProductLimit('tdah')` em vez de `tenants.max_patients`
+- `app/api/aba/learners/route.ts` — POST: usa `getProductLimit('aba')` em vez de `tenants.max_patients`
+- `app/api/patients/create/route.ts` — POST: unificado para usar `getProductLimit('tcc')` (antes fazia query manual em user_licenses)
+- `app/api/aba/me/route.ts` — GET: retorna `product_limits: { tcc, aba, tdah }` com `{ plan, max_patients }` por produto
+- `app/components/RoleProvider.tsx` — Adicionadas interfaces `ProductLimitInfo`, `ProductLimits`, campo `product_limits` em `ProfileData`
+- `app/tdah/pacientes/page.tsx` — Frontend gate usa `profile?.product_limits?.tdah?.max_patients`
+- `app/aba/configuracoes/page.tsx` — Seção "Meu Plano" usa `product_limits.aba`
+- `app/tdah/configuracoes/page.tsx` — Seção "Meu Plano" usa `product_limits.tdah`, fetchPlan corrigido (antes chamava /api/aba/plan inexistente)
+
+**Webhook Hotmart:** Continua atualizando `tenants.max_patients` (backward compat + admin view), mas gates de criação agora leem de `user_licenses`.
+
+---
+
+---
+
+## SESSAO 2026-04-10 — Auditoria TDAH + migracoes withTenant
+
+## Changelog — Sessão 10/04/2026
+
+### Auditoria completa + Bloco pré-venda AXIS TDAH
+
+**Relatório:** `docs/AUDIT_TDAH_2026-04-10.md` — 35+ features mapeadas, gaps de segurança identificados.
+
+**Fixes P0/P1 aplicados:**
+- Audit logs adicionados em: session close (`tdah_session_closed`), protocol transitions (`tdah_protocol_transition`)
+- `canAccessTdahPatient` aplicado em `/api/tdah/scores` (antes usava EXISTS subquery frágil)
+- Texto da página equipe atualizado para refletir N:N (Migration 038)
+
+**Migração de rotas (withTenant):**
+- `/api/google/callback` — tenants → profiles (multi-tenant safe)
+- `/api/aba/google/callback` — removido fallback tenants
+- `/api/user/accept-terms` — migrado para withTenant() completo
+- `/api/user/tenant` — documentado como exceção legítima (é o resolver)
+
+**Portal família expandido:**
+- `app/api/familia/[token]/route.ts` — adicionadas queries para `tdah_routines` e `tdah_token_economy` (Bible §18)
+
+**Documentação:**
+- `scripts/migrations/MIGRATION_GAPS.md` — gaps 008-010, 041
+
+**Endpoints sem withTenant() restantes (exceções legítimas):**
+- `/api/webhook/hotmart` — webhook externo, sem auth Clerk
+- `/api/webhook/clerk` — webhook externo
+- `/api/cron/*` — jobs internos
+- `/api/escola/[token]`, `/api/familia/[token]` — portais públicos via token
+- `/api/user/tenant` — é o próprio resolver de tenant
+
+---
+
+---
+
+## SESSAO 2026-04-01 (continuacao) — Pipeline transcricao + upload 19MB
+
+## Changelog — Sessão 01/04/2026 (continuação)
+
+### Feature: Pipeline de pós-processamento de transcrição v1.0.0
+
+**Objetivo:** Melhorar legibilidade da transcrição sem alterar sentido clínico. Sem LLM, sem API externa, determinístico, reversível, versionado.
+
+**Arquivos criados:**
+- `scripts/migrations/047_transcript_postprocess.sql` — adiciona raw_path, final_path, char_count_raw, char_count_final, postprocess_version, asr_model + backfill legado
+- `src/services/transcript-postprocess.ts` — módulo com pipeline: cleanTechnicalNoise → protectClinicalTerms → applySafeDictionaryCorrections → restoreClinicalTerms. applyLightPunctuation existe mas NÃO roda na v1.0. buildPreview() centraliza regra de preview.
+
+**Arquivos alterados:**
+- `scripts/workers/transcription-worker.ts` — agora gera rawText + finalText, salva 2 arquivos em disco ({id}.raw.txt e {id}.final.txt), persiste todos os campos novos
+- `src/services/transcript-storage.ts` — readTranscriptSmart() agora prioriza final_path → transcript_path → raw_path → text legado, com logs de fallback. saveTranscript() inalterado.
+- `app/api/transcribe/text/[transcriptId]/route.ts` — query inclui final_path, raw_path
+- `app/api/analyze-tcc/route.ts` — query inclui final_path, raw_path
+
+**Contrato de persistência:**
+- transcript_path = aponta para final_path (compatibilidade legada)
+- final_path = fonte principal para UI e análise TCC
+- raw_path = texto bruto do ASR (auditoria)
+- text_preview = gerado a partir de final_text via buildPreview()
+- char_count / char_count_final = tamanho do final_text
+
+**Pipeline v1.0 (ordem fixa):**
+1. cleanTechnicalNoise — trim, espaços duplos, quebras de linha, aspas, travessões
+2. protectClinicalTerms — placeholders por ocorrência (preserva forma original)
+3. applySafeDictionaryCorrections — dicionário explícito de erros reais do Whisper
+4. restoreClinicalTerms — devolve termos originais
+5. applyLightPunctuation — NÃO ATIVA na v1.0 (risco clínico)
+
+---
+
+### Fix: Upload de áudio > 10MB falhava (19MB MP3)
+
+**Problema:** Upload de MP3 de 19.5MB retornava `Request body exceeded 10MB` e `Failed to parse body as FormData`.
+
+**Causa raiz:** O middleware do Clerk bufferiza o body das requests. O limite default é 10MB. A config existente `serverActions.bodySizeLimit: '25mb'` só se aplica a Server Actions, não a Route Handlers do App Router.
+
+**Correção:** `next.config.ts` — adicionado `experimental.middlewareClientMaxBodySize: '50mb'` (limite para sessões de até ~1h em MP3). Atualizado `serverActions.bodySizeLimit` para `'50mb'` para consistência.
+
+### Erro 42501 (PostgreSQL) — Análise
+
+**Contexto:** Erro `code: 42501` (insufficient_privilege) apareceu nos logs junto com o upload. Vem de `ExecWithCheckOptions` = violação de RLS policy.
+
+**Análise:** O `/api/transcribe/route.ts` usa `checkTranscriptionLimit()` com resolução manual de tenant (`SELECT tenant_id FROM profiles WHERE clerk_user_id LIMIT 1`) — mesmo padrão quebrado para multi-tenant. Se pega o tenant errado, o `withTenantClient()` seta `app.tenant_id` com valor incorreto, e a RLS policy em `transcription_jobs` bloqueia o INSERT. **Obs:** o 42501 pode ser de request anterior; o log não garante que veio do mesmo request do upload de 19MB.
+
+**Status:** A rota `/api/transcribe` ainda usa resolução manual de tenant + `withTenantClient()` customizado em vez de `withTenant()`. Migração pendente para próxima sessão.
+
+**Endpoints com resolução manual de tenant (pendentes de migração):**
+- `/api/transcribe` (POST) — usa `checkTranscriptionLimit()` com LIMIT 1
+- `/api/transcribe/status/[jobId]` — verificar
+- Outros em `app/api/` — auditoria pendente
+
+---
+
+---
+
+## SESSAO 2026-03-31 — Fix transcricao + Analisar TCC + Accordion UI
+
+## Changelog — Sessão 31/03/2026
+
+### Bug fix: Transcrição completa não carregava na tela de sessão
+
+**Problema:** Ao abrir uma sessão concluída, a UI mostrava apenas ~500 chars (text_preview) em vez do texto completo (~9300 chars).
+
+**Causa raiz:** O endpoint `GET /api/transcribe/text/[transcriptId]` usava resolução manual de tenant (`SELECT id FROM tenants WHERE clerk_user_id = $1 LIMIT 1`), ignorando o cookie `axis_active_tenant`. Com multi-tenant, pegava o tenant errado → query `WHERE id = $1 AND tenant_id = $2` retornava 0 rows → **404**. O frontend falhava silenciosamente e mantinha o preview.
+
+**Correções:**
+
+- `app/api/transcribe/text/[transcriptId]/route.ts` — migrado para `withTenant()` com `handleRouteError()`. Adicionado try/catch no `readTranscriptSmart()` com fallback para `row.text` / `row.text_preview`.
+- `app/sessoes/[id]/page.tsx` — `loadSession()`: seta preview imediato, depois busca texto completo via fetch paralelo (fire-and-forget) com `setTranscript(prev => ...)`.
+
+### Bug fix: Botão "Analisar TCC" não funcionava
+
+**Problema:** Ao clicar em "Analisar TCC", nada acontecia (falha silenciosa).
+
+**Causa raiz:** Mesmo bug de tenant — `POST /api/analyze-tcc` usava resolução manual em vez de `withTenant()`. Com tenant errado, não achava a transcrição → 400 "Texto obrigatório".
+
+**Correções:**
+
+- `app/api/analyze-tcc/route.ts` — migrado para `withTenant()` com `handleRouteError()`. Todas as queries agora usam `client` da transação (não `pool` direto). Adicionado fallback no `readTranscriptSmart()`.
+- `app/sessoes/[id]/page.tsx` — `handleTCC()`: agora envia `text: transcript.text || transcript.text_preview` no body da request (dupla segurança). Mostra mensagem de erro real em vez de alert genérico.
+
+### UI: Accordion na seção TRANSCRIÇÃO
+
+**Motivo:** Com texto completo (~9300 chars), a tela ficava muito longa.
+
+**Implementação:** Accordion expansível — estado inicial colapsado (max-h-96 ~400px), gradiente de fade, botão "Ver transcrição completa" / "Recolher transcrição" com animação suave. Timestamp e "Analisar TCC" ficam fora do accordion, sempre visíveis.
+
+- `app/sessoes/[id]/page.tsx` — novo state `transcriptExpanded`, container com `transition-all duration-300`, gradiente `bg-gradient-to-t from-slate-50`.
+
+### Padrão identificado: endpoints sem withTenant()
+
+**Alerta:** Qualquer endpoint de API que resolva tenant manualmente (`SELECT id FROM tenants WHERE clerk_user_id`) está quebrado para usuários multi-tenant. Todos os endpoints devem usar `withTenant()` do `src/database/with-tenant.ts`, que respeita o cookie `axis_active_tenant` e suporta múltiplos perfis.
+
+**Endpoints já migrados:** `/api/transcribe/text/[id]`, `/api/analyze-tcc`, `/api/sessions/[id]/finish`, `/api/events/create`
+
+**Endpoints pendentes:** `/api/transcribe` (POST), `/api/transcribe/status/[jobId]`
+
+---
+
+---
+
+## SESSAO 2026-03-31 (continuacao) — Micro-eventos + CSO + SessionReport
+
+## Changelog — Sessão 31/03/2026 (continuação)
+
+### Bug fix: Micro-eventos não salvavam (BUG 1)
+
+**Problema:** Ao marcar micro-eventos na sessão (AVOIDANCE, CONFRONTATION, etc.), nada era salvo. Falha silenciosa.
+
+**Causa raiz:** `/api/events/create/route.ts` usava resolução manual de tenant (`SELECT id FROM tenants WHERE clerk_user_id = $1`) + queries diretas no `pool` sem RLS. Para multi-tenant, pegava tenant errado → `patientCheck` falhava → 404 silencioso.
+
+**Correção:** Reescrito para usar `withTenant()` com `handleRouteError()`. Todas as queries agora usam `client` da transação (não `pool` direto). Auth via `ctx.userId`.
+
+### Bug fix: CSO não atualizava + sugestão não gerada (BUGs 2&3)
+
+**Problema:** Ao finalizar sessão, o CSO não processava e nenhuma sugestão era gerada.
+
+**Causa raiz dupla:**
+1. Sem micro-eventos salvos (BUG 1), o finish calculava `totalFlex = 0` → `flexTrend = 'flat'` → CSO recebia payload vazio → resultado neutro → sugestão com confiança baixa → gate of silence.
+2. A query de transcrição no finish usava `SELECT text, transcript_path` — faltavam `final_path, raw_path, text_preview`. Sem esses campos, `readTranscriptSmart()` não conseguia ler o texto pós-processado.
+
+**Correções:**
+- `app/api/sessions/[id]/finish/route.ts` — query de transcrição agora inclui `text_preview, final_path, raw_path` para compatibilidade com `readTranscriptSmart()`.
+- BUG 1 corrigido acima resolve a causa raiz dos micro-eventos.
+
+### UX: Labels de flex_trend desalinhados no SessionReport
+
+**Problema:** O `SessionReport.tsx` comparava flex_trend com `'improving'`/`'declining'`, mas o finish endpoint gera `'up'`/`'down'`/`'flat'`. Valores nunca batiam → sempre mostrava "→ Estável".
+
+**Correção:** `app/components/SessionReport.tsx` — alinhado para usar `'up'`/`'down'`/`'flat'` com labels em português: "↑ Em evolução", "↓ Em declínio", "→ Estável"
+
+---
+
+## SESSOES ANTERIORES (consolidadas do NOTE.md original)
+
+## CONCLUIDO EM 24/03/2026
+
+### Sessão Cowork — Regressão ABA + P0 Fixes + Migrations + Validação (nota 4.5→9.0)
+
+**Regressão clínica ABA ponta a ponta: 14 etapas testadas, 7 quebras encontradas. Todas corrigidas. 480/480 testes.**
+
+**P0 Fixes (código alinhado ao schema, zero migrations de schema):**
+- [x] **P0-A CRÍTICO: session_summaries schema mismatch** — `summary/route.ts` ABA usava colunas inexistentes (`content`, `status`, `updated_at`, `created_by`). Reescrito para schema real: `summary_text`, `is_approved` (boolean), `sent_at`. source_module='aba'. Status derivado via CASE
+- [x] **P0-B ALTO: Ausência total de access control em 6 rotas [id]** — GET/PATCH sessions, POST trials, POST behaviors, POST/PUT/GET summary. Adicionado `canAccessLearner` em todas
+- [x] **P0-C ALTO: open/close session via DB functions inexistentes** — `open_session_aba()` e `close_session_aba()` nunca foram commitadas. Substituídas por SQL direto com guards de estado
+- [x] **P0-D: Error handling inconsistente** — Todas as rotas [id] agora usam `handleRouteError` + 404 genérico para acesso negado
+- [x] **Fix adicional: `completed_at` → `ended_at`** — Schema real (migration 007) usa `ended_at`, não `completed_at`
+
+**Migration 042 — DB Functions ABA (novo):**
+- [x] ENUM `aba_prompt_level` (7 níveis DTT: full_physical → independent)
+- [x] ENUM `aba_behavior_intensity` (4 níveis: low → severe)
+- [x] Function `record_target_trial()` — valida sessão/tenant, calcula score %, insere em session_targets
+- [x] Function `record_behavior_event()` — valida sessão/tenant, insere evento ABC em session_behaviors
+- [x] 4 colunas faltantes em `session_behaviors`: behavior_type, duration_seconds, location, recorded_at
+- [x] Tudo idempotente (CREATE OR REPLACE / IF NOT EXISTS)
+
+**Migration 043 — Fix portal_get_summaries (novo):**
+- [x] Function SECURITY DEFINER `portal_get_summaries()` usava `ss.content` (inexistente) e `ss.status = 'approved'` (inexistente). Corrigido para `ss.summary_text AS content` e `ss.sent_at IS NOT NULL`
+
+**Validação ponta a ponta: 10/10 etapas OK**
+- Criar learner → sessão → abrir → trials → behaviors → fechar → resumo → aprovar → enviar email → portal ABA
+
+**Arquivos criados:**
+- `scripts/migrations/042_aba_domain_functions.sql`
+- `scripts/migrations/043_fix_portal_summaries_schema.sql`
+- `docs/ABA_DB_FUNCTIONS.md`
+
+**Arquivos modificados:**
+- `app/api/aba/sessions/[id]/summary/route.ts` (reescrito — schema real + canAccessLearner + handleRouteError)
+- `app/api/aba/sessions/[id]/route.ts` (reescrito — canAccessLearner + SQL direto open/close + handleRouteError)
+- `app/api/aba/sessions/[id]/trials/route.ts` (canAccessLearner + handleRouteError)
+- `app/api/aba/sessions/[id]/behaviors/route.ts` (canAccessLearner + handleRouteError)
+
+**Notas de regressão clínica (todas validadas):**
+| Módulo | Pré-fix | Pós-fix |
+|--------|---------|---------|
+| TCC | 8.5 | 9.5 |
+| TDAH | 7.0 | 9.0 |
+| ABA | 4.5 | 9.0 |
+
+### Sessão Cowork — Regressão Clínica TDAH + Correções P0 (nota 7→9)
+
+**Regressão clínica ponta a ponta: 14 etapas testadas, 4 quebras encontradas e corrigidas. 480/480 testes.**
+
+**Quebras encontradas e corrigidas:**
+- [x] **P0-A CRÍTICO: session_summaries schema mismatch** — `summary/route.ts` usava colunas inexistentes (`content`, `status`, `updated_at`, `created_by`). Reescrito para schema real: `summary_text`, `is_approved` (boolean), `sent_at`. Fluxo resumo TDAH restaurado
+- [x] **P0-B CRÍTICO: portal família query quebrada** — `familia/[token]/route.ts` usava `patient_id` (inexistente → `learner_id`) e `status = 'sent'` (inexistente → `sent_at IS NOT NULL`). Promise.all falhava, portal retornava 500
+- [x] **P0-C ALTO: DRC POST sem canAccessTdahPatient** — Terapeuta podia criar DRC para paciente de outro terapeuta. Adicionado check de vínculo
+- [x] **P0-D ALTO: Token Economy POST sem canAccessTdahPatient** — Mesmo gap. Adicionado check de vínculo
+
+**Decisão:** Código alinhado ao schema atual (migration 007+024). Zero migrations novas.
+
+**Arquivos modificados:**
+- `app/api/tdah/sessions/[id]/summary/route.ts` (reescrito — schema real)
+- `app/api/familia/[token]/route.ts` (query summaries corrigida)
+- `app/api/tdah/drc/route.ts` (canAccessTdahPatient no POST)
+- `app/api/tdah/token-economy/route.ts` (canAccessTdahPatient no POST)
+
+### Sessão Cowork — Hardening TDAH (isolamento acesso nota 9.0)
+
+**13 rotas corrigidas, 16 testes de isolamento, matriz de acesso completa. 480/480 testes.**
+
+- [x] **Fase 1 — 8 rotas críticas** com `canAccessTdahPatient`: observations, drc/[id], events, guardians/[id], plans/[id], routines/[id], token-economy/[id], token-economy/[id]/transactions
+- [x] **Fase 2 — 5 rotas moderadas**: sessions (GET usa `tdahSessionFilter`, POST usa `canAccessTdahPatient`), sessions/[id], sessions/[id]/summary, plans, routines
+- [x] **Fase 3 — Info leakage**: clinical-state mensagem "Acesso negado — paciente de outro terapeuta" → "Paciente não encontrado" (404 genérico)
+- [x] **Fase 4 — 16 testes** em `src/tests/tdah-isolation.test.ts`: canAccessTdahPatient (4), multi-tenant (4), mensagens seguras (4), cenários de borda (4)
+- [x] **Fase 5 — Matriz de acesso**: `docs/MATRIZ_ACESSO_TDAH.md` — 13 tabelas por recurso + mecanismo + regras de erro
+
+### Sessão Cowork — Hardening TCC (isolamento acesso nota 9.0)
+
+**35 rotas auditadas, 1 gap crítico corrigido, 15 testes de isolamento, matriz de acesso. 480/480 testes.**
+
+- [x] **Auditoria 35 rotas TCC** — 34/35 já tinham isolamento correto (withTenant ou pool+tenant lookup). 1 gap crítico encontrado
+- [x] **FIX CRÍTICO: /api/analyze-clinical** — Zero tenant isolation (só Clerk auth). Adicionado `pool.query` tenant resolution
+- [x] **FIX: /api/chat-ana mensagens** — "Licença TCC não encontrada" e "Tenant não encontrado" vazavam info. Alterados para "Não autorizado" genérico
+- [x] **15 testes** em `src/tests/tcc-isolation.test.ts`: cross-tenant (2), autenticação (3), rota crítica analyze-clinical (3), mensagens seguras (4), preparação futura roles (3)
+- [x] **Matriz de acesso**: `docs/MATRIZ_ACESSO_TCC.md` — tabelas por recurso, gaps corrigidos, roadmap multi-user (6 meses)
+
+**Arquivos criados:**
+- `src/tests/tdah-isolation.test.ts` (16 testes)
+- `src/tests/tcc-isolation.test.ts` (15 testes)
+- `docs/MATRIZ_ACESSO_TDAH.md`
+- `docs/MATRIZ_ACESSO_TCC.md`
+
+**Arquivos modificados:**
+- `app/api/analyze-clinical/route.ts` (tenant resolution)
+- `app/api/chat-ana/route.ts` (mensagens genéricas)
+- `app/api/tdah/observations/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/drc/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/events/route.ts` (canAccessTdahPatient + handleRouteError)
+- `app/api/tdah/guardians/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/plans/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/plans/[id]/route.ts` (canAccessTdahPatient + handleRouteError)
+- `app/api/tdah/routines/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/routines/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/sessions/route.ts` (tdahSessionFilter + canAccessTdahPatient)
+- `app/api/tdah/sessions/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/sessions/[id]/summary/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/token-economy/[id]/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/token-economy/[id]/transactions/route.ts` (canAccessTdahPatient)
+- `app/api/tdah/clinical-state/route.ts` (info leakage fix)
+
+---
+
+## CONCLUIDO EM 23/03/2026
+
+### Sessão Cowork — Auditoria Técnica ABA (score 8.2 → ~9.0)
+
+**2 correções de segurança implementadas, 393/393 testes passando, 0 erros TypeScript.**
+
+- [x] **P0: Google webhook HMAC** — Handler validava apenas `channel_id` (UUID previsível). Agora valida `channel_id` + `resource_id` + token HMAC-SHA256 com `timingSafeEqual`. Watch route gera segredo 256-bit e envia HMAC ao Google. Migration 039 adiciona coluna `webhook_token`. Backward compatible (token NULL = skip HMAC)
+- [x] **P0: Claim packets GET sem role check** — Qualquer autenticado com feature flag podia listar todos os packets do tenant. Adicionado `requireAdminOrSupervisor(ctx)` antes de `requireFeature`
+- [x] **Não implementado: fila async claim packets** — Risco de regressão alto (infraestrutura job queue), sem evidência de timeout em produção
+- [x] **Não implementado: suite auth tests** — Aditivo, não corrige bug. Recomendado para sprint de qualidade
+- [x] **Não implementado: SLO instrumentation** — Requer stack de observabilidade não configurada
+
+**Arquivos modificados:**
+- `app/api/google/webhook/route.ts` (validação HMAC)
+- `app/api/google/watch/route.ts` (geração token)
+- `app/api/aba/claim-packets/route.ts` (role check GET)
+- `scripts/migrations/039_calendar_webhook_token.sql` (NOVO)
+
+**Migrations pendentes em produção:** 039
+
+### Sessão Cowork — Monitoramento Interno (health check + system_alerts)
+
+**Infraestrutura de monitoramento completa, 393/393 testes passando, 0 erros TypeScript.**
+
+- [x] **Migration 040: system_alerts** — Tabela de alertas internos com campos module, severity (info/warning/critical), source, code, message, context (JSONB), resolved/resolved_at/resolved_by. Índices por severity e created_at
+- [x] **Helper fire-and-forget** — `src/utils/system-alert.ts`: createSystemAlert() grava alerta sem bloquear a request. Erro de gravação apenas loga no console
+- [x] **Health check público** — `GET /api/health` retorna 200 (ok) ou 503 (error). Verifica conectividade DB. Grava alerta critical se DB unreachable. Adicionado em middleware como rota pública
+- [x] **5 pontos críticos instrumentados:**
+  - Webhook Hotmart: hottok inválido (HOTTOK_INVALID, critical) + erro genérico (WEBHOOK_ERROR, critical)
+  - sessions/finish: erro 500 no pipeline CSO (SESSION_FINISH_ERROR, critical)
+  - claim-packets GET/POST: erro 500 (CLAIM_PACKETS_LIST_ERROR / CLAIM_PACKET_GENERATE_ERROR, critical)
+  - with-tenant.ts: JWT ausente (AUTH_MISSING, warning) + tenant não encontrado (TENANT_NOT_FOUND, warning)
+- [x] **Admin API system-alerts** — `GET /api/admin/system-alerts` com filtros (severity, module, resolved, limit) + contagens agregadas. `PATCH` para resolver alertas. Protegido por verifyAdmin
+- [x] **AlertsPanel expandido** — Seção "Erros de Sistema" no painel admin: contagens por severity, lista alertas pendentes, botão "Resolver" inline. Auto-fetch de contagens no mount
+
+**Arquivos novos:**
+- `scripts/migrations/040_system_alerts.sql`
+- `src/utils/system-alert.ts`
+- `app/api/health/route.ts`
+- `app/api/admin/system-alerts/route.ts`
+
+**Arquivos modificados:**
+- `middleware.ts` (rota pública /api/health)
+- `app/api/webhook/hotmart/route.ts` (2 alertas)
+- `app/api/sessions/[id]/finish/route.ts` (1 alerta)
+- `app/api/aba/claim-packets/route.ts` (2 alertas GET/POST)
+- `src/database/with-tenant.ts` (2 alertas auth/tenant)
+- `app/admin/components/AlertsPanel.tsx` (seção Erros de Sistema)
+
+**Migrations pendentes em produção:** 039, 040
+
+### Sessão Cowork — Documentação Operacional
+
+**2 documentos criados para operação em produção:**
+
+- [x] **CHECKLIST_RELEASE.md** — Pre-deploy (migrations, backup, env), deploy VPS (PM2, Nginx), post-deploy (health check, smoke tests), rollback
+- [x] **PLAYBOOK_INCIDENTE.md** — Classificação severidade (S1-S4), contatos, checklists de resposta (DB down, auth, webhook, dados corrompidos)
+
+**Arquivos novos:**
+- `docs/CHECKLIST_RELEASE.md`
+- `docs/PLAYBOOK_INCIDENTE.md`
+
+### Sessão Cowork — Testes de Autorização (56 testes, 3 módulos)
+
+**Suite completa de testes de autorização cobrindo TCC, ABA e TDAH. 449/449 testes passando.**
+
+- [x] **Guards base** — requireRole, requireAdmin, requireAdminOrSupervisor: verificam role e retornam RoleError
+- [x] **handleRouteError** — Classificação: RoleError→403, PlanGateError→403, TenantSelection→409, auth→401, tenant→404, generic→500
+- [x] **TCC** — Autorização por role nas rotas sessions, events, suggestions
+- [x] **ABA** — learnerFilter, sessionFilter, canAccessLearner com mock de client. requireFeature para 4 tiers (free/founders/clinica_100/clinica_250). Combo role+feature em claim-packets
+- [x] **TDAH** — tdahPatientFilter, tdahSessionFilter, canAccessTdahPatient com fallback created_by. Portal token UUID validation
+- [x] **Operadora gate** — Cobertura completa dos 4 tiers
+
+**Arquivos novos:**
+- `src/tests/authorization.test.ts` (56 testes)
+
+### Sessão Cowork — CI/CD GitHub Actions + Hardening Env Vars
+
+**Pipeline CI criado e iterativamente corrigido através de 5 falhas de build.**
+
+- [x] **GitHub Actions workflow** — 3 jobs: lint-and-typecheck (tsc --noEmit), test (vitest --exclude='e2e/**'), build (next build)
+- [x] **Fix 1: E2E exclusion** — `e2e/tdah-flow.spec.ts` usa Playwright incompatível com Vitest. Adicionado `--exclude='e2e/**'`
+- [x] **Fix 2: Env vars no build** — OPENAI_API_KEY como secret, placeholders para Redis/Google/DB/Supabase
+- [x] **Fix 3: process.env.X! crash** — 10 arquivos com `!` non-null assertion causavam `undefined.replace()` em runtime. Corrigido para `|| ''` em todas as ocorrências (zero `process.env.X!` restante)
+- [x] **Fix 4: Resend constructor crash** — `new Resend(undefined)` crashava na inicialização. 4 arquivos corrigidos com instanciação condicional + null guard antes de `.emails.send()`
+- [x] **Fix 5: Clerk publishable key** — Clerk valida formato da chave em build time, rejeitando placeholders. Trocado para `${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}`
+
+**Arquivos novos:**
+- `.github/workflows/ci.yml`
+
+**Arquivos modificados (env hardening):**
+- `app/api/aba/google/callback/route.ts`, `app/api/aba/google/route.ts` (`.replace()` fix)
+- `app/api/google/route.ts`, `callback/route.ts`, `webhook/route.ts`, `watch/route.ts`, `sync/route.ts`, `disconnect/route.ts`
+- `app/api/sessions/create/route.ts`, `app/api/cron/renew-webhook/route.ts`
+- `src/google/calendar-helpers.ts`
+- `app/api/aba/sessions/[id]/summary/route.ts`, `app/api/tdah/sessions/[id]/summary/route.ts` (Resend fix)
+- `app/api/demo/solicitar/route.ts`, `app/api/webhook/hotmart/route.ts` (Resend fix)
+
+**CI status:** Verde após adição do secret `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` no GitHub
+
+---
+
+## CONCLUIDO EM 20/03/2026
+
+### Sessão Cowork — Google Calendar liberado + Tooltips tabela + Reembolso
+
+**Google Calendar — Verificação Google Brand APROVADA:**
+- [x] UpgradeModalTCC: removido "(em breve)" → "Google Calendar sync"
+- [x] Configurações TCC: botões conectar/sync/desconectar já estavam ativos (código pronto)
+- [x] Configurações ABA: idem — multi-terapeuta, webhook bidirecional funcional
+- [x] Configurações TDAH: seção Google Calendar ADICIONADA (não existia) — usa APIs /api/google/* compartilhadas
+- [x] Detecção de retorno OAuth (?google=success) no TDAH
+
+**Página de vendas ABA (/produto/aba) — Tooltips + Reembolso:**
+- [x] "faturamento" → "reembolso" em toda a página (tabela, cards mobile, JSON-LD, bloco Operadora)
+- [x] 17 HelpTip tooltips adicionados na tabela de planos (6 Motor Clínico + 11 Operadora Ready)
+- [x] 13 novos tooltip keys em lib/tooltips.ts (linguagem 50+): pub_motor_cso, pub_registro_estruturado, pub_relatorio_institucional, pub_multi_terapeuta, pub_relatorios_consolidados, pub_onboarding, pub_atestacao_terapeuta, pub_locais_atendimento, pub_anexos_sessao, pub_credenciais_provedor, pub_flags_integridade, pub_perfis_operadora, pub_investimento
+
+**Página de preços ABA (/aba/precos) — Reembolso:**
+- [x] "Claim packets (faturamento)" → "Documentação para reembolso" na tabela
+- [x] FAQ atualizado: "claim packets para faturamento" → "documentação para reembolso"
+
+**Zero "faturamento" restante em todo o /app.**
+
+**Arquivos modificados:**
+- app/components/UpgradeModalTCC.tsx
+- app/tdah/configuracoes/page.tsx (seção Google Calendar nova)
+- app/produto/aba/page.tsx (tooltips + reembolso)
+- app/aba/precos/page.tsx (reembolso)
+- lib/tooltips.ts (13 novos keys)
+
+---
+
+## CONCLUIDO EM 19/03/2026
+
+### Sessão Cowork (manhã-noite) — Admin + Bugs Críticos + Bible v2.7.0
+
+**Bugs críticos corrigidos:**
+- [x] Fix activate-free: remove plan_tier inexistente da query
+- [x] Fix webhook Hotmart: busca ampla por email (profiles + tenants + user_licenses) para evitar tenant duplicado
+- [x] Fix onboarding TCC: salvamento CPF/CRP — removido withTenant, usa pool direto + RETURNING
+- [x] Fix onboarding TCC: remove TermsModal antigo conflitante (modal azul sobre dashboard)
+- [x] Fix admin stats: syntax PostgreSQL (COUNT FILTER cast), hotmart_plan vazio tratado como free
+- [x] Fix admin filtros: force-dynamic em todas APIs, DISTINCT ON profiles, AbortController race condition
+- [x] Fix security hotspots SonarCloud: regex DoS (non-greedy), Math.random → crypto.randomBytes
+
+**Painel Administrativo completo (/admin/dashboard):**
+- [x] Guard: só porto.ar4@gmail.com e aleporto305@gmail.com
+- [x] 5 abas: Visão Geral, Usuários & Licenças, Compras Hotmart, Eventos Sistema, Alertas
+- [x] Stats cards: totais, pagos/free por produto, novos 24h, erros webhook
+- [x] Tabela licenças: filtros produto/status/email, paginação 20/página
+- [x] Modal detalhe: dados + licenças + ações (FREE, upgrade, desativar, LGPD delete)
+- [x] Gráficos recharts: signups/dia, distribuição, pagos vs free
+- [x] Alertas integridade: duplicatas, órfãos, fantasmas
+- [x] Migration 030: limpeza licenças fantasma CLERK_FREE_TIER
+
+**Hub melhorias:**
+- [x] TDAH descrição 4 linhas + remove "Ver estrutura" + logo transparente
+- [x] Badge Free (cinza) vs Ativo (verde) no Hub — usa hotmart_plan
+
+**Configurações TDAH:**
+- [x] PUT handler em /api/aba/me para salvar nome/registro
+- [x] Label "Registro profissional" (multi-profissional)
+
+**Bible v2.7.0 Operadora Ready:**
+- [x] Skill skill_axis_aba_v270.md criado (511 linhas)
+- [x] CLAUDE.md atualizado com referência v2.7.0
+- [x] Motor CSO-ABA v2.6.1 permanece congelado
+- [x] 12 tabelas novas + 1 extensão planejadas para Sprints 1-4
+
+**Onboarding 3 opções:**
+- [x] ABA e TDAH: adicionada opção "Ver como funciona" → /ajuda
+
+**SonarCloud:**
+- [x] coverage/ removido do git (189 arquivos, 48.898 linhas)
+- [x] sonar-project.properties configurado
+- [x] Páginas exemplo Sentry removidas
+- [x] NOSONAR no seed TDAH (DELETE intencional)
+
+**Arquivos principais criados/modificados:**
+- app/admin/ (13 arquivos novos: dashboard, components, APIs)
+- app/api/admin/ (guard, stats, users, users/[id], webhooks, alerts)
+- skills/skill_axis_aba_v270.md (novo)
+- scripts/migrations/030_cleanup_phantom_licenses.sql (novo)
+- sonar-project.properties (novo)
+
+### TESTE HOTMART — CONCLUIDO ✅ 08/03/2026
+
+| Item | Status |
+|---|---|
+| Migration 006 rodada | ✅ |
+| HOTMART_HOTTOK no .env | ✅ |
+| URL webhook Hotmart | ✅ https://axisclinico.com/api/webhook/hotmart |
+| URL webhook Clerk | ✅ https://axisclinico.com/api/webhook/clerk (user.created) |
+| CLERK_WEBHOOK_SECRET | ✅ |
+| Produtos ABA IDs | ✅ 7285432, 7291024 |
+| Resend API key producao | ✅ re_live_ |
+| URL obrigado no Hotmart | ✅ https://axisclinico.com/obrigado |
+
+**Teste real (email.paciente.x@gmail.com):** cadastro → onboarding → free → compra Hotmart → webhook → UPSERT licenca → email pos-compra → acesso desbloqueado. **TUDO FUNCIONANDO.**
+
+**Auto-provisioning (implementado 05/03, fix 08/03):** compra ANTES de cadastrar → Clerk Invitation + pending tenant/profile/license. Clerk webhook user.created resolve pending_hotmart_* → ativa profile + licenca.
+
+---
+
+## CONCLUIDO EM 10/03/2026
+
+### Noite (codigo — Cowork) — Finalização para Beta Comercial
+- [x] **Google Calendar OAuth**: branding submetido para verificacao Google (3-6 semanas). Dominio axisclinico.com verificado no Google Search Console via arquivo HTML. Botao "Conectar Google Calendar" desabilitado com mensagem "Em breve" ate aprovacao
+- [x] **Footer landing page**: links Politica de Privacidade e Termos de Servico adicionados
+- [x] **Nome "AXIS Clinico"**: adicionado na pagina inicial (exigencia Google Brand Verification)
+- [x] **Logo 120x120px**: enviado para Google Cloud Branding
+- [x] **Exclusao de conta LGPD**: testada e funcionando — modal com 90 dias retencao + mensagem orientando cancelar assinatura em hotmart.com
+- [x] **Cron backup**: duplicatas removidas do crontab, backup diario as 3h funcionando em /root/backups/axis-tcc/
+- [x] **Migrations 017 + 018**: maintenance_started_at e multi_tenant_profiles confirmadas no banco de producao
+- [x] **Dashboard e Painel**: navegacao unificada — top nav padronizado em todas as paginas (Dashboard · Painel · Aprendizes · Sessoes · Relatorios). Dashboard com header horizontal compacto (titulo esquerda, seletor aprendiz direita com borda cinza)
+- [x] **SKILL_ABA v2.6.1 + Central de Ajuda**: multi-clinica em producao
+- [x] **Google Calendar secao**: escondida corretamente (botao desabilitado, nao codigo removido)
+
+**Arquivos alterados:**
+- `app/page.tsx` (footer links + nome AXIS Clinico)
+- `app/aba/configuracoes/page.tsx` (Google Calendar desabilitado + mensagem Hotmart exclusao)
+- `app/aba/dashboard/page.tsx` (header horizontal + top nav)
+- `app/aba/page.tsx` (top nav padronizado)
+- `public/google336eb922a9244ae4.html` (verificacao Google Search Console — NAO REMOVER)
+
+### Tarde (codigo — Cowork)
+- [x] **Tooltips cor padrao**: HelpTip default mudou de emerald para slate (neutro). Cards relatorios com cores explicitas
+- [x] **Alertas sondas no dashboard**: API retorna maintenance_probe alerts (pendentes com data <= hoje). UI diferencia: sondas em ciano (relogio) vs regressao em vermelho (warning). Link direto para tela manutencao
+- [x] **Fix acentuacao dashboard**: 8 palavras sem acento corrigidas (Sessoes, Relatorios, Clinico, terapeutico, Evolucao, Aquisicao, Implementacao) + 1 em relatorios (criterios)
+- [x] **Equipe — Perfis de Acesso**: card colapsavel 3 colunas (Admin ambar / Supervisor azul / Terapeuta verde) com checkmarks de permissoes. Central de Ajuda expandida com descricao detalhada dos 3 perfis
+- [x] **BUG CRITICO — Multi-tenant**: profiles.clerk_user_id tinha UNIQUE (1 user = 1 tenant). Reescrito with-tenant.ts para N tenants. Migration 018 (drop UNIQUE, add compound index). Cookie-based routing. Auto-ativacao convites por email. Tela selecao clinica. TenantSelectionRequired (409). RoleProvider redirect. Clerk webhook expandido (pending_%)
+- [x] **BUG FK constraint**: ctx.profileId === ctx.tenantId no fallback causava FK violation em learner_therapists.assigned_by, team.invited_by, learners auto-assign. Fix: NULL quando fallback
+- [x] **SKILL_ABA.md atualizado**: v2.6.1, 18 secoes, multi-clinica, alertas sondas, roles expandidos, PEI status
+- [x] **Central de Ajuda expandida**: 8 secoes (era 7). Nova secao Multiplas Clinicas (4 items). Alertas dashboard explicados
+- [x] **Google Calendar desabilitado no beta**: botao "Conectar" com opacity-50 + cursor-not-allowed + "Em breve — verificacao Google em andamento". Codigo intacto
+- [x] **Mensagem exclusao conta**: ao confirmar exclusao, card azul orienta cancelar assinatura no hotmart.com
+- [x] **Testes**: 279/279 passando, TypeScript 0 erros
+
+### Manha (codigo — Cowork)
+- [x] **Manutencao/sondas 40%→100%**: Fix auto-schedule trigger (mastered→maintenance). Auto-transicao maintained quando 3/3 sondas passam. Fix schedule API status check (maintained→maintenance). Badge progresso no perfil aprendiz com "proxima sonda em Xd". Sondas canceladas na UI. Grids responsivos. Migration 017 (maintenance_started_at)
+- [x] **PEI 90%→100%**: PATCH endpoint /api/aba/pei/[id] (editar titulo, datas, status). State machine PEI (draft→active→completed→archived). Botoes transicao na UI. Goals editaveis. Audit log transicoes
+- [x] **Dashboard 95%→100%**: Links PEI e Biblioteca no acesso rapido (6 cards total)
+- [x] **Testes**: 279/279 passando, TypeScript sem erros
+
+---
+
+## CONCLUIDO EM 09/03/2026
+
+### Tarde (codigo — Cowork)
+- [x] **Portal Familia bugs**: botao nao abria (silent error), FK violation guardian_id, RLS bloqueando token lookup (SECURITY DEFINER 7 functions — migration 014), consent duplicado (UPSERT), colunas erradas (name vs full_name, birth_date vs date_of_birth, content vs summary_text)
+- [x] **Biblioteca de Protocolos V1**: seed 15 protocolos cobrindo 8 dominios (migration 015), API GET /api/aba/library com filtro dominio, UI modal "Usar da Biblioteca" no create protocol, fix EBP mapping (ebp_practice_id FK, nao string match)
+- [x] **Session Duration V2**: migration 016 (4 colunas: session_targets.duration_seconds, session_targets.applied_by UUID FK profiles, sessions_aba.duration_minutes_override, sessions_aba.applied_by UUID FK profiles). API trials mantém record_target_trial + UPDATE V2. PATCH sessao aceita override + applied_by. Frontend: cronometro play/pause/reset, dropdown applied_by, painel duracao (total/ativa/corrigida/aplicador)
+- [x] **Labels generalizacao**: variacao → pessoa, contexto → ambiente (page + tooltips + ajuda)
+- [x] **Mobile polish**: grids responsivos sm:grid-cols nas telas de sessao (trials 3→2, ABC 3→1, protocolo 2→1)
+- [x] **Testes**: 279/279 passando, TypeScript sem erros
+
+### Manha (codigo — Cowork)
+- [x] Bug Painel ABA: cards de metricas sem cor pastel → adicionadas cores (coral, azul, verde, ambar) + borders coordenados
+- [x] Bug Painel ABA: tooltips ❓ sumidos → adicionados com HelpTip em wrapper div (10 cards total: 4 principais + 6 avancados)
+- [x] Bug Dashboard Clinico: tooltips ❓ no canto errado (esquerdo) → fix wrapper div absolute top-2 right-2 (3 cards)
+- [x] 5 novas chaves tooltip em lib/tooltips.ts: dash_aprendizes, dash_protocolos, dash_em_alerta, dash_sessoes_totais, dash_cancelamento
+- [x] Migration 012 rodada em producao: generalization_started_at, generalization_completed_at, maintenance_started_at (maintained_at e archived_at ja existiam)
+- [x] Verificacao migrations: 011 (CID) ja aplicada, 013 (ENUM mastered_validated) ja aplicada, 012 concluida agora
+- [x] Nota: tabela _migrations NAO existe no banco (migrations foram rodadas manualmente). migrate.sh precisa de psql local — nao funciona com Docker
+
+---
+
+## CONCLUIDO EM 08/03/2026
+
+### Manha (codigo — Claude Code)
+- [x] Bug 1 Hotmart: INSERT trocado por UPSERT (ON CONFLICT uq_user_product) — usuario FREE que compra pago nao da mais duplicate key. Corrigido em fluxo normal e auto-provisioning
+- [x] Bug 2 Hotmart: Clerk webhook criado (app/api/webhook/clerk/route.ts) — escuta user.created, atualiza clerk_user_id de pending_hotmart_* para ID real em profiles, tenants, user_licenses. Verificacao Svix
+- [x] Bug 3 Hotmart: Clerk webhook tambem seta is_active = true no profile (antes ficava false e API nao encontrava)
+- [x] Bug 4 Hotmart: Offer 5hz0et4m adicionada ao OFFER_TO_PLAN (Founders 100). plan_tier e max_patients ja eram atualizados mas Bug 1 crashava antes
+- [x] Email pos-compra: 2 templates Resend (upgrade + novo usuario) em src/email/purchase-template.ts. Enviados non-blocking no webhook Hotmart apos sucesso
+- [x] Pagina /obrigado: app/obrigado/page.tsx — 3 passos, botao para /hub, contato@axisclinico.com. Rota publica no middleware
+- [x] Middleware atualizado: /api/webhook/clerk e /obrigado adicionados como rotas publicas
+
+### Tarde (deploy + config — manual)
+- [x] Clerk migrado para Production Pro ($25/mes): Invitation flow habilitado, emails customizaveis
+- [x] Email templates Clerk em PT-BR: convite, verificacao, reset senha — todos com branding AXIS ABA coral (#B4532F)
+- [x] Logo AXIS ABA configurado no Clerk (aparece nos emails e tela de login)
+- [x] CLERK_WEBHOOK_SECRET configurado na VPS (endpoint user.created)
+- [x] Resend API key producao: trocada de re_test_ para re_live_ na env da VPS. Emails funcionando
+- [x] URL obrigado configurada no Hotmart (Thank You Page → https://axisclinico.com/obrigado)
+- [x] Build + deploy completo (npm run build && pm2 restart axis-tcc)
+- [x] **Teste fluxo completo** com email.paciente.x@gmail.com: cadastro → onboarding → free → compra Hotmart → webhook processou → licenca ativa → email pos-compra recebido → acesso desbloqueado. TUDO OK
+- [x] Segundo produto Hotmart ID 7291024 confirmado (ambos mapeados para 'aba' no webhook)
+
+### Noite (codigo — Claude Code)
+- [x] Tela "Meu Plano" nas configuracoes: card com badge plano (cores por tier), barra progresso aprendizes (X de Y), detalhes em 3 mini-cards, botao upgrade coral (#C46A2F) com link Hotmart correto por tier. Dados via /api/aba/me (adicionado max_patients + learner_count na query)
+- [x] UserButton Clerk simplificado: "Gerenciar conta" escondido via appearance.elements em SidebarABA.tsx e Sidebar.tsx (publico 50+, trocar email quebraria vinculo licenca)
+- [x] Campo "Plano" removido da secao Clinica (admin) — agora tem secao dedicada
+- [x] Badge progresso Generalizacao 3x2: API GET /api/aba/protocols retorna gen_cells_passed (subquery CASE WHEN so para status=generalization). Badge ambar "X/6 celulas" ou verde "✓ 6/6" ao lado do status. Link "Matriz 3x2" tambem mostra (X/6)
+
+## CONCLUIDO EM 07/03/2026
+
+- [x] CID-10/CID-11: CIDSelector componente com toggle sistema, busca, entrada manual, catalogo 50+ codigos em 6 grupos (TEA, TDAH, DI, Linguagem, Motor, Outro), cross-mapping CID-10↔CID-11. Migration 011 (cid_system, cid_label). Badge no perfil do aprendiz. CID no relatorio PDF e LGPD export/delete
+- [x] Resend email from corrigido: todos os from trocados de onboarding@resend.dev para AXIS ABA <noreply@axisclinico.com> (demo/solicitar + sessions/summary). Dominio axisclinico.com verificado (DKIM+SPF). Pendente: trocar RESEND_API_KEY de teste para producao na VPS
+- [x] Fix dropdown email "Enviar Resumo": bug onde selecionar "Outro email..." e digitar fazia o input sumir (summaryEmail !== '' escondia o campo). Corrigido com state summaryCustomEmail + sentinel __custom__ no select
+- [x] Nome clinica editavel: campo nas configuracoes agora editavel (antes readOnly). PUT /api/aba/settings com requireAdminOrSupervisor
+- [x] Local sessao pre-fill: nova sessao pre-preenche campo "Local" com tenant_name via useRole(). Reset do form preserva nome
+- [x] Botao PEI condicional: "Vincular ao PEI" so aparece quando peiGoals.length > 0 (progressive disclosure — evita confusao com dropdown vazio)
+- [x] Botao "Agendar Sessao": estado vazio de sessoes na pagina do aprendiz agora tem botao que redireciona para /aba/sessoes?novo=true&aprendiz={id}. Modal abre automaticamente com aprendiz pre-selecionado
+- [x] Auditoria features: Portal Familia (token-based, 100% funcional), Google Calendar ABA (7 rotas, sync bidirecional, multi-terapeuta, 100% funcional), Biblioteca Protocolos (so schema, 10%)
+
+## CONCLUIDO EM 06/03/2026
+
+- [x] Clerk migrado para producao: atualizados clerk_user_id em profiles e tenants no banco
+- [x] Fix redirect pos-login: sem ?produto agora vai para /hub (antes ia direto /dashboard TCC)
+- [x] Fix sign-up idem: mesma correcao no cadastro
+- [x] Onboarding TCC restrito: componente Onboarding.tsx agora verifica pathname — so renderiza em rotas TCC (/dashboard, /sessoes, /pacientes), nunca em /aba/*, /hub, landing
+- [x] PushNotificationSetup condicionado: so aparece em rotas de produto + apos onboarding completo (checa axis_onboarding localStorage e axis_onboarding_done cookie)
+- [x] Excluir trial em sessao ativa: DELETE /api/aba/sessions/[id]/trials/[targetId] — valida session in_progress + tenant_id + audit log append-only. UI com lixeira hover + confirmacao inline (Sim/Nao). Escondido em sessao finalizada (guardrail 3)
+- [x] Fix Hub "Conhecer" vs "Acessar" para admin: profile apontava para tenant errado (c805e92a vs 123e4567). Corrigido no banco
+
+## CONCLUIDO EM 05/03/2026
+
+- [x] Migration 007: full ABA repair — ~20 tabelas ABA criadas que faltavam no banco (62 tabelas agora)
+- [x] Fix UNIQUE constraint em learner_therapists (ON CONFLICT falhava)
+- [x] Onboarding v3: refeito do zero como overlay client-side (OnboardingABA.tsx)
+  - Tela 1: Termo LGPD adaptado para profissionais de saude (generico, sem CRP)
+  - Tela 2: Escolha — "Personalizar Clinica" (→ /aba/configuracoes) ou "Cadastrar Aprendiz" (→ /aba/aprendizes)
+  - Eliminado redirect server-side do layout (causa raiz da tela branca)
+  - Funciona no primeiro load E no refresh (testado com 2 contas Gmail)
+- [x] Layout ABA limpo: so faz auth → tenant → licenca → renderiza (sem headers/pathname)
+- [x] /aba/onboarding page agora e redirect simples para /aba/dashboard
+- [x] Webhook Hotmart v2.1 com auto-provisioning: buyer sem conta → Clerk Invitation + tenant/profile/license pre-criados (pending_hotmart_*)
+- [x] Ativacao de perfil pendente: /api/user/tenant sincroniza clerk_user_id em tenants + user_licenses ao ativar pending_*
+- [x] Resolucao de licencas por tenant_id: corrigido em /api/user/licenses, /aba/layout.tsx, /produto/aba/layout.tsx (antes filtrava por clerk_user_id que falhava para auto-provisioning)
+- [x] Hub /hub: botao "Acessar" vs "Conhecer" agora funciona corretamente com licencas auto-provisionadas
+- [x] Bug fix dropdown EBP invisivel: API retorna campo "name" mas select usava "name_pt" (undefined → texto vazio). Corrigido para name_pt || name
+- [x] Bug fix resumo sessao vazio: modal "Enviar Resumo aos Pais" agora auto-gera texto a partir dos trials (alvos, acertos, percentual, nivel de dica)
+- [x] Bug fix query l.full_name: tabela learners usa "name", nao "full_name". Corrigido em /api/aba/sessions/[id]/summary/route.ts (2 queries)
+- [x] Bug fix session_summaries status constraint: INSERT usava 'draft' mas constraint so permite pending/approved/sent/rejected. Corrigido para 'pending'
+- [x] Email resumo para pais: remetente noreply@axisclinico.com, titulo/header/rodape dinamicos com tenants.name
+- [x] Autocomplete no campo "Alvo" do registro de trial: dropdown com alvos ja registrados + protocolos ativos, mantem ultimo alvo
+- [x] Bug fix onboarding aparece em todo refresh: cookie cache (axis_onboarding_done) + fallback para hidden em caso de erro API
+- [x] Bug fix LGPD Export v2.0: reescrito com safeQuery (SAVEPOINT) por tabela — falha em 1 tabela nao mata as outras. Corrigido nomes de colunas (content vs summary_text, score_pct vs score, behavior_type vs function_hypothesis)
+- [x] Bug fix LGPD Delete v2.0: reescrito com safeExec (SAVEPOINT) + auto-criacao de colunas faltantes (cancellation_scheduled_at, cancelled_at, anonymized_at via ALTER TABLE IF NOT EXISTS). Corrigido session_summaries.summary_text → content. Removido referencias a colunas que podem nao existir (school, deleted_at, crp, crp_uf, google_event_id, patient_response)
+- [x] LGPD Export v3.0: exportacao agora gera Excel (.xlsx) com 14 abas organizadas em portugues (Resumo, Aprendizes, Responsaveis, Profissionais, Protocolos, Sessoes, Alvos/Trials, Comportamentos, Snapshots, Estados Clinicos, PEI, Resumos, Consentimentos, Auditoria). Headers formatados, datas dd/mm/yyyy, cores por aba. JSON mantido via ?format=json. Dep: exceljs@4.4.0
+
+## CONCLUIDO EM 04/03/2026
+
+- [x] Onboarding v2: refatorado de 8 etapas burocraticas para 2 etapas acolhedoras (nome+area → termos)
+- [x] API setup simplificada: so depende de tabelas tenants + profiles (sem onboarding_progress, compliance_checklist, protocol_library)
+- [x] API progress simplificada: apenas checa onboarding_completed_at
+- [x] Toast de boas-vindas no dashboard apos onboarding
+- [x] Fix vitest.setup.ts: NODE_ENV read-only em Next.js 16
+- [x] Fix migration 005: ALTER TABLE IF NOT EXISTS para colunas de protocol_library
+- [x] .gitignore corrigido: .next/ removido do tracking do git
+
+## CONCLUIDO EM 03/03/2026
+
+- [x] Migration 006: user_licenses + migracao de tiers antigos
+- [x] Alinhamento planos: free/founders/clinica_100/clinica_250 em todo o sistema
+- [x] UpgradeModal com links Hotmart reais (Founders R$147, Clinica 250 R$497)
+- [x] Enforcement max_patients no POST /api/aba/learners + UpgradeModal automatico
+- [x] Bug fix: /api/aba/me agora retorna plan_tier (antes retornava campo errado 'plan')
+- [x] Licenca free criada automaticamente no cadastro de novo tenant
+- [x] Pagina Termos de Uso (/termos) — 11 secoes cobrindo responsabilidade clinica, pagamento, PI
+- [x] Pagina Politica de Privacidade (/privacidade) — 12 secoes, LGPD compliant
+- [x] Middleware atualizado com rotas publicas /termos e /privacidade
+- [x] Links legais no footer da landing page
+
+---
+
+---
+
+---
+
+*Arquivo-archive do AXIS ABA. Atualizar apenas ao promover NOTE ativo.*

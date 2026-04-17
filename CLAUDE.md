@@ -77,6 +77,32 @@ If a modification may impact clinical engines, database integrity, or historical
 
 ---
 
+## Fontes vivas por produto
+
+Cada produto mantem um NOTE ativo enxuto (foco atual, pendencias, arquitetura,
+URLs, regras criticas, arquivos-chave). Historico completo em `/docs/archive/`
+e sessoes detalhadas em `/docs/sessoes/`.
+
+| Produto | NOTE ativo | Archive | Sessoes |
+|---|---|---|---|
+| **ABA** | [/docs/NOTE_ABA.md](docs/NOTE_ABA.md) | [/docs/archive/NOTE_ABA_ARCHIVE.md](docs/archive/NOTE_ABA_ARCHIVE.md) | [/docs/sessoes/](docs/sessoes/) |
+| **TCC** | `NOTE_TCC.md` (raiz — **pendente migracao** p/ /docs/) | — | — |
+| **TDAH** | `NOTE_TDAH.md` (raiz — **pendente migracao** p/ /docs/) | — | — |
+
+**Quando trabalhar em um produto especifico:** carregar o NOTE daquele produto
+como primeira fonte de contexto (depois das skills). O NOTE ativo e sempre a
+fonte-de-verdade corrente; o archive so deve ser consultado sob demanda.
+
+---
+
+## Changelogs historicos por sessao
+
+> Os blocos abaixo sao changelogs consolidados no CLAUDE.md antes da
+> reorganizacao de 17/04/2026. Para ABA, ja foram importados para
+> `/docs/archive/NOTE_ABA_ARCHIVE.md` e podem ser removidos daqui
+> quando TCC e TDAH tambem forem migrados. Mantidos por seguranca
+> ate a migracao completa.
+
 ## Changelog — Sessão 10/04/2026 (continuação)
 
 ### Fix CRÍTICO: Isolamento de planos entre produtos
