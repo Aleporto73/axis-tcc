@@ -702,18 +702,6 @@ export default function SessionPage() {
           </div>
         )}
 
-        {isActive && protocols.length === 0 && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
-            <div>
-              <p className="text-sm text-amber-700 font-medium">Nenhum protocolo ativo</p>
-              <p className="text-xs text-amber-600 mt-0.5">Crie um protocolo para registrar trials</p>
-            </div>
-            <button onClick={() => setShowProtocolModal(true)} className="px-4 py-2 bg-aba-500 text-white text-sm font-medium rounded-lg hover:bg-aba-600 transition-colors">
-              + Protocolo
-            </button>
-          </div>
-        )}
-
         {(isActive || isCompleted) && (
           <>
             <div className="flex gap-1 mb-6 border-b border-slate-200">
@@ -733,6 +721,22 @@ export default function SessionPage() {
 
             {tab === 'trials' && (
               <div className="space-y-4">
+                {isActive && protocols.length === 0 && (
+                  <div className="text-center py-12 border border-slate-200 border-dashed rounded-xl bg-slate-50/50">
+                    <div className="w-14 h-14 rounded-full bg-aba-500/10 flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-7 h-7 text-aba-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-700 mb-1">Nenhum protocolo cadastrado</h3>
+                    <p className="text-xs text-slate-500 mb-5 max-w-xs mx-auto">
+                      Protocolos definem os alvos de aprendizagem (DTT). Crie um para começar a registrar trials nesta sessão.
+                    </p>
+                    <button onClick={() => setShowProtocolModal(true)} className="px-5 py-2 bg-aba-500 text-white text-sm font-medium rounded-lg hover:bg-aba-600 transition-colors">
+                      + Criar Protocolo
+                    </button>
+                  </div>
+                )}
                 {isActive && protocols.length > 0 && (
                   <div className="border border-slate-200 rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -890,9 +894,9 @@ export default function SessionPage() {
                       </div>
                     ))}
                   </div>
-                ) : (
+                ) : protocols.length > 0 ? (
                   <p className="text-xs text-slate-400 text-center py-8">Nenhum trial registrado</p>
-                )}
+                ) : null}
               </div>
             )}
 
