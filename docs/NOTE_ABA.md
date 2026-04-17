@@ -1,6 +1,6 @@
 # AXIS ABA — NOTE ativo
 
-**Atualizado:** 2026-04-17 (tarde)
+**Atualizado:** 2026-04-17 (noite — Fase 1 de correção)
 **Produto:** AXIS ABA (Applied Behavior Analysis)
 **Motor:** CSO-ABA v2.6.1 (congelado)
 **Bible:** AXIS_ABA_BIBLE v2.6.1 + v2.7.0 Operadora Ready
@@ -26,14 +26,37 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 
 ## PENDÊNCIAS (próxima sessão)
 
-### Bugs
-- [ ] **`session_summaries` schema mismatch — metade TDAH** — corrigido em ABA
-  em 17/04 tarde (ver CONCLUÍDO abaixo). Falta aplicar o mesmo fix em
-  `/api/tdah/lgpd/delete/route.ts:244` (UPDATE session_summaries) — fica para
-  chat TDAH.
-  **Atenção:** o diagnóstico original estava INVERTIDO — schema canônico é
-  `summary_text` + `is_approved` (migration 007). Quem está quebrado são as
-  rotas LGPD que usam `content`/`status`. Ver ARCHIVE TCC Contradição #3.
+### Bugs — Fase 2 schema sweep (`session_summaries`)
+
+**Descoberta crítica em 17/04 noite (validação VPS produção):** o diagnóstico
+das Contradições #3 do ARCHIVE TCC estava INVERTIDO em relação ao banco real.
+A migration 007 define `summary_text` + `is_approved`, mas **nunca foi
+aplicada** nesta tabela — o DB de produção continua com as colunas originais
+`content` + `status` (string). Nossos 3 commits da tarde (P0-1 + P1-1) haviam
+**regredido** produção ao trocar `content`/`status` por `summary_text`/`is_approved`.
+
+Caminho adotado: **B (alinhar código com DB)**. Fase 1 (esta sessão noite) =
+reverter somente as 2 rotas que tocamos. Fase 2 (próxima sessão) = varrer
+todas as outras rotas que já estavam usando `summary_text`/`is_approved` e
+trazê-las para o schema real do DB.
+
+- [ ] **`app/api/aba/sessions/[id]/summary/route.ts`** — INSERT, UPDATE e
+  SELECT usam `summary_text` + `is_approved`. Rota de criação/aprovação de
+  resumo para o portal família. Precisa trocar para `content` + `status`.
+- [ ] **`app/api/familia/[token]/route.ts:147`** — SELECT com `summary_text`.
+  Portal família nunca vê resumos.
+- [ ] **`scripts/migrations/043_fix_portal_summaries_schema.sql`** — função
+  PL/pgSQL com `ss.summary_text AS content`. Investigar se foi aplicada em
+  produção; se sim, função quebrada silenciosa.
+- [ ] **Decisão pendente:** migração definitiva (renomear `content` →
+  `summary_text`, `status` → `is_approved`) ou congelar schema atual. Hoje
+  há divergência entre migration 007 (arquivo) e DB (realidade).
+
+### Cross-chat (fora deste escopo)
+- [ ] Chat **TDAH**: aplicar mesmo sweep em `/api/tdah/lgpd/delete/route.ts:244`,
+  `/api/tdah/lgpd/export/route.ts:94`, `/api/tdah/sessions/[id]/summary/route.ts`.
+- [ ] Chat **TCC**: atualizar ARCHIVE TCC Contradição #3 — diagnóstico original
+  estava baseado em migration que nunca rodou, e não em schema real do DB.
 
 ### Melhorias UX (público 50+)
 - [ ] Google Places Autocomplete no endereço de Locais (hoje pede lat/long
@@ -58,29 +81,32 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 
 ---
 
-## CONCLUÍDO EM 2026-04-17 (tarde) — LGPD fixes + next.config
+## REVERTIDOS EM 2026-04-17 (noite) — Fase 1
 
-Sessão de limpeza pós-destravamento v2.7.0. 4 fixes em 3 commits. Escopo ABA-only
-(versões TDAH dos bugs cross-módulo ficam para outro chat).
+Validação funcional em VPS de produção mostrou que os 2 fixes LGPD da tarde
+(P0-1 e P1-1) **regrediram** produção. A tabela `session_summaries` no DB real
+tem colunas `content` + `status` (string), e não `summary_text` + `is_approved`
+como a migration 007 sugeria. Migration 007 nunca foi aplicada nesta tabela.
 
-### P0-1 — LGPD delete não anonimizava resumos dos pais
-- **Arquivo:** `app/api/aba/lgpd/delete/route.ts:466`
-- **Bug:** `UPDATE session_summaries SET content = '[ANONIMIZADO]'` — coluna
-  `content` não existe (schema canônico via migration 007 é `summary_text`).
-  SAVEPOINT engolia o erro → **LGPD delete não anonimizava resumos.**
-- **Fix:** `content` → `summary_text`. 3 linhas (comentário + SQL).
-- **Origem do diagnóstico:** ARCHIVE TCC Contradição #3 (sessão TCC de ontem
-  já tinha detectado que pendência original estava invertida).
+### P0-1 REVERTIDO — `app/api/aba/lgpd/delete/route.ts`
+- **Commit original:** troca `content` → `summary_text` no UPDATE de anonimização.
+- **Revert:** restaurado `UPDATE session_summaries SET content = '[ANONIMIZADO]'`.
+- **Comentário adicionado:** nota explicando que a coluna real em produção é
+  `content` e que migration 007 nunca rodou nesta tabela.
+- **Estado prod:** LGPD delete volta a funcionar como antes da tarde.
 
-### P1-1 — LGPD export não gerava aba "Resumos" (2 blocos, não 1)
-- **Arquivo:** `app/api/aba/lgpd/export/route.ts`
-- **Bug parte 1 (linhas 193-196):** SELECT pedia `content, status` (inexistentes)
-  → `safeQuery` retornava `[]` silenciosamente → aba "Resumos" do Excel
-  **nunca era gerada**. Mais grave do que o ARCHIVE sinalizou.
-- **Bug parte 2 (linhas 532-533):** formatador Excel referenciava `s.content`
-  e `s.status` → campos `undefined` → células em branco.
-- **Fix:** SELECT usa `summary_text, is_approved`; formatador lê o mesmo e
-  converte boolean para label PT-BR (`"Aprovado"`/`"Pendente"`).
+### P1-1 REVERTIDO — `app/api/aba/lgpd/export/route.ts`
+- **Commit original:** SELECT e formatador trocados para `summary_text` +
+  `is_approved` com label PT-BR (`Aprovado`/`Pendente`).
+- **Revert:** SELECT volta a `content, status`; formatador volta a `s.content`
+  + `s.status || ''` (string direta do DB — valores reais: `approved`, `sent`).
+- **Estado prod:** aba "Resumos" do Excel volta a ser gerada.
+
+---
+
+## CONCLUÍDO EM 2026-04-17 (tarde + noite) — mantidos
+
+Fixes **não relacionados** ao schema mismatch. Preservados na Fase 1.
 
 ### P1-5 — Remoção de `ensureLgpdColumns()` (dead code poluindo logs)
 - **Arquivo:** `app/api/aba/lgpd/delete/route.ts`
@@ -97,11 +123,9 @@ Sessão de limpeza pós-destravamento v2.7.0. 4 fixes em 3 commits. Escopo ABA-o
   Uma linha. Next.js 16 renomeou a chave.
 
 ### Validação pendente (funcional)
-- [ ] Rodar LGPD delete em tenant de dev e confirmar que `summary_text` vira
-  `'[ANONIMIZADO]'` em todos os summaries
-- [ ] Rodar LGPD export em tenant com summaries e confirmar que aba "Resumos"
-  aparece com boolean formatado
 - [ ] Subir `npm run dev` e confirmar que warning deprecado sumiu dos logs
+- [ ] Confirmar em prod (após deploy Fase 1) que LGPD delete anonimiza
+  `content` e LGPD export gera aba "Resumos"
 
 ---
 
