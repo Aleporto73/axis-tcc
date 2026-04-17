@@ -87,7 +87,7 @@ e sessoes detalhadas em `/docs/sessoes/`.
 |---|---|---|---|
 | **ABA** | [/docs/NOTE_ABA.md](docs/NOTE_ABA.md) | [/docs/archive/NOTE_ABA_ARCHIVE.md](docs/archive/NOTE_ABA_ARCHIVE.md) | [/docs/sessoes/](docs/sessoes/) |
 | **TCC** | [/docs/NOTE_TCC.md](docs/NOTE_TCC.md) | [/docs/archive/NOTE_TCC_ARCHIVE.md](docs/archive/NOTE_TCC_ARCHIVE.md) | [/docs/sessoes/](docs/sessoes/) |
-| **TDAH** | `NOTE_TDAH.md` (raiz — **pendente migracao** p/ /docs/) | — | — |
+| **TDAH** | [/docs/NOTE_TDAH.md](docs/NOTE_TDAH.md) | [/docs/archive/NOTE_TDAH_ARCHIVE.md](docs/archive/NOTE_TDAH_ARCHIVE.md) | [/docs/sessoes/](docs/sessoes/) |
 
 **Quando trabalhar em um produto especifico:** carregar o NOTE daquele produto
 como primeira fonte de contexto (depois das skills). O NOTE ativo e sempre a
@@ -101,9 +101,11 @@ fonte-de-verdade corrente; o archive so deve ser consultado sob demanda.
 > reorganizacao de 17/04/2026. Ja foram importados para:
 > - `/docs/archive/NOTE_ABA_ARCHIVE.md` (sessao 17/04)
 > - `/docs/archive/NOTE_TCC_ARCHIVE.md` (sessao 17/04)
+> - `/docs/archive/NOTE_TDAH_ARCHIVE.md` (sessao 17/04)
 >
-> Podem ser removidos daqui quando TDAH tambem for migrado. Mantidos
-> por seguranca ate a migracao completa.
+> **Todos os 3 produtos migrados.** Os blocos abaixo agora sao redundantes
+> com os archives e podem ser removidos em commit futuro (apos validacao).
+> Mantidos por seguranca imediata.
 
 ## Changelog — Sessão 10/04/2026 (continuação)
 
