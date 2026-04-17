@@ -79,7 +79,7 @@ ALTER TABLE service_sites ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   DROP POLICY IF EXISTS service_sites_tenant_isolation ON service_sites;
   CREATE POLICY service_sites_tenant_isolation ON service_sites
-    USING (tenant_id = current_setting('app.current_org')::uuid);
+    USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
 EXCEPTION WHEN others THEN NULL;
 END $$;
 

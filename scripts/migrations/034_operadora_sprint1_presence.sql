@@ -265,7 +265,8 @@ CREATE INDEX IF NOT EXISTS idx_attachments_hash
 
 -- ─────────────────────────────────────────────────────
 -- §5. RLS — Row Level Security (todas as tabelas)
--- Mesmo padrão: tenant_id = current_setting('app.current_org')
+-- Padrão: tenant_id = current_setting('app.tenant_id', true)
+-- (GUC setado por withTenant() em src/database/with-tenant.ts)
 -- ─────────────────────────────────────────────────────
 
 -- session_presence_proofs
@@ -273,7 +274,7 @@ ALTER TABLE session_presence_proofs ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   DROP POLICY IF EXISTS presence_proofs_tenant_isolation ON session_presence_proofs;
   CREATE POLICY presence_proofs_tenant_isolation ON session_presence_proofs
-    USING (tenant_id = current_setting('app.current_org')::uuid);
+    USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
@@ -282,7 +283,7 @@ ALTER TABLE session_attestations ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   DROP POLICY IF EXISTS attestations_tenant_isolation ON session_attestations;
   CREATE POLICY attestations_tenant_isolation ON session_attestations
-    USING (tenant_id = current_setting('app.current_org')::uuid);
+    USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
@@ -291,7 +292,7 @@ ALTER TABLE session_evidence_bundles ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   DROP POLICY IF EXISTS evidence_bundles_tenant_isolation ON session_evidence_bundles;
   CREATE POLICY evidence_bundles_tenant_isolation ON session_evidence_bundles
-    USING (tenant_id = current_setting('app.current_org')::uuid);
+    USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
@@ -300,7 +301,7 @@ ALTER TABLE session_attachments ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   DROP POLICY IF EXISTS attachments_tenant_isolation ON session_attachments;
   CREATE POLICY attachments_tenant_isolation ON session_attachments
-    USING (tenant_id = current_setting('app.current_org')::uuid);
+    USING (tenant_id = current_setting('app.tenant_id', true)::uuid);
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
