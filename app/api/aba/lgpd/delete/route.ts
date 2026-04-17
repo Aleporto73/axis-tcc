@@ -433,9 +433,9 @@ export async function DELETE() {
         [tenantId], 'anon_maint_probes')
       stats.maintenance_probes = r14.rowCount
 
-      // 15. SESSION_SUMMARIES — anonimizar texto (coluna = summary_text, schema migration 007)
+      // 15. SESSION_SUMMARIES — anonimizar texto (coluna real em prod = content; migration 007 nunca aplicada nesta tabela)
       const r15 = await safeExec(client,
-        `UPDATE session_summaries SET summary_text = '[ANONIMIZADO]' WHERE tenant_id = $1`,
+        `UPDATE session_summaries SET content = '[ANONIMIZADO]' WHERE tenant_id = $1`,
         [tenantId], 'anon_summaries')
       stats.session_summaries = r15.rowCount
 

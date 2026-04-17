@@ -191,7 +191,7 @@ async function fetchAllData(client: PoolClient, tenantId: string) {
     `SELECT * FROM maintenance_probes WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'maintenance_probes')
 
   const summaries = await safeQuery(client,
-    `SELECT id, session_id, learner_id, summary_text, is_approved,
+    `SELECT id, session_id, learner_id, content, status,
             approved_by, approved_at, sent_at, created_at
      FROM session_summaries WHERE tenant_id = $1 ORDER BY created_at`, [tenantId], 'session_summaries')
 
@@ -529,8 +529,8 @@ async function buildExcelWorkbook(data: any, meta: { profileId: string; role: st
     addHeaderRow(ws, ['Sessão ID', 'Aprendiz ID', 'Conteúdo', 'Status', 'Aprovado em', 'Enviado em', 'Criado em'])
     for (const s of data.summaries) {
       ws.addRow([
-        s.session_id || '', s.learner_id || '', s.summary_text || '',
-        s.is_approved ? 'Aprovado' : 'Pendente', fmtDate(s.approved_at), fmtDate(s.sent_at), fmtDate(s.created_at),
+        s.session_id || '', s.learner_id || '', s.content || '',
+        s.status || '', fmtDate(s.approved_at), fmtDate(s.sent_at), fmtDate(s.created_at),
       ])
     }
     styleDataRows(ws, 2)
