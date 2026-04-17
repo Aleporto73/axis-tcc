@@ -146,18 +146,20 @@ export async function POST(request: NextRequest) {
 
       // Audit log
       await ctx.client.query(
-        `INSERT INTO axis_audit_logs (tenant_id, action, category, actor_id, metadata)
-        VALUES ($1, 'ATTACHMENT_UPLOADED', 'operational', $2,
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
+        VALUES ($1, $2, 'user', 'ATTACHMENT_UPLOADED', 'attachment', $3,
           jsonb_build_object(
-            'session_id', $3::text,
-            'attachment_id', $4::text,
-            'type', $5::text,
-            'is_duplicate', $6::text
-          )
+            'category', 'operational',
+            'profile_id', $4::text,
+            'session_id', $5::text,
+            'type', $6::text,
+            'is_duplicate', $7::text
+          ),
+          NOW()
         )`,
         [
-          ctx.tenantId, ctx.profileId, session_id,
-          inserted.rows[0].id, attachment_type, String(isDuplicate),
+          ctx.tenantId, ctx.userId, inserted.rows[0].id, ctx.profileId, session_id,
+          attachment_type, String(isDuplicate),
         ]
       )
 

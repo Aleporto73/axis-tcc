@@ -250,18 +250,20 @@ export async function POST(request: NextRequest) {
 
       // Audit log
       await ctx.client.query(
-        `INSERT INTO axis_audit_logs (tenant_id, action, category, actor_id, metadata)
-        VALUES ($1, 'CLAIM_PACKET_GENERATED', 'operational', $2,
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
+        VALUES ($1, $2, 'user', 'CLAIM_PACKET_GENERATED', 'claim_packet', $3,
           jsonb_build_object(
-            'packet_id', $3::text,
-            'learner_id', $4::text,
-            'period', $5::text,
-            'total_sessions', $6::text,
-            'completeness', $7::text
-          )
+            'category', 'operational',
+            'profile_id', $4::text,
+            'learner_id', $5::text,
+            'period', $6::text,
+            'total_sessions', $7::text,
+            'completeness', $8::text
+          ),
+          NOW()
         )`,
         [
-          ctx.tenantId, ctx.profileId, packetId, learner_id,
+          ctx.tenantId, ctx.userId, packetId, ctx.profileId, learner_id,
           `${period_start} - ${period_end}`,
           String(totalSessions), String(completenessPct),
         ]

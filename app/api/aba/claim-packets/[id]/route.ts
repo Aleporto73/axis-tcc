@@ -159,15 +159,17 @@ export async function PATCH(
 
       // Audit log
       await ctx.client.query(
-        `INSERT INTO axis_audit_logs (tenant_id, action, category, actor_id, metadata)
-        VALUES ($1, 'CLAIM_PACKET_STATUS_CHANGED', 'operational', $2,
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
+        VALUES ($1, $2, 'user', 'CLAIM_PACKET_STATUS_CHANGED', 'claim_packet', $3,
           jsonb_build_object(
-            'packet_id', $3::text,
-            'from_status', $4::text,
-            'to_status', $5::text
-          )
+            'category', 'operational',
+            'profile_id', $4::text,
+            'from_status', $5::text,
+            'to_status', $6::text
+          ),
+          NOW()
         )`,
-        [ctx.tenantId, ctx.profileId, id, currentStatus, packet_status]
+        [ctx.tenantId, ctx.userId, id, ctx.profileId, currentStatus, packet_status]
       )
 
       return updated

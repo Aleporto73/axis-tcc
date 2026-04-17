@@ -46,20 +46,23 @@ SET
 WHERE created_at < NOW() - INTERVAL '2 years'
   AND (extracted_geo IS NOT NULL OR canvas_data IS NOT NULL);
 
--- 3. Log de execução
+-- 3. Log de execução (system-driven, sem user_id)
 INSERT INTO axis_audit_logs (
-  tenant_id, action, category, actor_id, metadata
+  tenant_id, user_id, actor, action, entity_type, metadata, created_at
 )
 SELECT DISTINCT
   tenant_id,
+  NULL,
+  'system',
   'LGPD_GEO_PURGED',
-  'compliance',
-  '00000000-0000-0000-0000-000000000000',
+  'system_job',
   jsonb_build_object(
+    'category', 'compliance',
     'job', 'purge_geo',
     'executed_at', NOW()::text,
     'retention_period', '2 years'
-  )
+  ),
+  NOW()
 FROM session_presence_proofs
 WHERE created_at < NOW() - INTERVAL '2 years'
 LIMIT 1;

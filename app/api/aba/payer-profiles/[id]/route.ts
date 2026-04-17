@@ -174,18 +174,21 @@ export async function PATCH(
 
       // Audit log versionado (Bible: "Alteração de perfil de pagador é versionada")
       await ctx.client.query(
-        `INSERT INTO axis_audit_logs (tenant_id, action, category, actor_id, metadata)
-        VALUES ($1, 'PAYER_PROFILE_UPDATED', 'operational', $2,
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
+        VALUES ($1, $2, 'user', 'PAYER_PROFILE_UPDATED', 'payer_profile', $3,
           jsonb_build_object(
-            'profile_id', $3::text,
-            'payer_name', $4::text,
-            'changes', $5::jsonb
-          )
+            'category', 'operational',
+            'profile_id', $4::text,
+            'payer_name', $5::text,
+            'changes', $6::jsonb
+          ),
+          NOW()
         )`,
         [
           ctx.tenantId,
-          ctx.profileId,
+          ctx.userId,
           id,
+          ctx.profileId,
           updated.rows[0].payer_name,
           JSON.stringify(changes),
         ]

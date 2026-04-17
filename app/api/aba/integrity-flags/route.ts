@@ -134,18 +134,22 @@ export async function POST(request: NextRequest) {
 
       // Audit log
       await ctx.client.query(
-        `INSERT INTO axis_audit_logs (tenant_id, action, category, actor_id, metadata)
-        VALUES ($1, 'INTEGRITY_SCAN_TRIGGERED', 'operational', $2,
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, metadata, created_at)
+        VALUES ($1, $2, 'user', 'INTEGRITY_SCAN_TRIGGERED', 'integrity_scan',
           jsonb_build_object(
-            'total_flags', $3::text,
-            'inserted', $4::text,
-            'updated', $5::text,
-            'auto_resolved', $6::text,
-            'duration_ms', $7::text
-          )
+            'category', 'operational',
+            'profile_id', $3::text,
+            'total_flags', $4::text,
+            'inserted', $5::text,
+            'updated', $6::text,
+            'auto_resolved', $7::text,
+            'duration_ms', $8::text
+          ),
+          NOW()
         )`,
         [
           ctx.tenantId,
+          ctx.userId,
           ctx.profileId,
           scanResult.total_flags.toString(),
           scanResult.inserted.toString(),

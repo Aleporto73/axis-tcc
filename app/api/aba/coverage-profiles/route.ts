@@ -127,15 +127,17 @@ export async function POST(request: NextRequest) {
 
       // Audit log
       await ctx.client.query(
-        `INSERT INTO axis_audit_logs (tenant_id, action, category, actor_id, metadata)
-        VALUES ($1, 'COVERAGE_CREATED', 'operational', $2,
+        `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
+        VALUES ($1, $2, 'user', 'COVERAGE_CREATED', 'coverage_profile', $3,
           jsonb_build_object(
-            'learner_id', $3::text,
-            'payer_name', $4::text,
-            'coverage_id', $5::text
-          )
+            'category', 'operational',
+            'profile_id', $4::text,
+            'learner_id', $5::text,
+            'payer_name', $6::text
+          ),
+          NOW()
         )`,
-        [ctx.tenantId, ctx.profileId, learner_id, payer_name.trim(), inserted.rows[0].id]
+        [ctx.tenantId, ctx.userId, inserted.rows[0].id, ctx.profileId, learner_id, payer_name.trim()]
       )
 
       return inserted
