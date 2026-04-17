@@ -44,26 +44,6 @@ async function safeExec(client: PoolClient, query: string, params: any[], label:
   }
 }
 
-/**
- * Garante que tenants tem as colunas LGPD necessárias.
- * Usa SAVEPOINT para não quebrar a transação se já existirem.
- */
-async function ensureLgpdColumns(client: PoolClient) {
-  const columns = [
-    { name: 'cancellation_scheduled_at', type: 'TIMESTAMPTZ' },
-    { name: 'cancelled_at', type: 'TIMESTAMPTZ' },
-    { name: 'anonymized_at', type: 'TIMESTAMPTZ' },
-  ]
-  for (const col of columns) {
-    await safeExec(
-      client,
-      `ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`,
-      [],
-      `ensure_col_${col.name}`
-    )
-  }
-}
-
 // =====================================================
 // GET — Consultar status de exclusão agendada
 // =====================================================
@@ -72,9 +52,6 @@ export async function GET() {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
       const { client, tenantId } = ctx
-
-      // Garantir colunas existem
-      await ensureLgpdColumns(client)
 
       const tenantData = await client.query(
         `SELECT id, name, cancellation_scheduled_at, cancelled_at, anonymized_at
@@ -139,9 +116,6 @@ export async function POST() {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
       const { client, tenantId, userId, profileId, role } = ctx
-
-      // Garantir colunas existem
-      await ensureLgpdColumns(client)
 
       // Verificar se já está agendado
       const current = await client.query(
@@ -269,8 +243,6 @@ export async function DELETE() {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
       const { client, tenantId, userId, profileId, role } = ctx
-
-      await ensureLgpdColumns(client)
 
       // Verificar se exclusão foi agendada e 90 dias passaram
       const tenantCheck = await client.query(
@@ -461,9 +433,9 @@ export async function DELETE() {
         [tenantId], 'anon_maint_probes')
       stats.maintenance_probes = r14.rowCount
 
-      // 15. SESSION_SUMMARIES — anonimizar texto (coluna = content)
+      // 15. SESSION_SUMMARIES — anonimizar texto (coluna = summary_text, schema migration 007)
       const r15 = await safeExec(client,
-        `UPDATE session_summaries SET content = '[ANONIMIZADO]' WHERE tenant_id = $1`,
+        `UPDATE session_summaries SET summary_text = '[ANONIMIZADO]' WHERE tenant_id = $1`,
         [tenantId], 'anon_summaries')
       stats.session_summaries = r15.rowCount
 
@@ -704,8 +676,6 @@ export async function PATCH() {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
       const { client, tenantId, userId, profileId, role } = ctx
-
-      await ensureLgpdColumns(client)
 
       const tenantCheck = await client.query(
         `SELECT cancellation_scheduled_at, anonymized_at
