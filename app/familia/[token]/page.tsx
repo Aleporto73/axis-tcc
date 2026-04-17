@@ -307,7 +307,7 @@ export default function FamiliaPortalPage() {
               {(data.session_summaries || []).map((s: any) => (
                 <div key={s.id} className="bg-slate-50 rounded-lg p-3">
                   <p className="text-xs text-slate-400 mb-1">{new Date(s.created_at).toLocaleDateString('pt-BR')}</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{s.summary_text}</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{s.content}</p>
                 </div>
               ))}
             </div>

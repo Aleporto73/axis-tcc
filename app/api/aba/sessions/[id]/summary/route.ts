@@ -10,19 +10,19 @@ import { sessionSummaryTemplate } from '@/src/email/session-summary-template'
 // PUT — Aprova ou envia email via Resend
 // GET — Busca resumo existente
 //
-// Schema real (migration 007 + 024):
-//   summary_text TEXT       (conteúdo do resumo)
-//   is_approved  BOOLEAN    (false=rascunho, true=aprovado)
+// Schema real em produção (legacy, migration 007 nunca aplicada nesta tabela):
+//   content      TEXT       (conteúdo do resumo)
+//   status       VARCHAR    ('approved' | 'sent' — valores reais em prod)
 //   approved_by  VARCHAR    (quem aprovou)
 //   approved_at  TIMESTAMPTZ
 //   sent_at      TIMESTAMPTZ (não-nulo = enviado)
 //   learner_id   UUID       (aprendiz)
 //   source_module VARCHAR   ('aba')
 //
-// Lógica de status derivada:
-//   pending  = is_approved = false AND sent_at IS NULL
-//   approved = is_approved = true  AND sent_at IS NULL
-//   sent     = sent_at IS NOT NULL
+// Fluxo atômico (UI dispara 3 chamadas em sequência):
+//   POST        → INSERT com status='approved', approved_by, approved_at (salta rascunho)
+//   PUT approve → idempotente (no-op se já approved)
+//   PUT send    → UPDATE status='sent', sent_at
 // =====================================================
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!content) return NextResponse.json({ error: 'content obrigatório' }, { status: 400 })
 
     const result = await withTenant(async (ctx) => {
-      const { client, tenantId } = ctx
+      const { client, tenantId, userId } = ctx
       // Busca sessão
       const sess = await client.query(
         `SELECT s.*, l.name as learner_name
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const canAccess = await canAccessLearner(ctx, session.learner_id)
       if (!canAccess) throw new Error('Não encontrado')
 
-      // Upsert resumo
+      // Upsert resumo — cria direto como approved (salta rascunho, alinhado com prod)
       const existing = await client.query(
         'SELECT id FROM session_summaries WHERE session_id = $1 AND tenant_id = $2',
         [sessionId, tenantId]
@@ -60,18 +60,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       let summaryId: string
       if (existing.rows[0]) {
-        // Atualizar rascunho existente: volta para não-aprovado
+        // Sobrescreve conteúdo e reseta para approved (permite re-edição antes do envio)
         await client.query(
-          `UPDATE session_summaries SET summary_text = $1, is_approved = false, sent_at = NULL WHERE id = $2`,
-          [content, existing.rows[0].id]
+          `UPDATE session_summaries SET content = $1, status = 'approved', approved_by = $2, approved_at = NOW(), sent_at = NULL WHERE id = $3`,
+          [content, userId, existing.rows[0].id]
         )
         summaryId = existing.rows[0].id
       } else {
-        // Criar novo rascunho
         const ins = await client.query(
-          `INSERT INTO session_summaries (id, tenant_id, session_id, learner_id, summary_text, is_approved, source_module, created_at)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, false, 'aba', NOW()) RETURNING id`,
-          [tenantId, sessionId, session.learner_id, content]
+          `INSERT INTO session_summaries (id, tenant_id, session_id, learner_id, content, status, approved_by, approved_at, source_module, created_at)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'approved', $5, NOW(), 'aba', NOW()) RETURNING id`,
+          [tenantId, sessionId, session.learner_id, content, userId]
         )
         summaryId = ins.rows[0].id
       }
@@ -97,7 +96,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const result = await withTenant(async (ctx) => {
       const { client, tenantId, userId } = ctx
       const sum = await client.query(
-        `SELECT ss.id, ss.summary_text, ss.is_approved, ss.sent_at,
+        `SELECT ss.id, ss.content, ss.status, ss.sent_at,
                 s.scheduled_at, s.duration_minutes, s.learner_id,
                 l.name as learner_name, t.name as clinic_name
          FROM session_summaries ss
@@ -117,8 +116,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const clinicName = s.clinic_name || 'AXIS ABA'
 
       if (action === 'approve') {
+        // Idempotente: POST já criou como 'approved'. Se já enviado, retorna estado atual.
+        if (s.status === 'approved' || s.status === 'sent') {
+          return { status: s.status }
+        }
         await client.query(
-          `UPDATE session_summaries SET is_approved = true, approved_by = $1, approved_at = NOW() WHERE id = $2`,
+          `UPDATE session_summaries SET status = 'approved', approved_by = $1, approved_at = NOW() WHERE id = $2`,
           [userId, summary_id]
         )
         return { status: 'approved' }
@@ -126,15 +129,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       if (action === 'send') {
         if (!recipient_email) throw new Error('recipient_email obrigatório para envio')
-        // Verificar se está aprovado
-        if (!s.is_approved) throw new Error('Resumo precisa ser aprovado antes do envio')
+        // Verificar se está aprovado (status='approved', não 'sent')
+        if (s.status !== 'approved') throw new Error('Resumo precisa ser aprovado antes do envio')
         if (s.sent_at) throw new Error('Resumo já foi enviado')
 
         const html = sessionSummaryTemplate({
           learnerName: s.learner_name,
           sessionDate: s.scheduled_at,
           durationMinutes: s.duration_minutes,
-          content: s.summary_text, // mapeia coluna DB → param template
+          content: s.content, // coluna DB 'content' → param template 'content'
           clinicName,
         })
 
@@ -149,7 +152,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         if (emailRes.error) throw new Error(`Erro Resend: ${emailRes.error.message}`)
 
         await client.query(
-          `UPDATE session_summaries SET sent_at = NOW() WHERE id = $1`,
+          `UPDATE session_summaries SET status = 'sent', sent_at = NOW() WHERE id = $1`,
           [summary_id]
         )
         return { status: 'sent', email_id: emailRes.data?.id }
@@ -183,12 +186,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       if (!canAccess) return { summary: null }
 
       const res = await client.query(
-        `SELECT id, session_id, learner_id, summary_text, is_approved, approved_by, approved_at, sent_at, source_module, created_at,
-                CASE
-                  WHEN sent_at IS NOT NULL THEN 'sent'
-                  WHEN is_approved = true THEN 'approved'
-                  ELSE 'pending'
-                END as status
+        `SELECT id, session_id, learner_id, content, status, approved_by, approved_at, sent_at, source_module, created_at
          FROM session_summaries WHERE session_id = $1 AND tenant_id = $2 ORDER BY created_at DESC LIMIT 1`,
         [sessionId, tenantId]
       )

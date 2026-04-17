@@ -142,9 +142,10 @@ export async function GET(
           LIMIT 10`,
           [patientId, tenantId]
         ),
-        // Resumos de sessão enviados (schema real: learner_id, sent_at)
+        // Resumos de sessão enviados (schema real em prod: content, sent_at)
+        // TODO: source_module='tdah' exclui resumos ABA — revisar filtro (pendência de produto).
         client.query(
-          `SELECT id, session_id, summary_text, sent_at, created_at
+          `SELECT id, session_id, content, sent_at, created_at
           FROM session_summaries
           WHERE learner_id = $1 AND tenant_id = $2
             AND source_module = 'tdah'
