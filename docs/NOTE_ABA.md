@@ -1,6 +1,6 @@
 # AXIS ABA — NOTE ativo
 
-**Atualizado:** 2026-04-17 (noite — Fase 1 + Fase 2 + Local dropdown + Trials empty state)
+**Atualizado:** 2026-04-17 (noite — Fase 1 + Fase 2 + Local dropdown + Trials empty state + limpeza TDAH LGPD)
 **Produto:** AXIS ABA (Applied Behavior Analysis)
 **Motor:** CSO-ABA v2.6.1 (congelado)
 **Bible:** AXIS_ABA_BIBLE v2.6.1 + v2.7.0 Operadora Ready
@@ -28,6 +28,27 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 
 ### Bugs de produto (descobertos na Fase 2)
 
+- [ ] **Bug GCal sync ABA — não propaga `declared_site_id` / `service_mode`**
+  (descoberto 17/04 noite). Em `app/api/aba/google/sync/route.ts:172-190`
+  o INSERT de nova sessão via sync não passa `declared_site_id` nem
+  `service_mode`. Tenant operadora que importa sessão via Google Calendar
+  fica com sessão "cega" de GPS → integrity scanner flaga `MISSING_GEO`.
+  Regrediu com o Local dropdown aplicado hoje. Fix: quando o evento GCal
+  tem `location` string, tentar match por `site_name` em `service_sites`
+  ativos do tenant (ILIKE) e popular `declared_site_id` + derivar
+  `service_mode`. Sem match → manter NULL (free tier) ou flag dedicado
+  `UNMATCHED_GCAL_LOCATION` (operadora). Esforço ~1-2h.
+
+- [ ] **Bug GCal sync ABA — match por `guardians.email` falha silencioso**
+  (descoberto 17/04 noite). `app/api/aba/google/sync/route.ts:97-129`
+  tenta match do `attendee.email` contra `guardians.email` → se não
+  bater, evento é skipado (`skipped++` linha 194) sem notificação ao
+  terapeuta. Clínicas perdem sessões importadas sem saber. Fix: expor
+  lista de "eventos não importados" no retorno do endpoint + UI que
+  mostre "X eventos não foram importados por falta de match — revisar
+  emails dos responsáveis". Esforço ~2h (backend simples + UI na
+  página de sync). Complementa o bug acima.
+
 - [ ] **Portal família ABA não mostra resumos** — rota `/api/familia/[token]`
   filtra `source_module = 'tdah'` (linha 150). Mesmo com schema corrigido,
   resumos ABA são excluídos. Decisão de produto: mostrar resumos de todos os
@@ -48,22 +69,52 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
   no schema real. Marcar como "contradição resolvida com inversão".
 
 ### Melhorias UX (público 50+)
-- [ ] Google Places Autocomplete no endereço de Locais (hoje pede lat/long
-  manual — impraticável para psicólogo 50+)
-- [ ] Recorrência de sessões — levantar o que incomoda
+- [ ] **Google Places no cadastro de Locais** — substituir input manual de
+  lat/lng por campo CEP com autopreenchimento via ViaCEP + geocoding via
+  Nominatim (OpenStreetMap). Zero custo. Público 50+ entende CEP.
+  Alternativa premium: Google Places Autocomplete (requer billing Google
+  Cloud + `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` com restrição HTTP referrer).
+- [ ] **Recorrência de sessões** — feature futura. Decisão pendente entre:
+  - **B' (nativo):** dropdown "Recorrência" no modal Nova Sessão
+    (Semanal/Quinzenal/Mensal) + campo "Repetir por N ocorrências" (1-12) +
+    coluna `recurrence_group_id UUID` em `sessions_aba` para cancelar série.
+    Esforço ~4-6h + migration.
+  - **Opção 1 (outbound API GCal — PREFERIDA):** quando usuário escolhe
+    recorrência, AXIS chama `calendar.events.insert` com
+    `RRULE:FREQ=WEEKLY|BIWEEKLY|MONTHLY`. Google expande, sync inbound
+    importa instâncias. Zero lógica de recorrência no AXIS. Esforço ~3h
+    **APÓS** correção dos 2 bugs de sync abaixo. Requer GCal conectado +
+    scope `calendar.events.write`.
+  - Referência UI: dropdown padrão Google Calendar/Outlook/Calendly
+    (Não se repete / Semanal / Quinzenal / Mensal).
 
 ### Ops
-- [ ] Remover `ensureLgpdColumns()` de `/api/tdah/lgpd/delete/route.ts`
-  (metade ABA resolvida em 17/04 tarde; colunas já existem via 003/007)
-- [ ] Rotacionar `AXIS_ENCRYPTION_KEY` mensalmente (exposta no chat de 17/04)
+- [ ] **Rotacionar `AXIS_ENCRYPTION_KEY`** — **prazo: maio/2026**
+  (todos os sistemas juntos: TCC + ABA + TDAH). Chave exposta em chat
+  durante 17/04. Plano Big Bang (~15-30 min janela manutenção):
+  1. Gerar nova chave (`openssl rand -base64 48`)
+  2. Ativar `MAINTENANCE_MODE` (middleware — **não existe hoje, precisa criar**)
+  3. Backup DB completo
+  4. Script SQL `rotate_encryption_key.sql`: `UPDATE col = pgp_sym_encrypt(
+     pgp_sym_decrypt(col, old_key), new_key)` em 7 colunas × 4 tabelas:
+     - `service_sites.address_encrypted`
+     - `session_presence_proofs.latitude`, `.longitude`, `.ip_address`
+     - `session_attestations.ip_address`, `.canvas_data`
+     - `session_attachments.extracted_geo`
+  5. Trocar `.env` nos 3 sistemas
+  6. Restart PM2
+  7. Smoke test (ler Local cadastrado, criar sessão nova)
+  8. Desativar `MAINTENANCE_MODE`
+  - **Blocker 1:** middleware `MAINTENANCE_MODE` não existe — criar antes.
+  - **Blocker 2:** `scripts/jobs/purge_geo.sql` usa nomes de coluna
+    errados (`latitude`/`longitude`/`ip_address`) vs schema real
+    (`latitude_encrypted` etc.). Reconciliar antes da rotação.
+  - **Alternativa descartada:** dual-key versioning (coluna `key_version`
+    + re-encrypt gradual). Complexidade não justifica dado volume beta
+    (<500 rows estimados).
 - [ ] **Teste funcional LGPD export via UI** — gerar Excel em tenant com
   summaries e confirmar aba "Resumos" preenchida com `content` + `status`
   (`approved`/`sent`). Fase 1 aplicada cega — precisa validar em prod.
-
-### Comunicação
-- [ ] **Avisar Bianca:** bugs LGPD + schema mismatch resolvidos (Fase 1 + 2
-  aplicadas). Feature "Resumo aos Pais" deve funcionar em prod após deploy
-  da Fase 2 — confirmar via UI antes de anunciar.
 
 ### Infra (P1) — lição 17/04
 - [ ] Adicionar infra de test DB (docker-compose pg + migrations auto + teardown)
@@ -71,6 +122,29 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 - [ ] **Objetivo:** prevenir nova leva de schema mismatch. A sessão 17/04
   descobriu que os 480 testes Vitest mockados não detectam schema mismatch
   entre código e DB real.
+
+---
+
+## APLICADO EM 2026-04-17 (noite) — Remoção `ensureLgpdColumns()` TDAH
+
+Complemento ao fix análogo aplicado no ABA hoje cedo (P1-5). Função rodava
+`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS` em 4 call sites (GET, POST,
+DELETE, PATCH); user `axis_app` do Supabase não tem permissão de ALTER →
+falhas silenciosas via SAVEPOINT, só poluindo logs.
+
+### Fix — `app/api/tdah/lgpd/delete/route.ts`
+- Função `ensureLgpdColumns()` (linhas 40-49) removida.
+- 4 call sites removidos (GET:59, POST:105, DELETE:160, PATCH:289).
+- Comentário adicionado no topo do arquivo explicando que as 3 colunas
+  (`cancellation_scheduled_at`, `cancelled_at`, `anonymized_at`) existem
+  em `tenants` desde migration 003 (reforço em 007).
+- `PoolClient` import + `safeExec` preservados (ainda usados por 4+
+  call sites legítimos de UPDATE/INSERT com SAVEPOINT).
+
+### Impacto
+- Zero mudança de comportamento funcional.
+- Logs em prod param de poluir com erros 42501 (insufficient_privilege)
+  nos 4 call sites de ALTER.
 
 ---
 

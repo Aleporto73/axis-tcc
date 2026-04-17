@@ -37,16 +37,11 @@ async function safeExec(client: PoolClient, query: string, params: any[], label:
   }
 }
 
-async function ensureLgpdColumns(client: PoolClient) {
-  const columns = [
-    { name: 'cancellation_scheduled_at', type: 'TIMESTAMPTZ' },
-    { name: 'cancelled_at', type: 'TIMESTAMPTZ' },
-    { name: 'anonymized_at', type: 'TIMESTAMPTZ' },
-  ]
-  for (const col of columns) {
-    await safeExec(client, `ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`, [], `ensure_${col.name}`)
-  }
-}
+// Nota: colunas cancellation_scheduled_at / cancelled_at / anonymized_at
+// existem em `tenants` desde migration 003 (reforço em 007). Não é mais
+// necessário garantir schema em runtime (o user axis_app do Supabase não
+// tem permissão de ALTER TABLE, então as chamadas falhavam silenciosamente
+// via SAVEPOINT e só poluíam logs).
 
 /**
  * GET /api/tdah/lgpd/delete
@@ -56,7 +51,6 @@ export async function GET() {
   try {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
-      await ensureLgpdColumns(ctx.client)
 
       const td = await ctx.client.query(
         `SELECT cancellation_scheduled_at, anonymized_at FROM tenants WHERE id = $1`, [ctx.tenantId])
@@ -102,7 +96,6 @@ export async function POST() {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
       const { client, tenantId, userId, profileId, role } = ctx
-      await ensureLgpdColumns(client)
 
       const current = await client.query(
         `SELECT cancellation_scheduled_at, anonymized_at FROM tenants WHERE id = $1`, [tenantId])
@@ -157,7 +150,6 @@ export async function DELETE() {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
       const { client, tenantId, userId, profileId, role } = ctx
-      await ensureLgpdColumns(client)
 
       const tc = await client.query(
         `SELECT cancellation_scheduled_at, anonymized_at FROM tenants WHERE id = $1`, [tenantId])
@@ -286,7 +278,6 @@ export async function PATCH() {
     const result = await withTenant(async (ctx) => {
       requireAdmin(ctx)
       const { client, tenantId, userId, profileId } = ctx
-      await ensureLgpdColumns(client)
 
       const tc = await client.query(
         `SELECT cancellation_scheduled_at, anonymized_at FROM tenants WHERE id = $1`, [tenantId])
@@ -321,3 +312,4 @@ export async function PATCH() {
     return NextResponse.json({ error: message }, { status })
   }
 }
+                                                                                                                                                                                                                                      
