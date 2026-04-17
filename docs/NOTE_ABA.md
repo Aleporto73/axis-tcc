@@ -60,10 +60,6 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 - [ ] Remover `ensureLgpdColumns()` de `/api/tdah/lgpd/delete/route.ts`
   (metade ABA resolvida em 17/04 tarde; colunas já existem via 003/007)
 - [ ] Rotacionar `AXIS_ENCRYPTION_KEY` mensalmente (exposta no chat de 17/04)
-- [ ] **CI GitHub vermelho** — 10 erros TS no último push. VPS e local passam
-  limpo (`npm run typecheck` + `npm run build` OK). Investigar diferença de
-  ambiente (versão Node, flags do tsconfig, cache). Prioridade P1 — bloqueia
-  merge automático.
 - [ ] **Teste funcional LGPD export via UI** — gerar Excel em tenant com
   summaries e confirmar aba "Resumos" preenchida com `content` + `status`
   (`approved`/`sent`). Fase 1 aplicada cega — precisa validar em prod.
@@ -79,6 +75,28 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 - [ ] **Objetivo:** prevenir nova leva de schema mismatch. A sessão 17/04
   descobriu que os 480 testes Vitest mockados não detectam schema mismatch
   entre código e DB real.
+
+---
+
+## APLICADO EM 2026-04-17 (noite) — Fix CI GitHub
+
+CI estava vermelho desde commits da tarde. Local e VPS passavam limpo,
+CI reportava 10 erros ("Invalid character" + warnings Node deprecated).
+
+### Fix — `app/sessoes/[id]/components/ClinicalContext.tsx`
+- **Bug:** arquivo terminava com 8 bytes NUL (`\0`) após o `}\n` de
+  fechamento do componente (7463 bytes totais; 8 NULs nos bytes finais).
+  Provável corrupção de editor. TSC no CI detectou e reportou 8x
+  "Invalid character" (um por NUL).
+- **Por que local/VPS passavam:** provavelmente cache incremental (`.next`
+  + buildinfo) mascarava. CI faz fresh checkout, sem cache.
+- **Fix:** truncate de 7463 → 7455 bytes. Arquivo termina limpo com
+  `  </div>\n  )\n}\n`. Zero NUL no arquivo inteiro.
+
+### Fix — `.github/workflows/ci.yml`
+- **Bug:** Node 20 deprecated (GitHub Actions warning em 2026). 3 jobs
+  usavam `node-version: '20'`.
+- **Fix:** todos atualizados para `'22'` (LTS atual).
 
 ---
 
