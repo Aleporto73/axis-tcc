@@ -1,6 +1,6 @@
 # AXIS ABA — NOTE ativo
 
-**Atualizado:** 2026-04-17 (noite — Fase 1 de correção)
+**Atualizado:** 2026-04-17 (noite — Fase 1 + Fase 2 aplicadas)
 **Produto:** AXIS ABA (Applied Behavior Analysis)
 **Motor:** CSO-ABA v2.6.1 (congelado)
 **Bible:** AXIS_ABA_BIBLE v2.6.1 + v2.7.0 Operadora Ready
@@ -26,37 +26,26 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 
 ## PENDÊNCIAS (próxima sessão)
 
-### Bugs — Fase 2 schema sweep (`session_summaries`)
+### Bugs de produto (descobertos na Fase 2)
 
-**Descoberta crítica em 17/04 noite (validação VPS produção):** o diagnóstico
-das Contradições #3 do ARCHIVE TCC estava INVERTIDO em relação ao banco real.
-A migration 007 define `summary_text` + `is_approved`, mas **nunca foi
-aplicada** nesta tabela — o DB de produção continua com as colunas originais
-`content` + `status` (string). Nossos 3 commits da tarde (P0-1 + P1-1) haviam
-**regredido** produção ao trocar `content`/`status` por `summary_text`/`is_approved`.
+- [ ] **Portal família ABA não mostra resumos** — rota `/api/familia/[token]`
+  filtra `source_module = 'tdah'` (linha 150). Mesmo com schema corrigido,
+  resumos ABA são excluídos. Decisão de produto: mostrar resumos de todos os
+  módulos no portal TDAH? Criar rota `/api/familia/aba/[token]`? Ou o portal
+  ABA deveria usar `/api/portal/[token]` (que já funciona via função
+  `portal_get_summaries`)? Investigar.
+- [ ] **Decisão pendente sobre schema session_summaries:** migration 007
+  declara `summary_text` + `is_approved` mas DB real tem `content` + `status`.
+  Manter o DB como está (caminho adotado na Fase 2) ou rodar migração
+  definitiva algum dia? Hoje há divergência documental entre 007 e realidade.
 
-Caminho adotado: **B (alinhar código com DB)**. Fase 1 (esta sessão noite) =
-reverter somente as 2 rotas que tocamos. Fase 2 (próxima sessão) = varrer
-todas as outras rotas que já estavam usando `summary_text`/`is_approved` e
-trazê-las para o schema real do DB.
-
-- [ ] **`app/api/aba/sessions/[id]/summary/route.ts`** — INSERT, UPDATE e
-  SELECT usam `summary_text` + `is_approved`. Rota de criação/aprovação de
-  resumo para o portal família. Precisa trocar para `content` + `status`.
-- [ ] **`app/api/familia/[token]/route.ts:147`** — SELECT com `summary_text`.
-  Portal família nunca vê resumos.
-- [ ] **`scripts/migrations/043_fix_portal_summaries_schema.sql`** — função
-  PL/pgSQL com `ss.summary_text AS content`. Investigar se foi aplicada em
-  produção; se sim, função quebrada silenciosa.
-- [ ] **Decisão pendente:** migração definitiva (renomear `content` →
-  `summary_text`, `status` → `is_approved`) ou congelar schema atual. Hoje
-  há divergência entre migration 007 (arquivo) e DB (realidade).
-
-### Cross-chat (fora deste escopo)
-- [ ] Chat **TDAH**: aplicar mesmo sweep em `/api/tdah/lgpd/delete/route.ts:244`,
-  `/api/tdah/lgpd/export/route.ts:94`, `/api/tdah/sessions/[id]/summary/route.ts`.
-- [ ] Chat **TCC**: atualizar ARCHIVE TCC Contradição #3 — diagnóstico original
-  estava baseado em migration que nunca rodou, e não em schema real do DB.
+### Cross-chat (outras sessões)
+- [ ] Chat **TDAH**: aplicar mesmo schema sweep em
+  `/api/tdah/lgpd/delete/route.ts:244`, `/api/tdah/lgpd/export/route.ts:94`,
+  `/api/tdah/sessions/[id]/summary/route.ts` (INSERT+UPDATE+SELECT).
+- [ ] Chat **TCC**: atualizar ARCHIVE TCC Contradição #3 — diagnóstico
+  original estava baseado em migration que nunca rodou em prod (007), não
+  no schema real. Marcar como "contradição resolvida com inversão".
 
 ### Melhorias UX (público 50+)
 - [ ] Google Places Autocomplete no endereço de Locais (hoje pede lat/long
@@ -71,6 +60,18 @@ trazê-las para o schema real do DB.
 - [ ] Remover `ensureLgpdColumns()` de `/api/tdah/lgpd/delete/route.ts`
   (metade ABA resolvida em 17/04 tarde; colunas já existem via 003/007)
 - [ ] Rotacionar `AXIS_ENCRYPTION_KEY` mensalmente (exposta no chat de 17/04)
+- [ ] **CI GitHub vermelho** — 10 erros TS no último push. VPS e local passam
+  limpo (`npm run typecheck` + `npm run build` OK). Investigar diferença de
+  ambiente (versão Node, flags do tsconfig, cache). Prioridade P1 — bloqueia
+  merge automático.
+- [ ] **Teste funcional LGPD export via UI** — gerar Excel em tenant com
+  summaries e confirmar aba "Resumos" preenchida com `content` + `status`
+  (`approved`/`sent`). Fase 1 aplicada cega — precisa validar em prod.
+
+### Comunicação
+- [ ] **Avisar Bianca:** bugs LGPD + schema mismatch resolvidos (Fase 1 + 2
+  aplicadas). Feature "Resumo aos Pais" deve funcionar em prod após deploy
+  da Fase 2 — confirmar via UI antes de anunciar.
 
 ### Infra (P1) — lição 17/04
 - [ ] Adicionar infra de test DB (docker-compose pg + migrations auto + teardown)
@@ -78,6 +79,42 @@ trazê-las para o schema real do DB.
 - [ ] **Objetivo:** prevenir nova leva de schema mismatch. A sessão 17/04
   descobriu que os 480 testes Vitest mockados não detectam schema mismatch
   entre código e DB real.
+
+---
+
+## APLICADO EM 2026-04-17 (noite) — Fase 2 schema sweep
+
+Alinhamento de código com schema real do DB (coluna `content` + `status`
+string). Escopo ABA: 3 arquivos de código + 1 migration neutralizada.
+
+### Fix — `app/api/aba/sessions/[id]/summary/route.ts`
+- **Bug:** rota inteira (POST/PUT/GET) usava `summary_text` + `is_approved`,
+  colunas que não existem no DB prod. Toda escrita silenciosamente falhava
+  (SAVEPOINT engolia); feature "Resumo aos Pais" ABA nunca funcionou em prod.
+- **Fix:** reescrito para `content` + `status` (VARCHAR, valores
+  `'approved' | 'sent'`). Fluxo POST colapsado — cria direto como
+  `status='approved'` (salta rascunho, alinhado com realidade prod).
+  PUT approve virou idempotente (no-op se já approved/sent).
+
+### Fix — `app/api/familia/[token]/route.ts:147`
+- **Bug:** SELECT pedia `summary_text` (inexistente) → portal família TDAH
+  nunca mostrava resumos (silent fail).
+- **Fix:** SELECT agora usa `content`.
+- **Bug lateral descoberto:** filtro `source_module = 'tdah'` exclui ABA
+  (ver PENDÊNCIAS → Bugs de produto).
+
+### Fix — `app/familia/[token]/page.tsx:310`
+- **Bug:** render `{s.summary_text}` retornava `undefined`.
+- **Fix:** `{s.content}`.
+
+### Neutralização — `scripts/migrations/043_fix_portal_summaries_schema.sql`
+- **Bug:** migration (criada 24/03) pretendia sobrescrever função
+  `portal_get_summaries` (da migration 014) com versão usando
+  `ss.summary_text AS content` — **quebraria** prod se aplicada.
+- **Validação prod:** função ativa é a versão 014 (`ss.content` +
+  `ss.status = 'approved'`) — correta.
+- **Fix:** arquivo 043 substituído por no-op documentado (header explica a
+  história, preserva numeração, impede dano futuro).
 
 ---
 
