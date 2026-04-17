@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 import { ensureValidToken, getAttendeeResponse, calcDurationMinutes } from '@/src/google/calendar-helpers'
+import { matchSiteByLocation } from '@/src/google/match-site'
 
 // =====================================================
 // AXIS ABA — Google Calendar Manual Sync (Multi-Terapeuta)
@@ -82,6 +83,13 @@ export async function POST() {
       let imported = 0
       let updated = 0
       let skipped = 0
+      // Bug 2 fix: coletar eventos não importados por falta de match
+      // para o usuário entender o que aconteceu (UI em /aba/configuracoes).
+      const unmatched: Array<{
+        summary: string
+        attendee_emails: string[]
+        scheduled_at: string
+      }> = []
 
       for (const event of events) {
         // Ignorar eventos sem horário (all-day)
@@ -167,15 +175,21 @@ export async function POST() {
             updated++
           }
         } else if (learnerId && event.status !== 'cancelled') {
+          // Bug 1 fix: tentar match do event.location contra service_sites
+          // ativos do tenant. Se bater, popular declared_site_id +
+          // service_mode + location (derivado de site_name canônico).
+          const matchedSite = await matchSiteByLocation(client, tenantId, event.location)
+
           // Criar nova sessão ABA
           await client.query(
             `INSERT INTO sessions_aba
               (tenant_id, learner_id, therapist_id, scheduled_at, duration_minutes,
                status, google_event_id, google_calendar_id, calendar_source,
                external_etag, external_updated_at, google_meet_link, patient_response,
+               declared_site_id, service_mode, location,
                created_at)
              VALUES ($1, $2, $3, $4, $5, 'agendada', $6, 'primary', 'google',
-                     $7, $8, $9, $10, NOW())`,
+                     $7, $8, $9, $10, $11, $12, $13, NOW())`,
             [
               tenantId,
               learnerId,
@@ -187,10 +201,28 @@ export async function POST() {
               event.updated,
               meetLink,
               attendeeResponse,
+              matchedSite?.site_id || null,
+              matchedSite?.service_mode || null,
+              matchedSite?.site_name || event.location || null,
             ]
           )
           imported++
         } else {
+          // Bug 2 fix: se o evento tinha attendees e nenhum bateu com
+          // guardian/learner, reportar ao usuário. Eventos sem attendees
+          // ou cancelados entram em skipped silenciosamente (esperado).
+          const hasAttendees =
+            event.attendees &&
+            event.attendees.some((a: { email?: string; self?: boolean }) => a.email && !a.self)
+          if (hasAttendees && event.status !== 'cancelled' && !learnerId) {
+            unmatched.push({
+              summary: event.summary || '(sem título)',
+              attendee_emails: event.attendees
+                .filter((a: { email?: string; self?: boolean }) => a.email && !a.self)
+                .map((a: { email: string }) => a.email),
+              scheduled_at: event.start.dateTime,
+            })
+          }
           skipped++
         }
       }
@@ -220,12 +252,20 @@ export async function POST() {
             imported,
             updated,
             skipped,
+            unmatched_count: unmatched.length,
             total: events.length,
           }),
         ]
       )
 
-      return { success: true, imported, updated, skipped, total: events.length }
+      return {
+        success: true,
+        imported,
+        updated,
+        skipped,
+        total: events.length,
+        unmatched,
+      }
     })
 
     if ('error' in result) {

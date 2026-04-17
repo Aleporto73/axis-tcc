@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { sessionFilter, canAccessLearner, handleRouteError } from '@/src/database/with-role'
+import { deriveServiceMode } from '@/src/google/match-site'
 
 // =====================================================
 // AXIS ABA - API: Sessões (Multi-Terapeuta)
@@ -46,21 +47,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const { message, status } = handleRouteError(error)
     return NextResponse.json({ error: message }, { status })
-  }
-}
-
-// Mapeia site_type → service_mode (v2.7.0 Operadora Ready)
-// Ref: skill_axis_aba_v270.md — GPS compliance
-function deriveServiceMode(siteType: string): string {
-  switch (siteType) {
-    case 'home': return 'domiciliar'
-    case 'school': return 'escolar'
-    case 'telehealth': return 'telehealth'
-    case 'clinic':
-    case 'community':
-    case 'other':
-    default:
-      return 'presencial'
   }
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
 import { ensureValidToken, getAttendeeResponse, calcDurationMinutes } from '@/src/google/calendar-helpers'
+import { matchSiteByLocation } from '@/src/google/match-site'
 import { rateLimit } from '@/src/middleware/rate-limit'
 
 // =====================================================
@@ -142,14 +143,19 @@ async function syncCalendarForProfile(tenantId: string, profileId: string, clerk
           updated++
         }
       } else if (learnerId && event.status !== 'cancelled') {
+        // Bug 1 fix: match event.location contra service_sites ativos.
+        // Se bater, popular declared_site_id + service_mode + location.
+        const matchedSite = await matchSiteByLocation(client, tenantId, event.location)
+
         await client.query(
           `INSERT INTO sessions_aba
             (tenant_id, learner_id, therapist_id, scheduled_at, duration_minutes,
              status, google_event_id, google_calendar_id, calendar_source,
              external_etag, external_updated_at, google_meet_link, patient_response,
+             declared_site_id, service_mode, location,
              created_at)
            VALUES ($1, $2, $3, $4, $5, 'agendada', $6, 'primary', 'google',
-                   $7, $8, $9, $10, NOW())`,
+                   $7, $8, $9, $10, $11, $12, $13, NOW())`,
           [
             tenantId,
             learnerId,
@@ -161,9 +167,40 @@ async function syncCalendarForProfile(tenantId: string, profileId: string, clerk
             event.updated,
             meetLink,
             attendeeResponse,
+            matchedSite?.site_id || null,
+            matchedSite?.service_mode || null,
+            matchedSite?.site_name || event.location || null,
           ]
         )
         imported++
+      } else {
+        // Bug 2 fix (webhook async, sem UI): se o evento tinha attendees
+        // reais e nenhum bateu com guardian/learner, grava audit log
+        // CALENDAR_UNMATCHED_EVENT para rastreabilidade. Logs em prod
+        // permitem investigar por que sessões não foram importadas.
+        const hasAttendees =
+          event.attendees &&
+          event.attendees.some((a: { email?: string; self?: boolean }) => a.email && !a.self)
+        if (hasAttendees && event.status !== 'cancelled' && !learnerId) {
+          await client.query(
+            `INSERT INTO axis_audit_logs (tenant_id, user_id, action, metadata)
+             VALUES ($1, $2, 'CALENDAR_UNMATCHED_EVENT', $3)`,
+            [
+              tenantId,
+              clerkUserId,
+              JSON.stringify({
+                product: 'axis_aba',
+                source: 'webhook',
+                event_id: event.id,
+                summary: event.summary || '(sem título)',
+                scheduled_at: event.start.dateTime,
+                attendee_emails: event.attendees
+                  .filter((a: { email?: string; self?: boolean }) => a.email && !a.self)
+                  .map((a: { email: string }) => a.email),
+              }),
+            ]
+          )
+        }
       }
     }
 
