@@ -23,6 +23,22 @@ interface Learner {
   name: string
 }
 
+interface ServiceSite {
+  id: string
+  site_name: string
+  site_type: 'clinic' | 'home' | 'school' | 'telehealth' | 'community' | 'other'
+  is_active: boolean
+}
+
+const siteTypeLabels: Record<string, string> = {
+  clinic: 'Clínica',
+  home: 'Domicílio',
+  school: 'Escola',
+  telehealth: 'Telehealth',
+  community: 'Comunidade',
+  other: 'Outro',
+}
+
 const statusLabels: Record<string, string> = {
   scheduled: 'Agendada',
   in_progress: 'Em andamento',
@@ -87,10 +103,13 @@ function SessionCard({ s, highlight }: { s: Session; highlight?: boolean }) {
 
 export default function SessoesPage() {
   const searchParams = useSearchParams()
-  const { profile } = useRole()
+  const { profile, operadora } = useRole()
+  const useSiteDropdown = !!operadora?.serviceSites
   const defaultLocation = profile?.tenant_name || ''
   const [sessions, setSessions] = useState<Session[]>([])
   const [learners, setLearners] = useState<Learner[]>([])
+  const [sites, setSites] = useState<ServiceSite[]>([])
+  const [sitesLoaded, setSitesLoaded] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -101,15 +120,16 @@ export default function SessoesPage() {
     scheduled_date: '',
     scheduled_time: '',
     location: defaultLocation,
+    service_site_id: '',
     notes: '',
   })
 
-  // Atualizar location default quando profile carregar
+  // Atualizar location default quando profile carregar (só usado em tenants free sem operadora)
   useEffect(() => {
-    if (profile?.tenant_name && !form.location) {
+    if (!useSiteDropdown && profile?.tenant_name && !form.location) {
       setForm(f => ({ ...f, location: profile.tenant_name || '' }))
     }
-  }, [profile?.tenant_name])
+  }, [profile?.tenant_name, useSiteDropdown])
 
   // Detectar query params ?novo=true&aprendiz=xxx (vindo da ficha do aprendiz)
   useEffect(() => {
@@ -141,27 +161,50 @@ export default function SessoesPage() {
       .catch(() => {})
   }, [])
 
+  const fetchSites = useCallback(() => {
+    fetch('/api/aba/service-sites')
+      .then(r => r.ok ? r.json() : { sites: [] })
+      .then(d => {
+        const active = (d.sites || []).filter((s: ServiceSite) => s.is_active)
+        setSites(active)
+        setSitesLoaded(true)
+      })
+      .catch(() => setSitesLoaded(true))
+  }, [])
+
   useEffect(() => { fetchSessions() }, [fetchSessions])
   useEffect(() => { fetchLearners() }, [fetchLearners])
+  useEffect(() => {
+    if (showModal && useSiteDropdown && !sitesLoaded) fetchSites()
+  }, [showModal, useSiteDropdown, sitesLoaded, fetchSites])
 
   const handleSubmit = async () => {
     if (!form.learner_id || !form.scheduled_date || !form.scheduled_time) {
       setError('Aprendiz, data e horário são obrigatórios.')
       return
     }
+    if (useSiteDropdown && !form.service_site_id) {
+      setError('Local de atendimento é obrigatório (compliance GPS).')
+      return
+    }
     setSaving(true)
     setError(null)
     try {
       const scheduled_at = new Date(`${form.scheduled_date}T${form.scheduled_time}:00`).toISOString()
+      const body: Record<string, unknown> = {
+        learner_id: form.learner_id,
+        scheduled_at,
+        notes: form.notes.trim() || null,
+      }
+      if (useSiteDropdown) {
+        body.service_site_id = form.service_site_id
+      } else {
+        body.location = form.location.trim() || null
+      }
       const res = await fetch('/api/aba/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          learner_id: form.learner_id,
-          scheduled_at,
-          location: form.location.trim() || null,
-          notes: form.notes.trim() || null,
-        }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -169,7 +212,14 @@ export default function SessoesPage() {
         setSaving(false)
         return
       }
-      setForm({ learner_id: '', scheduled_date: '', scheduled_time: '', location: profile?.tenant_name || '', notes: '' })
+      setForm({
+        learner_id: '',
+        scheduled_date: '',
+        scheduled_time: '',
+        location: useSiteDropdown ? '' : (profile?.tenant_name || ''),
+        service_site_id: '',
+        notes: '',
+      })
       setShowModal(false)
       setSaving(false)
       fetchSessions()
@@ -312,8 +362,30 @@ export default function SessoesPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Local</label>
-                <input type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Ex: Sala 3, Clínica Centro" />
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Local de atendimento{useSiteDropdown ? ' *' : ''}
+                </label>
+                {useSiteDropdown ? (
+                  !sitesLoaded ? (
+                    <div className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-400 bg-slate-50">Carregando locais...</div>
+                  ) : sites.length === 0 ? (
+                    <div className="border border-amber-200 bg-amber-50 rounded-lg p-3">
+                      <p className="text-xs text-amber-700 mb-2">Nenhum local de atendimento cadastrado. É obrigatório para agendar sessões (compliance GPS).</p>
+                      <Link href="/aba/configuracoes#locais" className="inline-block text-xs font-medium text-aba-500 hover:text-aba-600 underline">
+                        Cadastre um Local →
+                      </Link>
+                    </div>
+                  ) : (
+                    <select value={form.service_site_id} onChange={e => setForm({...form, service_site_id: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500 bg-white">
+                      <option value="">Selecione...</option>
+                      {sites.map(s => (
+                        <option key={s.id} value={s.id}>{s.site_name} ({siteTypeLabels[s.site_type] || s.site_type})</option>
+                      ))}
+                    </select>
+                  )
+                ) : (
+                  <input type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Ex: Sala 3, Clínica Centro" />
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Observações</label>

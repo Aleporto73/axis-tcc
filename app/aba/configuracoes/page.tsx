@@ -532,7 +532,7 @@ export default function ConfiguracoesABAPage() {
         {/* Locais onde a equipe atende (clínica, domicílio, escola, etc.) */}
         {/* ============================================ */}
         {!isTerapeuta && operadora.serviceSites && (
-          <section className="bg-white rounded-xl border border-slate-200 p-6">
+          <section id="locais" className="bg-white rounded-xl border border-slate-200 p-6 scroll-mt-24">
             <ServiceSitesManager canEdit={isAdmin || role === 'supervisor'} />
           </section>
         )}

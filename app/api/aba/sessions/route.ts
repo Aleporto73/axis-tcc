@@ -49,12 +49,29 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Mapeia site_type → service_mode (v2.7.0 Operadora Ready)
+// Ref: skill_axis_aba_v270.md — GPS compliance
+function deriveServiceMode(siteType: string): string {
+  switch (siteType) {
+    case 'home': return 'domiciliar'
+    case 'school': return 'escolar'
+    case 'telehealth': return 'telehealth'
+    case 'clinic':
+    case 'community':
+    case 'other':
+    default:
+      return 'presencial'
+  }
+}
+
 // POST — Criar sessão ABA (agendar)
 // Terapeuta só pode agendar para seus aprendizes
+// Operadora: exige service_site_id → popula declared_site_id + service_mode + location (derivado de site_name)
+// Free/legado: aceita location (string livre), sem declared_site_id
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { learner_id, scheduled_at, location, notes } = body
+    const { learner_id, scheduled_at, service_site_id, location, notes } = body
 
     if (!learner_id || !scheduled_at) {
       return NextResponse.json(
@@ -79,6 +96,30 @@ export async function POST(request: NextRequest) {
         throw new Error('Aprendiz não vinculado a este terapeuta')
       }
 
+      // Caminho operadora: valida service_site, deriva service_mode, popula declared_site_id
+      if (service_site_id) {
+        const siteCheck = await ctx.client.query(
+          `SELECT id, site_name, site_type FROM service_sites
+           WHERE id = $1 AND tenant_id = $2 AND is_active = true`,
+          [service_site_id, ctx.tenantId]
+        )
+
+        if (siteCheck.rows.length === 0) {
+          throw new Error('Local de atendimento não encontrado ou inativo')
+        }
+
+        const site = siteCheck.rows[0]
+        const serviceMode = deriveServiceMode(site.site_type)
+
+        return await ctx.client.query(
+          `INSERT INTO sessions_aba (tenant_id, learner_id, therapist_id, scheduled_at, declared_site_id, service_mode, location, notes)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING *`,
+          [ctx.tenantId, learner_id, ctx.userId, scheduled_at, site.id, serviceMode, site.site_name, notes || null]
+        )
+      }
+
+      // Caminho legado (free/sem operadora): location string livre, sem declared_site_id
       return await ctx.client.query(
         `INSERT INTO sessions_aba (tenant_id, learner_id, therapist_id, scheduled_at, location, notes)
          VALUES ($1, $2, $3, $4, $5, $6)
@@ -94,6 +135,9 @@ export async function POST(request: NextRequest) {
     }
     if (error instanceof Error && error.message === 'Aprendiz não vinculado a este terapeuta') {
       return NextResponse.json({ error: error.message }, { status: 403 })
+    }
+    if (error instanceof Error && error.message === 'Local de atendimento não encontrado ou inativo') {
+      return NextResponse.json({ error: error.message }, { status: 404 })
     }
     const { message, status } = handleRouteError(error)
     return NextResponse.json({ error: message }, { status })
