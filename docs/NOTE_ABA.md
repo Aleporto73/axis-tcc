@@ -1,6 +1,6 @@
 # AXIS ABA — NOTE ativo
 
-**Atualizado:** 2026-04-17 (noite — Fase 1 + Fase 2 + Local dropdown)
+**Atualizado:** 2026-04-17 (noite — Fase 1 + Fase 2 + Local dropdown + Trials empty state)
 **Produto:** AXIS ABA (Applied Behavior Analysis)
 **Motor:** CSO-ABA v2.6.1 (congelado)
 **Bible:** AXIS_ABA_BIBLE v2.6.1 + v2.7.0 Operadora Ready
@@ -51,8 +51,6 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 - [ ] Google Places Autocomplete no endereço de Locais (hoje pede lat/long
   manual — impraticável para psicólogo 50+)
 - [ ] Recorrência de sessões — levantar o que incomoda
-- [ ] Vazio inteligente na aba Trials: botão "Criar Protocolo" quando
-  aprendiz não tem protocolo cadastrado
 
 ### Ops
 - [ ] Remover `ensureLgpdColumns()` de `/api/tdah/lgpd/delete/route.ts`
@@ -73,6 +71,36 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 - [ ] **Objetivo:** prevenir nova leva de schema mismatch. A sessão 17/04
   descobriu que os 480 testes Vitest mockados não detectam schema mismatch
   entre código e DB real.
+
+---
+
+## APLICADO EM 2026-04-17 (noite) — Empty state aba Trials
+
+Aba "Trials" dentro da página de sessão (`/aba/sessoes/[id]`) ficava
+visualmente vazia quando o aprendiz não tinha nenhum protocolo cadastrado.
+Havia só um banner amber fora das tabs (fácil de perder) e um texto
+"Nenhum trial registrado" no fim da aba. Usuário 50+ não entendia o
+próximo passo.
+
+### Fix — `app/aba/sessoes/[id]/page.tsx`
+- **Remoção do banner amber topo** (fora das tabs, redundante).
+- **Empty state rico dentro da aba Trials** quando `isActive &&
+  protocols.length === 0`: ícone clipboard-check, título "Nenhum
+  protocolo cadastrado", explicação curta ("Protocolos definem os alvos
+  de aprendizagem (DTT). Crie um para começar a registrar trials nesta
+  sessão."), CTA primário "+ Criar Protocolo" que abre o modal
+  `showProtocolModal` já existente.
+- **"Nenhum trial registrado"** agora condicional a `protocols.length > 0`
+  (evita duplicata com o empty state).
+- **Sessão `isCompleted` sem protocolo:** renderiza nada extra (não faz
+  sentido oferecer criar protocolo em sessão encerrada).
+
+### Impacto
+- Zero mudança de schema/backend. Só UX.
+- Infraestrutura (`showProtocolModal`, `handleCreateProtocol`) já existia
+  — só faltava wireup do empty state.
+- Reaproveita o mesmo modal de criação de protocolo usado pelo botão
+  "+ Protocolo" no topo do formulário (quando já tem protocolos).
 
 ---
 
