@@ -86,7 +86,7 @@ e sessoes detalhadas em `/docs/sessoes/`.
 | Produto | NOTE ativo | Archive | Sessoes |
 |---|---|---|---|
 | **ABA** | [/docs/NOTE_ABA.md](docs/NOTE_ABA.md) | [/docs/archive/NOTE_ABA_ARCHIVE.md](docs/archive/NOTE_ABA_ARCHIVE.md) | [/docs/sessoes/](docs/sessoes/) |
-| **TCC** | `NOTE_TCC.md` (raiz — **pendente migracao** p/ /docs/) | — | — |
+| **TCC** | [/docs/NOTE_TCC.md](docs/NOTE_TCC.md) | [/docs/archive/NOTE_TCC_ARCHIVE.md](docs/archive/NOTE_TCC_ARCHIVE.md) | [/docs/sessoes/](docs/sessoes/) |
 | **TDAH** | `NOTE_TDAH.md` (raiz — **pendente migracao** p/ /docs/) | — | — |
 
 **Quando trabalhar em um produto especifico:** carregar o NOTE daquele produto
@@ -98,10 +98,12 @@ fonte-de-verdade corrente; o archive so deve ser consultado sob demanda.
 ## Changelogs historicos por sessao
 
 > Os blocos abaixo sao changelogs consolidados no CLAUDE.md antes da
-> reorganizacao de 17/04/2026. Para ABA, ja foram importados para
-> `/docs/archive/NOTE_ABA_ARCHIVE.md` e podem ser removidos daqui
-> quando TCC e TDAH tambem forem migrados. Mantidos por seguranca
-> ate a migracao completa.
+> reorganizacao de 17/04/2026. Ja foram importados para:
+> - `/docs/archive/NOTE_ABA_ARCHIVE.md` (sessao 17/04)
+> - `/docs/archive/NOTE_TCC_ARCHIVE.md` (sessao 17/04)
+>
+> Podem ser removidos daqui quando TDAH tambem for migrado. Mantidos
+> por seguranca ate a migracao completa.
 
 ## Changelog — Sessão 10/04/2026 (continuação)
 
