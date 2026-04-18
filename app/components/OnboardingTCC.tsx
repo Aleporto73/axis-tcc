@@ -8,7 +8,7 @@ import { useUser } from '@clerk/nextjs'
 // OnboardingTCC — Overlay client-side (3 telas)
 //
 // Tela 1: Termo LGPD para psicólogos
-// Tela 2: CPF + CRP obrigatórios
+// Tela 2: CRP opcional (sem CPF)
 // Tela 3: Escolha — Clínica / Paciente / Ajuda
 //
 // Usa API /api/tcc/onboarding (GET/POST)
@@ -53,14 +53,6 @@ O profissional é responsável por:
 • Obter consentimento dos pacientes para uso do sistema e gravação de sessões
 • Manter suas credenciais de acesso em segurança`
 
-function formatCPF(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11)
-  if (digits.length <= 3) return digits
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
-  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
-}
-
 export default function OnboardingTCC() {
   const router = useRouter()
   const { user, isLoaded: userLoaded } = useUser()
@@ -70,8 +62,7 @@ export default function OnboardingTCC() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // CPF/CRP
-  const [cpf, setCpf] = useState('')
+  // CRP (opcional)
   const [crp, setCrp] = useState('')
 
   // Check progress
@@ -104,7 +95,6 @@ export default function OnboardingTCC() {
             document.cookie = 'axis_tcc_onboarding_done=1; path=/; max-age=31536000; SameSite=Lax'
           }
           setStatus(data.completed ? 'hidden' : 'show')
-          if (data.cpf) setCpf(formatCPF(data.cpf))
           if (data.crp) setCrp(data.crp)
         }
       } catch {
@@ -116,29 +106,23 @@ export default function OnboardingTCC() {
     return () => { cancelled = true }
   }, [userLoaded, user])
 
-  const handleSaveCpfCrp = async () => {
+  const handleSaveCrp = async () => {
     setSaving(true)
     setError('')
 
-    const cpfClean = cpf.replace(/\D/g, '')
-    if (cpfClean.length !== 11) {
-      setError('CPF deve ter 11 dígitos')
-      setSaving(false)
-      return
-    }
-    if (!crp.trim()) {
-      setError('CRP é obrigatório')
-      setSaving(false)
-      return
-    }
-
     try {
+      const body: { crp?: string } = {}
+      // CRP é opcional — só envia se preenchido
+      if (crp.trim()) {
+        body.crp = crp.trim()
+      }
+
       const res = await fetch('/api/tcc/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cpf: cpfClean, crp: crp.trim() }),
+        body: JSON.stringify(body),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({ error: 'Erro ao salvar' }))
 
       if (res.ok) {
         document.cookie = 'axis_tcc_onboarding_done=1; path=/; max-age=31536000; SameSite=Lax'
@@ -232,30 +216,20 @@ export default function OnboardingTCC() {
           </div>
         )}
 
-        {/* ══════════ TELA 2: CPF + CRP ══════════ */}
+        {/* ══════════ TELA 2: CRP OPCIONAL ══════════ */}
         {step === 2 && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
             <div className="text-center mb-6">
               <h1 className="text-2xl font-normal text-slate-800 mb-2">Dados Profissionais</h1>
               <p className="text-sm text-slate-500">O AXIS TCC é de uso exclusivo para Psicólogos</p>
-              <p className="text-xs text-slate-400 mt-2">O plano gratuito inclui 1 paciente e 120 minutos de transcrição por mês.</p>
+              <p className="text-xs text-slate-400 mt-2">O plano gratuito inclui 1 paciente e 300 minutos de transcrição gratuita.</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">CPF</label>
-                <input
-                  type="text"
-                  value={cpf}
-                  onChange={e => setCpf(formatCPF(e.target.value))}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#1e3a5f] transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">CRP</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                  CRP <span className="text-slate-400 font-normal">(opcional)</span>
+                </label>
                 <input
                   type="text"
                   value={crp}
@@ -263,6 +237,7 @@ export default function OnboardingTCC() {
                   placeholder="Ex: 06/12345"
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#1e3a5f] transition-colors"
                 />
+                <p className="text-xs text-slate-400 mt-1.5">Aparecerá nos relatórios clínicos. Você pode preencher depois em Configurações.</p>
               </div>
             </div>
 
@@ -273,14 +248,14 @@ export default function OnboardingTCC() {
             )}
 
             <button
-              onClick={handleSaveCpfCrp}
-              disabled={saving || !cpf || !crp}
+              onClick={handleSaveCrp}
+              disabled={saving}
               className={`w-full mt-6 px-6 py-3 text-sm font-medium rounded-xl shadow-sm transition-all active:scale-[0.98] ${
-                !saving && cpf && crp ? 'text-white hover:opacity-90' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                !saving ? 'text-white hover:opacity-90' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
-              style={!saving && cpf && crp ? { backgroundColor: TCC_COLOR } : {}}
+              style={!saving ? { backgroundColor: TCC_COLOR } : {}}
             >
-              {saving ? 'Salvando...' : 'Confirmar dados'}
+              {saving ? 'Salvando...' : crp.trim() ? 'Confirmar e continuar' : 'Continuar sem CRP'}
             </button>
 
             <button onClick={() => setStep(1)} disabled={saving} className="w-full mt-3 px-4 py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors">

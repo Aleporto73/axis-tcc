@@ -205,7 +205,7 @@ PM2 (produção VPS)
 | Arquivo | Função |
 |---|---|
 | `app/components/OnboardingTCC.tsx` | 3 telas (LGPD + CPF/CRP + escolha) |
-| `app/api/tcc/onboarding/route.ts` | GET/POST — completude por presença de CPF |
+| `app/api/tcc/onboarding/route.ts` | GET/POST — completude por tenants.onboarding_completed_at (Fase 12.1) |
 
 ---
 
