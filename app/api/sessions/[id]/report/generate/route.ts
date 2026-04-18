@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 import { readTranscriptSmart } from '@/src/services/transcript-storage'
+import { getTranscriptionUsage } from '@/src/services/transcription-limit'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -24,6 +25,17 @@ export async function POST(
 
     const result = await withTenant(async (ctx) => {
       const { client, tenantId } = ctx
+
+      // Fase 12.2: bloquear geracao se limite FREE atingido (antes de qualquer OpenAI call)
+      const usage = await getTranscriptionUsage(client, tenantId)
+      if (usage.limit_reached) {
+        return NextResponse.json({
+          error: 'LIMIT_REACHED',
+          message: 'Voce atingiu o limite gratuito de 300 minutos de transcricao. Faca upgrade para gerar relatorios.',
+          minutes_used: usage.minutes_used,
+          limit: usage.limit,
+        }, { status: 402 })
+      }
 
       // 1. Buscar sessao + paciente
       const sessionResult = await client.query(
