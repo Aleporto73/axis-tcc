@@ -8,7 +8,7 @@ import Sidebar from '../../components/Sidebar'
 import ClinicalReport from '../../components/ClinicalReport'
 import SignalsPreview from '../../components/SignalsPreview'
 import AnalyticalStructure from '../../components/AnalyticalStructure'
-import TranscriptionLimitModal from '@/app/tcc/components/TranscriptionLimitModal'
+import UpgradeModalTCC from '@/app/components/UpgradeModalTCC'
 import TranscriptView from './components/TranscriptView'
 import ClinicalContext from './components/ClinicalContext'
 import EvolutionPanel from './components/EvolutionPanel'
@@ -59,6 +59,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
   const [transcriptionJob, setTranscriptionJob] = useState<TranscriptionJob | null>(null)
   const [showLimitModal, setShowLimitModal] = useState(false)
+  const [limitReason, setLimitReason] = useState<'transcription' | 'report'>('transcription')
   const [clinicalReport, setClinicalReport] = useState<{ insights?: { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } } | null>(null)
   const [openInsightSection, setOpenInsightSection] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'transcricao' | 'relatorio' | 'anotacoes'>('relatorio')
@@ -166,6 +167,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       if (res.status === 402) {
         const data = await res.json().catch(() => ({}))
         if (data.error === 'LIMIT_REACHED') {
+          setLimitReason('transcription')
           setShowLimitModal(true)
           setUploading(false)
           return
@@ -683,6 +685,10 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                   hasTranscript={!!transcript?.text || !!transcript?.text_preview}
                   hasAnalysis={!!analysis}
                   onReportLoaded={(r) => setClinicalReport(r)}
+                  onLimitReached={() => {
+                    setLimitReason('report')
+                    setShowLimitModal(true)
+                  }}
                 />
 
                 {clinicalReport?.insights && (
@@ -766,10 +772,12 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* Modal limite de transcricao */}
-      {showLimitModal && (
-        <TranscriptionLimitModal onClose={() => setShowLimitModal(false)} />
-      )}
+      {/* Modal limite de transcricao / relatorio (Fase 12.3) */}
+      <UpgradeModalTCC
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        reason={limitReason}
+      />
     </div>
   )
 }

@@ -28,6 +28,7 @@ interface ClinicalReportProps {
   hasTranscript: boolean
   hasAnalysis: boolean
   onReportLoaded?: (report: ReportData | null) => void
+  onLimitReached?: () => void
 }
 
 const REPORT_FIELDS = [
@@ -38,7 +39,7 @@ const REPORT_FIELDS = [
   { key: 'closing', label: 'Encerramento / Tarefa de Casa', required: false },
 ] as const
 
-export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, onReportLoaded }: ClinicalReportProps) {
+export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, onReportLoaded, onLimitReached }: ClinicalReportProps) {
   const [report, setReport] = useState<ReportData | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -87,6 +88,10 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
+        if (res.status === 402 && data.error === 'LIMIT_REACHED') {
+          onLimitReached?.()
+          return
+        }
         setError(data.error || 'Erro ao gerar relatorio')
         return
       }

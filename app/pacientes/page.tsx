@@ -251,7 +251,7 @@ export default function PacientesPage() {
       )}
 
       {/* Upgrade Modal TCC */}
-      <UpgradeModalTCC open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+      <UpgradeModalTCC open={showUpgrade} onClose={() => setShowUpgrade(false)} reason="patients" />
     </div>
   )
 }
