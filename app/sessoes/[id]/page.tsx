@@ -7,7 +7,6 @@ import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
 import ClinicalReport from '../../components/ClinicalReport'
 import SignalsPreview from '../../components/SignalsPreview'
-import InsightsPanel from '../../components/InsightsPanel'
 import AnalyticalStructure from '../../components/AnalyticalStructure'
 import TranscriptionLimitModal from '@/app/tcc/components/TranscriptionLimitModal'
 import TranscriptView from './components/TranscriptView'
@@ -357,6 +356,80 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
           </div>
         )}
 
+        {/* INSIGHTS AXIS — inline, expandido, sem accordion */}
+        {clinicalReport?.insights && (
+          (clinicalReport.insights.emotions?.length || clinicalReport.insights.distortions?.length || clinicalReport.insights.techniques_identified?.length) ? (
+            <div>
+              <p className={sectionLabelCls}>Insights AXIS</p>
+
+              {/* Emoções com barras */}
+              {clinicalReport.insights.emotions && clinicalReport.insights.emotions.length > 0 && (
+                <div className="mb-4">
+                  <p className={isDark ? 'text-[11px] font-medium text-slate-300 mb-2' : 'text-[11px] font-medium text-slate-600 mb-2'}>Emoções</p>
+                  <div className="space-y-1.5">
+                    {clinicalReport.insights.emotions.map((em, i) => {
+                      const pct = Math.max(0, Math.min(100, Math.round((em.intensity || 0) * 100)))
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className={isDark ? 'text-[11px] text-slate-300 w-20 truncate' : 'text-[11px] text-slate-700 w-20 truncate'} title={em.name}>{em.name}</span>
+                          <div className={isDark ? 'flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden' : 'flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden'}>
+                            <div
+                              className={isDark ? 'h-full bg-gradient-to-r from-indigo-400 to-violet-400 rounded-full' : 'h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full'}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className={isDark ? 'text-[10px] font-mono text-slate-400 w-8 text-right' : 'text-[10px] font-mono text-slate-500 w-8 text-right'}>{pct}%</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Distorções com border-left amarelo */}
+              {clinicalReport.insights.distortions && clinicalReport.insights.distortions.length > 0 && (
+                <div className="mb-4">
+                  <p className={isDark ? 'text-[11px] font-medium text-slate-300 mb-2' : 'text-[11px] font-medium text-slate-600 mb-2'}>Distorções cognitivas</p>
+                  <div className="space-y-2">
+                    {clinicalReport.insights.distortions.map((d, i) => (
+                      <div
+                        key={i}
+                        className={isDark
+                          ? 'border-l-2 border-amber-400 bg-amber-900/10 pl-2 py-1'
+                          : 'border-l-2 border-amber-400 bg-amber-50 pl-2 py-1'}
+                      >
+                        <p className={isDark ? 'text-[11px] font-semibold text-amber-200' : 'text-[11px] font-semibold text-amber-800'}>{d.label}</p>
+                        {d.example && (
+                          <p className={isDark ? 'text-[11px] italic text-slate-400 mt-0.5 break-words' : 'text-[11px] italic text-slate-600 mt-0.5 break-words'}>&ldquo;{d.example}&rdquo;</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Técnicas como chips verdes */}
+              {clinicalReport.insights.techniques_identified && clinicalReport.insights.techniques_identified.length > 0 && (
+                <div>
+                  <p className={isDark ? 'text-[11px] font-medium text-slate-300 mb-2' : 'text-[11px] font-medium text-slate-600 mb-2'}>Técnicas identificadas</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {clinicalReport.insights.techniques_identified.map((t, i) => (
+                      <span
+                        key={i}
+                        className={isDark
+                          ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-900/40 text-emerald-300 border border-emerald-800'
+                          : 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200'}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null
+        )}
+
         {/* MICRO-EVENTOS */}
         <div>
           <p className={sectionLabelCls}>Micro-eventos</p>
@@ -425,15 +498,15 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       <Sidebar />
       <main className="md:ml-20 min-h-screen pb-20 md:pb-8">
         {/* 2-column grid (desktop) / stacked (mobile) */}
-        <div className="md:grid md:grid-cols-[300px_1fr]">
+        <div className="md:grid md:grid-cols-[420px_minmax(0,1fr)]">
 
-          {/* ───── Sidebar DARK (desktop only) ───── */}
-          <aside className="hidden md:block bg-slate-800 text-slate-100 p-6 md:min-h-[calc(100vh-0px)]">
+          {/* ───── Sidebar DARK (desktop only) — sticky com scroll próprio ───── */}
+          <aside className="hidden md:block bg-slate-800 text-slate-100 p-6 md:sticky md:top-0 md:max-h-screen md:overflow-y-auto">
             {sidebarContent('dark')}
           </aside>
 
           {/* ───── Main column ───── */}
-          <div className="px-4 md:px-8 lg:px-10 xl:px-12 pt-6">
+          <div className="min-w-0 px-4 md:px-8 lg:px-10 xl:px-12 pt-6">
             <div className="max-w-4xl">
 
               {/* Voltar */}
@@ -555,7 +628,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                         transcriptId={transcript.id}
                         fallbackText={transcript.text || transcript.text_preview}
                         previewMode={!transcriptExpanded}
-                        previewBlocks={2}
+                        previewBlocks={1}
                         onExpand={() => setTranscriptExpanded(true)}
                       />
                       <p className="text-xs text-slate-400 mt-4 mb-4">Transcrito em {new Date(transcript.created_at).toLocaleString('pt-BR')}</p>
@@ -566,20 +639,9 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                         </button>
                       )}
 
-                      {/* Insights AXIS + Estrutura Analítica — aparecem após Analisar TCC */}
-                      {(analysis || clinicalReport?.insights) && (
+                      {/* Estrutura Analítica (Fatos/Pensamentos/Emoções) — colapsado por default. Insights ficam SÓ na sidebar. */}
+                      {analysis && (
                         <div className="mt-8">
-                          <InsightsPanel
-                            insights={clinicalReport?.insights as { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } | null ?? null}
-                            microEvents={microEvents}
-                            cso={pipelineResult ? {
-                              activation_level: null,
-                              cognitive_rigidity: null,
-                              emotional_load: null,
-                              flex_trend: pipelineResult.flex_trend || null,
-                            } : null}
-                            openSection={openInsightSection}
-                          />
                           <AnalyticalStructure analysis={analysis} />
                         </div>
                       )}
@@ -611,7 +673,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
               )}
 
               {/* ═══ Tab: Relatório ═══ */}
-              {/* ClinicalReport mounted always so onReportLoaded fires and feeds Insights na Transcrição */}
+              {/* ClinicalReport mounted always so onReportLoaded fires and feeds Insights na sidebar */}
               <div className={activeTab === 'relatorio' ? '' : 'hidden'}>
                 <ClinicalReport
                   sessionId={id}
