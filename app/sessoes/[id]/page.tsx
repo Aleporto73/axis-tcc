@@ -62,7 +62,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [limitReason, setLimitReason] = useState<'transcription' | 'report'>('transcription')
   const [clinicalReport, setClinicalReport] = useState<{ insights?: { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } } | null>(null)
   const [openInsightSection, setOpenInsightSection] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'transcricao' | 'relatorio' | 'anotacoes'>('relatorio')
+  const [activeTab, setActiveTab] = useState<'transcricao' | 'relatorio'>('relatorio')
   const [evolution, setEvolution] = useState<any>(null)
   const [mobileContextOpen, setMobileContextOpen] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -585,16 +585,18 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                 >
                   Relatório
                 </button>
+                {/* Aba Anotações oculta - Fase 13.1 (sem funcionalidade ainda)
                 <button
-                  onClick={() => setActiveTab('anotacoes')}
+                  onClick={() => setActiveTab('anotacoes' as any)}
                   className={`py-3 text-sm font-medium transition-colors relative ${
-                    activeTab === 'anotacoes'
+                    (activeTab as string) === 'anotacoes'
                       ? 'text-slate-900 border-b-2 border-tcc-700'
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   Anotações
                 </button>
+                */}
               </nav>
 
               {/* ═══ Tab: Transcrição ═══ */}
@@ -708,16 +710,16 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                 )}
               </div>
 
-              {/* ═══ Tab: Anotações ═══ */}
-              {activeTab === 'anotacoes' && (
+              {/* Tab Anotações ocultada - Fase 13.1 (sem funcionalidade ainda)
+              {(activeTab as string) === 'anotacoes' && (
                 <section className="mb-8 pb-8">
                   <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <svg className="w-12 h-12 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     <p className="text-slate-400 text-sm">Funcionalidade em breve</p>
                     <p className="text-slate-300 text-xs mt-1">Anotações livres durante e após a sessão</p>
                   </div>
                 </section>
               )}
+              */}
 
               {/* Finalizar */}
               {session.status === 'em_andamento' && (

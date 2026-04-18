@@ -128,11 +128,13 @@ export default function ClinicalContext({ sessionId, patientId, onEvolutionLoade
           {!firstHasCaseBase && patientId && (
             <a
               href={`/pacientes/${patientId}`}
+              title="Base do caso ainda incompleta. Clique para completar no cadastro do paciente."
               className={isDark
-                ? 'bg-amber-900/40 text-amber-300 border border-amber-800 text-xs rounded-full px-2 py-0.5 hover:bg-amber-900/60 transition-colors'
-                : 'bg-amber-100 text-amber-700 text-xs rounded-full px-2 py-0.5 hover:bg-amber-200 transition-colors'}
+                ? 'inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 underline decoration-dotted underline-offset-2'
+                : 'inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 underline decoration-dotted underline-offset-2'}
             >
-              Base do caso incompleta
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              base incompleta
             </a>
           )}
         </div>
@@ -198,11 +200,13 @@ export default function ClinicalContext({ sessionId, patientId, onEvolutionLoade
               {patientId && (
                 <a
                   href={`/pacientes/${patientId}`}
+                  title="Base do caso ainda incompleta. Clique para completar no cadastro do paciente."
                   className={isDark
-                    ? 'bg-amber-900/40 text-amber-300 border border-amber-800 text-xs rounded-full px-2 py-0.5 hover:bg-amber-900/60 transition-colors whitespace-nowrap'
-                    : 'bg-amber-100 text-amber-700 text-xs rounded-full px-2 py-0.5 hover:bg-amber-200 transition-colors whitespace-nowrap'}
+                    ? 'inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 underline decoration-dotted underline-offset-2 whitespace-nowrap'
+                    : 'inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 underline decoration-dotted underline-offset-2 whitespace-nowrap'}
                 >
-                  Base do caso incompleta
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  base incompleta
                 </a>
               )}
             </div>

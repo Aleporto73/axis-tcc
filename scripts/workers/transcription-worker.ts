@@ -274,23 +274,27 @@ async function processJob(job: any): Promise<void> {
     console.log(`[JOB ${jid}] Arquivos salvos: raw=${rawPath} final=${finalPath}`)
 
     // 5. INSERT no banco (com RLS tenant)
-    console.log(`[JOB ${jid}] Inserindo no banco...`)
+    // Fase 13.1: audio_duration_seconds = end do ultimo segment do ASR (fonte de verdade)
+    const audioDurationSeconds: number | null = asrSegments.length > 0
+      ? Number(asrSegments[asrSegments.length - 1].end.toFixed(3))
+      : null
+    console.log(`[JOB ${jid}] Inserindo no banco... (audio_duration=${audioDurationSeconds}s)`)
     await withTenantClient(job.tenant_id, async (client) => {
       await client.query(
         `INSERT INTO transcripts
          (id, tenant_id, patient_id, session_id, session_date,
           transcript_path, raw_path, final_path,
           text_preview, char_count, char_count_raw, char_count_final,
-          postprocess_version, asr_model, processed)
+          postprocess_version, asr_model, audio_duration_seconds, processed)
          VALUES ($1, $2, $3, $4, CURRENT_DATE,
                  $5, $6, $7,
                  $8, $9, $10, $11,
-                 $12, $13, false)`,
+                 $12, $13, $14, false)`,
         [
           transcriptId, job.tenant_id, job.patient_id, job.session_id,
           transcriptPath, rawPath, finalPath,
           buildPreview(finalText), finalText.length, rawText.length, finalText.length,
-          POSTPROCESS_VERSION, 'whisper-1'
+          POSTPROCESS_VERSION, 'whisper-1', audioDurationSeconds
         ]
       )
 
@@ -343,15 +347,18 @@ async function processJob(job: any): Promise<void> {
 
       if (isFree) {
         const month = new Date().toISOString().slice(0, 7)
-        const estimatedMinutes = Math.max(1, Math.ceil((job.file_size_bytes || 0) / (64 * 1024 / 8 * 60)))
+        // Fase 13.1: duracao real do ASR > estimativa por tamanho (bitrate 64kbps era impreciso)
+        const realMinutes = audioDurationSeconds !== null && audioDurationSeconds > 0
+          ? Math.max(1, Math.ceil(audioDurationSeconds / 60))
+          : Math.max(1, Math.ceil((job.file_size_bytes || 0) / (64 * 1024 / 8 * 60)))  // fallback seguro
         await client.query(
           `INSERT INTO transcription_usage (tenant_id, month, minutes_used, updated_at)
            VALUES ($1, $2, $3, NOW())
            ON CONFLICT (tenant_id, month)
            DO UPDATE SET minutes_used = transcription_usage.minutes_used + $3, updated_at = NOW()`,
-          [job.tenant_id, month, estimatedMinutes]
+          [job.tenant_id, month, realMinutes]
         )
-        console.log(`[JOB ${jid}] Uso FREE incrementado: ${estimatedMinutes} min (${month})`)
+        console.log(`[JOB ${jid}] Uso FREE incrementado: ${realMinutes} min (audio=${audioDurationSeconds}s, fallback=${audioDurationSeconds === null})`)
       }
     })
     console.log(`[JOB ${jid}] INSERT ok: transcript_id=${transcriptId}`)

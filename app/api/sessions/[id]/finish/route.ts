@@ -5,6 +5,7 @@ import { createSystemAlert } from '@/src/utils/system-alert'
 import { readTranscriptSmart } from '@/src/services/transcript-storage'
 import { processEvent } from '@/src/engines/cso'
 import { generateSuggestions, CsoDelta } from '@/src/engines/suggestion'
+import { getSessionDuration } from '@/src/services/session-duration'
 
 // =====================================================
 // AXIS TCC — Finalizar Sessão + Pipeline CSO
@@ -42,12 +43,18 @@ export async function POST(
       const session = sessionResult.rows[0]
       const patientId = session.patient_id
       const startedAt = new Date(session.started_at)
-      const endedAt = new Date()
-      const durationMinutes = Math.round((endedAt.getTime() - startedAt.getTime()) / 60000)
 
-      // 2. Finalizar sessão
+      // 2. Finalizar sessao (ended_at primeiro, depois duracao canonica via helper)
       await client.query(
-        `UPDATE sessions SET status = 'finalizada', ended_at = NOW(), duration_minutes = $1 WHERE id = $2 AND tenant_id = $3`,
+        `UPDATE sessions SET status = 'finalizada', ended_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+        [id, tenantId]
+      )
+
+      // 2b. Buscar duracao canonica: audio real (transcripts.audio_duration_seconds) ou started_at/ended_at
+      const durationMinutes = await getSessionDuration(client, id, tenantId)
+
+      await client.query(
+        `UPDATE sessions SET duration_minutes = $1 WHERE id = $2 AND tenant_id = $3`,
         [durationMinutes, id, tenantId]
       )
 
