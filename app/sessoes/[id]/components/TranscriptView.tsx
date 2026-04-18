@@ -127,10 +127,10 @@ export default function TranscriptView({
       ? fallbackText.slice(0, 400) + (fallbackText.length > 400 ? '…' : '')
       : fullText
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
           <div className="border-l-2 border-slate-200 pl-4">
-            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+            <p className="text-xs text-slate-700 leading-snug whitespace-pre-wrap">
               {previewText}
             </p>
           </div>
@@ -157,11 +157,11 @@ export default function TranscriptView({
   const totalMinutes = Math.max(1, Math.round((totalBlocks * 30) / 60))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {blocks.map((block) => (
         <div key={block.startSeconds}>
           {/* Timestamp + linha separadora */}
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-1.5">
             <span className="text-xs text-slate-500 font-mono whitespace-nowrap">
               {block.timestamp}
             </span>
@@ -169,9 +169,9 @@ export default function TranscriptView({
           </div>
 
           {/* Bloco de texto */}
-          <div className="border-l-2 border-slate-200 pl-4 space-y-2">
+          <div className="border-l-2 border-slate-200 pl-4 space-y-1">
             {block.segments.map((seg) => (
-              <span key={seg.index} className="block text-sm text-slate-700 leading-relaxed">
+              <span key={seg.index} className="block text-xs text-slate-700 leading-snug">
                 {seg.text}
               </span>
             ))}

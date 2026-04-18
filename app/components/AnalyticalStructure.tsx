@@ -35,19 +35,19 @@ export default function AnalyticalStructure({ analysis }: AnalyticalStructurePro
   return (
     <section className="mb-8">
       <div
-        className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden"
+        className="bg-rose-50 rounded-xl border border-rose-200 overflow-hidden"
         title="Dados extraídos pela IA a partir da transcrição. Útil para revisão detalhada ou supervisão."
       >
         <button
           onClick={() => setMainOpen(!mainOpen)}
-          className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-slate-100 transition-colors"
+          className="flex items-center justify-between w-full px-4 py-3 cursor-pointer hover:bg-rose-100 transition-colors"
           aria-expanded={mainOpen}
         >
-          <div className="flex items-center gap-2 text-slate-500">
+          <div className="flex items-center gap-2 text-rose-700">
             <Search className="w-4 h-4" />
             <span className="text-sm font-medium">Ver estrutura da análise</span>
           </div>
-          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${mainOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-rose-500 transition-transform duration-200 ${mainOpen ? 'rotate-180' : ''}`} />
         </button>
 
         <div className={`transition-all duration-200 overflow-hidden ${mainOpen ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>

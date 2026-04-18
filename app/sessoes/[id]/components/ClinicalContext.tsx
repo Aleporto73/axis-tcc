@@ -188,19 +188,19 @@ export default function ClinicalContext({ sessionId, patientId, onEvolutionLoade
           </>
         ) : (
           <>
-            <div className="flex items-center gap-2 mb-0.5">
+            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
               <p
-                className={labelCls}
+                className={`${labelCls} whitespace-nowrap`}
                 title="Este é o assunto da última sessão, não necessariamente o foco do tratamento."
               >
-                Último tema da sessão anterior
+                Tema anterior
               </p>
               {patientId && (
                 <a
                   href={`/pacientes/${patientId}`}
                   className={isDark
-                    ? 'bg-amber-900/40 text-amber-300 border border-amber-800 text-xs rounded-full px-2 py-0.5 hover:bg-amber-900/60 transition-colors'
-                    : 'bg-amber-100 text-amber-700 text-xs rounded-full px-2 py-0.5 hover:bg-amber-200 transition-colors'}
+                    ? 'bg-amber-900/40 text-amber-300 border border-amber-800 text-xs rounded-full px-2 py-0.5 hover:bg-amber-900/60 transition-colors whitespace-nowrap'
+                    : 'bg-amber-100 text-amber-700 text-xs rounded-full px-2 py-0.5 hover:bg-amber-200 transition-colors whitespace-nowrap'}
                 >
                   Base do caso incompleta
                 </a>
@@ -242,7 +242,7 @@ export default function ClinicalContext({ sessionId, patientId, onEvolutionLoade
           </div>
         </div>
       ) : (
-        <p className={csoMutedCls}>CSO ainda nao calculado</p>
+        <p className={csoMutedCls}>CSO ainda não calculado</p>
       )}
     </div>
   )

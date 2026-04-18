@@ -348,14 +348,6 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
           />
         </div>
 
-        {/* EVOLUÇÃO CSO */}
-        {evolution && (
-          <div>
-            <p className={sectionLabelCls}>Evolução</p>
-            <EvolutionPanel evolution={evolution} variant={variant} />
-          </div>
-        )}
-
         {/* INSIGHTS AXIS — inline, expandido, sem accordion */}
         {clinicalReport?.insights && (
           (clinicalReport.insights.emotions?.length || clinicalReport.insights.distortions?.length || clinicalReport.insights.techniques_identified?.length) ? (
@@ -368,17 +360,20 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                   <p className={isDark ? 'text-[11px] font-medium text-slate-300 mb-2' : 'text-[11px] font-medium text-slate-600 mb-2'}>Emoções</p>
                   <div className="space-y-1.5">
                     {clinicalReport.insights.emotions.map((em, i) => {
-                      const pct = Math.max(0, Math.min(100, Math.round((em.intensity || 0) * 100)))
+                      // normalizeIntensity: aceita 0-1 ou 0-10 (legado). Width = intensity*100. Label = intensity.toFixed(1).
+                      const raw = em.intensity || 0
+                      const intensity = raw > 1 ? raw / 10 : raw
+                      const widthPct = Math.max(0, Math.min(100, Math.round(intensity * 100)))
                       return (
                         <div key={i} className="flex items-center gap-2">
                           <span className={isDark ? 'text-[11px] text-slate-300 w-20 truncate' : 'text-[11px] text-slate-700 w-20 truncate'} title={em.name}>{em.name}</span>
                           <div className={isDark ? 'flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden' : 'flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden'}>
                             <div
                               className={isDark ? 'h-full bg-gradient-to-r from-indigo-400 to-violet-400 rounded-full' : 'h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full'}
-                              style={{ width: `${pct}%` }}
+                              style={{ width: `${widthPct}%` }}
                             />
                           </div>
-                          <span className={isDark ? 'text-[10px] font-mono text-slate-400 w-8 text-right' : 'text-[10px] font-mono text-slate-500 w-8 text-right'}>{pct}%</span>
+                          <span className={isDark ? 'text-[10px] font-mono text-slate-400 w-8 text-right' : 'text-[10px] font-mono text-slate-500 w-8 text-right'}>{intensity.toFixed(1)}</span>
                         </div>
                       )
                     })}
@@ -428,6 +423,14 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
               )}
             </div>
           ) : null
+        )}
+
+        {/* EVOLUÇÃO CSO — movida para depois de Insights AXIS */}
+        {evolution && (
+          <div>
+            <p className={sectionLabelCls}>Evolução</p>
+            <EvolutionPanel evolution={evolution} variant={variant} />
+          </div>
         )}
 
         {/* MICRO-EVENTOS */}
@@ -498,7 +501,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       <Sidebar />
       <main className="md:ml-20 min-h-screen pb-20 md:pb-8">
         {/* 2-column grid (desktop) / stacked (mobile) */}
-        <div className="md:grid md:grid-cols-[420px_minmax(0,1fr)]">
+        <div className="md:grid md:grid-cols-[480px_minmax(0,1fr)]">
 
           {/* ───── Sidebar DARK (desktop only) — sticky com scroll próprio ───── */}
           <aside className="hidden md:block bg-slate-800 text-slate-100 p-6 md:sticky md:top-0 md:max-h-screen md:overflow-y-auto">
@@ -507,7 +510,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
 
           {/* ───── Main column ───── */}
           <div className="min-w-0 px-4 md:px-8 lg:px-10 xl:px-12 pt-6">
-            <div className="max-w-4xl">
+            <div className="max-w-5xl">
 
               {/* Voltar */}
               <Link href="/sessoes" className="inline-flex items-center gap-2 text-slate-500 hover:text-sky-600 transition-colors mb-4 text-sm">
