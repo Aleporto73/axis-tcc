@@ -187,7 +187,7 @@ export default function CaseBaseForm({ patientId }: CaseBaseFormProps) {
             />
           </div>
 
-          {/* Crenca central */}
+          {/* Crença central */}
           <div>
             <label className="block text-xs uppercase text-slate-500 tracking-wide font-medium mb-1">
               Crença central (hipótese)

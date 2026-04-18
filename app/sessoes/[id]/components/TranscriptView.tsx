@@ -18,6 +18,9 @@ interface SegmentBlock {
 interface TranscriptViewProps {
   transcriptId: string
   fallbackText?: string
+  previewMode?: boolean
+  previewBlocks?: number
+  onExpand?: () => void
 }
 
 /**
@@ -56,7 +59,13 @@ function groupByBlocks(segments: Segment[]): SegmentBlock[] {
     }))
 }
 
-export default function TranscriptView({ transcriptId, fallbackText }: TranscriptViewProps) {
+export default function TranscriptView({
+  transcriptId,
+  fallbackText,
+  previewMode = false,
+  previewBlocks = 2,
+  onExpand,
+}: TranscriptViewProps) {
   const [segments, setSegments] = useState<Segment[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -113,21 +122,39 @@ export default function TranscriptView({ transcriptId, fallbackText }: Transcrip
 
   // Fallback: erro na rota ou segments vazios (transcrição legada)
   if (error || !segments || segments.length === 0) {
+    const fullText = fallbackText || 'Transcrição disponível'
+    const previewText = previewMode && fallbackText
+      ? fallbackText.slice(0, 400) + (fallbackText.length > 400 ? '…' : '')
+      : fullText
     return (
       <div className="space-y-6">
         <div>
           <div className="border-l-2 border-slate-200 pl-4">
             <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-              {fallbackText || 'Transcrição disponível'}
+              {previewText}
             </p>
           </div>
+          {previewMode && fallbackText && fallbackText.length > 400 && (
+            <button
+              onClick={() => onExpand?.()}
+              className="mt-3 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+            >
+              ↓ continua · ver transcrição completa
+            </button>
+          )}
         </div>
       </div>
     )
   }
 
   // Segments agrupados em blocos de 30s
-  const blocks = groupByBlocks(segments)
+  const allBlocks = groupByBlocks(segments)
+  const totalBlocks = allBlocks.length
+  const blocks = previewMode ? allBlocks.slice(0, previewBlocks) : allBlocks
+  const hiddenCount = totalBlocks - blocks.length
+
+  // Tempo total em minutos (aprox. 30s por block)
+  const totalMinutes = Math.max(1, Math.round((totalBlocks * 30) / 60))
 
   return (
     <div className="space-y-6">
@@ -151,6 +178,15 @@ export default function TranscriptView({ transcriptId, fallbackText }: Transcrip
           </div>
         </div>
       ))}
+
+      {previewMode && hiddenCount > 0 && (
+        <button
+          onClick={() => onExpand?.()}
+          className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+        >
+          ↓ continua · {totalMinutes} min de transcrição
+        </button>
+      )}
     </div>
   )
 }

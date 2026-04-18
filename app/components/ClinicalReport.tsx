@@ -217,7 +217,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
           <div className="flex items-center gap-3 mb-4">
             <div className="h-4 bg-indigo-100 rounded animate-pulse w-48" />
           </div>
-          <p className="text-xs text-slate-400 mb-4">Analisando transcri&#231;&#227;o e extraindo insights...</p>
+          <p className="text-xs text-slate-400 mb-4">Analisando transcrição e extraindo insights...</p>
           <div className="space-y-3">
             {REPORT_FIELDS.map(f => (
               <div key={f.key}>
@@ -238,7 +238,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide" title="Relat\u00f3rio narrativo gerado por IA a partir da transcri\u00e7\u00e3o. Edit\u00e1vel e export\u00e1vel em PDF.">Relatório Clínico</h2>
+          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide" title="Relatório narrativo gerado por IA a partir da transcrição. Editável e exportável em PDF.">Relatório Clínico</h2>
           <span
             className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${
               report!.status === 'final'
@@ -246,7 +246,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
                 : 'bg-amber-50 text-amber-700 border border-amber-200'
             }`}
             role="status"
-            title={report!.status === 'final' ? 'Aprovado pelo profissional' : 'Rascunho \u2014 ainda n\u00e3o aprovado pelo profissional'}
+            title={report!.status === 'final' ? 'Aprovado pelo profissional' : 'Rascunho — ainda não aprovado pelo profissional'}
           >
             {report!.status === 'final' ? 'Aprovado' : 'Rascunho'}
           </span>
@@ -360,7 +360,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
                   disabled={isGenerating}
                   className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium"
                   aria-label="Regenerar relatorio"
-                  title="Gerar novamente usando IA. O conte\u00fado atual ser\u00e1 substitu\u00eddo."
+                  title="Gerar novamente usando IA. O conteúdo atual será substituído."
                 >
                   <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
                   Regenerar

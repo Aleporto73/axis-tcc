@@ -36,7 +36,7 @@ export default function AnalyticalStructure({ analysis }: AnalyticalStructurePro
     <section className="mb-8">
       <div
         className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden"
-        title="Dados extra\u00eddos pela IA a partir da transcri\u00e7\u00e3o. \u00datil para revis\u00e3o detalhada ou supervis\u00e3o."
+        title="Dados extraídos pela IA a partir da transcrição. Útil para revisão detalhada ou supervisão."
       >
         <button
           onClick={() => setMainOpen(!mainOpen)}
@@ -45,7 +45,7 @@ export default function AnalyticalStructure({ analysis }: AnalyticalStructurePro
         >
           <div className="flex items-center gap-2 text-slate-500">
             <Search className="w-4 h-4" />
-            <span className="text-sm font-medium">{"Ver estrutura da an\u00e1lise"}</span>
+            <span className="text-sm font-medium">Ver estrutura da análise</span>
           </div>
           <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${mainOpen ? 'rotate-180' : ''}`} />
         </button>
@@ -54,7 +54,7 @@ export default function AnalyticalStructure({ analysis }: AnalyticalStructurePro
           <div className="px-4 pb-4 space-y-3">
             {hasFatos && (
               <SubSection
-                title="Fatos extra\u00eddos"
+                title="Fatos extraídos"
                 count={analysis.fatos.length}
                 isOpen={openSubs.has('fatos')}
                 onToggle={() => toggleSub('fatos')}
@@ -88,7 +88,7 @@ export default function AnalyticalStructure({ analysis }: AnalyticalStructurePro
 
             {hasEmocoes && (
               <SubSection
-                title={"Emo\u00e7\u00f5es brutas"}
+                title="Emoções brutas"
                 count={analysis.emocoes.length}
                 isOpen={openSubs.has('emocoes')}
                 onToggle={() => toggleSub('emocoes')}

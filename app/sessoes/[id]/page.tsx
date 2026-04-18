@@ -44,7 +44,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [transcript, setTranscript] = useState<Transcript | null>(null)
   const [analysis, setAnalysis] = useState<TCCAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
-  // transcriptExpanded removido — TranscriptView cuida internamente
+  const [transcriptExpanded, setTranscriptExpanded] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
@@ -64,6 +64,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [openInsightSection, setOpenInsightSection] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'transcricao' | 'relatorio' | 'anotacoes'>('relatorio')
   const [evolution, setEvolution] = useState<any>(null)
+  const [mobileContextOpen, setMobileContextOpen] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -263,7 +264,6 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   }
 
   const microLabel = (type: string) => { switch (type) { case 'AVOIDANCE_OBSERVED': return 'Evitou'; case 'CONFRONTATION_OBSERVED': return 'Enfrentou'; case 'ADJUSTMENT_OBSERVED': return 'Ajustou'; case 'RECOVERY_OBSERVED': return 'Recuperou'; default: return type } }
-  const microColor = (type: string) => { switch (type) { case 'AVOIDANCE_OBSERVED': return 'bg-amber-50 text-amber-700 border-amber-200'; case 'CONFRONTATION_OBSERVED': return 'bg-emerald-50 text-emerald-700 border-emerald-200'; case 'ADJUSTMENT_OBSERVED': return 'bg-sky-50 text-sky-700 border-sky-200'; case 'RECOVERY_OBSERVED': return 'bg-violet-50 text-violet-700 border-violet-200'; default: return 'bg-slate-50 text-slate-700 border-slate-200' } }
   const fmtTime = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
 
   const getStatusText = (status: string) => {
@@ -302,202 +302,317 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
     </div>
   )
 
+  // ─────────────────────────────────────────────
+  // Sidebar (dark on desktop / light accordion on mobile)
+  // ─────────────────────────────────────────────
+  const sidebarContent = (variant: 'light' | 'dark') => {
+    const isDark = variant === 'dark'
+    const sectionLabelCls = isDark
+      ? 'text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2'
+      : 'text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2'
+    return (
+      <div className="space-y-5">
+        {/* PACIENTE */}
+        <div>
+          <p className={sectionLabelCls}>Paciente</p>
+          <Link
+            href={`/pacientes/${session.patient_id}`}
+            className={isDark
+              ? 'block text-base font-medium text-slate-100 hover:text-white transition-colors'
+              : 'block text-base font-medium text-slate-900 hover:text-slate-700 transition-colors'}
+          >
+            {session.patient_name}
+          </Link>
+          <div className={isDark ? 'mt-2 text-xs text-slate-400 space-y-0.5' : 'mt-2 text-xs text-slate-500 space-y-0.5'}>
+            <p>Sessão #{session.session_number}</p>
+            <p>{new Date(session.scheduled_at).toLocaleDateString('pt-BR')}</p>
+            <p>
+              {session.duration_minutes
+                ? `${session.duration_minutes} min`
+                : session.status === 'agendada'
+                ? 'Aguardando'
+                : 'Em andamento'}
+            </p>
+          </div>
+        </div>
+
+        <div className={isDark ? 'border-t border-slate-700' : 'border-t border-slate-200'} />
+
+        {/* CONTEXTO CLÍNICO */}
+        <div>
+          <p className={sectionLabelCls}>Contexto</p>
+          <ClinicalContext
+            sessionId={id}
+            patientId={session.patient_id}
+            onEvolutionLoaded={setEvolution}
+            variant={variant}
+          />
+        </div>
+
+        {/* EVOLUÇÃO CSO */}
+        {evolution && (
+          <div>
+            <p className={sectionLabelCls}>Evolução</p>
+            <EvolutionPanel evolution={evolution} variant={variant} />
+          </div>
+        )}
+
+        {/* MICRO-EVENTOS */}
+        <div>
+          <p className={sectionLabelCls}>Micro-eventos</p>
+          {session.status === 'em_andamento' && (
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <button
+                onClick={() => openMicroModal('AVOIDANCE_OBSERVED')}
+                className={isDark
+                  ? 'px-2 py-1.5 rounded-md text-xs font-medium border border-amber-800 bg-amber-900/30 text-amber-300 hover:bg-amber-900/50 transition-colors'
+                  : 'px-2 py-1.5 rounded-md text-xs font-medium border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors'}
+              >
+                Evitou
+              </button>
+              <button
+                onClick={() => openMicroModal('CONFRONTATION_OBSERVED')}
+                className={isDark
+                  ? 'px-2 py-1.5 rounded-md text-xs font-medium border border-emerald-800 bg-emerald-900/30 text-emerald-300 hover:bg-emerald-900/50 transition-colors'
+                  : 'px-2 py-1.5 rounded-md text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors'}
+              >
+                Enfrentou
+              </button>
+              <button
+                onClick={() => openMicroModal('ADJUSTMENT_OBSERVED')}
+                className={isDark
+                  ? 'px-2 py-1.5 rounded-md text-xs font-medium border border-sky-800 bg-sky-900/30 text-sky-300 hover:bg-sky-900/50 transition-colors'
+                  : 'px-2 py-1.5 rounded-md text-xs font-medium border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors'}
+              >
+                Ajustou
+              </button>
+              <button
+                onClick={() => openMicroModal('RECOVERY_OBSERVED')}
+                className={isDark
+                  ? 'px-2 py-1.5 rounded-md text-xs font-medium border border-violet-800 bg-violet-900/30 text-violet-300 hover:bg-violet-900/50 transition-colors'
+                  : 'px-2 py-1.5 rounded-md text-xs font-medium border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors'}
+              >
+                Recuperou
+              </button>
+            </div>
+          )}
+          {microEvents.length === 0 ? (
+            <p className={isDark ? 'text-xs text-slate-500 italic' : 'text-xs text-slate-400 italic'}>
+              {session.status === 'em_andamento' ? 'Nenhum registrado ainda' : 'Nenhum registrado'}
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {microEvents.map((ev, i) => (
+                <span
+                  key={i}
+                  className={isDark
+                    ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-900/50 text-slate-200 border border-slate-700'
+                    : 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200'}
+                  title={ev.note || undefined}
+                >
+                  {microLabel(ev.type)} ({(ev.intensity * 10).toFixed(0)}/10)
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Sidebar />
       <main className="md:ml-20 min-h-screen pb-20 md:pb-8">
-        <div className="px-4 md:px-8 lg:px-12 xl:px-16 pt-6">
-          <div className="max-w-4xl mx-auto">
-            
-            {/* Voltar */}
-            <Link href="/sessoes" className="inline-flex items-center gap-2 text-slate-500 hover:text-sky-600 transition-colors mb-6 text-sm">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-              Voltar
-            </Link>
+        {/* 2-column grid (desktop) / stacked (mobile) */}
+        <div className="md:grid md:grid-cols-[300px_1fr]">
 
-            {/* Header */}
-            <header className="flex items-start justify-between mb-8">
-              <div>
-                <h1 className="text-lg font-normal text-slate-400 tracking-tight mb-0">
-                  Sessão #{session.session_number}
-                </h1>
-                <p className="text-base text-slate-400 italic font-light">{session.patient_name}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                {session.google_meet_link && (
-                  <a href={session.google_meet_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors text-sm font-medium">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    Entrar no Meet
-                  </a>
-                )}
-                <span className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${getStatusStyle(session.status)}`}>
-                  {getStatusText(session.status)}
-                </span>
-              </div>
-            </header>
+          {/* ───── Sidebar DARK (desktop only) ───── */}
+          <aside className="hidden md:block bg-slate-800 text-slate-100 p-6 md:min-h-[calc(100vh-0px)]">
+            {sidebarContent('dark')}
+          </aside>
 
-            {/* Info Cards */}
-            <div className="grid grid-cols-3 gap-4 mb-8 pb-8 border-b border-slate-100">
-              <div className="text-center">
-                <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Paciente</p>
-                <p className="text-slate-900 font-medium">{session.patient_name}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Data</p>
-                <p className="text-slate-900 font-medium">{new Date(session.scheduled_at).toLocaleDateString('pt-BR')}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Duração</p>
-                <p className="text-slate-900 font-medium">{session.duration_minutes ? `${session.duration_minutes} min` : session.status === 'agendada' ? 'Aguardando' : 'Em andamento'}</p>
-              </div>
-            </div>
+          {/* ───── Main column ───── */}
+          <div className="px-4 md:px-8 lg:px-10 xl:px-12 pt-6">
+            <div className="max-w-4xl">
 
-            {/* Contexto Clínico — sessão anterior */}
-            <ClinicalContext sessionId={id} patientId={session.patient_id} onEvolutionLoaded={setEvolution} />
+              {/* Voltar */}
+              <Link href="/sessoes" className="inline-flex items-center gap-2 text-slate-500 hover:text-sky-600 transition-colors mb-4 text-sm">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                Voltar
+              </Link>
 
-            {/* Evolução CSO — deltas + timeline */}
-            <EvolutionPanel evolution={evolution} />
-
-            {/* Micro-eventos */}
-            {session.status === 'em_andamento' && (
-              <section className="mb-8 pb-8 border-b border-slate-100">
-                <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">Micro-eventos de Flexibilidade</h2>
-                <p className="text-sm text-slate-400 mb-4">Marque comportamentos observados durante a sessão</p>
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                  <button onClick={() => openMicroModal('AVOIDANCE_OBSERVED')} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors">
-                    <span className="text-sm font-medium text-amber-700">Evitou</span>
-                  </button>
-                  <button onClick={() => openMicroModal('CONFRONTATION_OBSERVED')} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors">
-                    <span className="text-sm font-medium text-emerald-700">Enfrentou</span>
-                  </button>
-                  <button onClick={() => openMicroModal('ADJUSTMENT_OBSERVED')} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-sky-200 bg-sky-50 hover:bg-sky-100 transition-colors">
-                    <span className="text-sm font-medium text-sky-700">Ajustou</span>
-                  </button>
-                  <button onClick={() => openMicroModal('RECOVERY_OBSERVED')} className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-violet-200 bg-violet-50 hover:bg-violet-100 transition-colors">
-                    <span className="text-sm font-medium text-violet-700">Recuperou</span>
-                  </button>
-                </div>
-                {microEvents.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {microEvents.map((ev, i) => (
-                      <span key={i} className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${microColor(ev.type)}`}>
-                        {microLabel(ev.type)} ({(ev.intensity * 10).toFixed(0)}/10)
-                        {ev.note && <span className="text-slate-400">- {ev.note}</span>}
-                      </span>
-                    ))}
+              {/* Mobile accordion: contexto clínico (substitui sidebar em mobile) */}
+              <div className="md:hidden mb-6">
+                <button
+                  onClick={() => setMobileContextOpen(!mobileContextOpen)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
+                  aria-expanded={mobileContextOpen}
+                >
+                  <span className="text-sm font-medium text-slate-700">Contexto clínico & micro-eventos</span>
+                  <svg
+                    className={`w-4 h-4 text-slate-400 transition-transform ${mobileContextOpen ? 'rotate-180' : ''}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {mobileContextOpen && (
+                  <div className="mt-3 p-4 bg-white border border-slate-200 rounded-lg">
+                    {sidebarContent('light')}
                   </div>
                 )}
-              </section>
-            )}
+              </div>
 
-            {/* ═══ Tabs ═══ */}
-            <nav className="flex gap-6 border-b border-slate-200 mb-8">
-              <button
-                onClick={() => setActiveTab('transcricao')}
-                className={`py-3 text-sm font-medium transition-colors relative ${
-                  activeTab === 'transcricao'
-                    ? 'text-slate-900 border-b-2 border-tcc-700'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Transcrição
-              </button>
-              <button
-                onClick={() => setActiveTab('relatorio')}
-                className={`py-3 text-sm font-medium transition-colors relative ${
-                  activeTab === 'relatorio'
-                    ? 'text-slate-900 border-b-2 border-tcc-700'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Relatório
-              </button>
-              <button
-                onClick={() => setActiveTab('anotacoes')}
-                className={`py-3 text-sm font-medium transition-colors relative ${
-                  activeTab === 'anotacoes'
-                    ? 'text-slate-900 border-b-2 border-tcc-700'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Anotações
-              </button>
-            </nav>
+              {/* Header */}
+              <header className="flex items-start justify-between mb-6">
+                <div>
+                  <h1 className="text-lg font-normal text-slate-400 tracking-tight mb-0">
+                    Sessão #{session.session_number}
+                  </h1>
+                  <p className="text-base text-slate-400 italic font-light">{session.patient_name}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {session.google_meet_link && (
+                    <a href={session.google_meet_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors text-sm font-medium">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                      Entrar no Meet
+                    </a>
+                  )}
+                  <span className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${getStatusStyle(session.status)}`}>
+                    {getStatusText(session.status)}
+                  </span>
+                </div>
+              </header>
 
-            {/* ═══ Tab: Transcrição ═══ */}
-            {activeTab === 'transcricao' && (
-              <section className="mb-8 pb-8 border-b border-slate-100">
-                {/* Progresso da transcrição (background job) */}
-                {transcriptionJob && (transcriptionJob.status === 'pending' || transcriptionJob.status === 'processing') && (
-                  <div className="mb-4 p-4 bg-sky-50 rounded-lg border border-sky-200">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
-                      <p className="text-sm font-medium text-sky-800">
-                        {transcriptionJob.status === 'pending' ? 'Aguardando processamento...' : 'Transcrevendo áudio...'}
+              {/* ═══ Tabs ═══ */}
+              <nav className="flex gap-6 border-b border-slate-200 mb-6">
+                <button
+                  onClick={() => setActiveTab('transcricao')}
+                  className={`py-3 text-sm font-medium transition-colors relative ${
+                    activeTab === 'transcricao'
+                      ? 'text-slate-900 border-b-2 border-tcc-700'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Transcrição
+                </button>
+                <button
+                  onClick={() => setActiveTab('relatorio')}
+                  className={`py-3 text-sm font-medium transition-colors relative ${
+                    activeTab === 'relatorio'
+                      ? 'text-slate-900 border-b-2 border-tcc-700'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Relatório
+                </button>
+                <button
+                  onClick={() => setActiveTab('anotacoes')}
+                  className={`py-3 text-sm font-medium transition-colors relative ${
+                    activeTab === 'anotacoes'
+                      ? 'text-slate-900 border-b-2 border-tcc-700'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Anotações
+                </button>
+              </nav>
+
+              {/* ═══ Tab: Transcrição ═══ */}
+              {activeTab === 'transcricao' && (
+                <section className="mb-8 pb-8 border-b border-slate-100">
+                  {/* Progresso da transcrição (background job) */}
+                  {transcriptionJob && (transcriptionJob.status === 'pending' || transcriptionJob.status === 'processing') && (
+                    <div className="mb-4 p-4 bg-sky-50 rounded-lg border border-sky-200">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-sm font-medium text-sky-800">
+                          {transcriptionJob.status === 'pending' ? 'Aguardando processamento...' : 'Transcrevendo áudio...'}
+                        </p>
+                      </div>
+                      <div className="w-full bg-sky-100 rounded-full h-2 overflow-hidden">
+                        <div className="bg-sky-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }} />
+                      </div>
+                      <p className="text-sm text-sky-700 mt-3">
+                        Você pode continuar usando o sistema normalmente. A transcrição será processada em segundo plano.
+                      </p>
+                      <p className="mt-2 text-slate-400" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                        Processamos as conversas em infraestrutura própria, com padrão de segurança hospitalar e proteção adicional além da LGPD.
                       </p>
                     </div>
-                    <div className="w-full bg-sky-100 rounded-full h-2 overflow-hidden">
-                      <div className="bg-sky-500 h-2 rounded-full animate-pulse" style={{ width: '100%' }} />
+                  )}
+                  {transcriptionJob && transcriptionJob.status === 'failed' && (
+                    <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-200">
+                      <p className="text-sm font-medium text-red-800">Erro na transcrição</p>
+                      <p className="text-sm text-red-600 mt-1">{transcriptionJob.error_message || 'Ocorreu um erro ao processar o áudio. Tente novamente.'}</p>
                     </div>
-                    <p className="text-sm text-sky-700 mt-3">
-                      Você pode continuar usando o sistema normalmente. A transcrição será processada em segundo plano.
-                    </p>
-                    <p className="mt-2 text-slate-400" style={{ fontSize: '12px', lineHeight: '1.4' }}>
-                      Processamos as conversas em infraestrutura própria, com padrão de segurança hospitalar e proteção adicional além da LGPD.
-                    </p>
-                  </div>
-                )}
-                {transcriptionJob && transcriptionJob.status === 'failed' && (
-                  <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-200">
-                    <p className="text-sm font-medium text-red-800">Erro na transcrição</p>
-                    <p className="text-sm text-red-600 mt-1">{transcriptionJob.error_message || 'Ocorreu um erro ao processar o áudio. Tente novamente.'}</p>
-                  </div>
-                )}
+                  )}
 
-                {transcript ? (
-                  <div>
-                    <TranscriptView
-                      transcriptId={transcript.id}
-                      fallbackText={transcript.text || transcript.text_preview}
-                    />
-                    <p className="text-xs text-slate-400 mt-4 mb-4">Transcrito em {new Date(transcript.created_at).toLocaleString('pt-BR')}</p>
-                    {!analysis && (
-                      <button onClick={handleTCC} disabled={analyzing} className="flex items-center gap-2 px-5 py-2.5 bg-violet-500 text-white rounded-lg hover:bg-violet-600 disabled:opacity-50 transition-colors text-sm font-medium">
-                        {analyzing ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>}
-                        {analyzing ? 'Analisando...' : 'Analisar TCC'}
-                      </button>
-                    )}
-                  </div>
-                ) : !uploading && !transcriptionJob && (
-                  <div>
-                    <p className="text-slate-400 italic mb-4 text-sm">Nenhuma transcrição</p>
-                    <div className="flex gap-3">
-                      {!isRecording ? (
-                        <button onClick={startRec} disabled={uploading} className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100 disabled:opacity-50 transition-colors text-sm font-medium">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                          Gravar
-                        </button>
-                      ) : (
-                        <button onClick={stopRec} className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-lg animate-pulse text-sm font-medium">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" /></svg>
-                          Parar ({fmtTime(recordingTime)})
+                  {transcript ? (
+                    <div>
+                      <TranscriptView
+                        transcriptId={transcript.id}
+                        fallbackText={transcript.text || transcript.text_preview}
+                        previewMode={!transcriptExpanded}
+                        previewBlocks={2}
+                        onExpand={() => setTranscriptExpanded(true)}
+                      />
+                      <p className="text-xs text-slate-400 mt-4 mb-4">Transcrito em {new Date(transcript.created_at).toLocaleString('pt-BR')}</p>
+                      {!analysis && (
+                        <button onClick={handleTCC} disabled={analyzing} className="flex items-center gap-2 px-5 py-2.5 bg-violet-500 text-white rounded-lg hover:bg-violet-600 disabled:opacity-50 transition-colors text-sm font-medium">
+                          {analyzing ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>}
+                          {analyzing ? 'Analisando...' : 'Analisar TCC'}
                         </button>
                       )}
-                      <label className={`flex items-center gap-2 px-5 py-2.5 bg-sky-50 text-sky-600 border border-sky-200 rounded-lg cursor-pointer hover:bg-sky-100 transition-colors text-sm font-medium ${uploading ? 'opacity-50' : ''}`}>
-                        {uploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Enviando"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
-                        {uploading ? 'Enviando...' : 'Upload'}
-                        <input type="file" accept="audio/*" onChange={handleUpload} disabled={uploading} className="hidden" />
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </section>
-            )}
 
-            {/* ═══ Tab: Relatório ═══ */}
-            {activeTab === 'relatorio' && (
-              <>
-                {/* Relatório Clínico — Sessão v2 */}
+                      {/* Insights AXIS + Estrutura Analítica — aparecem após Analisar TCC */}
+                      {(analysis || clinicalReport?.insights) && (
+                        <div className="mt-8">
+                          <InsightsPanel
+                            insights={clinicalReport?.insights as { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } | null ?? null}
+                            microEvents={microEvents}
+                            cso={pipelineResult ? {
+                              activation_level: null,
+                              cognitive_rigidity: null,
+                              emotional_load: null,
+                              flex_trend: pipelineResult.flex_trend || null,
+                            } : null}
+                            openSection={openInsightSection}
+                          />
+                          <AnalyticalStructure analysis={analysis} />
+                        </div>
+                      )}
+                    </div>
+                  ) : !uploading && !transcriptionJob && (
+                    <div>
+                      <p className="text-slate-400 italic mb-4 text-sm">Nenhuma transcrição</p>
+                      <div className="flex gap-3">
+                        {!isRecording ? (
+                          <button onClick={startRec} disabled={uploading} className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100 disabled:opacity-50 transition-colors text-sm font-medium">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                            Gravar
+                          </button>
+                        ) : (
+                          <button onClick={stopRec} className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-lg animate-pulse text-sm font-medium">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" /></svg>
+                            Parar ({fmtTime(recordingTime)})
+                          </button>
+                        )}
+                        <label className={`flex items-center gap-2 px-5 py-2.5 bg-sky-50 text-sky-600 border border-sky-200 rounded-lg cursor-pointer hover:bg-sky-100 transition-colors text-sm font-medium ${uploading ? 'opacity-50' : ''}`}>
+                          {uploading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Enviando"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
+                          {uploading ? 'Enviando...' : 'Upload'}
+                          <input type="file" accept="audio/*" onChange={handleUpload} disabled={uploading} className="hidden" />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* ═══ Tab: Relatório ═══ */}
+              {/* ClinicalReport mounted always so onReportLoaded fires and feeds Insights na Transcrição */}
+              <div className={activeTab === 'relatorio' ? '' : 'hidden'}>
                 <ClinicalReport
                   sessionId={id}
                   hasTranscript={!!transcript?.text || !!transcript?.text_preview}
@@ -505,7 +620,6 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                   onReportLoaded={(r) => setClinicalReport(r)}
                 />
 
-                {/* Preview de Sinais */}
                 {clinicalReport?.insights && (
                   <SignalsPreview
                     insights={clinicalReport.insights as { emotions?: { name: string; intensity: number }[]; distortions?: { type: string; label: string; example: string }[] }}
@@ -515,60 +629,47 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                       else acc.push({ type: ev.type, count: 1 })
                       return acc
                     }, [])}
-                    onClickSignal={setOpenInsightSection}
+                    onClickSignal={(section) => {
+                      setOpenInsightSection(section)
+                      setActiveTab('transcricao')
+                    }}
                   />
                 )}
+              </div>
 
-                {/* Insights AXIS — Sessão v2 */}
-                <InsightsPanel
-                  insights={clinicalReport?.insights as { emotions?: { name: string; intensity: number }[]; topics?: string[]; distortions?: { type: string; label: string; example: string }[]; techniques_identified?: string[] } | null ?? null}
-                  microEvents={microEvents}
-                  cso={pipelineResult ? {
-                    activation_level: null,
-                    cognitive_rigidity: null,
-                    emotional_load: null,
-                    flex_trend: pipelineResult.flex_trend || null,
-                  } : null}
-                  openSection={openInsightSection}
-                />
+              {/* ═══ Tab: Anotações ═══ */}
+              {activeTab === 'anotacoes' && (
+                <section className="mb-8 pb-8">
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <svg className="w-12 h-12 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    <p className="text-slate-400 text-sm">Funcionalidade em breve</p>
+                    <p className="text-slate-300 text-xs mt-1">Anotações livres durante e após a sessão</p>
+                  </div>
+                </section>
+              )}
 
-                {/* Estrutura Analítica — Fatos/Pensamentos/Emoções em accordion */}
-                <AnalyticalStructure analysis={analysis} />
-              </>
-            )}
+              {/* Finalizar */}
+              {session.status === 'em_andamento' && (
+                <section>
+                  <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4">Finalizar Sessão</h2>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Observações finais..."
+                    className="w-full px-4 py-3 border border-slate-200 rounded-lg mb-4 h-32 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={handleFinish}
+                    disabled={finishing}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-100 disabled:opacity-50 transition-colors text-sm font-medium"
+                  >
+                    {finishing ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Finalizando"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                    {finishing ? 'Finalizando...' : 'Finalizar Sessão'}
+                  </button>
+                </section>
+              )}
 
-            {/* ═══ Tab: Anotações ═══ */}
-            {activeTab === 'anotacoes' && (
-              <section className="mb-8 pb-8">
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <svg className="w-12 h-12 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  <p className="text-slate-400 text-sm">Funcionalidade em breve</p>
-                  <p className="text-slate-300 text-xs mt-1">Anotações livres durante e após a sessão</p>
-                </div>
-              </section>
-            )}
-
-            {/* Finalizar */}
-            {session.status === 'em_andamento' && (
-              <section>
-                <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4">Finalizar Sessão</h2>
-                <textarea 
-                  value={notes} 
-                  onChange={(e) => setNotes(e.target.value)} 
-                  placeholder="Observações finais..." 
-                  className="w-full px-4 py-3 border border-slate-200 rounded-lg mb-4 h-32 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" 
-                />
-                <button
-                  onClick={handleFinish}
-                  disabled={finishing}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-100 disabled:opacity-50 transition-colors text-sm font-medium"
-                >
-                  {finishing ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" role="status" aria-label="Finalizando"></div> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
-                  {finishing ? 'Finalizando...' : 'Finalizar Sessão'}
-                </button>
-              </section>
-            )}
-
+            </div>
           </div>
         </div>
       </main>

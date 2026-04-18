@@ -100,13 +100,13 @@ export default function InsightsPanel({ insights, microEvents, cso, openSection 
     <section className="mb-8">
       <div className="flex items-center gap-2 mb-3">
         <Activity className="w-4 h-4 text-slate-400" />
-        <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide" title="An\u00e1lise inteligente extra\u00edda da transcri\u00e7\u00e3o. Diferencial exclusivo AXIS.">Insights AXIS</h2>
+        <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wide" title="Análise inteligente extraída da transcrição. Diferencial exclusivo AXIS.">Insights AXIS</h2>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
         {hasEmotions && (
           <AccordionItem
-            title="Emo&#231;&#245;es identificadas"
+            title="Emoções identificadas"
             icon={<Heart className="w-4 h-4" />}
             isOpen={openSections.has('emotions')}
             onToggle={() => toggleSection('emotions')}
@@ -131,7 +131,7 @@ export default function InsightsPanel({ insights, microEvents, cso, openSection 
 
         {hasTopics && (
           <AccordionItem
-            title="T&#243;picos da sess&#227;o"
+            title="Tópicos da sessão"
             icon={<span className="text-sm">#</span>}
             isOpen={openSections.has('topics')}
             onToggle={() => toggleSection('topics')}
@@ -149,14 +149,14 @@ export default function InsightsPanel({ insights, microEvents, cso, openSection 
 
         {hasDistortions && (
           <AccordionItem
-            title="Poss&#237;veis distor&#231;&#245;es cognitivas"
+            title="Possíveis distorções cognitivas"
             icon={<Zap className="w-4 h-4" />}
             isOpen={openSections.has('distortions')}
             onToggle={() => toggleSection('distortions')}
             count={insights!.distortions!.length}
           >
             <p className="text-xs text-amber-600 italic mb-3">
-              {"Poss\u00edveis distor\u00e7\u00f5es identificadas \u2014 requer valida\u00e7\u00e3o do profissional"}
+              {"Possíveis distorções identificadas — requer validação do profissional"}
             </p>
             <div className="space-y-2">
               {insights!.distortions!.map((d, i) => (
@@ -176,7 +176,7 @@ export default function InsightsPanel({ insights, microEvents, cso, openSection 
 
         {hasTechniques && (
           <AccordionItem
-            title="T&#233;cnicas identificadas na sess&#227;o"
+            title="Técnicas identificadas na sessão"
             icon={<CheckCircle className="w-4 h-4" />}
             isOpen={openSections.has('techniques')}
             onToggle={() => toggleSection('techniques')}
@@ -195,7 +195,7 @@ export default function InsightsPanel({ insights, microEvents, cso, openSection 
 
         {hasMicroEvents && (
           <AccordionItem
-            title="Micro-eventos 3&#170; Onda"
+            title="Micro-eventos 3ª Onda"
             icon={<Activity className="w-4 h-4" />}
             isOpen={openSections.has('micro-events')}
             onToggle={() => toggleSection('micro-events')}
@@ -217,14 +217,14 @@ export default function InsightsPanel({ insights, microEvents, cso, openSection 
 
         {hasCso && (
           <AccordionItem
-            title="Estado Cl&#237;nico (CSO)"
+            title="Estado Clínico (CSO)"
             icon={<TrendingUp className="w-4 h-4" />}
             isOpen={openSections.has('cso')}
             onToggle={() => toggleSection('cso')}
           >
             <div className="space-y-3">
               {cso!.activation_level !== null && (
-                <CsoBar label="Ativa&#231;&#227;o" value={cso!.activation_level!} />
+                <CsoBar label="Ativação" value={cso!.activation_level!} />
               )}
               {cso!.cognitive_rigidity !== null && (
                 <CsoBar label="Rigidez cognitiva" value={cso!.cognitive_rigidity!} />
@@ -234,7 +234,7 @@ export default function InsightsPanel({ insights, microEvents, cso, openSection 
               )}
               {cso!.flex_trend && (
                 <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                  <span className="text-xs text-slate-500">{"Tend\u00eancia:"}</span>
+                  <span className="text-xs text-slate-500">Tendência:</span>
                   <FlexTrendBadge trend={cso!.flex_trend} />
                 </div>
               )}
@@ -263,7 +263,7 @@ function FlexTrendBadge({ trend }: { trend: string }) {
   }
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">
-      <Minus className="w-3 h-3" /> {"Est\u00e1vel"}
+      <Minus className="w-3 h-3" /> Estável
     </span>
   )
 }

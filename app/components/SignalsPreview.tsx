@@ -58,7 +58,7 @@ export default function SignalsPreview({ insights, microEvents, onClickSignal }:
   if (chips.length === 0) return null
 
   return (
-    <div className="flex items-center gap-3 py-3 px-4 bg-slate-50 rounded-lg border border-slate-200 mb-8" title="Indicadores-chave extra\u00eddos automaticamente desta sess\u00e3o">
+    <div className="flex items-center gap-3 py-3 px-4 bg-slate-50 rounded-lg border border-slate-200 mb-8" title="Indicadores-chave extraídos automaticamente desta sessão">
       <Zap className="w-4 h-4 text-slate-400 flex-shrink-0" />
       <div className="flex items-center gap-2 flex-wrap">
         {chips.map((chip, i) => (
