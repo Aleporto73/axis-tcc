@@ -5,7 +5,6 @@ import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
-import SessionReport from '../../components/SessionReport'
 import ClinicalReport from '../../components/ClinicalReport'
 import SignalsPreview from '../../components/SignalsPreview'
 import InsightsPanel from '../../components/InsightsPanel'
@@ -58,7 +57,6 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
   const [microIntensity, setMicroIntensity] = useState(0.5)
   const [microNote, setMicroNote] = useState('')
   const [savingMicro, setSavingMicro] = useState(false)
-  const [showReport, setShowReport] = useState(false)
   const [pipelineResult, setPipelineResult] = useState<PipelineResult | null>(null)
   const [transcriptionJob, setTranscriptionJob] = useState<TranscriptionJob | null>(null)
   const [showLimitModal, setShowLimitModal] = useState(false)
@@ -332,12 +330,6 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                     Entrar no Meet
                   </a>
                 )}
-                {session.status === 'finalizada' && (
-                  <button onClick={() => setShowReport(!showReport)} className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    Relatório
-                  </button>
-                )}
                 <span className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${getStatusStyle(session.status)}`}>
                   {getStatusText(session.status)}
                 </span>
@@ -359,8 +351,6 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
                 <p className="text-slate-900 font-medium">{session.duration_minutes ? `${session.duration_minutes} min` : session.status === 'agendada' ? 'Aguardando' : 'Em andamento'}</p>
               </div>
             </div>
-
-            {showReport && <SessionReport sessionId={id} onClose={() => setShowReport(false)} />}
 
             {/* Contexto Clínico — sessão anterior */}
             <ClinicalContext sessionId={id} patientId={session.patient_id} onEvolutionLoaded={setEvolution} />

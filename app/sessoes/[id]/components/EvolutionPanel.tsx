@@ -63,6 +63,7 @@ export default function EvolutionPanel({ evolution }: EvolutionPanelProps) {
   if (!evolution) return null
 
   const { delta, timeline } = evolution
+  if (!timeline) return null
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
