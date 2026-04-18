@@ -2,11 +2,28 @@ import pool from '../database/db';
 import { ClinicalState, Suggestion, SuggestionType } from '../types';
 
 /**
+ * Delta entre o CSO atual e o anterior (input auxiliar — Fase 11).
+ * Cada campo: (valor_atual - valor_anterior). null se indisponível.
+ */
+export interface CsoDelta {
+  activation_level: number | null;
+  cognitive_rigidity: number | null;
+  emotional_load: number | null;
+  task_adherence: number | null;
+}
+
+/**
  * Gera sugestoes baseadas no CSO atual
  * REGRA: Apenas 1 sugestao por ciclo (prioridade)
+ *
+ * @param cso   CSO recém-calculado (fonte de verdade — engine determinístico)
+ * @param delta Input AUXILIAR opcional. Não substitui regras existentes.
  */
-export async function generateSuggestions(cso: ClinicalState): Promise<Suggestion | null> {
-  const candidateSuggestions = await evaluateRules(cso);
+export async function generateSuggestions(
+  cso: ClinicalState,
+  delta?: CsoDelta | null
+): Promise<Suggestion | null> {
+  const candidateSuggestions = await evaluateRules(cso, delta);
 
   if (candidateSuggestions.length === 0) {
     return null;
@@ -32,7 +49,7 @@ export async function generateSuggestions(cso: ClinicalState): Promise<Suggestio
     topSuggestion.reason,
     topSuggestion.confidence,
     JSON.stringify(topSuggestion.context),
-    'SUGGESTION_ENGINE_v2.1'
+    'SUGGESTION_ENGINE_v2.2'
   ]);
 
   return result.rows[0];
@@ -41,7 +58,10 @@ export async function generateSuggestions(cso: ClinicalState): Promise<Suggestio
 /**
  * Avalia todas as regras de sugestao
  */
-async function evaluateRules(cso: any): Promise<SuggestionCandidate[]> {
+async function evaluateRules(
+  cso: any,
+  delta?: CsoDelta | null
+): Promise<SuggestionCandidate[]> {
   const suggestions: SuggestionCandidate[] = [];
 
   // REGRA 1: CRISIS_PROTOCOL (Prioridade maxima)
@@ -235,6 +255,62 @@ async function evaluateRules(cso: any): Promise<SuggestionCandidate[]> {
       priority: 4,
       context: { flex_trend: cso.flex_trend, recovery_time: cso.recovery_time }
     });
+  }
+
+  // ============================================================
+  // REGRAS DE EVOLUÇÃO (Fase 11 — input auxiliar via delta)
+  // ============================================================
+  // Delta entra como sinal complementar SEM reescrever as regras
+  // existentes. Threshold |delta| >= 0.05 alinhado com R4 do
+  // EvolutionPanel (estabilidade clínica).
+  //
+  // Regras existentes (1–12) permanecem fonte de verdade.
+  if (delta) {
+    const THRESHOLD = 0.05;
+
+    const worsened =
+      delta.activation_level !== null && delta.activation_level <= -THRESHOLD &&
+      delta.task_adherence  !== null && delta.task_adherence  <= -THRESHOLD &&
+      delta.emotional_load  !== null && delta.emotional_load  >=  THRESHOLD &&
+      delta.cognitive_rigidity !== null && delta.cognitive_rigidity >= THRESHOLD;
+
+    const improved =
+      delta.activation_level !== null && delta.activation_level >=  THRESHOLD &&
+      delta.task_adherence  !== null && delta.task_adherence  >=  THRESHOLD &&
+      delta.emotional_load  !== null && delta.emotional_load  <= -THRESHOLD &&
+      delta.cognitive_rigidity !== null && delta.cognitive_rigidity <= -THRESHOLD;
+
+    // REGRA 13: PIORA CONSISTENTE (Alta prioridade — evolução)
+    if (worsened) {
+      suggestions.push({
+        type: 'CHECK_ADHERENCE',
+        title: 'Piora em Múltiplas Dimensões — Revisar Caso',
+        reason: [
+          'Piora em múltiplas dimensões entre sessões',
+          'Ativação e aderência caíram; carga emocional e rigidez subiram',
+          'Avaliar fatores externos e ajustar ritmo'
+        ],
+        confidence: 0.80,
+        priority: 7,
+        context: { delta }
+      });
+    }
+
+    // REGRA 14: MELHORA CONSISTENTE (Baixa prioridade — evolução)
+    if (improved) {
+      suggestions.push({
+        type: 'CELEBRATE_PROGRESS',
+        title: 'Melhora Consistente — Reforçar Processo',
+        reason: [
+          'Melhora consistente em múltiplas dimensões',
+          'Ativação e aderência subiram; carga emocional e rigidez caíram',
+          'Reforço positivo do processo é importante'
+        ],
+        confidence: 0.85,
+        priority: 4,
+        context: { delta }
+      });
+    }
   }
 
   return suggestions;

@@ -4,7 +4,7 @@ import { handleRouteError } from '@/src/database/with-role'
 import { createSystemAlert } from '@/src/utils/system-alert'
 import { readTranscriptSmart } from '@/src/services/transcript-storage'
 import { processEvent } from '@/src/engines/cso'
-import { generateSuggestions } from '@/src/engines/suggestion'
+import { generateSuggestions, CsoDelta } from '@/src/engines/suggestion'
 
 // =====================================================
 // AXIS TCC — Finalizar Sessão + Pipeline CSO
@@ -142,8 +142,37 @@ export async function POST(
       // 8. Suggestion Engine (se CSO gerado)
       let suggestionResult = null
       if (csoResult) {
+        // 8.1. Buscar CSO anterior pra calcular delta (input auxiliar — Fase 11)
+        let delta: CsoDelta | null = null
         try {
-          suggestionResult = await generateSuggestions(csoResult)
+          const prevCsoQuery = await client.query(
+            `SELECT activation_level, cognitive_rigidity, emotional_load, task_adherence
+             FROM clinical_states
+             WHERE patient_id = $1 AND tenant_id = $2 AND id <> $3
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [patientId, tenantId, csoResult.id]
+          )
+
+          if (prevCsoQuery.rows.length > 0) {
+            const prev = prevCsoQuery.rows[0]
+            const diff = (curr: number | null, old: number | null): number | null =>
+              curr !== null && old !== null ? Number(curr) - Number(old) : null
+
+            delta = {
+              activation_level:    diff(csoResult.activation_level,    prev.activation_level),
+              cognitive_rigidity:  diff(csoResult.cognitive_rigidity,  prev.cognitive_rigidity),
+              emotional_load:      diff(csoResult.emotional_load,      prev.emotional_load),
+              task_adherence:      diff(csoResult.task_adherence,      prev.task_adherence),
+            }
+          }
+        } catch (err) {
+          console.error('[PIPELINE] Falha ao calcular delta CSO (segue sem delta):', err)
+          delta = null
+        }
+
+        try {
+          suggestionResult = await generateSuggestions(csoResult, delta)
         } catch (err) {
           console.error('[PIPELINE] Erro no Suggestion Engine:', err)
           pipelineWarnings.push('Motor de sugestões falhou. Nenhuma sugestão foi gerada neste ciclo.')
