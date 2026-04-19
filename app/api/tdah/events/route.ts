@@ -3,13 +3,13 @@ import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError, canAccessTdahPatient } from '@/src/database/with-role'
 
 // =====================================================
-// AXIS TDAH — API Eventos Clínicos
+// AXIS TDAH â€” API Eventos ClÃ­nicos
 // Equivalente a /api/aba/sessions/[id]/behaviors
-// Tabela: tdah_events (Bible §10.2)
+// Tabela: tdah_events (Bible Â§10.2)
 //
-// Diferenças vs ABA:
+// DiferenÃ§as vs ABA:
 //   - event_type expandido (transition, sensory, behavioral, abc, task_avoidance, etc.)
-//   - ABC é condicional (nem todo evento tem antecedent/behavior/consequence)
+//   - ABC Ã© condicional (nem todo evento tem antecedent/behavior/consequence)
 //   - Contexto tricontextual (clinical/home/school)
 //   - intensity opcional (leve/moderada/alta/severa)
 // =====================================================
@@ -22,7 +22,7 @@ const VALID_EVENT_TYPES = new Set([
 const VALID_INTENSITIES = new Set(['leve', 'moderada', 'alta', 'severa'])
 const VALID_CONTEXTS = new Set(['clinical', 'home', 'school'])
 
-// GET — Listar eventos de uma sessão
+// GET â€” Listar eventos de uma sessÃ£o
 export async function GET(request: NextRequest) {
   try {
     const result = await withTenant(async (ctx) => {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       const eventType = searchParams.get('event_type')
 
       if (!sessionId && !patientId) {
-        throw new Error('session_id ou patient_id é obrigatório')
+        throw new Error('session_id ou patient_id Ã© obrigatÃ³rio')
       }
 
       // Hardening: verificar acesso ao paciente
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ events: result.rows })
   } catch (error: any) {
-    if (error.message?.includes('obrigatório')) {
+    if (error.message?.includes('obrigatÃ³rio')) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
     const { message, status } = handleRouteError(error)
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST — Registrar evento clínico TDAH
+// POST â€” Registrar evento clÃ­nico TDAH
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -102,46 +102,46 @@ export async function POST(request: NextRequest) {
       intensity, context, occurred_at,
     } = body
 
-    // Validações obrigatórias
+    // ValidaÃ§Ãµes obrigatÃ³rias
     if (!session_id || !event_type) {
       return NextResponse.json(
-        { error: 'session_id e event_type são obrigatórios' },
+        { error: 'session_id e event_type sÃ£o obrigatÃ³rios' },
         { status: 400 }
       )
     }
 
     if (!VALID_EVENT_TYPES.has(event_type)) {
       return NextResponse.json(
-        { error: `event_type inválido. Válidos: ${[...VALID_EVENT_TYPES].join(', ')}` },
+        { error: `event_type invÃ¡lido. VÃ¡lidos: ${[...VALID_EVENT_TYPES].join(', ')}` },
         { status: 400 }
       )
     }
 
-    // ABC obrigatório se event_type === 'abc'
+    // ABC obrigatÃ³rio se event_type === 'abc'
     if (event_type === 'abc' && (!antecedent || !behavior || !consequence)) {
       return NextResponse.json(
-        { error: 'Para eventos ABC, antecedent, behavior e consequence são obrigatórios' },
+        { error: 'Para eventos ABC, antecedent, behavior e consequence sÃ£o obrigatÃ³rios' },
         { status: 400 }
       )
     }
 
     if (intensity && !VALID_INTENSITIES.has(intensity)) {
       return NextResponse.json(
-        { error: `intensity inválido. Válidos: ${[...VALID_INTENSITIES].join(', ')}` },
+        { error: `intensity invÃ¡lido. VÃ¡lidos: ${[...VALID_INTENSITIES].join(', ')}` },
         { status: 400 }
       )
     }
 
     if (context && !VALID_CONTEXTS.has(context)) {
       return NextResponse.json(
-        { error: `context inválido. Válidos: ${[...VALID_CONTEXTS].join(', ')}` },
+        { error: `context invÃ¡lido. VÃ¡lidos: ${[...VALID_CONTEXTS].join(', ')}` },
         { status: 400 }
       )
     }
 
     const result = await withTenant(async (ctx) => {
-      const { client, tenantId, userId } = ctx
-      // Verificar sessão existe e está in_progress
+      const { client, tenantId, profileId } = ctx
+      // Verificar sessÃ£o existe e estÃ¡ in_progress
       const session = await client.query(
         `SELECT id, status, session_context, patient_id FROM tdah_sessions
          WHERE id = $1 AND tenant_id = $2`,
@@ -149,28 +149,23 @@ export async function POST(request: NextRequest) {
       )
 
       if (session.rows.length === 0) {
-        throw new Error('Sessão não encontrada')
+        throw new Error('SessÃ£o nÃ£o encontrada')
       }
 
-      // Hardening: verificar acesso ao paciente desta sessão
+      // Hardening: verificar acesso ao paciente desta sessÃ£o
       const canAccess = await canAccessTdahPatient(ctx, session.rows[0].patient_id)
       if (!canAccess) {
-        throw new Error('Sessão não encontrada')
+        throw new Error('SessÃ£o nÃ£o encontrada')
       }
 
-      // Bible §11: sessão fechada é imutável
+      // Bible Â§11: sessÃ£o fechada Ã© imutÃ¡vel
       if (session.rows[0].status === 'completed' || session.rows[0].status === 'cancelled') {
-        throw new Error('Sessão já finalizada — não é possível registrar eventos (Bible §11)')
+        throw new Error('SessÃ£o jÃ¡ finalizada â€” nÃ£o Ã© possÃ­vel registrar eventos (Bible Â§11)')
       }
 
-      // Buscar profile do user
-      const profile = await client.query(
-        'SELECT id FROM profiles WHERE clerk_user_id = $1 AND tenant_id = $2 AND is_active = true',
-        [userId, tenantId]
-      )
-      const profileId = profile.rows[0]?.id || null
+      // profileId vem do contexto withTenant (jÃ¡ resolvido com is_active = true)
 
-      // Usar contexto da sessão se não especificado
+      // Usar contexto da sessÃ£o se nÃ£o especificado
       const eventContext = context || session.rows[0].session_context
 
       const insert = await client.query(
@@ -193,7 +188,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ event: result }, { status: 201 })
   } catch (error: any) {
-    if (error.message === 'Sessão não encontrada') {
+    if (error.message === 'SessÃ£o nÃ£o encontrada') {
       return NextResponse.json({ error: error.message }, { status: 404 })
     }
     if (error.message?.includes('Bible')) {
