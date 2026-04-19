@@ -19,12 +19,11 @@ aparece confirmado como ativo — ver contradição #1 no archive. Infraestrutur
 compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
 Últimas entregas:
-- **Fase 14 parcial (19/04/2026, commit 0dbd9cb)** — schema sweep TCC: sweep
-  preventivo identificou 6 rotas suspeitas. Resultado após análise:
-  3 falsos positivos (documentados), 2 refatoradas (`tdah/events` +
-  `tdah/plans` usando `ctx.profileId` em vez de lookup manual redundante),
-  1 pendente de investigação (`sessions/create` — pool.query em
-  `calendar_connections`, precisa confirmar se tabela tem RLS ativa).
+- **Fase 14 concluída (19/04/2026, commits 0dbd9cb + 4030a36)** — schema sweep TCC:
+  6 rotas suspeitas analisadas. Resultado: 3 falsos positivos documentados,
+  2 refatoradas (`tdah/events` + `tdah/plans` usando `ctx.profileId`),
+  1 investigada e declarada aceitável (`sessions/create` — `calendar_connections`
+  sem RLS, registrado como débito técnico pra quando ativar RLS global).
 - **Fase 13.2 (19/04/2026, CLOSED as no-op)** — migração de `/api/transcribe`
   POST e `/api/transcribe/status/[jobId]` para `withTenant()`. Pre-check
   mostrou que **ambas já estavam migradas** em fase anterior (provavelmente
@@ -48,7 +47,7 @@ compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
 ## PENDÊNCIAS (próxima sessão)
 
-### Fase 14 parcial — DEPLOYADA (19/04, commit 0dbd9cb) ✅
+### Fase 14 — CONCLUÍDA (19/04, commits 0dbd9cb + 4030a36) ✅
 Schema sweep TCC concluído com os seguintes resultados:
 
 **Refatorados (ctx.profileId):**
@@ -56,32 +55,33 @@ Schema sweep TCC concluído com os seguintes resultados:
 - `app/api/tdah/plans/route.ts` ✅ — mesmo padrão
 
 **Falsos positivos documentados (exceções legítimas, não precisam mudar):**
-- `app/api/health/route.ts` — `SELECT 1 AS alive` (liveness probe público,
-  sem auth, sem dados sensíveis)
-- `app/api/patient/push/authorize/route.ts` — 3× `pool.query`. Auth via
-  `patient_token` público (portal família), mesmo padrão de
-  `/api/familia/[token]` e `/api/escola/[token]`. Tenant deriva do patient
-  record. Sem Clerk context.
-- `app/api/push/send/route.ts` — 2× `pool.query`. API interna autenticada
-  via `INTERNAL_API_KEY` header. Sem Clerk context.
+- `app/api/health/route.ts` — `SELECT 1 AS alive` (liveness probe público)
+- `app/api/patient/push/authorize/route.ts` — auth via `patient_token` público
+  (portal família). Tenant deriva do patient record. Sem Clerk context.
+- `app/api/push/send/route.ts` — API interna autenticada via
+  `INTERNAL_API_KEY` header. Sem Clerk context.
 
-**Pendente de investigação (não refatorado nesta sessão):**
-- [ ] `app/api/sessions/create/route.ts` — usa `withTenant` (3×) E
-  `pool.query` (L40, L52) em `calendar_connections`. Comentário do arquivo
-  diz "pool mantido para Google Calendar (operação externa)" mas as queries
-  são em tabela interna. Se `calendar_connections` tem RLS ativa, pode
-  retornar 0 rows silenciosamente quando virar multi-tenant — integração
-  Google Calendar quebraria sem erro visível. Próxima sessão:
-  - Verificar migrations de `calendar_connections` (buscar
-    `ENABLE ROW LEVEL SECURITY` e `CREATE POLICY`)
-  - Se tem RLS: refatorar `createGoogleCalendarEvent` para receber `client`
-    da transação `withTenant` em vez de usar `pool` direto
-  - Se não tem RLS: documentar como fragilidade aceitável e fechar
-- [ ] Pendências RLS fora do escopo (registradas pelo CC, fase futura):
-  - `patient/push/authorize` escreve em `patient_push_tokens` + `audit_logs`
-    sem `app.tenant_id` setado
-  - `push/send` consulta `push_tokens` por `user_id` sem filtro de tenant
-    (potencial leak cross-tenant se `user_id` colidir entre tenants)
+**Investigado e aceito (sem bug atual, débito futuro):**
+- `app/api/sessions/create/route.ts` — usa `pool.query` (L40, L52) em
+  `calendar_connections`. Investigação 19/04: tabela **não tem RLS policy**
+  (`\d calendar_connections` confirma — só FK pra tenants, sem RLS).
+  Query filtra explicitamente `WHERE tenant_id = $1` e funciona correto.
+  Fragilidade latente: se RLS for ativada futuramente em
+  `calendar_connections`, integração Google Calendar quebraria
+  silenciosamente. Correção pré-planejada para esse momento: passar o
+  `client` da transação `withTenant` para a função
+  `createGoogleCalendarEvent` em vez de usar `pool` direto.
+
+### Débitos técnicos — ativação RLS global (futuro)
+Quando ativar RLS em todas as tabelas com `tenant_id`, estas rotas precisam
+refactor antes ou junto (senão quebram silenciosamente):
+- [ ] `app/api/sessions/create/route.ts` — `createGoogleCalendarEvent`
+  precisa receber `client` transacional (ver detalhe acima)
+- [ ] `app/api/patient/push/authorize/route.ts` — escreve em
+  `patient_push_tokens` + `audit_logs` sem `app.tenant_id` setado
+- [ ] `app/api/push/send/route.ts` — consulta `push_tokens` por `user_id`
+  sem filtro de tenant (potencial leak cross-tenant se `user_id` colidir
+  entre tenants)
 
 ### Fase 13.1 — DEPLOYADA (18/04, commit d0dd2d3) ✅
 Migration 054 aplicada, worker reiniciado, sistema testado manualmente em
@@ -120,8 +120,6 @@ Validação via `docker exec axis-postgres psql`:
   produção (comparável ao ABA destravado 12/03)
 
 ### Próximas fases mapeadas
-- [ ] **Fase 14 conclusão — sessions/create** — investigar RLS de
-  `calendar_connections`, decidir refactor ou aceitar fragilidade
 - [ ] **Fase 15 — testes manuais** — infra de test DB (docker-compose pg
   + migrations auto + teardown). Sessão ABA 17/04 descobriu que 17 rotas
   com schema mismatch passaram pelos 480 testes Vitest mockados. TCC tem
@@ -131,8 +129,6 @@ Validação via `docker exec axis-postgres psql`:
   mensagens Clerk, ativar quality gate SonarCloud.
 
 ### Débitos técnicos (v2.x — não-bloqueantes)
-- [ ] `app/api/sessions/create/route.ts` linha 54: `const event: any` no
-  Google Calendar event → tipar (já feito no commit 0dbd9cb? verificar)
 - [ ] `/api/stats` não retorna `pending_notes` / `pending_confirmation` mas
   a interface TS `Stats` define os campos (undefined ignorados, dead code)
 - [ ] Hex hardcoded em `onboarding` e `evolution` componentes (restantes
