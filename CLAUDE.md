@@ -212,12 +212,12 @@ fonte-de-verdade corrente; o archive so deve ser consultado sob demanda.
 
 **Análise:** O `/api/transcribe/route.ts` usa `checkTranscriptionLimit()` com resolução manual de tenant (`SELECT tenant_id FROM profiles WHERE clerk_user_id LIMIT 1`) — mesmo padrão quebrado para multi-tenant. Se pega o tenant errado, o `withTenantClient()` seta `app.tenant_id` com valor incorreto, e a RLS policy em `transcription_jobs` bloqueia o INSERT. **Obs:** o 42501 pode ser de request anterior; o log não garante que veio do mesmo request do upload de 19MB.
 
-**Status:** A rota `/api/transcribe` ainda usa resolução manual de tenant + `withTenantClient()` customizado em vez de `withTenant()`. Migração pendente para próxima sessão.
+**Status:** ~~A rota `/api/transcribe` ainda usa resolução manual de tenant + `withTenantClient()` customizado em vez de `withTenant()`. Migração pendente para próxima sessão.~~ ✅ **RESOLVIDO** — verificado em 19/04: rota já migrada para `withTenant()` (Fase 13.2 fechada como no-op).
 
 **Endpoints com resolução manual de tenant (pendentes de migração):**
-- `/api/transcribe` (POST) — usa `checkTranscriptionLimit()` com LIMIT 1
-- `/api/transcribe/status/[jobId]` — verificar
-- Outros em `app/api/` — auditoria pendente
+- ~~`/api/transcribe` (POST)~~ — ✅ **RESOLVIDO** (confirmado em 19/04, Fase 13.2 no-op: já usa `withTenant()`; migração efetiva em fase anterior)
+- ~~`/api/transcribe/status/[jobId]`~~ — ✅ **RESOLVIDO** (19/04, idem)
+- Outros em `app/api/` — sweep 19/04 achou 6 rotas não-admin/webhook/cron com `pool.query`/resolução manual (ver `docs/NOTE_TCC.md` → Fase 14)
 
 ---
 
@@ -257,9 +257,9 @@ fonte-de-verdade corrente; o archive so deve ser consultado sob demanda.
 
 **Alerta:** Qualquer endpoint de API que resolva tenant manualmente (`SELECT id FROM tenants WHERE clerk_user_id`) está quebrado para usuários multi-tenant. Todos os endpoints devem usar `withTenant()` do `src/database/with-tenant.ts`, que respeita o cookie `axis_active_tenant` e suporta múltiplos perfis.
 
-**Endpoints já migrados:** `/api/transcribe/text/[id]`, `/api/analyze-tcc`, `/api/sessions/[id]/finish`, `/api/events/create`
+**Endpoints já migrados:** `/api/transcribe/text/[id]`, `/api/analyze-tcc`, `/api/sessions/[id]/finish`, `/api/events/create`, `/api/transcribe` (POST), `/api/transcribe/status/[jobId]`
 
-**Endpoints pendentes:** `/api/transcribe` (POST), `/api/transcribe/status/[jobId]`
+**Endpoints pendentes:** ~~`/api/transcribe` (POST), `/api/transcribe/status/[jobId]`~~ ✅ **RESOLVIDO** — verificado em 19/04 (Fase 13.2 no-op)
 
 ---
 

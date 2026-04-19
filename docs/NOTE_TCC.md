@@ -1,6 +1,6 @@
 # AXIS TCC — NOTE ativo
 
-**Atualizado:** 2026-04-17
+**Atualizado:** 2026-04-19
 **Produto:** AXIS TCC (Terapia Cognitivo-Comportamental)
 **Motor:** CSO-TCC v3.0.0
 **Bible:** Documento Mestre TCC v2.1
@@ -18,25 +18,82 @@
 aparece confirmado como ativo — ver contradição #1 no archive. Infraestrutura
 compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
-Última grande entrega: **Sessão v2 (15-16/04/2026)** — reestruturação completa
-da página de sessão em 4 blocos verticais com camada narrativa IA
-(ClinicalReport + SignalsPreview + InsightsPanel + AnalyticalStructure), +
-GPT-4o-mini para geração de relatório clínico com anti-hallucination prompt
-(migration 049).
+Últimas entregas:
+- **Fase 13.1 (18/04/2026, commit d0dd2d3)** — duração real do áudio em
+  produção. Coluna `transcripts.audio_duration_seconds` (migration 054)
+  preenchida pelo worker com `segments[last].end` do faster-whisper.
+  `getSessionDuration()` virou fonte canônica usada pelo finish endpoint.
+  Bug corrigido: estimativa 64kbps era 5× mais rápida que 320kbps real +
+  inflação de `duration_minutes` quando o psicólogo demorava a clicar
+  "Finalizar". Bônus visuais: aba "Anotações" oculta (sem funcionalidade),
+  chip "Base do caso incompleta" virou link discreto `underline-dotted`.
+- **Fase 13.2 (19/04/2026, CLOSED as no-op)** — migração de `/api/transcribe`
+  POST e `/api/transcribe/status/[jobId]` para `withTenant()`. Pre-check
+  mostrou que **ambas já estavam migradas** em fase anterior (provavelmente
+  12.2). Inventário do changelog 01/04 ficou desatualizado. Grep global
+  `SELECT id FROM tenants WHERE clerk_user_id` retornou **zero ocorrências**
+  em todo `app/api/`. Nenhum edit feito.
+- **Sessão v2 (15-16/04/2026)** — reestruturação completa da página de
+  sessão em 4 blocos verticais com camada narrativa IA (ClinicalReport +
+  SignalsPreview + InsightsPanel + AnalyticalStructure) + GPT-4o-mini para
+  geração de relatório clínico com anti-hallucination prompt (migration 049).
 
 ---
 
 ## PENDÊNCIAS (próxima sessão)
 
-### P0 — validação em produção
+### Fase 13.1 — DEPLOYADA (18/04, commit d0dd2d3) ✅
+Migration 054 aplicada, worker reiniciado, sistema testado manualmente em
+produção: duração real do áudio, limite 300 min acumulado, modal único
+(UpgradeModalTCC), onboarding sem CPF funcionando. Não há pendência de
+deploy da 13.1. Arquivos entregues:
+- `scripts/migrations/054_transcripts_audio_duration.sql` (APLICADA)
+- `src/services/session-duration.ts` (helper canônico novo)
+- Modificados: `scripts/workers/transcription-worker.ts` (usa
+  `segments[last].end` + `realMinutes` em vez de estimativa 64kbps),
+  `app/api/sessions/[id]/finish/route.ts` (split UPDATE + helper),
+  `app/sessoes/[id]/page.tsx` (aba Anotações oculta),
+  `app/sessoes/[id]/components/ClinicalContext.tsx` (chip discreto)
+
+### Fase 13.2 — CLOSED no-op (19/04) ✅
+Premissa do inventário de 01/04 estava desatualizada. Pre-check confirmou:
+- `grep -rn "SELECT id FROM tenants WHERE clerk_user_id" app/api/` → vazio
+- `app/api/transcribe/route.ts` (POST) já usa `withTenant()` (linha 25)
+- `app/api/transcribe/status/[jobId]/route.ts` já usa `withTenant()` (linha 16)
+Nenhum edit foi feito nessas rotas. Migração efetiva provavelmente aconteceu
+na Fase 12.2 ou 12.3. Não reabrir.
+
+### P0 — validação em produção (pendências antigas — herdadas)
 - [ ] **Migrations 031, 032, 049 em produção** — registradas como "pendentes
   em produção" em 19/03 e 16/04 sem confirmação posterior. Se não aplicadas:
   - `031_tcc_cpf_crp.sql` → onboarding CPF/CRP quebra
-  - `032_transcription_usage.sql` → limite 120 min/mês FREE não é enforcado
+  - `032_transcription_usage.sql` → limite 300 min FREE não é enforcado
   - `049_session_reports.sql` → Sessão v2 (report + insights) não persiste
 - [ ] **Checkout Hotmart TCC** — validar que links `J104687347A` estão ativos
   e o fluxo de compra completo (cadastro → pagamento → licença) funciona em
   produção (comparável ao ABA destravado 12/03)
+
+### Próximas fases mapeadas
+- [ ] **Fase 14 — schema sweep TCC** — sweep preventivo (19/04) achou 6
+  rotas não-admin/webhook/cron com `pool.query` ou resolução manual fora
+  de `withTenant`. Lista pra investigar:
+  - `app/api/health/route.ts` — `SELECT 1 AS alive` (provavelmente OK,
+    healthcheck sem dados sensíveis)
+  - `app/api/patient/push/authorize/route.ts` — 3× `pool.query`, sem withTenant
+  - `app/api/push/send/route.ts` — 2× `pool.query`, sem withTenant
+  - `app/api/sessions/create/route.ts` — usa withTenant (3×) E pool.query (2×)
+    nas linhas 40 e 52 (possivelmente Google connection setup)
+  - `app/api/tdah/events/route.ts` — usa withTenant, mas linha 168 tem
+    `SELECT id FROM profiles WHERE clerk_user_id` (verificar se está dentro
+    do contexto withTenant)
+  - `app/api/tdah/plans/route.ts` — similar (linha 149)
+- [ ] **Fase 15 — testes manuais** — infra de test DB (docker-compose pg
+  + migrations auto + teardown). Sessão ABA 17/04 descobriu que 17 rotas
+  com schema mismatch passaram pelos 480 testes Vitest mockados. TCC tem
+  mesma exposição — schema sweep estático (Fase 14) ajuda, mas não substitui
+  teste integrado.
+- [ ] **Fase 16 — carry-forward Clerk PT-BR + SonarCloud** — traduzir
+  mensagens Clerk, ativar quality gate SonarCloud.
 
 ### Débitos técnicos (v2.x — não-bloqueantes)
 - [ ] `app/api/sessions/create/route.ts` linha 54: `const event: any` no
@@ -45,13 +102,6 @@ GPT-4o-mini para geração de relatório clínico com anti-hallucination prompt
   a interface TS `Stats` define os campos (undefined ignorados, dead code)
 - [ ] Hex hardcoded em `onboarding` e `evolution` componentes (restantes
   após migração de design tokens)
-
-### Infra (P1) — lição da sessão 17/04 (ABA)
-- [ ] Adicionar infra de test DB (docker-compose pg + migrations auto
-  + teardown). A sessão ABA 17/04 descobriu que 17 rotas com schema mismatch
-  passaram pelos 480 testes Vitest mockados. TCC tem mesma exposição:
-  uma nova passada de **schema sweep** (verificação estática de colunas
-  usadas vs schema real) pode revelar bugs similares.
 
 ---
 
@@ -174,10 +224,11 @@ PM2 (produção VPS)
 | `app/api/transcribe/text/[transcriptId]/route.ts` | Fetch transcrição completa |
 | `src/services/transcript-postprocess.ts` | Pipeline v1.0.0 (clean + protect + dictionary + restore) |
 | `src/services/transcript-storage.ts` | readTranscriptSmart (final_path → raw_path → fallback) |
+| `src/services/session-duration.ts` | **Fase 13.1** — getSessionDuration() canônica: lê `transcripts.audio_duration_seconds` → fallback para `sessions.started_at/ended_at` |
 | `scripts/workers/transcription-worker.ts` | Worker async, gera raw + final |
-| `app/api/tcc/transcription/usage/route.ts` | Limite 120 min/mês FREE |
+| `app/api/tcc/transcription/usage/route.ts` | Limite 300 min lifetime FREE (Fase 12.2) |
 | `app/tcc/components/TranscriptionUsageBar.tsx` | Barra dashboard |
-| `app/tcc/components/TranscriptionLimitModal.tsx` | Modal 402 LIMIT_REACHED |
+| ~~`app/tcc/components/TranscriptionLimitModal.tsx`~~ | REMOVIDO em Fase 12.3 — consolidado em `UpgradeModalTCC.tsx` com `reason` prop |
 
 ### Análise IA
 | Arquivo | Função |
@@ -287,4 +338,4 @@ PM2 (produção VPS)
 ---
 
 *Arquivo vivo. Atualizar a cada sessão significativa. Mover conteúdo antigo
-para `/docs/archive/NOTE_TCC_ARCHIVE.md` quando o NOTE passar de ~250 linhas.*
+para `/docs/archive/NOTE_TCC_ARCHIVE.md` quando o NOTE passar de ~350 linhas.*
