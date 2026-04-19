@@ -19,6 +19,18 @@ aparece confirmado como ativo — ver contradição #1 no archive. Infraestrutur
 compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
 Últimas entregas:
+- **Fase 14 parcial (19/04/2026, commit 0dbd9cb)** — schema sweep TCC: sweep
+  preventivo identificou 6 rotas suspeitas. Resultado após análise:
+  3 falsos positivos (documentados), 2 refatoradas (`tdah/events` +
+  `tdah/plans` usando `ctx.profileId` em vez de lookup manual redundante),
+  1 pendente de investigação (`sessions/create` — pool.query em
+  `calendar_connections`, precisa confirmar se tabela tem RLS ativa).
+- **Fase 13.2 (19/04/2026, CLOSED as no-op)** — migração de `/api/transcribe`
+  POST e `/api/transcribe/status/[jobId]` para `withTenant()`. Pre-check
+  mostrou que **ambas já estavam migradas** em fase anterior (provavelmente
+  12.2). Inventário do changelog 01/04 ficou desatualizado. Grep global
+  `SELECT id FROM tenants WHERE clerk_user_id` retornou **zero ocorrências**
+  em todo `app/api/`. Nenhum edit feito.
 - **Fase 13.1 (18/04/2026, commit d0dd2d3)** — duração real do áudio em
   produção. Coluna `transcripts.audio_duration_seconds` (migration 054)
   preenchida pelo worker com `segments[last].end` do faster-whisper.
@@ -27,12 +39,6 @@ compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
   inflação de `duration_minutes` quando o psicólogo demorava a clicar
   "Finalizar". Bônus visuais: aba "Anotações" oculta (sem funcionalidade),
   chip "Base do caso incompleta" virou link discreto `underline-dotted`.
-- **Fase 13.2 (19/04/2026, CLOSED as no-op)** — migração de `/api/transcribe`
-  POST e `/api/transcribe/status/[jobId]` para `withTenant()`. Pre-check
-  mostrou que **ambas já estavam migradas** em fase anterior (provavelmente
-  12.2). Inventário do changelog 01/04 ficou desatualizado. Grep global
-  `SELECT id FROM tenants WHERE clerk_user_id` retornou **zero ocorrências**
-  em todo `app/api/`. Nenhum edit feito.
 - **Sessão v2 (15-16/04/2026)** — reestruturação completa da página de
   sessão em 4 blocos verticais com camada narrativa IA (ClinicalReport +
   SignalsPreview + InsightsPanel + AnalyticalStructure) + GPT-4o-mini para
@@ -41,6 +47,41 @@ compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 ---
 
 ## PENDÊNCIAS (próxima sessão)
+
+### Fase 14 parcial — DEPLOYADA (19/04, commit 0dbd9cb) ✅
+Schema sweep TCC concluído com os seguintes resultados:
+
+**Refatorados (ctx.profileId):**
+- `app/api/tdah/events/route.ts` ✅ — lookup manual de profiles substituído
+- `app/api/tdah/plans/route.ts` ✅ — mesmo padrão
+
+**Falsos positivos documentados (exceções legítimas, não precisam mudar):**
+- `app/api/health/route.ts` — `SELECT 1 AS alive` (liveness probe público,
+  sem auth, sem dados sensíveis)
+- `app/api/patient/push/authorize/route.ts` — 3× `pool.query`. Auth via
+  `patient_token` público (portal família), mesmo padrão de
+  `/api/familia/[token]` e `/api/escola/[token]`. Tenant deriva do patient
+  record. Sem Clerk context.
+- `app/api/push/send/route.ts` — 2× `pool.query`. API interna autenticada
+  via `INTERNAL_API_KEY` header. Sem Clerk context.
+
+**Pendente de investigação (não refatorado nesta sessão):**
+- [ ] `app/api/sessions/create/route.ts` — usa `withTenant` (3×) E
+  `pool.query` (L40, L52) em `calendar_connections`. Comentário do arquivo
+  diz "pool mantido para Google Calendar (operação externa)" mas as queries
+  são em tabela interna. Se `calendar_connections` tem RLS ativa, pode
+  retornar 0 rows silenciosamente quando virar multi-tenant — integração
+  Google Calendar quebraria sem erro visível. Próxima sessão:
+  - Verificar migrations de `calendar_connections` (buscar
+    `ENABLE ROW LEVEL SECURITY` e `CREATE POLICY`)
+  - Se tem RLS: refatorar `createGoogleCalendarEvent` para receber `client`
+    da transação `withTenant` em vez de usar `pool` direto
+  - Se não tem RLS: documentar como fragilidade aceitável e fechar
+- [ ] Pendências RLS fora do escopo (registradas pelo CC, fase futura):
+  - `patient/push/authorize` escreve em `patient_push_tokens` + `audit_logs`
+    sem `app.tenant_id` setado
+  - `push/send` consulta `push_tokens` por `user_id` sem filtro de tenant
+    (potencial leak cross-tenant se `user_id` colidir entre tenants)
 
 ### Fase 13.1 — DEPLOYADA (18/04, commit d0dd2d3) ✅
 Migration 054 aplicada, worker reiniciado, sistema testado manualmente em
@@ -63,30 +104,24 @@ Premissa do inventário de 01/04 estava desatualizada. Pre-check confirmou:
 Nenhum edit foi feito nessas rotas. Migração efetiva provavelmente aconteceu
 na Fase 12.2 ou 12.3. Não reabrir.
 
-### P0 — validação em produção (pendências antigas — herdadas)
-- [ ] **Migrations 031, 032, 049 em produção** — registradas como "pendentes
-  em produção" em 19/03 e 16/04 sem confirmação posterior. Se não aplicadas:
-  - `031_tcc_cpf_crp.sql` → onboarding CPF/CRP quebra
-  - `032_transcription_usage.sql` → limite 300 min FREE não é enforcado
-  - `049_session_reports.sql` → Sessão v2 (report + insights) não persiste
+### Migrations em produção — CONFIRMADAS (19/04) ✅
+Validação via `docker exec axis-postgres psql`:
+- `031_tcc_cpf_crp.sql` ✅ — colunas `cpf`, `crp`, `crp_uf` existem em
+  `profiles` + índice único `idx_profiles_cpf_unique`
+- `032_transcription_usage.sql` ✅ — tabela `transcription_usage` existe
+  com estrutura correta (id, tenant_id, month, minutes_used, updated_at)
+  + constraint unique (tenant_id, month)
+- `049_session_reports.sql` ✅ — tabela `session_reports` existe com
+  estrutura completa + RLS policy `tenant_isolation` ativa
+
+### P0 — pendências comerciais
 - [ ] **Checkout Hotmart TCC** — validar que links `J104687347A` estão ativos
   e o fluxo de compra completo (cadastro → pagamento → licença) funciona em
   produção (comparável ao ABA destravado 12/03)
 
 ### Próximas fases mapeadas
-- [ ] **Fase 14 — schema sweep TCC** — sweep preventivo (19/04) achou 6
-  rotas não-admin/webhook/cron com `pool.query` ou resolução manual fora
-  de `withTenant`. Lista pra investigar:
-  - `app/api/health/route.ts` — `SELECT 1 AS alive` (provavelmente OK,
-    healthcheck sem dados sensíveis)
-  - `app/api/patient/push/authorize/route.ts` — 3× `pool.query`, sem withTenant
-  - `app/api/push/send/route.ts` — 2× `pool.query`, sem withTenant
-  - `app/api/sessions/create/route.ts` — usa withTenant (3×) E pool.query (2×)
-    nas linhas 40 e 52 (possivelmente Google connection setup)
-  - `app/api/tdah/events/route.ts` — usa withTenant, mas linha 168 tem
-    `SELECT id FROM profiles WHERE clerk_user_id` (verificar se está dentro
-    do contexto withTenant)
-  - `app/api/tdah/plans/route.ts` — similar (linha 149)
+- [ ] **Fase 14 conclusão — sessions/create** — investigar RLS de
+  `calendar_connections`, decidir refactor ou aceitar fragilidade
 - [ ] **Fase 15 — testes manuais** — infra de test DB (docker-compose pg
   + migrations auto + teardown). Sessão ABA 17/04 descobriu que 17 rotas
   com schema mismatch passaram pelos 480 testes Vitest mockados. TCC tem
@@ -97,11 +132,28 @@ na Fase 12.2 ou 12.3. Não reabrir.
 
 ### Débitos técnicos (v2.x — não-bloqueantes)
 - [ ] `app/api/sessions/create/route.ts` linha 54: `const event: any` no
-  Google Calendar event → tipar
+  Google Calendar event → tipar (já feito no commit 0dbd9cb? verificar)
 - [ ] `/api/stats` não retorna `pending_notes` / `pending_confirmation` mas
   a interface TS `Stats` define os campos (undefined ignorados, dead code)
 - [ ] Hex hardcoded em `onboarding` e `evolution` componentes (restantes
   após migração de design tokens)
+
+### Backlog polimento (pós-monetização, não-bloqueante)
+- [ ] Fonte menor nos cards Fatos/Pensamentos/Emoções
+- [ ] "0 sessões hoje" cor neutra (não vermelho)
+- [ ] Adicionar "despolfiado→desconfiado" no SAFE_CORRECTIONS do
+  `transcript-postprocess.ts`
+- [ ] Refinar prompt extração emoções (não pegar hesitação como "sei lá")
+- [ ] Investigar CSO não calculando (checar cron/trigger do finish)
+- [ ] Dropar coluna `profiles.cpf` (opcional, não usada desde Fase 12.1)
+
+### Aviso técnico — Cowork virtiofs (19/04)
+Cowork apresentou bug persistente de cache FUSE servindo versão stale de
+`docs/NOTE_TCC.md` (14982 bytes no mount vs 15610 bytes no Windows/git).
+Touch de `LastWriteTime`, remoção de `.git/index.lock`, fechamento e
+reabertura da sessão não resolveram. Edições desta sessão foram feitas
+fora do Cowork (PowerShell + VS Code + git direto). Próxima sessão:
+verificar se o cache expirou; se persistir, escalar com Anthropic.
 
 ---
 
@@ -155,7 +207,7 @@ PM2 (produção VPS)
 
 | Plano | Preço | Pacientes | Transcrição | Link checkout |
 |---|---|---|---|---|
-| Free | Gratuito | 1 | 120 min/mês | `/sign-up?produto=tcc` |
+| Free | Gratuito | 1 | 300 min lifetime | `/sign-up?produto=tcc` |
 | Profissional | R$59/mês | Ilimitado | Ilimitada | pay.hotmart.com/H104687347A?off=J104687347A |
 
 > Limites lidos de `user_licenses` via `src/database/product-limits.ts`
@@ -244,6 +296,12 @@ PM2 (produção VPS)
 | `src/database/with-role.ts` | RBAC + handleRouteError |
 | `src/database/product-limits.ts` | Limite de pacientes por produto (10/04) |
 | `src/database/tcc-license-gate.ts` | Gate de licença (DRY, layouts TCC) |
+
+### TDAH (Fase 14 — refatorado 19/04)
+| Arquivo | Função |
+|---|---|
+| `app/api/tdah/events/route.ts` | **Fase 14** — usa `ctx.profileId` (lookup manual removido) |
+| `app/api/tdah/plans/route.ts` | **Fase 14** — usa `ctx.profileId` (lookup manual removido) |
 
 ### Billing (Hotmart)
 | Arquivo | Função |
