@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await withTenant(async (ctx) => {
-      const { client, tenantId, userId } = ctx
+      const { client, tenantId, userId, profileId } = ctx
       // Verificar paciente
       const patient = await client.query(
         'SELECT id FROM tdah_patients WHERE id = $1 AND tenant_id = $2 AND status = $3',
@@ -144,12 +144,7 @@ export async function POST(request: NextRequest) {
         throw new Error('Paciente não encontrado ou inativo')
       }
 
-      // Buscar profile
-      const profile = await client.query(
-        'SELECT id FROM profiles WHERE clerk_user_id = $1 AND tenant_id = $2',
-        [userId, tenantId]
-      )
-      const profileId = profile.rows[0]?.id || null
+      // profileId vem do contexto withTenant (já resolvido)
 
       // Criar plano
       const plan = await client.query(
