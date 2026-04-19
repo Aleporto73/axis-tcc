@@ -1,6 +1,6 @@
 # AXIS TCC — NOTE ativo
 
-**Atualizado:** 2026-04-19
+**Atualizado:** 2026-04-19 (pós-incidente plans corrupção)
 **Produto:** AXIS TCC (Terapia Cognitivo-Comportamental)
 **Motor:** CSO-TCC v3.0.0
 **Bible:** Documento Mestre TCC v2.1
@@ -19,11 +19,18 @@ aparece confirmado como ativo — ver contradição #1 no archive. Infraestrutur
 compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
 Últimas entregas:
-- **Fase 14 concluída (19/04/2026, commits 0dbd9cb + 4030a36)** — schema sweep TCC:
+- **Fase 14 concluída (19/04/2026, 4 commits + incidente + fix)** — schema sweep TCC:
   6 rotas suspeitas analisadas. Resultado: 3 falsos positivos documentados,
-  2 refatoradas (`tdah/events` + `tdah/plans` usando `ctx.profileId`),
+  1 refatorada de verdade (`tdah/plans` usando `ctx.profileId`),
+  1 era falso positivo (já estava refatorado — `tdah/events`),
   1 investigada e declarada aceitável (`sessions/create` — `calendar_connections`
   sem RLS, registrado como débito técnico pra quando ativar RLS global).
+  **INCIDENTE crítico**: commit `0dbd9cb` sobrescreveu `tdah/plans/route.ts` com
+  conteúdo de `tdah/events/route.ts` (corrupção durante edição paralela no Cowork).
+  Produção ficou com a rota `/api/tdah/plans` quebrada até detecção ~21:00.
+  Recuperado via commit `fbfe283` (restaurado de `05156f4`) e commit `75b57f6`
+  aplicou o refactor real. Lição: verificar cabeçalho único de cada arquivo após
+  edições paralelas, não confiar só em SHA256+typecheck.
 - **Fase 13.2 (19/04/2026, CLOSED as no-op)** — migração de `/api/transcribe`
   POST e `/api/transcribe/status/[jobId]` para `withTenant()`. Pre-check
   mostrou que **ambas já estavam migradas** em fase anterior (provavelmente
@@ -47,12 +54,17 @@ compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
 ## PENDÊNCIAS (próxima sessão)
 
-### Fase 14 — CONCLUÍDA (19/04, commits 0dbd9cb + 4030a36) ✅
-Schema sweep TCC concluído com os seguintes resultados:
+### Fase 14 — CONCLUÍDA (19/04, 4 commits + incidente + fix) ✅
+Schema sweep TCC concluído com os seguintes resultados (corrigido pós-incidente):
 
 **Refatorados (ctx.profileId):**
-- `app/api/tdah/events/route.ts` ✅ — lookup manual de profiles substituído
-- `app/api/tdah/plans/route.ts` ✅ — mesmo padrão
+- `app/api/tdah/plans/route.ts` ✅ — refactor real aplicado no commit `75b57f6`
+  (após restore via `fbfe283` do commit pré-Fase-14 `05156f4`)
+
+**Falso positivo descoberto no pré-check:**
+- `app/api/tdah/events/route.ts` ⚠️ — já estava refatorado antes da Fase 14.
+  O inventário inicial listou como pendente mas o código já usava `ctx.profileId`.
+  Nada foi alterado neste arquivo.
 
 **Falsos positivos documentados (exceções legítimas, não precisam mudar):**
 - `app/api/health/route.ts` — `SELECT 1 AS alive` (liveness probe público)
@@ -137,11 +149,61 @@ Validação via `docker exec axis-postgres psql`:
 ### Backlog polimento (pós-monetização, não-bloqueante)
 - [ ] Fonte menor nos cards Fatos/Pensamentos/Emoções
 - [ ] "0 sessões hoje" cor neutra (não vermelho)
-- [ ] Adicionar "despolfiado→desconfiado" no SAFE_CORRECTIONS do
-  `transcript-postprocess.ts`
+- [x] ~~Adicionar "despolfiado→desconfiado" no SAFE_CORRECTIONS~~ ✅ feito 19/04 (commit `836b9fa`)
 - [ ] Refinar prompt extração emoções (não pegar hesitação como "sei lá")
 - [ ] Investigar CSO não calculando (checar cron/trigger do finish)
 - [ ] Dropar coluna `profiles.cpf` (opcional, não usada desde Fase 12.1)
+
+### Incidente 19/04 — Corrupção em tdah/plans/route.ts (RESOLVIDO)
+**Contexto:** durante a Fase 14 o CC executou edits paralelos em `tdah/events`
+e `tdah/plans`. O commit `0dbd9cb` gravou o conteúdo de `events` por cima
+de `plans`. Arquivo ficou com estrutura correta (SHA256 válido, UTF-8 OK,
+zero null bytes, typecheck passou) mas o **conteúdo semântico estava errado**
+— plans virou events literalmente.
+
+**Como foi detectado:**
+Ao tentar continuar o refactor na sessão seguinte do CC, os greps começaram
+a divergir. Teste no PowerShell local confirmou corrupção real no disco
+(hashes plans==events=`7060 bytes` idênticos).
+
+**Recuperação (3 passos):**
+1. `git checkout 05156f4 -- app/api/tdah/plans/route.ts` (restaura versão pré-Fase 14)
+2. Commit `fbfe283` com o restore
+3. Commit `75b57f6` aplica o refactor `ctx.profileId` da Fase 14 corretamente
+
+**Estado final em produção:**
+- `tdah/plans/route.ts` — 194 linhas, refactor aplicado, funcionando
+- `tdah/events/route.ts` — inalterado (já estava OK antes)
+
+**Lição aprendida (regra nova):**
+Quando CC edita múltiplos arquivos irmãos (mesmo diretório, padrão parecido),
+verificar **cabeçalho único de cada arquivo** após salvar. SHA256+typecheck
+não detecta esse tipo de corrupção — o arquivo fica "válido" mas errado.
+Comando de validação: `grep -l "API Plano TDAH" app/api/tdah/plans/route.ts`
+(deve retornar match, se não → arquivo está com conteúdo de outro módulo).
+
+### Bug Hub (conta admin porto.ar4@gmail.com) — RESOLVIDO operacional (19/04, 20:30)
+**Problema:** conta admin tinha 2 profiles ativos em tenants diferentes:
+- Admin em `Ana Tunussi Porto` (principal)
+- Terapeuta em `Geo Legends` (testes)
+
+`withTenant()` corretamente disparava `TenantSelectionRequired` (409),
+mas a tela `/hub` não tratava o erro — parecia usuário novo sem licença.
+
+**Fix operacional via SQL:**
+```sql
+UPDATE profiles SET is_active = false
+WHERE id = '269782c2-611a-4166-9f67-749fe3389a25';
+```
+
+Profile de terapeuta do Geo Legends desativado. Login volta a funcionar.
+Arquitetura multi-profile continua funcional (mesma pessoa pode ser admin
+em TCC + terapeuta em ABA em outra clínica).
+
+**Não há código a mudar** — o fluxo está correto em arquitetura, foi
+dado sujo de testes. Se for necessário suportar múltiplos profiles
+ativos por usuário no futuro, a tela `/hub` precisará consumir
+`TenantSelectionRequired.tenants[]` e mostrar seletor.
 
 ### Aviso técnico — Cowork virtiofs (19/04)
 Cowork apresentou bug persistente de cache FUSE servindo versão stale de
@@ -204,7 +266,7 @@ PM2 (produção VPS)
 | Plano | Preço | Pacientes | Transcrição | Link checkout |
 |---|---|---|---|---|
 | Free | Gratuito | 1 | 300 min lifetime | `/sign-up?produto=tcc` |
-| Profissional | R$59/mês | Ilimitado | Ilimitada | pay.hotmart.com/H104687347A?off=J104687347A |
+| Profissional | R$59/mês | Ilimitado | Ilimitada | pay.hotmart.com/J104687347A?off=sn8ebdqc |
 
 > Limites lidos de `user_licenses` via `src/database/product-limits.ts`
 > (desde 10/04/2026 — não mais `tenants.max_patients` global).
@@ -276,7 +338,7 @@ PM2 (produção VPS)
 | `scripts/workers/transcription-worker.ts` | Worker async, gera raw + final |
 | `app/api/tcc/transcription/usage/route.ts` | Limite 300 min lifetime FREE (Fase 12.2) |
 | `app/tcc/components/TranscriptionUsageBar.tsx` | Barra dashboard |
-| ~~`app/tcc/components/TranscriptionLimitModal.tsx`~~ | REMOVIDO em Fase 12.3 — consolidado em `UpgradeModalTCC.tsx` com `reason` prop |
+| ~~`app/tcc/components/TranscriptionLimitModal.tsx`~~ | **Verificar status** — consolidado em `UpgradeModalTCC.tsx` com `reason` prop (Fase 12.3). Arquivo pode existir localmente mas não é mais referenciado. |
 
 ### Análise IA
 | Arquivo | Função |
@@ -293,11 +355,11 @@ PM2 (produção VPS)
 | `src/database/product-limits.ts` | Limite de pacientes por produto (10/04) |
 | `src/database/tcc-license-gate.ts` | Gate de licença (DRY, layouts TCC) |
 
-### TDAH (Fase 14 — refatorado 19/04)
+### TDAH (Fase 14 — refatorado 19/04, com incidente)
 | Arquivo | Função |
 |---|---|
-| `app/api/tdah/events/route.ts` | **Fase 14** — usa `ctx.profileId` (lookup manual removido) |
-| `app/api/tdah/plans/route.ts` | **Fase 14** — usa `ctx.profileId` (lookup manual removido) |
+| `app/api/tdah/events/route.ts` | Já usava `ctx.profileId` antes da Fase 14 (falso positivo no inventário, inalterado) |
+| `app/api/tdah/plans/route.ts` | **Fase 14 (commits `fbfe283` + `75b57f6`)** — usa `ctx.profileId`. Passou por incidente de corrupção, recuperado e refatorado corretamente. Ver seção "Incidente 19/04" acima. |
 
 ### Billing (Hotmart)
 | Arquivo | Função |
