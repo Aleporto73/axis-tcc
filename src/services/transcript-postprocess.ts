@@ -170,6 +170,8 @@ const SAFE_CORRECTIONS: Array<[RegExp, string]> = [
   [/\bcomportamentual\b/gi, 'comportamental'],
   [/\bpsicoterapeuta\b/gi, 'psicoterapeuta'], // manter correto
   [/\bcognitivo comportamental\b/gi, 'cognitivo-comportamental'],
+  // ─── Erros ASR identificados em 19/04/2026 ───
+  [/\bdespolfiado\b/gi, 'desconfiado'],
 ]
 
 /**
