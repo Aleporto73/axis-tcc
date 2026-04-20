@@ -140,7 +140,7 @@ export async function POST(
           source: 'session_finish',
           related_entity_id: id,
           created_at: new Date()
-        })
+        }, client)
       } catch (err) {
         console.error('[PIPELINE] Erro no CSO Engine:', err)
         pipelineWarnings.push('Motor CSO não processou o evento. Os indicadores podem estar desatualizados.')

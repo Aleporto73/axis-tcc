@@ -1,4 +1,4 @@
-import pool from '../database/db';
+import { PoolClient } from 'pg';
 import { ClinicalState, Event } from '../types';
 import crypto from 'crypto';
 import { z } from 'zod';
@@ -47,8 +47,8 @@ function generateEventHash(event: Event): string {
 /**
  * Verifica se evento já foi processado (anti-duplicidade)
  */
-async function isEventAlreadyProcessed(eventHash: string): Promise<boolean> {
-  const result = await pool.query(
+async function isEventAlreadyProcessed(eventHash: string, client: PoolClient): Promise<boolean> {
+  const result = await client.query(
     'SELECT id FROM clinical_states WHERE event_hash = $1 LIMIT 1',
     [eventHash]
   );
@@ -59,7 +59,7 @@ async function isEventAlreadyProcessed(eventHash: string): Promise<boolean> {
  * Processa um evento e atualiza (ou cria) o Clinical State Object
  * REGRA: SEMPRE INSERT, NUNCA UPDATE (append-only)
  */
-export async function processEvent(event: Event): Promise<ClinicalState | null> {
+export async function processEvent(event: Event, client: PoolClient): Promise<ClinicalState | null> {
   // Validação com Zod
   const validation = validateEvent(event);
   if (!validation.success) {
@@ -69,7 +69,7 @@ export async function processEvent(event: Event): Promise<ClinicalState | null> 
 
   // Anti-duplicidade via hash
   const eventHash = generateEventHash(event);
-  const alreadyProcessed = await isEventAlreadyProcessed(eventHash);
+  const alreadyProcessed = await isEventAlreadyProcessed(eventHash, client);
   
   if (alreadyProcessed) {
     return null;
@@ -82,7 +82,7 @@ export async function processEvent(event: Event): Promise<ClinicalState | null> 
     LIMIT 1
   `;
 
-  const result = await pool.query(lastCSOQuery, [event.patient_id, event.tenant_id]);
+  const result = await client.query(lastCSOQuery, [event.patient_id, event.tenant_id]);
   const lastCSO = result.rows[0] || null;
 
   const newCSO = calculateNewCSO(lastCSO, event);
@@ -103,7 +103,7 @@ export async function processEvent(event: Event): Promise<ClinicalState | null> 
     RETURNING *
   `;
 
-  const insertResult = await pool.query(insertQuery, [
+  const insertResult = await client.query(insertQuery, [
     newCSO.tenant_id,
     newCSO.patient_id,
     CSO_ENGINE_VERSION,
