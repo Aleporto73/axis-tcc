@@ -64,7 +64,7 @@ export default function AnalyticalStructure({ analysis }: AnalyticalStructurePro
                 itemBorderClass="border-sky-100"
               >
                 {analysis.fatos.map((f, i) => (
-                  <li key={i} className="text-sm bg-white rounded p-2 border border-sky-100">{f}</li>
+                  <li key={i} className="text-xs bg-white/60 backdrop-blur-sm rounded-md px-3 py-2 border border-sky-200/60 text-slate-700">{f}</li>
                 ))}
               </SubSection>
             )}
@@ -81,7 +81,7 @@ export default function AnalyticalStructure({ analysis }: AnalyticalStructurePro
                 itemBorderClass="border-amber-100"
               >
                 {analysis.pensamentos.map((p, i) => (
-                  <li key={i} className="text-sm bg-white rounded p-2 border border-amber-100">{p}</li>
+                  <li key={i} className="text-xs bg-white/60 backdrop-blur-sm rounded-md px-3 py-2 border border-amber-200/60 text-slate-700">{p}</li>
                 ))}
               </SubSection>
             )}
@@ -98,7 +98,7 @@ export default function AnalyticalStructure({ analysis }: AnalyticalStructurePro
                 itemBorderClass="border-rose-100"
               >
                 {analysis.emocoes.map((e, i) => (
-                  <li key={i} className="text-sm bg-white rounded p-2 border border-rose-100">{e}</li>
+                  <li key={i} className="text-xs bg-white/60 backdrop-blur-sm rounded-md px-3 py-2 border border-rose-200/60 text-slate-700">{e}</li>
                 ))}
               </SubSection>
             )}
