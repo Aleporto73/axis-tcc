@@ -1,6 +1,6 @@
 # AXIS TCC — NOTE ativo
 
-**Atualizado:** 2026-04-19 (pós-incidente plans corrupção)
+**Atualizado:** 2026-04-20 (6 commits + fix P0 motor CSO RLS + migration 055 LGPD)
 **Produto:** AXIS TCC (Terapia Cognitivo-Comportamental)
 **Motor:** CSO-TCC v3.0.0
 **Bible:** Documento Mestre TCC v2.1
@@ -94,6 +94,10 @@ refactor antes ou junto (senão quebram silenciosamente):
 - [ ] `app/api/push/send/route.ts` — consulta `push_tokens` por `user_id`
   sem filtro de tenant (potencial leak cross-tenant se `user_id` colidir
   entre tenants)
+- [ ] **`events` — RLS desligado (descoberto 20/04 durante fix CSO)** —
+  `relrowsecurity = f` em produção. `events/create` funciona porque usa
+  `client.query` com filtro `tenant_id` explícito, mas sem defense-in-depth.
+  Ativar policy quando for feito sweep global de RLS.
 
 ### Fase 13.1 — DEPLOYADA (18/04, commit d0dd2d3) ✅
 Migration 054 aplicada, worker reiniciado, sistema testado manualmente em
