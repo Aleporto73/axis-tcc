@@ -101,6 +101,10 @@ WHERE NOT EXISTS (
 )
 ON CONFLICT DO NOTHING;
 
+-- Garantir colunas existem (podem ser criadas aqui ou na 007, depende da ordem)
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS plan_tier TEXT DEFAULT 'free';
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS max_patients INT DEFAULT 1;
+
 -- ─── Atualizar CHECK constraint de plan_tier nos tenants ───
 -- Migration 005 criou: CHECK (plan_tier IN ('trial','starter','professional','clinic'))
 -- Agora alinhado com landing page: free, founders, clinica_100, clinica_250
