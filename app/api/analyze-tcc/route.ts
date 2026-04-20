@@ -67,6 +67,7 @@ REGRAS OBRIGATORIAS:
 9. Se houver ambiguidade, omita
 10. Maximo 5 itens por categoria - priorize os mais relevantes
 11. Nao repita a mesma informacao em categorias diferentes
+12. IGNORE hesitacoes e marcadores de incerteza como: "sei la", "nao sei", "acho que sim", "talvez", "de repente", "ne", "tipo". Eles NAO sao emocoes nem pensamentos - sao apenas preenchimento verbal.
 
 EXTRAIA:
 
@@ -79,8 +80,9 @@ EXTRAIA:
    Ex: "Eu sempre estrago tudo", "Ninguem me entende"
 
 3. EMOCOES
-   Sentimentos claramente nomeados pelo paciente.
-   Ex: "Fiquei com raiva", "Me senti ansioso", "Tive medo"
+   Sentimentos claramente nomeados pelo paciente (substantivos ou adjetivos emocionais explicitos).
+   SIM: "Fiquei com raiva", "Me senti ansioso", "Tive medo", "Estava triste", "Fiquei envergonhado"
+   NAO: "Sei la", "Nao sei", "Estranho", "Diferente", "Meio assim" - sao hesitacoes ou descricoes vagas, NAO emocoes.
 
 4. COMPORTAMENTOS
    Acoes ou reacoes do paciente diante das situacoes.
