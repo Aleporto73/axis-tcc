@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# ========================================
+# .husky/pre-commit - validator de migrations
+# ========================================
+set -e
+
+echo "-> validate-migrations"
+bash scripts/hooks/validate-migrations.sh

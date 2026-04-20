@@ -11,6 +11,38 @@
 > - **TDAH** — tabelas com prefixo `tdah_`.
 > - **TCC** — `sessions` (TCC), `patients` (TCC), `transcripts`, `transcription_jobs`, `transcript_segments`, `session_reports`, `case_base`, `exposure_hierarchies`.
 
+## Convenção de nomenclatura (057+)
+
+A partir da migration **057**, todo novo arquivo em `scripts/migrations/` **deve** seguir:
+
+```
+NNN_<modulo>_<descricao_em_snake_case>.sql
+```
+
+Onde:
+
+- **NNN** — número sequencial com 3 dígitos (zero-padded). Próximo disponível: `057`.
+- **`<modulo>`** — literal, minúsculo. Um de: `aba`, `tcc`, `tdah`, `shared`.
+- **`<descricao>`** — snake_case, objetivo, sem acentos, começa por verbo ou substantivo da tabela afetada.
+
+**Exemplos válidos:**
+
+- `057_aba_add_protocol_archive_reason.sql`
+- `058_tcc_transcripts_add_language.sql`
+- `059_shared_drop_unused_column.sql`
+- `060_tdah_routines_add_reminder_time.sql`
+
+**Exemplos inválidos (rejeitados pelo hook):**
+
+- `057_add_column.sql` — falta módulo
+- `057_ABA_foo.sql` — módulo deve ser minúsculo
+- `57_aba_foo.sql` — NNN precisa de 3 dígitos
+- `057_billing_foo.sql` — `billing` não é um módulo válido (use `shared`)
+
+**Migrations 001–056 são legadas.** Nomes antigos são preservados por rastreabilidade; o validador pula qualquer arquivo com `NNN ≤ 056`. Os 4 casos de nome enganoso (005, 014, 015, 021) estão documentados abaixo e permanecem como estão.
+
+**Regra adicional (conteúdo):** toda migration deve terminar com `COMMIT;` (ou estar dentro de um `DO $$ ... END $$;` explícito). O validador do pre-commit hook verifica tanto o nome quanto essa regra mínima.
+
 ## Ownership por migration (001 → 056)
 
 | Migration | Módulo | Descrição | Nota |
@@ -99,3 +131,5 @@ Gaps não afetam execução; migrations são aplicadas manualmente em ordem.
 ## Próxima migration disponível
 
 **057** — contar a partir do último número existente, independentemente de gaps.
+
+Novos arquivos a partir daqui **devem seguir a convenção `NNN_<modulo>_<descricao>.sql`** definida no início deste documento. O pre-commit hook (`scripts/hooks/validate-migrations.sh`, a ser criado na Fase 2 do plano Hub 9/10) rejeita nomes fora do padrão para 057+.
