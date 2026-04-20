@@ -487,12 +487,6 @@ export async function DELETE() {
         [tenantId], 'del_push_tokens')
       stats.push_tokens_removed = r22.rowCount
 
-      // 23. NOTIFICATION_PREFERENCES — remover
-      const r23 = await safeExec(client,
-        `DELETE FROM notification_preferences WHERE tenant_id = $1`,
-        [tenantId], 'del_notif_prefs')
-      stats.notification_preferences_removed = r23.rowCount
-
       // 24. AUDIT LOGS — MANTER INTACTOS (5 anos compliance)
       const r24 = await safeExec(client,
         `SELECT COUNT(*)::int as cnt FROM axis_audit_logs WHERE tenant_id = $1`,
