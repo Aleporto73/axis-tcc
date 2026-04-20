@@ -318,7 +318,7 @@ export default function DashboardPage() {
           {/* Metrics Line + AXIS Assist */}
           <section className="mb-6 md:mb-8 pb-5 md:pb-6 border-b border-slate-100">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base md:text-xl text-slate-700 mb-1">
-              <span className="text-xs text-tcc-accent">{sessionsToday} {sessionsToday === 1 ? 'sessão' : 'sessões'} hoje</span>
+              <span className={`text-xs ${sessionsToday === 0 ? 'text-tcc-300' : 'text-tcc-accent'}`}>{sessionsToday} {sessionsToday === 1 ? 'sessão' : 'sessões'} hoje</span>
               {inProgress > 0 && (
                 <>
                   <span className="text-slate-300">·</span>
