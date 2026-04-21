@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   lint-and-typecheck:
-    name: TypeScript Check
+    name: Lint + TypeScript Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -24,6 +24,9 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
+
+      - name: ESLint (boundaries)
+        run: npx eslint .
 
       - run: npx tsc --noEmit
 
