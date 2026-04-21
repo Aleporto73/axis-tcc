@@ -1,6 +1,6 @@
 # AXIS TCC — NOTE ativo
 
-**Atualizado:** 2026-04-20 (6 commits + fix P0 motor CSO RLS + migration 055 LGPD)
+**Atualizado:** 2026-04-20 (Hub audit 5→9/10 — ESLint boundaries + husky + migration 056)
 **Produto:** AXIS TCC (Terapia Cognitivo-Comportamental)
 **Motor:** CSO-TCC v3.0.0
 **Bible:** Documento Mestre TCC v2.1
@@ -19,6 +19,18 @@ aparece confirmado como ativo — ver contradição #1 no archive. Infraestrutur
 compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
 Últimas entregas:
+- **Hub audit (20/04/2026) — SHARED/infra, commit chain ABA-led** — 6 commits no
+  hub que beneficiam TCC sem tocar em código do produto. Novas proteções: (1)
+  **ESLint boundaries** (`eslint.config.mjs`, commit `af157c9`) impede que código
+  TCC importe de `app/aba/**` ou `app/tdah/**`, e protege `src/engines/cso.ts`
+  de imports a partir de ABA/TDAH; (2) **Husky pre-commit validator** (commit
+  `54312d8`) exige nome `NNN_<modulo>_<descricao>.sql` + tag `-- COMMIT: ...`
+  em migrations 057+; (3) **MIGRATIONS_MAP.md** documenta ownership das 52
+  migrations; (4) migration 056 (`calendar_connections` + `push_tokens`, commit
+  `a97d986`) corrige tabelas órfãs — `calendar_connections` é usada pelo TCC em
+  `/api/sessions/create` (débito técnico de RLS documentado na Fase 14).
+  CI ganhou passo `ESLint (boundaries)`. Backup tag: `backup-pre-eslint`.
+  Sessão detalhada: [sessoes/2026-04-20_hub_audit](sessoes/2026-04-20_hub_audit.md).
 - **Fase 14 concluída (19/04/2026, 4 commits + incidente + fix)** — schema sweep TCC:
   6 rotas suspeitas analisadas. Resultado: 3 falsos positivos documentados,
   1 refatorada de verdade (`tdah/plans` usando `ctx.profileId`),

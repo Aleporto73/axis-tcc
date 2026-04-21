@@ -1,6 +1,6 @@
 # AXIS TDAH — NOTE ativo
 
-**Atualizado:** 2026-04-17
+**Atualizado:** 2026-04-20 (Hub audit 5→9/10 — ESLint boundaries + husky + migration 056)
 **Produto:** AXIS TDAH (Transtorno de Deficit de Atencao e Hiperatividade)
 **Motor:** CSO-TDAH v1.0 (3 blocos — base + executive + AuDHD layer)
 **Bible:** AXIS_TDAH_BIBLE_v2.5 (congelada), PLANO_TDAH.md
@@ -23,6 +23,18 @@ withTenant + expansao portal familia).
 
 Produto mais novo dos 3 — compartilha infraestrutura com ABA/TCC:
 auth Clerk, multi-tenant, billing Hotmart, audit logs, LGPD.
+
+**Hub audit (20/04/2026) — SHARED/infra, commit chain ABA-led.** 6 commits no
+hub que beneficiam TDAH sem tocar em código do produto. Novas proteções: (1)
+**ESLint boundaries** (`eslint.config.mjs`, commit `af157c9`) impede que código
+TDAH importe de `app/aba/**` ou do motor `src/engines/cso.ts` (TCC), e protege
+`src/engines/cso-tdah.ts` + `cso-tdah-adapter.ts` de imports a partir de
+ABA/TCC; (2) **Husky pre-commit validator** (commit `54312d8`) exige nome
+`NNN_<modulo>_<descricao>.sql` + tag `-- COMMIT: ...` em migrations 057+;
+(3) **MIGRATIONS_MAP.md** documenta ownership das 52 migrations;
+(4) migration 056 (commit `a97d986`) adiciona `push_tokens` — relevante para
+o plano de notificações mobile TDAH. CI ganhou passo `ESLint (boundaries)`.
+Backup tag: `backup-pre-eslint`. Sessão: [sessoes/2026-04-20_hub_audit](sessoes/2026-04-20_hub_audit.md).
 
 ---
 

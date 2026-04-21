@@ -1,6 +1,6 @@
 # AXIS ABA — NOTE ativo
 
-**Atualizado:** 2026-04-17 (noite — Fase 1 + Fase 2 + Local dropdown + Trials empty state + limpeza TDAH LGPD)
+**Atualizado:** 2026-04-20 (Hub audit 5→9/10 — husky + ESLint boundaries + MIGRATIONS_MAP)
 **Produto:** AXIS ABA (Applied Behavior Analysis)
 **Motor:** CSO-ABA v2.6.1 (congelado)
 **Bible:** AXIS_ABA_BIBLE v2.6.1 + v2.7.0 Operadora Ready
@@ -122,6 +122,37 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 - [ ] **Objetivo:** prevenir nova leva de schema mismatch. A sessão 17/04
   descobriu que os 480 testes Vitest mockados não detectam schema mismatch
   entre código e DB real.
+
+---
+
+## APLICADO EM 2026-04-20 — Auditoria ABA + Hub 5→9/10
+
+Sessão detalhada: [2026-04-20_hub_audit](sessoes/2026-04-20_hub_audit.md).
+
+**Commits (7):**
+- `bb171ea` fix migration 006 (`plan_tier` + `max_patients` antes dos UPDATEs)
+- `a97d986` migration 056 (tabelas órfãs `calendar_connections` + `push_tokens` — SHARED)
+- `161d855` fix 039 (`undefined_table` guard) + remove dead code `notification_preferences` + MIGRATIONS_MAP.md
+- `54312d8` convenção migrations 057+ + pre-commit validator (husky) — SHARED
+- `dd94285` fix CI (`package-lock.json` sync com husky) — SHARED
+- `af157c9` ESLint boundaries (cross-module guard ABA↔TCC↔TDAH) — SHARED
+- (inline) typecheck script + 5 arquivos TCC restaurados
+
+**Proteções ativas (novas):**
+- **Husky pre-commit** valida nome (`NNN_<modulo>_<descricao>.sql`) + tag `-- COMMIT: ...` em migrations 057+
+- **ESLint boundaries** impede imports cruzados entre ABA/TCC/TDAH (`eslint.config.mjs`)
+- **MIGRATIONS_MAP.md** documenta ownership das 52 migrations existentes
+- Backup tag: `backup-pre-eslint` (em `dd94285`)
+
+**Scores:**
+- ABA módulo: **7/10** (features UX pendentes: ViaCEP, RRULE)
+- Hub saúde: 5/10 → **9/10**
+
+**Pendências remanescentes (não entraram):**
+- ViaCEP + Nominatim (endereço Locais) — Caminho B
+- Recorrência sessões (GCal RRULE) — discovery com Bianca
+- C-4 landing vs onboarding (ofertas batem, onboarding não gate por `plan_tier`)
+- `tsconfig moduleResolution` — erros pré-existentes, CI passa via `next build`
 
 ---
 
