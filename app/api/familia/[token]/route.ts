@@ -22,6 +22,9 @@ const PORTAL_RATE_LIMIT = { limit: 30, windowMs: 60_000, prefix: 'portal-familia
 async function validateToken(token: string) {
   const client = await pool.connect()
   try {
+    // Sem SET LOCAL app.tenant_id aqui - intencional.
+    // Ver app/api/escola/[token]/route.ts validateToken()
+    // e docs/audits/validacao_tier0_tier1.md CHECK 5.
     const res = await client.query(
       `SELECT t.*, p.name as patient_name, p.birth_date, p.status as patient_status,
         p.school_name, p.diagnosis

@@ -20,7 +20,10 @@ const PORTAL_RATE_LIMIT = { limit: 30, windowMs: 60_000, prefix: 'portal-escola'
 async function validateToken(token: string) {
   const client = await pool.connect()
   try {
-    await client.query("SET LOCAL app.tenant_id = ''")
+    // Removido SET LOCAL app.tenant_id = '' (era no-op: SET LOCAL fora de
+    // BEGIN/COMMIT e ignorado pelo PostgreSQL). Isolacao de tenant aqui
+    // vem de filtros explicitos (token UNIQUE + WHERE tenant_id = $X).
+    // Ver docs/audits/validacao_tier0_tier1.md CHECK 5.
 
     const res = await client.query(
       `SELECT t.*, p.name as patient_name, p.birth_date,

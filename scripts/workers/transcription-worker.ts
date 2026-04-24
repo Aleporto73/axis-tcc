@@ -86,6 +86,11 @@ async function withTenantClient<T>(
 }
 
 // ── Helper RLS: contexto de worker (para transcription_jobs cross-tenant) ──
+// BACKDOOR RLS ESCOPADO - app.is_worker libera cross-tenant em
+// transcription_jobs (policy worker_access, migration 046).
+// NAO setar este GUC fora de scripts/workers/.
+// Guardrail CI: scripts/ci/check_is_worker_scope.sh.
+// Ver docs/audits/validacao_tier0_tier1.md CHECK 4.
 async function withWorkerClient<T>(
   callback: (client: PoolClient) => Promise<T>
 ): Promise<T> {
