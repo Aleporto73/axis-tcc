@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Pool } from 'pg'
-import { randomUUID } from 'crypto'
+import { randomUUID, timingSafeEqual } from 'crypto'
 
 const pool = new Pool({
   host: process.env.DATABASE_HOST,
@@ -13,6 +13,20 @@ const pool = new Pool({
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
 const WEBHOOK_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com') + '/api/google/webhook'
+
+/**
+ * Valida o header Authorization contra o CRON_SECRET em tempo constante.
+ * Retorna false se: header ausente, não começa com "Bearer ",
+ * comprimentos divergem, ou tokens diferem.
+ */
+function isValidCronAuth(authHeader: string | null, secret: string): boolean {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return false
+  const providedToken = authHeader.slice('Bearer '.length)
+  const providedBuf = Buffer.from(providedToken)
+  const expectedBuf = Buffer.from(secret)
+  if (providedBuf.length !== expectedBuf.length) return false
+  return timingSafeEqual(providedBuf, expectedBuf)
+}
 
 async function refreshAccessToken(refreshToken: string): Promise<string | null> {
   const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -32,8 +46,11 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
 
 export async function GET(request: NextRequest) {
   try {
+    // Auth: CRON_SECRET obrigatório (fail-closed)
     const authHeader = request.headers.get('authorization')
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const cronSecret = process.env.CRON_SECRET
+
+    if (!cronSecret || !isValidCronAuth(authHeader, cronSecret)) {
       return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
     }
 
