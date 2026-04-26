@@ -1,6 +1,6 @@
 # AXIS TDAH — Matriz de Acesso por Role
 
-**Atualizado:** 24/03/2026 (hardening v1.0)
+**Atualizado:** 25/04/2026 (Onda 5.3 — fallback `created_by` removido)
 **Base:** Migration 038 (tdah_patient_therapists N:N)
 
 ---
@@ -11,7 +11,7 @@
 |------|-----------|--------|
 | **admin** | Administrador da clínica | Acesso total dentro do tenant |
 | **supervisor** | Supervisora clínica | Acesso total dentro do tenant |
-| **terapeuta** | Profissional de atendimento | Apenas pacientes vinculados (tdah_patient_therapists) + fallback created_by |
+| **terapeuta** | Profissional de atendimento | Apenas pacientes vinculados via `tdah_patient_therapists` (sem fallback) |
 
 ---
 
@@ -153,13 +153,15 @@
 
 O sistema usa 3 helpers em `src/database/with-role.ts`:
 
-1. **`tdahPatientFilter(ctx, startParam)`** — Gera cláusula SQL para WHERE em queries de listagem. Admin/Supervisor: sem filtro. Terapeuta: filtra por `tdah_patient_therapists` OR `created_by`.
+1. **`tdahPatientFilter(ctx, startParam)`** — Gera cláusula SQL para WHERE em queries de listagem. Admin/Supervisor: sem filtro. Terapeuta: filtra exclusivamente por `tdah_patient_therapists`.
 
 2. **`tdahSessionFilter(ctx, startParam, alias)`** — Idem, para sessões (filtra por patient_id dos pacientes vinculados).
 
 3. **`canAccessTdahPatient(ctx, patientId)`** — Verificação pontual: retorna `true/false`. Usado em rotas de item individual `/[id]`.
 
-Fallback `created_by` garante compatibilidade com dados pré-Migration-038.
+> **Desde Onda 5.3 (25/04/2026):** vínculo terapeuta-paciente exige row explícita em
+> `tdah_patient_therapists`. Não há fallback por `created_by`. Atribuição/desvinculação
+> é feita via `POST/DELETE /api/tdah/patient-therapists` (admin/supervisor apenas).
 
 ---
 
@@ -168,3 +170,17 @@ Fallback `created_by` garante compatibilidade com dados pré-Migration-038.
 - Acesso negado retorna **404 genérico** ("Não encontrado"), nunca 403 com informação sobre existência
 - Nenhuma mensagem de erro revela se o recurso existe ou pertence a outro profissional
 - Pattern: `if (!canAccess) → throw 404 genérico`
+
+---
+
+## Changelog
+
+### Onda 5.3 — 25/04/2026
+- Removido fallback `OR p.created_by = $profileId` em `tdahPatientFilter`.
+- Removido `UNION SELECT FROM tdah_patients WHERE created_by` em `tdahSessionFilter`.
+- Removido `UNION ALL ... created_by` em `canAccessTdahPatient` (mantido `LIMIT 1` — Variante B conservadora).
+- Removido OR inline equivalente em `app/api/tdah/plans/route.ts`.
+- Auditoria prévia (25/04 em prod): 0 terapeutas com leak ativo (Q9 confirmado).
+
+### v1.0 — 24/03/2026
+- Hardening inicial: criação de `tdah_patient_therapists` (Migration 038), backfill via `created_by`, helpers de visibilidade com fallback transitório.

@@ -42,15 +42,14 @@ export async function GET(request: NextRequest) {
       }
 
       // Role filter: terapeuta vê só pacientes vinculados (Migration 038)
-      // Nota: não usa tdahPatientFilter porque alias 'p' aqui é tdah_plans, não tdah_patients
+      // Nota: não usa tdahPatientFilter porque o helper hardcoda alias 'p',
+      // e aqui precisamos filtrar por 'tp' (tdah_patients via JOIN).
+      // Onda 5.3 (25/04/2026): removido fallback OR tp.created_by — leak intra-tenant.
       if (role === 'terapeuta') {
         params.push(profileId)
-        q += ` AND (
-          tp.id IN (
-            SELECT patient_id FROM tdah_patient_therapists
-            WHERE profile_id = $${params.length} AND tenant_id = $1
-          )
-          OR tp.created_by = $${params.length}
+        q += ` AND tp.id IN (
+          SELECT patient_id FROM tdah_patient_therapists
+          WHERE profile_id = $${params.length} AND tenant_id = $1
         )`
       }
 

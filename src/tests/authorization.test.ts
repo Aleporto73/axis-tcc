@@ -356,11 +356,13 @@ describe('TDAH — tdahPatientFilter (visibilidade por role)', () => {
     expect(params).toEqual([])
   })
 
-  test('Terapeuta: filtra via tdah_patient_therapists + fallback created_by', () => {
+  test('Terapeuta: filtra exclusivamente via tdah_patient_therapists (Onda 5.3)', () => {
     const ctx = terapeutaCtx('prof-tdah-1')
     const { clause, params } = tdahPatientFilter(ctx, 4)
     expect(clause).toContain('tdah_patient_therapists')
-    expect(clause).toContain('created_by')
+    // Onda 5.3 (25/04/2026): fallback OR created_by removido
+    expect(clause).not.toContain('created_by')
+    expect(clause).not.toContain(' OR ')
     expect(clause).toContain('$4')
     expect(params).toEqual(['prof-tdah-1'])
   })
@@ -378,12 +380,14 @@ describe('TDAH — tdahSessionFilter (visibilidade sessões)', () => {
     expect(clause).toBe('')
   })
 
-  test('Terapeuta: filtra via tdah_patient_therapists + created_by', () => {
+  test('Terapeuta: filtra exclusivamente via tdah_patient_therapists (Onda 5.3)', () => {
     const ctx = terapeutaCtx('prof-tdah-2')
     const { clause, params } = tdahSessionFilter(ctx, 3)
     expect(clause).toContain('tdah_patient_therapists')
-    expect(clause).toContain('tdah_patients')
-    expect(clause).toContain('created_by')
+    // Onda 5.3 (25/04/2026): UNION SELECT FROM tdah_patients (created_by) removido
+    expect(clause).not.toContain('UNION')
+    expect(clause).not.toContain('tdah_patients')
+    expect(clause).not.toContain('created_by')
     expect(clause).toContain('$3')
     expect(params).toEqual(['prof-tdah-2'])
   })
@@ -428,14 +432,17 @@ describe('TDAH — canAccessTdahPatient (verificação de vínculo)', () => {
     )
   })
 
-  test('Terapeuta COM created_by (fallback): tem acesso', async () => {
+  test('Terapeuta COM apenas created_by (sem membership) NÃO tem acesso (Onda 5.3)', async () => {
+    // Onda 5.3 (25/04/2026): invertido. Antes validava fallback created_by como feature.
+    // Agora valida que sem row em tdah_patient_therapists não há acesso, mesmo se o
+    // terapeuta consta como created_by do paciente (leak intra-tenant fechado).
     const ctx = terapeutaCtx('prof-tdah-1')
-    ctx.client = mockClient([{ '?column?': 1 }]) // UNION ALL retorna via created_by
+    ctx.client = mockClient([]) // sem match em tdah_patient_therapists
     const result = await canAccessTdahPatient(ctx, 'patient-2')
-    expect(result).toBe(true)
-    // Query deve ter UNION ALL com tdah_patients.created_by
+    expect(result).toBe(false)
+    // Query não deve mais conter UNION ALL (Onda 5.3)
     expect(ctx.client.query).toHaveBeenCalledWith(
-      expect.stringContaining('UNION ALL'),
+      expect.not.stringContaining('UNION ALL'),
       ['patient-2', 'prof-tdah-1', 'tenant-001']
     )
   })

@@ -73,17 +73,19 @@ describe('TDAH Isolamento — canAccessTdahPatient', () => {
     expect(result).toBe(true)
   })
 
-  test('Terapeuta acessa paciente via fallback created_by (pré-migration-038)', async () => {
-    // Client retorna 1 row — match via UNION ALL (created_by)
-    const client = mockClient([{ '?column?': 1 }])
+  test('Terapeuta SEM membership NÃO acessa paciente que criou (Onda 5.3)', async () => {
+    // Onda 5.3 (25/04/2026): invertido. Antes validava OR fallback created_by
+    // como feature. Agora valida que sem row em tdah_patient_therapists não há acesso,
+    // mesmo se o terapeuta consta como created_by do paciente (leak intra-tenant fechado).
+    const client = mockClient([])
     const ctx = mockCtx({
       role: 'terapeuta',
-      profileId: 'profile-antigo',
+      profileId: 'profile-criador-sem-membership',
       client,
     })
 
-    const result = await canAccessTdahPatient(ctx, 'patient-criado-antes')
-    expect(result).toBe(true)
+    const result = await canAccessTdahPatient(ctx, 'patient-criado-mas-sem-vinculo')
+    expect(result).toBe(false)
   })
 
   test('Admin acessa QUALQUER paciente da org sem query ao banco', async () => {
@@ -147,7 +149,9 @@ describe('TDAH Isolamento — Multi-Tenant', () => {
     const ctx = mockCtx({ role: 'terapeuta', profileId: 'profile-T1' })
     const filter = tdahPatientFilter(ctx, 3)
     expect(filter.clause).toContain('tdah_patient_therapists')
-    expect(filter.clause).toContain('created_by')
+    // Onda 5.3 (25/04/2026): clause não deve mais conter OR created_by (leak removido)
+    expect(filter.clause).not.toContain('created_by')
+    expect(filter.clause).not.toContain(' OR ')
     expect(filter.params).toEqual(['profile-T1'])
   })
 
@@ -162,7 +166,9 @@ describe('TDAH Isolamento — Multi-Tenant', () => {
     const ctx = mockCtx({ role: 'terapeuta', profileId: 'profile-T2' })
     const filter = tdahSessionFilter(ctx, 3)
     expect(filter.clause).toContain('tdah_patient_therapists')
-    expect(filter.clause).toContain('tdah_patients')
+    // Onda 5.3 (25/04/2026): clause não deve mais conter UNION SELECT FROM tdah_patients (leak removido)
+    expect(filter.clause).not.toContain('UNION')
+    expect(filter.clause).not.toContain('tdah_patients')
     expect(filter.params).toEqual(['profile-T2'])
   })
 })
@@ -244,7 +250,9 @@ describe('TDAH Isolamento — Cenários de Borda', () => {
     expect(result).toBe(false)
   })
 
-  test('canAccessTdahPatient inclui UNION ALL para cobrir created_by', async () => {
+  test('canAccessTdahPatient usa apenas tdah_patient_therapists, sem UNION/created_by (Onda 5.3)', async () => {
+    // Onda 5.3 (25/04/2026): invertido. Antes validava UNION ALL com created_by.
+    // Agora valida que a query usa apenas tdah_patient_therapists.
     const client = mockClient([])
     const ctx = mockCtx({
       role: 'terapeuta',
@@ -255,10 +263,9 @@ describe('TDAH Isolamento — Cenários de Borda', () => {
     await canAccessTdahPatient(ctx, 'patient-Y')
 
     const queryStr = client.query.mock.calls[0][0] as string
-    // Deve ter UNION ALL para verificar tanto tdah_patient_therapists quanto created_by
-    expect(queryStr).toContain('UNION ALL')
     expect(queryStr).toContain('tdah_patient_therapists')
-    expect(queryStr).toContain('created_by')
+    expect(queryStr).not.toContain('UNION')
+    expect(queryStr).not.toContain('created_by')
   })
 
   test('tdahPatientFilter usa $1 para tenant_id (referência posicional correta)', () => {

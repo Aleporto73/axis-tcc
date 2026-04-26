@@ -115,8 +115,9 @@ export async function canAccessLearner(
  *   const { clause, params } = tdahPatientFilter(ctx, startParamIndex)
  *   const query = `SELECT * FROM tdah_patients p WHERE p.tenant_id = $1 ${clause}`
  *
- * Fallback: se não houver registros na tabela de vínculos, usa created_by
- * para manter compatibilidade com tenants que ainda não migraram.
+ * Onda 5.3 (25/04/2026): removido fallback OR p.created_by — leak intra-tenant.
+ * Vínculo terapeuta-paciente agora exige row explícita em tdah_patient_therapists.
+ * Admin/supervisor não passam por aqui (early-return clause vazia, linhas 125-127).
  */
 export function tdahPatientFilter(
   ctx: TenantContext,
@@ -126,14 +127,11 @@ export function tdahPatientFilter(
     return { clause: '', params: [] }
   }
 
-  // Terapeuta: filtrar via tdah_patient_therapists (com fallback para created_by)
+  // Terapeuta: filtrar via tdah_patient_therapists (vínculo explícito N:N)
   return {
-    clause: `AND (
-      p.id IN (
-        SELECT patient_id FROM tdah_patient_therapists
-        WHERE profile_id = $${startParamIndex} AND tenant_id = $1
-      )
-      OR p.created_by = $${startParamIndex}
+    clause: `AND p.id IN (
+      SELECT patient_id FROM tdah_patient_therapists
+      WHERE profile_id = $${startParamIndex} AND tenant_id = $1
     )`,
     params: [ctx.profileId]
   }
@@ -142,6 +140,8 @@ export function tdahPatientFilter(
 /**
  * Retorna cláusula SQL para filtrar sessões TDAH por pacientes do terapeuta.
  * Para uso em queries que não fazem JOIN direto com tdah_patients.
+ *
+ * Onda 5.3 (25/04/2026): removido UNION com tdah_patients.created_by — leak intra-tenant.
  */
 export function tdahSessionFilter(
   ctx: TenantContext,
@@ -156,9 +156,6 @@ export function tdahSessionFilter(
     clause: `AND ${sessionAlias}.patient_id IN (
       SELECT patient_id FROM tdah_patient_therapists
       WHERE profile_id = $${startParamIndex} AND tenant_id = $1
-      UNION
-      SELECT id FROM tdah_patients
-      WHERE created_by = $${startParamIndex} AND tenant_id = $1
     )`,
     params: [ctx.profileId]
   }
@@ -167,6 +164,10 @@ export function tdahSessionFilter(
 /**
  * Verifica se terapeuta tem acesso a um paciente TDAH específico.
  * Admin/Supervisor sempre têm acesso.
+ *
+ * Onda 5.3 (25/04/2026): removido UNION ALL com tdah_patients.created_by.
+ * Acesso single-patient agora exige row explícita em tdah_patient_therapists.
+ * Admin/supervisor têm early-return true (linhas 175-177), não passam por aqui.
  */
 export async function canAccessTdahPatient(
   ctx: TenantContext,
@@ -179,9 +180,6 @@ export async function canAccessTdahPatient(
   const result = await ctx.client.query(
     `SELECT 1 FROM tdah_patient_therapists
      WHERE patient_id = $1 AND profile_id = $2 AND tenant_id = $3
-     UNION ALL
-     SELECT 1 FROM tdah_patients
-     WHERE id = $1 AND created_by = $2 AND tenant_id = $3
      LIMIT 1`,
     [patientId, ctx.profileId, ctx.tenantId]
   )
