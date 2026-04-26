@@ -30,7 +30,7 @@ export async function POST(
     const result = await withTenant(async (ctx) => {
       // Verificar economia existe
       const economy = await ctx.client.query(
-        'SELECT * FROM tdah_token_economy WHERE id = $1 AND tenant_id = $2',
+        'SELECT * FROM tdah_token_economy WHERE id = $1 AND tenant_id = $2 FOR UPDATE',
         [economyId, ctx.tenantId]
       )
       if (economy.rows.length === 0) {
