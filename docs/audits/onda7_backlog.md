@@ -1,7 +1,8 @@
 # AXIS — Onda 7 Backlog
 
 **Criado:** 25/04/2026 (pós-Onda 5.3 staging)
-**Status:** Aberto. Itens a executar quando Onda 5.3 fechar em prod.
+**Última atualização:** 26/04/2026 (pós-Onda 5.3 prod — commit 8e60d34)
+**Status:** Aberto. Onda 5.3 fechada em prod.
 
 ---
 
@@ -17,9 +18,9 @@ Backlog de TODOs arquiteturais que NÃO foram tratados nas Ondas 1-5.3 mas merec
 |---|---|---|---|---|
 | 12 | Bug `team/route.ts` UUID=TEXT — JOIN nunca casa | P2 | 30min | Em `app/api/tdah/team/route.ts:38-49`, JOIN `pc.created_by = p.clerk_user_id` compara UUID (`tdah_patients.created_by`, FK `profiles.id`) com TEXT (`profiles.clerk_user_id`, ex `user_xxxxx`). Resultado: contadores `patient_count` e `session_count` sempre zerados na UI admin TDAH "Equipe". Fix: trocar `p.clerk_user_id` por `p.id`. Bug silencioso, não crítico, mas confunde admin. Detectado no diag principal Onda 5.3 §2.5. |
 | 13 | VPS staging não-reconciliado com origin/main | P1 | 1h | `/root/axis-tcc-staging` está em HEAD `6454407` (20/04, pré-Onda 1) com 13 modificações M não-commitadas correspondentes aos patches das Ondas 1-4 aplicados manualmente. Esses patches JÁ ESTÃO commitados em origin/main (commits `d9b8f22`, `e129a67`, `b6012b3`, `9dd7bbf`). Após Onda 5.3 fechar em prod, sequência correta: (a) validar via `git diff <arquivo>` que cada M == conteúdo correspondente em origin/main; (b) se OK, `git checkout .` para descartar M (conteúdo idêntico virá via pull); (c) `git pull origin main`; (d) validar SHA dos arquivos == prod. NÃO usar `git stash` ou cherry-pick — stash daria conflito quando pull reaplicar os mesmos patches; cherry-pick é vazio porque os commits já existem. ATENÇÃO: se algum M divergir de origin/main no passo (a), parar e investigar antes de descartar. |
-| 14 | Inventário e reconciliação de migrations órfãs (054, 056) | P1 | 1h | Mirror local tem `scripts/migrations/054_transcripts_audio_duration.sql` (criada 18/04, Fase 12.1) e `056_create_orphan_tables.sql` sem investigação. Estado em staging/prod desconhecido. Trabalho: (a) read do conteúdo das duas; (b) verificar via `\d` se tabelas/colunas existem em staging e prod; (c) cross-check com `docs/NOTE_TCC.md` / `docs/` pra ver se mencionadas como pendentes; (d) verificar se há callers no código aguardando; (e) decidir aplicar ou descartar. Detectado durante diag Item F (Onda 7) em 25/04/2026. |
+| 14 | Validar aplicação no DB das migrations 054 e 056 (parcialmente fechado) | P2 | 30min | Migrations 054 (commit `d0dd2d3`) e 056 (commit `a97d986`) já em origin/main. Pendência: validar via psql se tabelas/colunas existem em staging e prod, e grep callers no código pra confirmar uso. Detectado durante diag Item F (Onda 7) em 25/04/2026. |
 | 15 | Atualizar `docs/NOTE_TDAH.md` com Onda 5.3 | P3 | 15min | Decisão D3 da Onda 5.3: `NOTE_TDAH.md` não foi atualizada (escopo restrito a `MATRIZ_ACESSO_TDAH.md`). Mencionar Onda 5.3 (remoção fallback `created_by`) no NOTE pra fonte de produto ficar coerente. |
-| 16 | Commit migration 055 em origin/main | P2 | 5min | `scripts/migrations/055_drop_profiles_cpf.sql` está aplicada em staging E prod (confirmado em 25/04/2026 via `psql`: coluna ausente, índice ausente, `SELECT cpf` retorna `"column does not exist"` nos dois bancos). Arquivo SQL existe no mirror local em `/scripts/migrations/` mas NUNCA foi commitado em `origin/main`. Quando rodar reconciliação geral do staging (Item 13), commitar a 055 junto. SEM risco operacional — é housekeeping de versionamento. Detectado durante diag Item F (Onda 7) em 25/04/2026. |
+| 16 | ✅ FECHADO — Commit migration 055 em origin/main | P2 | 5min | Migration 055 já estava em origin/main no commit `4f2f980` (verificação retroativa em 26/04/2026 via `git ls-files`). Aprendizado: rodar `git ls-files` antes de assumir que arquivo é órfão. Detectado durante diag Item F (Onda 7) em 25/04/2026. |
 
 ---
 
@@ -46,3 +47,4 @@ Itens 1-11 do handoff Onda 4 (commit `9dd7bbf`). Detalhamento completo na transc
 ## Notas operacionais (não-TODO, mas registrado)
 
 - **Comportamento Clerk + Next 16:** rotas autenticadas (`/api/tdah/*`, `/api/aba/*`, `/api/sessions`) retornam HTML 404 quando request não tem cookie de sessão. Middleware Clerk redireciona pra `/sign-in`, que cai no catch-all 404 do Next. Comportamento idêntico em staging e prod. NÃO é regressão da Onda 5.3 nem bug — é o framework. Documentação: ver smoke HTTP staging Onda 5.3.
+- **Cowork autolink corrompe heredoc grande:** clipboard de saída transforma identifiers tipo `x.md`, `x.id` em links markdown `[x](http://x)`. Workaround durante Onda 5.3 prod: `cp` direto staging→prod no mesmo VPS, sem passar por clipboard. Detectado em 26/04/2026.
