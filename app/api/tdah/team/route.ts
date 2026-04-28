@@ -40,13 +40,13 @@ export async function GET() {
           FROM tdah_patients
           WHERE tenant_id = $1 AND status = 'active'
           GROUP BY created_by
-        ) pc ON pc.created_by = p.clerk_user_id
+        ) pc ON pc.created_by = p.id
         LEFT JOIN (
-          SELECT created_by, COUNT(*) AS session_count
+          SELECT therapist_id, COUNT(*) AS session_count
           FROM tdah_sessions
           WHERE tenant_id = $1 AND status != 'cancelled'
-          GROUP BY created_by
-        ) sc ON sc.created_by = p.clerk_user_id
+          GROUP BY therapist_id
+        ) sc ON sc.therapist_id = p.id
         WHERE p.tenant_id = $1
         ORDER BY
           CASE p.role
