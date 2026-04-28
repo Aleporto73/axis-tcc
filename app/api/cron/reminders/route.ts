@@ -1,20 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { timingSafeEqual } from 'crypto'
 import { processScheduledReminders } from '@/src/services/scheduler'
-
-/**
- * Valida o header Authorization contra o CRON_SECRET em tempo constante.
- * Retorna false se: header ausente, não começa com "Bearer ",
- * comprimentos divergem, ou tokens diferem.
- */
-function isValidCronAuth(authHeader: string | null, secret: string): boolean {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return false
-  const providedToken = authHeader.slice('Bearer '.length)
-  const providedBuf = Buffer.from(providedToken)
-  const expectedBuf = Buffer.from(secret)
-  if (providedBuf.length !== expectedBuf.length) return false
-  return timingSafeEqual(providedBuf, expectedBuf)
-}
+import { isValidCronAuth } from '@/src/lib/cron-auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +8,7 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
 
-    if (!cronSecret || !isValidCronAuth(authHeader, cronSecret)) {
+    if (!cronSecret || !isValidCronAuth(authHeader, cronSecret, process.env.CRON_SECRET_OLD)) {
       return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
     }
 

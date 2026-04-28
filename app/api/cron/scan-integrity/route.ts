@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { Pool } from 'pg'
+import { isValidCronAuth } from '@/src/lib/cron-auth'
 
 const pool = new Pool({
   host: process.env.DATABASE_HOST,
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
 
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret || !isValidCronAuth(authHeader, cronSecret, process.env.CRON_SECRET_OLD)) {
       return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
     }
 
