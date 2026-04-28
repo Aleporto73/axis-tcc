@@ -2,15 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import { rateLimit } from '@/src/middleware/rate-limit'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
+// Rate limit: 30 req/min por IP (chamada OpenAI gpt-4o-mini, mais barata que Whisper)
+const ANALYZE_CLINICAL_RATE_LIMIT = { limit: 30, windowMs: 60_000, prefix: 'analyze-clinical' }
+
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit por IP (antes de abrir conexao DB)
+    const blocked = await rateLimit(request, ANALYZE_CLINICAL_RATE_LIMIT)
+    if (blocked) return blocked
+
     return await withTenant(async (ctx) => {
-    const { transcript, patientName } = await request.json()
+    const { transcript } = await request.json()
 
     if (!transcript) {
       return NextResponse.json({ error: 'Transcrição não fornecida' }, { status: 400 })
