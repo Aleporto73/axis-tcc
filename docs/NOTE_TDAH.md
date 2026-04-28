@@ -1,6 +1,6 @@
 # AXIS TDAH — NOTE ativo
 
-**Atualizado:** 2026-04-20 (Hub audit 5→9/10 — ESLint boundaries + husky + migration 056)
+**Atualizado:** 2026-04-28 (Onda 5.3-5.6 + Items 2, 12, 21 — fix seguranca/race/team UUID/CRON_SECRET rotacao)
 **Produto:** AXIS TDAH (Transtorno de Deficit de Atencao e Hiperatividade)
 **Motor:** CSO-TDAH v1.0 (3 blocos — base + executive + AuDHD layer)
 **Bible:** AXIS_TDAH_BIBLE_v2.5 (congelada), PLANO_TDAH.md
@@ -35,6 +35,8 @@ ABA/TCC; (2) **Husky pre-commit validator** (commit `54312d8`) exige nome
 (4) migration 056 (commit `a97d986`) adiciona `push_tokens` — relevante para
 o plano de notificações mobile TDAH. CI ganhou passo `ESLint (boundaries)`.
 Backup tag: `backup-pre-eslint`. Sessão: [sessoes/2026-04-20_hub_audit](sessoes/2026-04-20_hub_audit.md).
+
+**Atualização 28/04/2026 — Ondas 5.3-5.6 + segurança:** 13 commits em prod cobrindo Ondas 5.3-5.6 (TDAH leak, race token-economy, CSP, cron-auth refactor), Item 12 team UUID bug, Item 21 rotação completa CRON_SECRET, Item 2 rate limit em analyze-clinical, e fix CI (mock rate-limit em vitest.setup). Detalhes em `docs/audits/onda7_backlog.md`.
 
 ---
 
