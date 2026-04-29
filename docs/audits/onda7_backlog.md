@@ -1,8 +1,8 @@
 # AXIS — Onda 7 Backlog
 
 **Criado:** 25/04/2026 (pós-Onda 5.3 staging)
-**Última atualização:** 28/04/2026 (pós-Item 21 fase 2 + Item 12 — commit 56c8e7e)
-**Status:** Aberto. Onda 5.3 fechada. Item 21 (rotação CRON_SECRET) concluída. Item 12 fechado.
+**Última atualização:** 29/04/2026 (pós-Item 11 Fase A em prod — commit 9c99182)
+**Status:** Aberto. Onda 5.3 fechada. Item 21 (rotação CRON_SECRET) concluída. Item 12 fechado. Item 11 Fase A concluída em prod (RLS 5 tabelas núcleo TDAH).
 
 ---
 
@@ -23,6 +23,7 @@ Backlog de TODOs arquiteturais que NÃO foram tratados nas Ondas 1-5.3 mas merec
 | 16 | ✅ FECHADO — Commit migration 055 em origin/main | P2 | 5min | Migration 055 já estava em origin/main no commit `4f2f980` (verificação retroativa em 26/04/2026 via `git ls-files`). Aprendizado: rodar `git ls-files` antes de assumir que arquivo é órfão. Detectado durante diag Item F (Onda 7) em 25/04/2026. |
 | 17 | ✅ FECHADO retroativo — Trabalho concluído sem registro prévio (28/04/2026) | — | — | Investigação plano "v4" + 4 trabalhos executados sem item formal: (a) **Item 18** race condition em `tdah_token_economy` → fix transação atômica com `FOR UPDATE`, commit `3c1f17e`; (b) **Item 19** CSP Report-Only header habilitado, commit `8c1626f`; (c) **Item 20** sync N:N `patient_therapists` → falso alarme, código já atomicamente correto via `withTenant` + `ON CONFLICT`; (d) **Item 21 fase 1** refactor `isValidCronAuth` para `src/lib/cron-auth.ts` + dual-secret support nos 3 endpoints cron, commit `f257c48` (resolve **Item 9** do backlog Onda 4 referência). Plano v4 também avaliou auditoria conceitual v3 — descartada por não-acionável. |
 | 24 | Calendar connection órfã causando `failed:1` em renew-webhook | P3 | 5min | Connection `8ab4afe3-5db8-4aea-b646-4d5a638a2dd9` (tenant Ana Tunussi Porto, `user_397qcUZO3cIaQUVjsrFMrCMwFsY`) com `sync_enabled=true`, `token_expiry < NOW()` desde 13/02/2026, `webhook_expiration` 18/02/2026. Cron `renew-webhook` tenta renovar 4x/dia e falha 100% (refresh_token expirado/revogado). Resultado: `failed:1` em todo ciclo desde fevereiro. Fix: `UPDATE calendar_connections SET sync_enabled = false WHERE id = '8ab4afe3-5db8-4aea-b646-4d5a638a2dd9'` ou DELETE. Pré-existente, sem relação com rotação CRON_SECRET. Detectado em 28/04/2026 durante validação Item 21 fase 2. |
+| 11A | ✅ FECHADO — Item 11 Fase A: RLS em 5 tabelas núcleo TDAH | P1 | Sessão 29/04/2026 | Migration `057_tdah_rls_phase_a.sql` aplicada em staging + prod (commit `9c99182`). 5 tabelas com RLS forced+enabled: `tdah_patients`, `tdah_sessions`, `tdah_observations`, `tdah_events`, `tdah_snapshots`. Padrão policy: `tenant_isolation FOR ALL USING(tenant_id = app_tenant_id()) WITH CHECK(...)`. **Caminho 2 (SET LOCAL nos portais) validado empiricamente:** patches v3 família+escola adicionam `BEGIN/SET LOCAL/COMMIT` em 2 lugares — `validateToken()` (UPDATE last_used_at) e GET handler (Promise.all + access_log). Bug latente descoberto durante validação: `session_summaries` tem RLS ABA pré-existente que quebrava portal família — o wrap v3 cobre isso. Backup pgdump prod em `/root/backups/057_pre_rls/prod_20260429_135149.sql`. Smoke real prod escola: HTTP 200 com paciente real. **Pendente:** Fase B = 15 tabelas `tdah_*` restantes (cada uma exige análise de callers tipo Q2). Aprendizados: (a) ler todos os callers antes de aplicar RLS — Q2 era pré-requisito, não pós; (b) `axis_app` não-superuser respeita RLS (validado empiricamente vs `axis` SUPERUSER que bypassa); (c) build stale após `git pull` exige `rm -rf .next && rebuild` antes de pm2 restart; (d) PowerShell sempre `-LiteralPath` em paths com `[colchetes]`. |
 
 ---
 
