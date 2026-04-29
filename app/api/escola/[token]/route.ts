@@ -20,36 +20,73 @@ const PORTAL_RATE_LIMIT = { limit: 30, windowMs: 60_000, prefix: 'portal-escola'
 async function validateToken(token: string) {
   const client = await pool.connect()
   try {
-    // Removido SET LOCAL app.tenant_id = '' (era no-op: SET LOCAL fora de
-    // BEGIN/COMMIT e ignorado pelo PostgreSQL). Isolacao de tenant aqui
-    // vem de filtros explicitos (token UNIQUE + WHERE tenant_id = $X).
-    // Ver docs/audits/validacao_tier0_tier1.md CHECK 5.
+    // RLS em tdah_patients exige app.tenant_id setado.
+    // Como tenant_id vem do token, separamos em 2 etapas:
+    // 1) Buscar token (tdah_teacher_tokens) - descobre tenant_id
+    // 2) SET LOCAL app.tenant_id + buscar patient (tdah_patients, com RLS)
+    //
+    // IMPORTANTE: a Etapa 1 abaixo roda SEM app.tenant_id setado.
+    // Funciona hoje porque tdah_teacher_tokens NAO tem RLS.
+    // Se RLS for adicionada em tdah_teacher_tokens no futuro, este codigo precisa
+    // de outro mecanismo (token e UNIQUE globalmente, entao nao ha vazamento de
+    // tenant aqui - mas a query falharia com app_tenant_id() exception).
 
-    const res = await client.query(
-      `SELECT t.*, p.name as patient_name, p.birth_date,
-        p.school_name as patient_school, p.status as patient_status
-      FROM tdah_teacher_tokens t
-      JOIN tdah_patients p ON p.id = t.patient_id AND p.tenant_id = t.tenant_id
-      WHERE t.token = $1 AND t.is_active = true`,
+    // Etapa 1: token + tenant_id (sem RLS necessaria aqui)
+    const tokenRes = await client.query(
+      `SELECT id, token, tenant_id, patient_id,
+              expires_at, is_active
+       FROM tdah_teacher_tokens
+       WHERE token = $1 AND is_active = true`,
       [token]
     )
-
-    if (res.rows.length === 0) {
+    if (tokenRes.rows.length === 0) {
       return null
     }
+    const tokenData = tokenRes.rows[0]
 
-    const tokenData = res.rows[0]
-
-    // Verificar expiração
+    // Verificar expiracao
     if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
       return null
     }
 
-    // Atualizar last_used_at
-    await client.query(
-      'UPDATE tdah_teacher_tokens SET last_used_at = NOW() WHERE id = $1',
-      [tokenData.id]
-    )
+    // Guard: tenant_id obrigatorio pra setar GUC. Falha silenciosa se ausente.
+    if (!tokenData.tenant_id) {
+      console.error('[PORTAL ESCOLA] Token sem tenant_id:', tokenData.id)
+      return null
+    }
+
+    // Etapa 2: SET LOCAL app.tenant_id + buscar patient (RLS-protected)
+    // set_config(..., is_local=true) so vale dentro de transacao aberta (BEGIN).
+    await client.query('BEGIN')
+    try {
+      await client.query(
+        `SELECT set_config('app.tenant_id', $1, true)`,
+        [tokenData.tenant_id]
+      )
+      const patientRes = await client.query(
+        `SELECT name as patient_name, birth_date,
+                school_name as patient_school, status as patient_status
+         FROM tdah_patients
+         WHERE id = $1 AND tenant_id = $2`,
+        [tokenData.patient_id, tokenData.tenant_id]
+      )
+      if (patientRes.rows.length === 0) {
+        await client.query('ROLLBACK')
+        return null
+      }
+      // Merge token + patient (mantem compatibilidade com callers existentes)
+      Object.assign(tokenData, patientRes.rows[0])
+
+      // UPDATE last_used_at dentro da mesma tx (mantem SET LOCAL ativo)
+      await client.query(
+        'UPDATE tdah_teacher_tokens SET last_used_at = NOW() WHERE id = $1',
+        [tokenData.id]
+      )
+      await client.query('COMMIT')
+    } catch (e) {
+      await client.query('ROLLBACK')
+      throw e
+    }
 
     return tokenData
   } finally {

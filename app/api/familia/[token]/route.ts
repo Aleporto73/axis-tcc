@@ -22,25 +22,68 @@ const PORTAL_RATE_LIMIT = { limit: 30, windowMs: 60_000, prefix: 'portal-familia
 async function validateToken(token: string) {
   const client = await pool.connect()
   try {
-    // Sem SET LOCAL app.tenant_id aqui - intencional.
-    // Ver app/api/escola/[token]/route.ts validateToken()
-    // e docs/audits/validacao_tier0_tier1.md CHECK 5.
-    const res = await client.query(
-      `SELECT t.*, p.name as patient_name, p.birth_date, p.status as patient_status,
-        p.school_name, p.diagnosis
-      FROM tdah_family_tokens t
-      JOIN tdah_patients p ON p.id = t.patient_id AND p.tenant_id = t.tenant_id
-      WHERE t.token = $1 AND t.is_active = true`,
+    // RLS em tdah_patients exige app.tenant_id setado.
+    // Como tenant_id vem do token, separamos em 2 etapas:
+    // 1) Buscar token (tdah_family_tokens) - descobre tenant_id
+    // 2) SET LOCAL app.tenant_id + buscar patient (tdah_patients, com RLS)
+    //
+    // IMPORTANTE: a Etapa 1 abaixo roda SEM app.tenant_id setado.
+    // Funciona hoje porque tdah_family_tokens NAO tem RLS.
+    // Se RLS for adicionada em tdah_family_tokens no futuro, este codigo precisa
+    // de outro mecanismo (token e UNIQUE globalmente, entao nao ha vazamento de
+    // tenant aqui - mas a query falharia com app_tenant_id() exception).
+
+    // Etapa 1: token + tenant_id (sem RLS necessaria aqui)
+    const tokenRes = await client.query(
+      `SELECT id, token, tenant_id, patient_id, guardian_name,
+              consent_accepted_at, expires_at, is_active
+       FROM tdah_family_tokens
+       WHERE token = $1 AND is_active = true`,
       [token]
     )
-    if (res.rows.length === 0) return null
-    const td = res.rows[0]
+    if (tokenRes.rows.length === 0) return null
+    const td = tokenRes.rows[0]
     if (td.expires_at && new Date(td.expires_at) < new Date()) return null
 
-    await client.query(
-      'UPDATE tdah_family_tokens SET last_accessed_at = NOW() WHERE id = $1',
-      [td.id]
-    )
+    // Guard: tenant_id obrigatorio pra setar GUC. Falha silenciosa se ausente.
+    if (!td.tenant_id) {
+      console.error('[PORTAL FAMILIA] Token sem tenant_id:', td.id)
+      return null
+    }
+
+    // Etapa 2: SET LOCAL app.tenant_id + buscar patient (RLS-protected)
+    // set_config(..., is_local=true) so vale dentro de transacao aberta (BEGIN).
+    await client.query('BEGIN')
+    try {
+      await client.query(
+        `SELECT set_config('app.tenant_id', $1, true)`,
+        [td.tenant_id]
+      )
+      const patientRes = await client.query(
+        `SELECT name as patient_name, birth_date, status as patient_status,
+                school_name, diagnosis
+         FROM tdah_patients
+         WHERE id = $1 AND tenant_id = $2`,
+        [td.patient_id, td.tenant_id]
+      )
+      if (patientRes.rows.length === 0) {
+        await client.query('ROLLBACK')
+        return null
+      }
+      // Merge token + patient (mantem compatibilidade com callers existentes)
+      Object.assign(td, patientRes.rows[0])
+
+      // UPDATE last_accessed_at dentro da mesma tx (mantem SET LOCAL ativo)
+      await client.query(
+        'UPDATE tdah_family_tokens SET last_accessed_at = NOW() WHERE id = $1',
+        [td.id]
+      )
+      await client.query('COMMIT')
+    } catch (e) {
+      await client.query('ROLLBACK')
+      throw e
+    }
+
     return td
   } finally {
     client.release()
