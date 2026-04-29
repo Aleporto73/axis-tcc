@@ -1,6 +1,6 @@
 # AXIS TDAH — NOTE ativo
 
-**Atualizado:** 2026-04-28 (Onda 5.3-5.6 + Items 2, 12, 21 — fix seguranca/race/team UUID/CRON_SECRET rotacao)
+**Atualizado:** 2026-04-29 (Item 11 Fase A em prod — RLS 5 tabelas nucleo TDAH + migration 058 versionando app_tenant_id; Onda 5.3-5.6 + Items 2, 12, 21 anteriores)
 **Produto:** AXIS TDAH (Transtorno de Deficit de Atencao e Hiperatividade)
 **Motor:** CSO-TDAH v1.0 (3 blocos — base + executive + AuDHD layer)
 **Bible:** AXIS_TDAH_BIBLE_v2.5 (congelada), PLANO_TDAH.md
@@ -38,18 +38,22 @@ Backup tag: `backup-pre-eslint`. Sessão: [sessoes/2026-04-20_hub_audit](sessoes
 
 **Atualização 28/04/2026 — Ondas 5.3-5.6 + segurança:** 13 commits em prod cobrindo Ondas 5.3-5.6 (TDAH leak, race token-economy, CSP, cron-auth refactor), Item 12 team UUID bug, Item 21 rotação completa CRON_SECRET, Item 2 rate limit em analyze-clinical, e fix CI (mock rate-limit em vitest.setup). Detalhes em `docs/audits/onda7_backlog.md`.
 
+**Atualização 29/04/2026 — Item 11 Fase A em prod:** RLS forced+enabled em 5 tabelas núcleo TDAH (`tdah_patients`, `tdah_sessions`, `tdah_observations`, `tdah_events`, `tdah_snapshots`) via migration `057_tdah_rls_phase_a.sql` (commit `9c99182`). Padrão policy: `tenant_isolation FOR ALL USING(tenant_id = app_tenant_id()) WITH CHECK(...)`. Caminho 2 (BEGIN/`set_config('app.tenant_id', $1, true)`/COMMIT) aplicado nos portais família+escola v3 (SHAs `92258502...` e `1b15011c...`) + sub-rota escola/drc no Patch 2 desta sessão. Migration `058_shared_app_tenant_id_function.sql` versiona retroativamente a função `app_tenant_id()` que existia em prod sem versionamento. Pendente: **Fase B = 15 tabelas tdah_\* restantes** (mapa completo + fatiamento B.0→B.4 em `docs/audits/onda7_backlog.md` Item 11A). Aprendizados-chave: (a) ler todos os callers ANTES de aplicar RLS; (b) `axis_app` é não-superuser e respeita RLS, `axis` é SUPERUSER e bypassa; (c) build stale após `git pull` exige `rm -rf .next && rebuild` antes de `pm2 restart`; (d) PowerShell sempre `-LiteralPath` em paths com `[colchetes]`.
+
 ---
 
 ## PENDENCIAS (proxima sessao)
 
 ### P0 — validacao em producao
-- [ ] **Migrations em producao** — validar que `030`, `031`, `032`, `038`, `048`
+- [ ] **Migrations em producao** — validar que `030`, `031`, `032`, `038`, `048`, `057`, `058`
   foram aplicadas. Se nao:
   - `030_cleanup_phantom_licenses.sql` → licencas fantasma removidas
   - `031_tcc_cpf_crp.sql` → onboarding CPF/CRP (usado tambem em TDAH via perfil compartilhado)
   - `032_transcription_usage.sql` → limite transcricao (compartilhado)
   - `038_tdah_patient_therapists.sql` → vinculo N:N terapeuta-paciente TDAH
   - `048_fix_tdah_observation_enums.sql` → enums corretos (PIS/BSS/EXR/SEN/TRF)
+  - `057_tdah_rls_phase_a.sql` → RLS Fase A em 5 tabelas nucleo (aplicada em prod 29/04, commit `9c99182`)
+  - `058_shared_app_tenant_id_function.sql` → versiona funcao `app_tenant_id()` (no-op em prod, garante existencia em ambiente novo)
 - [ ] **`npm audit fix`** + revisao das 2 critical + 4 high identificadas
   em 10/04/2026
 
@@ -189,7 +193,7 @@ Mock: 7 snapshots CSO por paciente, 12 sessoes, 10 DRCs, 21 protocolos.
    `(tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)`
 3. Portal escola NUNCA mostra CSO, snapshots, layer AuDHD
 4. Portal familia NUNCA mostra CSO, snapshots, layer AuDHD, notas clinicas
-5. Multi-tenant isolation obrigatorio — `withTenant()` + `canAccessTdahPatient()`
+5. Multi-tenant isolation obrigatorio — `withTenant()` + `canAccessTdahPatient()` (camada aplicacao) **+ RLS forced** em 5 tabelas nucleo desde Fase A (29/04, migration 057): `tdah_patients`, `tdah_sessions`, `tdah_observations`, `tdah_events`, `tdah_snapshots`. Policy `tenant_isolation` usa funcao `app_tenant_id()` (versionada em 058). Fase B vai cobrir 15 tabelas restantes — ver `docs/audits/onda7_backlog.md` Item 11A.
 6. Pesos CSO-TDAH configuraveis via `engine_versions` (flexibilidade pos-piloto)
 7. `tdah_patient_therapists` (N:N) e fonte-de-verdade desde Migration 038.
    Fallback `created_by` mantido para compatibilidade legada
