@@ -119,6 +119,17 @@ export async function GET(
 
     const client = await pool.connect()
     try {
+      // RLS: tdah_drc/tdah_protocols entram na Fase B futura, e tdah_* nucleo na Fase A.
+      // Wrap Promise.all + access_log + return em BEGIN/SET LOCAL/COMMIT pra setar
+      // app.tenant_id antes de qualquer query que toque tabela RLS-protected.
+      // return DENTRO do try pra preservar escopo das variaveis const do Promise.all.
+      await client.query('BEGIN')
+      try {
+        await client.query(
+          `SELECT set_config('app.tenant_id', $1, true)`,
+          [tokenData.tenant_id]
+        )
+
       // Queries paralelas — todas independentes
       const [protocols, drcs, drcSummary] = await Promise.all([
         // Protocolos ativos (professor vê título e status apenas)
@@ -179,21 +190,27 @@ export async function GET(
         }
       }
 
-      return NextResponse.json({
-        valid: true,
-        teacher_name: tokenData.teacher_name,
-        school_name: tokenData.school_name,
-        patient: {
-          name: tokenData.patient_name,
-          age,
-          school: tokenData.patient_school,
-        },
-        protocols: protocols.rows.map((p: any) => ({
-          id: p.id, code: p.code, title: p.title, block: p.block
-        })),
-        drc_entries: drcs.rows,
-        drc_summary: drcSummary.rows[0],
-      })
+        await client.query('COMMIT')
+
+        return NextResponse.json({
+          valid: true,
+          teacher_name: tokenData.teacher_name,
+          school_name: tokenData.school_name,
+          patient: {
+            name: tokenData.patient_name,
+            age,
+            school: tokenData.patient_school,
+          },
+          protocols: protocols.rows.map((p: any) => ({
+            id: p.id, code: p.code, title: p.title, block: p.block
+          })),
+          drc_entries: drcs.rows,
+          drc_summary: drcSummary.rows[0],
+        })
+      } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+      }
     } finally {
       client.release()
     }

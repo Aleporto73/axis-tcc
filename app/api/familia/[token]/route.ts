@@ -138,6 +138,17 @@ export async function GET(
         if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--
       }
 
+      // RLS: session_summaries ja tem RLS, e Fase A futura adiciona RLS nas 5 tabelas TDAH.
+      // Wrap Promise.all + access_log + return em BEGIN/SET LOCAL/COMMIT pra setar
+      // app.tenant_id antes de qualquer query que toque tabela RLS-protected.
+      // return DENTRO do try pra preservar escopo das variaveis const do Promise.all.
+      await client.query('BEGIN')
+      try {
+        await client.query(
+          `SELECT set_config('app.tenant_id', $1, true)`,
+          [tenantId]
+        )
+
       // Queries paralelas — todas independentes, mesmo paciente/tenant
       const [protocols, drcSummary, upcomingSessions, recentSessions, summaries, achievements, routines, tokenEconomy] = await Promise.all([
         // Protocolos ativos (status simplificado)
@@ -233,7 +244,7 @@ export async function GET(
         ),
       ])
 
-      // Log access
+      // Log access (dentro da mesma tx pra herdar GUC)
       try {
         await client.query(
           `INSERT INTO tdah_family_access_log (tenant_id, token_id, patient_id, action)
@@ -242,7 +253,9 @@ export async function GET(
         )
       } catch (_) {}
 
-      return NextResponse.json({
+        await client.query('COMMIT')
+
+        return NextResponse.json({
         valid: true,
         needs_consent: false,
         guardian_name: tokenData.guardian_name,
@@ -262,6 +275,10 @@ export async function GET(
         routines: routines.rows,
         token_economy: tokenEconomy.rows,
       })
+      } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+      }
     } finally {
       client.release()
     }
