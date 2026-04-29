@@ -1,6 +1,6 @@
 # AXIS TDAH — NOTE ativo
 
-**Atualizado:** 2026-04-29 (Item 11 Fase A em prod — RLS 5 tabelas nucleo TDAH + migration 058 versionando app_tenant_id; Onda 5.3-5.6 + Items 2, 12, 21 anteriores)
+**Atualizado:** 2026-04-29 (Item 11 Fase A + Fase B.1 corrigida — RLS 8 tabelas TDAH no total; migrations 057, 058, 060 versionadas; 059 versionada como tentativa anterior; Onda 5.3-5.6 + Items 2, 12, 21 anteriores)
 **Produto:** AXIS TDAH (Transtorno de Deficit de Atencao e Hiperatividade)
 **Motor:** CSO-TDAH v1.0 (3 blocos — base + executive + AuDHD layer)
 **Bible:** AXIS_TDAH_BIBLE_v2.5 (congelada), PLANO_TDAH.md
@@ -40,12 +40,14 @@ Backup tag: `backup-pre-eslint`. Sessão: [sessoes/2026-04-20_hub_audit](sessoes
 
 **Atualização 29/04/2026 — Item 11 Fase A em prod:** RLS forced+enabled em 5 tabelas núcleo TDAH (`tdah_patients`, `tdah_sessions`, `tdah_observations`, `tdah_events`, `tdah_snapshots`) via migration `057_tdah_rls_phase_a.sql` (commit `9c99182`). Padrão policy: `tenant_isolation FOR ALL USING(tenant_id = app_tenant_id()) WITH CHECK(...)`. Caminho 2 (BEGIN/`set_config('app.tenant_id', $1, true)`/COMMIT) aplicado nos portais família+escola v3 (SHAs `92258502...` e `1b15011c...`) + sub-rota escola/drc no Patch 2 desta sessão. Migration `058_shared_app_tenant_id_function.sql` versiona retroativamente a função `app_tenant_id()` que existia em prod sem versionamento. Pendente: **Fase B = 15 tabelas tdah_\* restantes** (mapa completo + fatiamento B.0→B.4 em `docs/audits/onda7_backlog.md` Item 11A). Aprendizados-chave: (a) ler todos os callers ANTES de aplicar RLS; (b) `axis_app` é não-superuser e respeita RLS, `axis` é SUPERUSER e bypassa; (c) build stale após `git pull` exige `rm -rf .next && rebuild` antes de `pm2 restart`; (d) PowerShell sempre `-LiteralPath` em paths com `[colchetes]`.
 
+**Fase B.1 (29/04/2026 — tentativa + correção):** Migration `059_tdah_rls_phase_b_1.sql` (commit `da21614`) tentou RLS em 4 tabelas (`tdah_drc`, `tdah_protocols`, `tdah_teacher_tokens`, `tdah_teacher_access_log`). Falhou no smoke escola GET com HTTP 500 `[AXIS RLS] app.tenant_id não definido` porque `tdah_teacher_tokens` é lida em `validateToken` Etapa 1 ANTES de saber `tenant_id` (chicken-and-egg). Aviso já constava nos comentários dos próprios portais (escola/`[token]`/route.ts e escola/`[token]`/drc/route.ts) mas foi ignorado na 059. Rollback em staging via `DROP POLICY` + `DISABLE+NO FORCE` nas 4 tabelas → ambiente verde. Prod nunca recebeu 059. Migration `060_tdah_rls_phase_b_1_corrected.sql` corrige excluindo `tdah_teacher_tokens` — RLS ativada apenas em 3 tabelas (`tdah_drc`, `tdah_protocols`, `tdah_teacher_access_log`). **Tokens (teacher + family) precisam design dedicado:** `validateToken` Etapa 1 lê token sem `tenant_id` setado, RLS bloqueia. Decisão futura — sessão dedicada antes da B.4: (a) tokens permanecem fora de RLS (UUID hex64 globalmente único, sem risco de vazamento via SELECT cego porque não há como adivinhar token de outro tenant), OU (b) policy especial com BYPASS em SELECT mas FORCE em UPDATE/INSERT/DELETE.
+
 ---
 
 ## PENDENCIAS (proxima sessao)
 
 ### P0 — validacao em producao
-- [ ] **Migrations em producao** — validar que `030`, `031`, `032`, `038`, `048`, `057`, `058`
+- [ ] **Migrations em producao** — validar que `030`, `031`, `032`, `038`, `048`, `057`, `058`, `060`
   foram aplicadas. Se nao:
   - `030_cleanup_phantom_licenses.sql` → licencas fantasma removidas
   - `031_tcc_cpf_crp.sql` → onboarding CPF/CRP (usado tambem em TDAH via perfil compartilhado)
@@ -54,6 +56,8 @@ Backup tag: `backup-pre-eslint`. Sessão: [sessoes/2026-04-20_hub_audit](sessoes
   - `048_fix_tdah_observation_enums.sql` → enums corretos (PIS/BSS/EXR/SEN/TRF)
   - `057_tdah_rls_phase_a.sql` → RLS Fase A em 5 tabelas nucleo (aplicada em prod 29/04, commit `9c99182`)
   - `058_shared_app_tenant_id_function.sql` → versiona funcao `app_tenant_id()` (no-op em prod, garante existencia em ambiente novo)
+  - `059_tdah_rls_phase_b_1.sql` → **NAO aplicar em prod**: tentativa anterior com 4 tabelas, falhou no smoke escola GET (HTTP 500, chicken-and-egg em `tdah_teacher_tokens`), rollback em staging. Versionada como registro historico, prod nunca recebeu.
+  - `060_tdah_rls_phase_b_1_corrected.sql` → RLS Fase B.1 em 3 tabelas (`tdah_drc`, `tdah_protocols`, `tdah_teacher_access_log`). Versionada 29/04, aguarda smoke staging + smoke prod antes de fechar como aplicada.
 - [ ] **`npm audit fix`** + revisao das 2 critical + 4 high identificadas
   em 10/04/2026
 
