@@ -245,6 +245,14 @@ rg -n "is_worker" --type ts --type sql --type tsx
 
 ## CHECK 5 — `/api/escola/[token]` ordem invertida (Tier 1)
 
+> **[ATUALIZAÇÃO 29/04/2026 — RESOLVIDO]**
+> Bug descrito abaixo foi resolvido pelos patches v3 dos portais (commit `9c99182`).
+> Padrão Caminho 2 (`BEGIN` + `set_config('app.tenant_id', $1, true)` + `COMMIT`)
+> implementado em ambos os portais família e escola, em 2 pontos cada
+> (validateToken + GET handler com Promise.all + access_log).
+> Validação empírica: SHA família `92258502...`, escola `1b15011c33...`.
+> Conteúdo abaixo preservado como referência histórica do bug original.
+
 - **Veredito:** **CONFIRMADO ordem invertida** — `app.tenant_id` é setado como **string vazia ANTES** do token ser validado, e a primeira query RLS-dependente roda **dentro** desse contexto tenant-less.
 - **Severidade confirmada:** **P1 — Tier 1** (potencial P0 dependendo da policy real da tabela `tdah_teacher_tokens` — precisa runtime check para confirmar se string vazia é fail-open ou fail-closed na policy)
 
