@@ -21,7 +21,7 @@ NNN_<modulo>_<descricao_em_snake_case>.sql
 
 Onde:
 
-- **NNN** — número sequencial com 3 dígitos (zero-padded). Próximo disponível: `057`.
+- **NNN** — número sequencial com 3 dígitos (zero-padded). Próximo disponível: `059`.
 - **`<modulo>`** — literal, minúsculo. Um de: `aba`, `tcc`, `tdah`, `shared`.
 - **`<descricao>`** — snake_case, objetivo, sem acentos, começa por verbo ou substantivo da tabela afetada.
 
@@ -43,7 +43,7 @@ Onde:
 
 **Regra adicional (conteúdo):** toda migration deve terminar com `COMMIT;` (ou estar dentro de um `DO $$ ... END $$;` explícito). O validador do pre-commit hook verifica tanto o nome quanto essa regra mínima.
 
-## Ownership por migration (001 → 056)
+## Ownership por migration (001 → 058)
 
 | Migration | Módulo | Descrição | Nota |
 |-----------|--------|-----------|------|
@@ -99,6 +99,8 @@ Onde:
 | 054_transcripts_audio_duration.sql | TCC | audio_duration_seconds em transcripts | |
 | 055_drop_profiles_cpf.sql | SHARED | DROP profiles.cpf | |
 | 056_create_orphan_tables.sql | SHARED | calendar_connections + push_tokens (formalização das órfãs) | |
+| 057_tdah_rls_phase_a.sql | TDAH | RLS Fase A em 5 tabelas núcleo TDAH (Item 11 Onda 7) | Padrão policy `tenant_isolation` usa `app_tenant_id()` (versionada na 058). Aplicada em prod 29/04 (commit `9c99182`). |
+| 058_shared_app_tenant_id_function.sql | SHARED | Versiona retroativamente função `app_tenant_id()` usada em policies RLS | No-op em prod (função já existia, criada manualmente antes da Onda ABA v2.7.0). Garante existência em ambientes novos (staging restore, dev, disaster recovery). Pré-requisito implícito da 057. |
 
 ## Os 4 casos de nome enganoso (resumo)
 
@@ -122,14 +124,14 @@ Gaps não afetam execução; migrations são aplicadas manualmente em ordem.
 
 | Módulo | Qtde | Migrations |
 |--------|-----:|-----------|
-| SHARED | 17 | 001, 002, 003, 004, 005, 006, 018, 024, 028, 029, 030, 031, 039, 040, 043, 055, 056 |
+| SHARED | 18 | 001, 002, 003, 004, 005, 006, 018, 024, 028, 029, 030, 031, 039, 040, 043, 055, 056, 058 |
 | ABA    | 16 | 007, 011, 012, 013, 014, 015, 016, 017, 033, 034, 035, 036, 037, 042, 052, 053 |
 | TCC    | 12 | 019, 020, 021, 032, 044, 045, 046, 047, 049, 050, 051, 054 |
-| TDAH   |  7 | 022, 023, 025, 026, 027, 038, 048 |
-| **Total** | **52** | (de 001..056 com 4 gaps: 008, 009, 010, 041) |
+| TDAH   |  8 | 022, 023, 025, 026, 027, 038, 048, 057 |
+| **Total** | **54** | (de 001..058 com 4 gaps: 008, 009, 010, 041) |
 
 ## Próxima migration disponível
 
-**057** — contar a partir do último número existente, independentemente de gaps.
+**059** — contar a partir do último número existente, independentemente de gaps.
 
 Novos arquivos a partir daqui **devem seguir a convenção `NNN_<modulo>_<descricao>.sql`** definida no início deste documento. O pre-commit hook (`scripts/hooks/validate-migrations.sh`, a ser criado na Fase 2 do plano Hub 9/10) rejeita nomes fora do padrão para 057+.
