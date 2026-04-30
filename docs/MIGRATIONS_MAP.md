@@ -21,7 +21,7 @@ NNN_<modulo>_<descricao_em_snake_case>.sql
 
 Onde:
 
-- **NNN** — número sequencial com 3 dígitos (zero-padded). Próximo disponível: `059`.
+- **NNN** — número sequencial com 3 dígitos (zero-padded). Próximo disponível: `062`.
 - **`<modulo>`** — literal, minúsculo. Um de: `aba`, `tcc`, `tdah`, `shared`.
 - **`<descricao>`** — snake_case, objetivo, sem acentos, começa por verbo ou substantivo da tabela afetada.
 
@@ -43,7 +43,7 @@ Onde:
 
 **Regra adicional (conteúdo):** toda migration deve terminar com `COMMIT;` (ou estar dentro de um `DO $$ ... END $$;` explícito). O validador do pre-commit hook verifica tanto o nome quanto essa regra mínima.
 
-## Ownership por migration (001 → 058)
+## Ownership por migration (001 → 061)
 
 | Migration | Módulo | Descrição | Nota |
 |-----------|--------|-----------|------|
@@ -101,6 +101,9 @@ Onde:
 | 056_create_orphan_tables.sql | SHARED | calendar_connections + push_tokens (formalização das órfãs) | |
 | 057_tdah_rls_phase_a.sql | TDAH | RLS Fase A em 5 tabelas núcleo TDAH (Item 11 Onda 7) | Padrão policy `tenant_isolation` usa `app_tenant_id()` (versionada na 058). Aplicada em prod 29/04 (commit `9c99182`). |
 | 058_shared_app_tenant_id_function.sql | SHARED | Versiona retroativamente função `app_tenant_id()` usada em policies RLS | No-op em prod (função já existia, criada manualmente antes da Onda ABA v2.7.0). Garante existência em ambientes novos (staging restore, dev, disaster recovery). Pré-requisito implícito da 057. |
+| 059_tdah_rls_phase_b_1.sql | TDAH | RLS Fase B.1 — tentativa com 4 tabelas, **NÃO APLICADA EM PROD** | Tentou ativar RLS em `tdah_drc`, `tdah_protocols`, `tdah_teacher_tokens`, `tdah_teacher_access_log`. Falhou no smoke escola GET (HTTP 500, chicken-and-egg em `tdah_teacher_tokens` lida em `validateToken` Etapa 1 antes de saber `tenant_id`). Rollback em staging via `DROP POLICY` + `DISABLE+NO FORCE`. Substituída pela 060. Versionada como registro histórico (commit `da21614`). |
+| 060_tdah_rls_phase_b_1_corrected.sql | TDAH | RLS Fase B.1 corrigida em 3 tabelas TDAH | Exclui `tdah_teacher_tokens` da Fase B.1. Aplica em `tdah_drc`, `tdah_protocols`, `tdah_teacher_access_log`. Aplicada em prod 29/04 sessão tarde (commit `453f5dd` mergeado em `6b97ac8`), smoke escola GET HTTP 200 com dados reais. Tokens precisam design dedicado pré-B.4 (decisão futura). |
+| 061_shared_remove_app_tenant_id_default.sql | SHARED | RESET `app.tenant_id` default global (Item 11C) | Remove default `'00000000-0000-0000-0000-000000000000'` setado em prod via `ALTER DATABASE` de origem desconhecida (manual, sem versionamento, mascarava fail-loud). Aplicado em prod 30/04 manhã, fail-loud restaurado, smoke escola GET HTTP 200. Versionada retroativamente — no-op em prod, efetiva em ambientes novos / disaster recovery. Decisão técnica: sem `BEGIN/COMMIT` envolvendo o `ALTER DATABASE` (PG rejeita DDL de DB settings em tx); usa `COMMIT;` literal como sentinela do hook. |
 
 ## Os 4 casos de nome enganoso (resumo)
 
@@ -124,14 +127,14 @@ Gaps não afetam execução; migrations são aplicadas manualmente em ordem.
 
 | Módulo | Qtde | Migrations |
 |--------|-----:|-----------|
-| SHARED | 18 | 001, 002, 003, 004, 005, 006, 018, 024, 028, 029, 030, 031, 039, 040, 043, 055, 056, 058 |
+| SHARED | 19 | 001, 002, 003, 004, 005, 006, 018, 024, 028, 029, 030, 031, 039, 040, 043, 055, 056, 058, 061 |
 | ABA    | 16 | 007, 011, 012, 013, 014, 015, 016, 017, 033, 034, 035, 036, 037, 042, 052, 053 |
 | TCC    | 12 | 019, 020, 021, 032, 044, 045, 046, 047, 049, 050, 051, 054 |
-| TDAH   |  8 | 022, 023, 025, 026, 027, 038, 048, 057 |
-| **Total** | **54** | (de 001..058 com 4 gaps: 008, 009, 010, 041) |
+| TDAH   | 10 | 022, 023, 025, 026, 027, 038, 048, 057, 059, 060 |
+| **Total** | **57** | (de 001..061 com 4 gaps: 008, 009, 010, 041) |
 
 ## Próxima migration disponível
 
-**059** — contar a partir do último número existente, independentemente de gaps.
+**062** — contar a partir do último número existente, independentemente de gaps.
 
 Novos arquivos a partir daqui **devem seguir a convenção `NNN_<modulo>_<descricao>.sql`** definida no início deste documento. O pre-commit hook (`scripts/hooks/validate-migrations.sh`, a ser criado na Fase 2 do plano Hub 9/10) rejeita nomes fora do padrão para 057+.
