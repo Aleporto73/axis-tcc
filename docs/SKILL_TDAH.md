@@ -696,3 +696,40 @@ Você como profissional pode pertencer a mais de uma clínica. Cada clínica tem
 - Audit logs: 5 anos de retenção
 - Dados clínicos: 7 anos de retenção (CFM/CRP)
 - Conformidade: LGPD (Lei 13.709/2018), CFM, CRP
+
+## 24. ARQUITETURA DE SEGURANÇA — RLS E TOKENS
+
+O AXIS TDAH usa duas camadas de isolamento entre clínicas: validação na aplicação (`withTenant` + `canAccessTdahPatient`) e Row Level Security (RLS) no PostgreSQL. As duas operam juntas — a aplicação garante o caminho feliz, e o banco recusa qualquer query que tente burlá-lo.
+
+### Tabelas com RLS forced+enabled (8 atuais)
+
+- **Núcleo clínico (5):** tdah_patients, tdah_sessions, tdah_observations, tdah_events, tdah_snapshots
+- **Portais públicos (3):** tdah_drc, tdah_protocols, tdah_teacher_access_log
+
+A policy `tenant_isolation` exige `tenant_id = app_tenant_id()`. A função `app_tenant_id()` lê o GUC `app.tenant_id` setado pelo middleware via `set_config(..., true)` por request. Sem GUC, levanta exception — fail-loud.
+
+### Tabelas permanentemente FORA de RLS (decisão arquitetural — Caminho A)
+
+`tdah_teacher_tokens` e `tdah_family_tokens` ficam **permanentemente fora de RLS** por design. Não é dívida técnica — é decisão consciente.
+
+**Justificativa:**
+
+1. **Token é hex64 globalmente UNIQUE** — 256 bits de entropia, gerado via `crypto.randomBytes(32).toString('hex')`. UNIQUE constraint garante zero colisão. Adivinhar token de outro tenant via SELECT cego é infactível (espaço de busca = 2^256).
+2. **Lookup por token DESCOBRE o `tenant_id`** — o portal público recebe o token na URL e faz `SELECT tenant_id FROM ... WHERE token = $1` sem saber tenant a priori. Esse é o passo que viabiliza o `set_config('app.tenant_id', ..., true)` subsequente.
+3. **RLS em tokens criaria chicken-and-egg sem ganho de segurança** — exigiria saber `tenant_id` antes de buscar o token. Validado empiricamente pela tentativa 059 (29/04/2026): smoke escola GET retornou HTTP 500 com `[AXIS RLS] app.tenant_id não definido`. Rollback em staging, prod nunca recebeu.
+
+**Defesa-em-profundidade preservada:**
+
+- Token UNIQUE bloqueia descoberta cross-tenant (espaço de busca infactível).
+- Após resolver token → `tenant_id`, todas as queries subsequentes nos portais entram em wrap `BEGIN + set_config + COMMIT` (Caminho 2), e tabelas RLS-forced recusam cross-tenant.
+- `validateToken` valida `expires_at` + `is_active` antes de retornar.
+- Rate limit por IP em ambos os portais (30 req/min em GET, 15 req/min em POST DRC).
+
+**Por que não existe migration ADR:**
+
+Migrations existem pra mudanças no banco — alterar schema, rodar DDL, criar policies. Decisão de **não-aplicar** RLS via migration vazia poluiria o histórico DDL com prosa. A decisão fica documentada em:
+
+- Comentários dos próprios portais (`app/api/escola/[token]/route.ts`, `app/api/familia/[token]/route.ts`)
+- Esta seção
+- `docs/NOTE_TDAH.md` (parágrafo de decisão 30/04/2026)
+- `docs/audits/onda7_backlog.md` (Item 11D — decisão fechada)
