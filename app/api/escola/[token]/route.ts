@@ -26,10 +26,11 @@ async function validateToken(token: string) {
     // 2) SET LOCAL app.tenant_id + buscar patient (tdah_patients, com RLS)
     //
     // IMPORTANTE: a Etapa 1 abaixo roda SEM app.tenant_id setado.
-    // Funciona hoje porque tdah_teacher_tokens NAO tem RLS.
-    // Se RLS for adicionada em tdah_teacher_tokens no futuro, este codigo precisa
-    // de outro mecanismo (token e UNIQUE globalmente, entao nao ha vazamento de
-    // tenant aqui - mas a query falharia com app_tenant_id() exception).
+    // tdah_teacher_tokens (e tdah_family_tokens) ficam PERMANENTEMENTE FORA de RLS por design.
+    // Justificativa: token hex64 globalmente UNIQUE (256 bits entropy), lookup
+    // direto descobre tenant_id, RLS criaria chicken-and-egg sem ganho de
+    // seguranca real. Decisao documentada em docs/NOTE_TDAH.md e
+    // docs/SKILL_TDAH.md.
 
     // Etapa 1: token + tenant_id (sem RLS necessaria aqui)
     const tokenRes = await client.query(
