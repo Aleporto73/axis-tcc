@@ -21,7 +21,7 @@ NNN_<modulo>_<descricao_em_snake_case>.sql
 
 Onde:
 
-- **NNN** — número sequencial com 3 dígitos (zero-padded). Próximo disponível: `064`.
+- **NNN** — número sequencial com 3 dígitos (zero-padded). Próximo disponível: `065`.
 - **`<modulo>`** — literal, minúsculo. Um de: `aba`, `tcc`, `tdah`, `shared`.
 - **`<descricao>`** — snake_case, objetivo, sem acentos, começa por verbo ou substantivo da tabela afetada.
 
@@ -43,7 +43,7 @@ Onde:
 
 **Regra adicional (conteúdo):** toda migration deve terminar com `COMMIT;` (ou estar dentro de um `DO $$ ... END $$;` explícito). O validador do pre-commit hook verifica tanto o nome quanto essa regra mínima.
 
-## Ownership por migration (001 → 063)
+## Ownership por migration (001 → 064)
 
 | Migration | Módulo | Descrição | Nota |
 |-----------|--------|-----------|------|
@@ -106,6 +106,7 @@ Onde:
 | 061_shared_remove_app_tenant_id_default.sql | SHARED | RESET `app.tenant_id` default global (Item 11C) | Remove default `'00000000-0000-0000-0000-000000000000'` setado em prod via `ALTER DATABASE` de origem desconhecida (manual, sem versionamento, mascarava fail-loud). Aplicado em prod 30/04 manhã, fail-loud restaurado, smoke escola GET HTTP 200. Versionada retroativamente — no-op em prod, efetiva em ambientes novos / disaster recovery. Decisão técnica: sem `BEGIN/COMMIT` envolvendo o `ALTER DATABASE` (PG rejeita DDL de DB settings em tx); usa `COMMIT;` literal como sentinela do hook. |
 | 062_tdah_rls_phase_b_3.sql | TDAH | RLS Fase B.3 em 5 tabelas internas TDAH baixo risco (Item 11 Onda 7) | Ativa `ENABLE + FORCE ROW LEVEL SECURITY` + `tenant_isolation FOR ALL USING/WITH CHECK = app_tenant_id()` em `tdah_token_transactions`, `tdah_guardians`, `tdah_patient_therapists`, `tdah_plans`, `tdah_plan_goals`. Todas servidas apenas por rotas autenticadas Clerk com middleware `withTenant`/`withRole` — sem chicken-and-egg. Pré-condições verificadas em prod: `tenant_id NOT NULL`, zero rows órfãs, 18 rotas autenticadas mapeadas com overlap. **Atenção `tdah_patient_therapists`:** base do sistema de roles TDAH (lida em `src/database/with-role.ts`). RLS afeta autorização, não só isolamento — smoke validou login como terapeuta + `canAccessTdahPatient()` + `tdahPatientFilter()`. Aplicada em prod 30/04 manhã (commit `7756551`). Reversão manual (snippet no header). Pré-requisito: `058` (`app_tenant_id()`). |
 | 063_shared_migrate_tcc_aba_rls_to_app_tenant_id.sql | SHARED | Migra 42 policies RLS TCC/ABA do padrão antigo `current_setting('app.tenant_id'[, true])::uuid` para `app_tenant_id()` (Item 11E Onda 7) | `ALTER POLICY` in-place (zero gap) em 42 tabelas TCC/ABA: 32 com nome `tenant_isolation` simples + 5 com nome customizado (Perfil A frágil, sem missing_ok) + 5 com nome customizado (Perfil B silencioso, com missing_ok). Aplicada em prod 30/04 tarde (commit `b27c5b3`), smoke escola GET HTTP 200, health 200, scheduler agora loga `[AXIS RLS] app.tenant_id não definido na sessão` (mensagem clara) em vez de `unrecognized configuration parameter`. Mudança semântica adicional: 5 policies do Perfil B ganham `WITH CHECK = USING` (defesa-em-profundidade simétrica, alinha com TDAH Fase A/B). Idempotente (skip se já em padrão novo ou policy ausente). Pré-requisito: 058. Carry-forward: scheduler ainda quebra com mensagem clara → Item 11F separado. |
+| 064_tdah_rls_phase_b_2_b_4.sql | TDAH | RLS Fases B.2 (família) + B.4 (trivial) unificadas em 4 tabelas TDAH (Item 11 Onda 7 — finalização) | Ativa `ENABLE + FORCE ROW LEVEL SECURITY` + `tenant_isolation FOR ALL USING/WITH CHECK = app_tenant_id()` em 4 tabelas remanescentes: **B.2 família (3 tabelas, 0 rows):** `tdah_family_access_log`, `tdah_routines`, `tdah_token_economy`; **B.4 trivial (1 tabela, 3 rows em 3 tenants):** `tdah_audhd_log`. Unificadas porque escopo restante era pequeno e perfil de risco baixo. **Tabelas EXCLUÍDAS por design:** `tdah_protocol_library` (Item 11G — sem `tenant_id`, library shared), `tdah_teacher_tokens` + `tdah_family_tokens` (Item 11D — Caminho A). **Atenções especiais documentadas no header:** (a) `tdah_audhd_log` append-only Bible §6 — RLS isola sem bloquear INSERT; (b) `tdah_token_economy` race condition mitigada por FOR UPDATE (Item 18 Onda 5.6) — RLS força respeito a tenant_isolation; (c) `tdah_family_access_log` gravado via wrap Caminho 2 no portal família. Aplicada em prod 30/04 final (commit `1102f52`), smoke escola GET HTTP 200, health 200, scheduler continua com mensagem AXIS RLS clara (Item 11F P3 separado). Pré-requisito: `058`. Idempotente. **Estado final TDAH:** 17 tabelas com RLS + 2 tokens fora (11D) + 1 library fora (11G) = 20 tabelas `tdah_*` com decisão arquitetural completa. |
 
 ## Os 4 casos de nome enganoso (resumo)
 
@@ -132,11 +133,11 @@ Gaps não afetam execução; migrations são aplicadas manualmente em ordem.
 | SHARED | 20 | 001, 002, 003, 004, 005, 006, 018, 024, 028, 029, 030, 031, 039, 040, 043, 055, 056, 058, 061, 063 |
 | ABA    | 16 | 007, 011, 012, 013, 014, 015, 016, 017, 033, 034, 035, 036, 037, 042, 052, 053 |
 | TCC    | 12 | 019, 020, 021, 032, 044, 045, 046, 047, 049, 050, 051, 054 |
-| TDAH   | 11 | 022, 023, 025, 026, 027, 038, 048, 057, 059, 060, 062 |
-| **Total** | **59** | (de 001..063 com 4 gaps: 008, 009, 010, 041) |
+| TDAH   | 12 | 022, 023, 025, 026, 027, 038, 048, 057, 059, 060, 062, 064 |
+| **Total** | **60** | (de 001..064 com 4 gaps: 008, 009, 010, 041) |
 
 ## Próxima migration disponível
 
-**064** — contar a partir do último número existente, independentemente de gaps.
+**065** — contar a partir do último número existente, independentemente de gaps.
 
 Novos arquivos a partir daqui **devem seguir a convenção `NNN_<modulo>_<descricao>.sql`** definida no início deste documento. O pre-commit hook (`scripts/hooks/validate-migrations.sh`, a ser criado na Fase 2 do plano Hub 9/10) rejeita nomes fora do padrão para 057+.

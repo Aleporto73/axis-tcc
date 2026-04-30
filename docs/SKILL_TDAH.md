@@ -701,14 +701,19 @@ Você como profissional pode pertencer a mais de uma clínica. Cada clínica tem
 
 O AXIS TDAH usa duas camadas de isolamento entre clínicas: validação na aplicação (`withTenant` + `canAccessTdahPatient`) e Row Level Security (RLS) no PostgreSQL. As duas operam juntas — a aplicação garante o caminho feliz, e o banco recusa qualquer query que tente burlá-lo.
 
-### Tabelas com RLS forced+enabled (8 atuais)
+### Tabelas com RLS forced+enabled (17 atuais — Item 11 RLS finalizado em 30/04/2026)
 
-- **Núcleo clínico (5):** tdah_patients, tdah_sessions, tdah_observations, tdah_events, tdah_snapshots
-- **Portais públicos (3):** tdah_drc, tdah_protocols, tdah_teacher_access_log
+- **Núcleo clínico (5, Fase A — migration 057):** tdah_patients, tdah_sessions, tdah_observations, tdah_events, tdah_snapshots
+- **Portais públicos (3, Fase B.1 — migration 060):** tdah_drc, tdah_protocols, tdah_teacher_access_log
+- **Internas baixo risco (5, Fase B.3 — migration 062):** tdah_token_transactions, tdah_guardians, tdah_patient_therapists, tdah_plans, tdah_plan_goals
+- **Família (3, Fase B.2 — migration 064):** tdah_family_access_log, tdah_routines, tdah_token_economy
+- **Histórico AuDHD (1, Fase B.4 — migration 064):** tdah_audhd_log
 
 A policy `tenant_isolation` exige `tenant_id = app_tenant_id()`. A função `app_tenant_id()` lê o GUC `app.tenant_id` setado pelo middleware via `set_config(..., true)` por request. Sem GUC, levanta exception — fail-loud.
 
-### Tabelas permanentemente FORA de RLS (decisão arquitetural — Caminho A)
+### Tabelas permanentemente FORA de RLS (decisão arquitetural)
+
+#### Caminho A — Tokens hex64 UNIQUE (Item 11D)
 
 `tdah_teacher_tokens` e `tdah_family_tokens` ficam **permanentemente fora de RLS** por design. Não é dívida técnica — é decisão consciente.
 
@@ -733,3 +738,33 @@ Migrations existem pra mudanças no banco — alterar schema, rodar DDL, criar p
 - Esta seção
 - `docs/NOTE_TDAH.md` (parágrafo de decisão 30/04/2026)
 - `docs/audits/onda7_backlog.md` (Item 11D — decisão fechada)
+
+#### Library tables sem `tenant_id` (Item 11G)
+
+`tdah_protocol_library` fica **permanentemente fora de RLS** porque a tabela **não tem coluna `tenant_id`** — é uma library shared/global.
+
+**Justificativa:**
+
+1. **Conteúdo é catálogo curado pela Psiform**, não dado de tenant. Os 46 protocolos (42 P1 + 4 P1.1, Bible Anexo B, seed em migration 023) são lidos por todos os tenants do produto TDAH — não há multi-tenancy de catálogo.
+2. **RLS pressupõe coluna discriminadora por tenant** — sem `tenant_id`, não há expressão possível para a policy. Aplicar RLS aqui exigiria primeiro adicionar `tenant_id` em todas as linhas, o que conflitaria com o modelo de catálogo global.
+3. **Seed cresce monotonicamente** conforme novos protocolos forem curados; não há "deletar protocolo de outro tenant" como ameaça.
+
+**Pattern de uso:**
+
+- Os 5 callers principais (`/api/tdah/protocols/route.ts`, `/api/tdah/protocols/[id]/route.ts`, `/api/tdah/protocol-library/route.ts`, `/api/tdah/reports/route.ts`, `/api/tdah/lgpd/export/route.ts`) **leem direto sem `set_config('app.tenant_id', …)`** — não há GUC necessário para essa tabela.
+- Quando o caller cruza `tdah_protocol_library` com tabelas RLS-protegidas (ex.: protocolos vinculados ao paciente em `tdah_protocols`, que tem RLS), o filtro de tenant vem **da tabela RLS-protegida do JOIN**, não da library. O `WHERE tdah_protocols.tenant_id = app_tenant_id()` (implícito pela RLS) já garante o isolamento — a library só serve metadados estáticos.
+- Não há risco de vazamento porque library não armazena nada que dependa de tenant.
+
+**Decisão documentada em:**
+
+- Header da migration `064_tdah_rls_phase_b_2_b_4.sql` (seção "Tabelas EXCLUIDAS desta migration")
+- Esta subseção
+- `docs/audits/onda7_backlog.md` (Item 11G — decisão fechada)
+- `docs/NOTE_TDAH.md` (parágrafo final 30/04/2026)
+
+### Estado final do schema TDAH (20 tabelas, decisão arquitetural completa)
+
+- 17 com RLS forced+enabled (lista acima)
+- 2 fora por Item 11D (tokens hex64 UNIQUE)
+- 1 fora por Item 11G (library shared sem `tenant_id`)
+- **Zero tabelas `tdah_*` sem decisão arquitetural.**
