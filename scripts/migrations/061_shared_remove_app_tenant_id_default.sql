@@ -1,0 +1,53 @@
+-- 061_shared_remove_app_tenant_id_default.sql
+-- Item 11C - Remover default global app.tenant_id do database em prod
+--
+-- Contexto: pg_db_role_setting em prod mostrava
+-- ALTER DATABASE axis_tcc SET app.tenant_id = '00000000-0000-0000-0000-000000000000'
+-- aplicado a todos os roles. Origem desconhecida (manual, sem versionamento,
+-- history vazio). Nao afetava operacao real (middleware/wrap sobrescrevem em
+-- cada request via set_config local=true), mas mascarava fail-loud: queries
+-- sem GUC retornavam count=0 silencioso em vez de levantar [AXIS RLS] exception.
+-- Documentado em docs/audits/onda7_backlog.md Item 11C (commit 295fe23) +
+-- docs/NOTE_TDAH.md paragrafo "Achado pos-deploy" (commit d63e6c2).
+--
+-- Resolucao em 4 etapas:
+--   Etapa 1 (consumidores) - grep/auditoria mapeou consumidores diretos do DB.
+--                            Workers, scripts ad-hoc e cron jobs verificados.
+--                            Todos seguros (nao dependem do default).
+--   Etapa 2 (staging)     - simulacao de RESET em staging confirmou no-op
+--                            (staging nunca teve o default).
+--   Etapa 3 (prod)        - aplicado em prod direto via psql em 30/04/2026
+--                            manha. Fail-loud restaurado: axis_app sem GUC
+--                            agora levanta [AXIS RLS] exception. Smoke
+--                            escola GET prod = HTTP 200 com dados reais,
+--                            health = 200, zero erros AXIS RLS recentes.
+--                            Backup pgdump PRE preservado em
+--                            /root/backups/061_pre_reset/prod_20260430_101608.sql
+--   Etapa 4 (versionar)   - esta migration. No-op em prod (RESET ja aplicado),
+--                            efetiva em ambientes novos / disaster recovery /
+--                            staging restore que possam herdar o default
+--                            atraves de pg_dump --create antigo.
+--
+-- DECISAO TECNICA - sem BEGIN/COMMIT envolvendo o ALTER DATABASE:
+--   PostgreSQL rejeita ALTER DATABASE ... SET/RESET dentro de bloco
+--   transacional (erro: "ALTER DATABASE ... SET cannot run inside a
+--   transaction block"). O comando precisa ser executado standalone.
+--   Para satisfazer o validate-migrations.sh (que exige ultima linha
+--   nao-vazia = "COMMIT;" ou "END $$;"), usamos COMMIT; literal apos o
+--   ALTER DATABASE como sentinela. psql vai gerar WARNING
+--   "there is no transaction in progress" mas nao erro fatal - passa
+--   em ON_ERROR_STOP=1. Saida esperada:
+--     ALTER DATABASE
+--     WARNING:  there is no transaction in progress
+--     COMMIT
+--
+-- Idempotente: RESET em GUC ja inexistente e no-op.
+--
+-- Reversao manual (nao incluida no script):
+--   ALTER DATABASE axis_tcc SET app.tenant_id = '00000000-0000-0000-0000-000000000000';
+--   (Restaura o default original. Use apenas se RESET quebrou algum consumidor
+--   direto que nao foi detectado pela auditoria da Etapa 1.)
+
+ALTER DATABASE axis_tcc RESET app.tenant_id;
+
+COMMIT;
