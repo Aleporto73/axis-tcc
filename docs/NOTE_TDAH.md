@@ -1,6 +1,6 @@
 # AXIS TDAH — NOTE ativo
 
-**Atualizado:** 2026-04-29 (Item 11 Fase A + Fase B.1 corrigida — RLS 8 tabelas TDAH no total; migrations 057, 058, 060 versionadas; 059 versionada como tentativa anterior; Onda 5.3-5.6 + Items 2, 12, 21 anteriores)
+**Atualizado:** 2026-04-30 (Item 11C resolvido em prod — RESET `app.tenant_id` default global, fail-loud restaurado, migration 061 versionada; Item 11 Fase A + Fase B.1 corrigida — RLS 8 tabelas TDAH no total; migrations 057, 058, 060, 061 versionadas; 059 versionada como tentativa anterior)
 **Produto:** AXIS TDAH (Transtorno de Deficit de Atencao e Hiperatividade)
 **Motor:** CSO-TDAH v1.0 (3 blocos — base + executive + AuDHD layer)
 **Bible:** AXIS_TDAH_BIBLE_v2.5 (congelada), PLANO_TDAH.md
@@ -44,12 +44,14 @@ Backup tag: `backup-pre-eslint`. Sessão: [sessoes/2026-04-20_hub_audit](sessoes
 
 **Achado pós-deploy 29/04/2026 (sessão noite — débito 11C aberto):** `pg_db_role_setting` em prod mostra que o database `axis_tcc` tem `app.tenant_id = '00000000-0000-0000-0000-000000000000'` setado como **default global pra todos os roles** via `ALTER DATABASE`. Origem desconhecida (não está em nenhum script versionado, history vazio, foi rodado manualmente em sessão antiga não rastreada). **Não afeta operação real:** middleware (`withTenant` + `set_config('app.tenant_id', ..., true)`) e wrap Caminho 2 nos portais sobrescrevem o zero default em cada request, então RLS funciona em runtime. **Mas mascara fail-loud:** teste de fail em prod retorna `count=0` silencioso em vez de levantar `[AXIS RLS] app.tenant_id não definido` exception. Confirmado empiricamente: 5 tabelas Fase A + 3 tabelas Fase B.1 em prod retornam `count=0` quando consultadas sem GUC; mesmas tabelas em staging (sem o default) levantam exception. **Risco:** qualquer query nova sem `withTenant`/wrap retorna 0 rows em vez de gritar — bug silencioso. **Pendente Item 11C (sessão dedicada):** investigar consumidores diretos do DB que possam estar dependendo do default + criar migration `061` com `ALTER DATABASE axis_tcc RESET app.tenant_id` + smoke pós-RESET pra confirmar fail-loud restaurado em prod sem quebrar nada em runtime.
 
+**Atualização 30/04/2026 manhã — Item 11C resolvido em prod:** 4 etapas concluídas. **Etapa 1** (consumidores) — grep/auditoria mapeou consumidores diretos do DB (workers, scripts ad-hoc, jobs cron); todos seguros, nenhum dependia do default. **Etapa 2** (staging) — simulação de RESET em staging confirmou no-op (staging nunca teve o default). **Etapa 3** (prod) — `ALTER DATABASE axis_tcc RESET app.tenant_id` aplicado direto via psql em prod. Backup pgdump PRE preservado em `/root/backups/061_pre_reset/prod_20260430_101608.sql`. Fail-loud restaurado: `axis_app` sem GUC agora levanta `[AXIS RLS] app.tenant_id não definido` exception em vez de retornar `count=0` silencioso. Smoke prod pós-RESET: escola GET HTTP 200 com dados reais, health 200, zero erros AXIS RLS recentes nos logs. **Etapa 4** (versionar) — migration `061_shared_remove_app_tenant_id_default.sql` (commit `cc41ece`) versiona o RESET retroativamente: no-op em prod (já aplicado), efetiva em ambientes novos / disaster recovery / staging restore que herdem o default via `pg_dump --create` antigo. Decisão técnica documentada no header da migration: `ALTER DATABASE` não roda em bloco transacional (PG rejeita), usa `COMMIT;` literal como sentinela do hook `validate-migrations.sh`. **Aprendizado da resolução:** debt P3 sobre defaults globais via `ALTER DATABASE` agora está mitigado — qualquer outro default desconhecido em GUCs do DB deve ser auditado via `pg_db_role_setting` no próximo audit pass. Item 11C fechado em `docs/audits/onda7_backlog.md`.
+
 ---
 
 ## PENDENCIAS (proxima sessao)
 
 ### P0 — validacao em producao
-- [ ] **Migrations em producao** — validar que `030`, `031`, `032`, `038`, `048`, `057`, `058`, `060`
+- [ ] **Migrations em producao** — validar que `030`, `031`, `032`, `038`, `048`, `057`, `058`, `060`, `061`
   foram aplicadas. Se nao:
   - `030_cleanup_phantom_licenses.sql` → licencas fantasma removidas
   - `031_tcc_cpf_crp.sql` → onboarding CPF/CRP (usado tambem em TDAH via perfil compartilhado)
@@ -59,7 +61,8 @@ Backup tag: `backup-pre-eslint`. Sessão: [sessoes/2026-04-20_hub_audit](sessoes
   - `057_tdah_rls_phase_a.sql` → RLS Fase A em 5 tabelas nucleo (aplicada em prod 29/04, commit `9c99182`)
   - `058_shared_app_tenant_id_function.sql` → versiona funcao `app_tenant_id()` (no-op em prod, garante existencia em ambiente novo)
   - `059_tdah_rls_phase_b_1.sql` → **NAO aplicar em prod**: tentativa anterior com 4 tabelas, falhou no smoke escola GET (HTTP 500, chicken-and-egg em `tdah_teacher_tokens`), rollback em staging. Versionada como registro historico, prod nunca recebeu.
-  - `060_tdah_rls_phase_b_1_corrected.sql` → RLS Fase B.1 em 3 tabelas (`tdah_drc`, `tdah_protocols`, `tdah_teacher_access_log`). Versionada 29/04, aguarda smoke staging + smoke prod antes de fechar como aplicada.
+  - `060_tdah_rls_phase_b_1_corrected.sql` → RLS Fase B.1 em 3 tabelas (`tdah_drc`, `tdah_protocols`, `tdah_teacher_access_log`). **APLICADA EM PROD 29/04 sessão tarde** (commit `453f5dd` mergeado em `6b97ac8`, smoke escola GET HTTP 200 com dados reais).
+  - `061_shared_remove_app_tenant_id_default.sql` → RESET `app.tenant_id` default global Item 11C (commit `cc41ece`). **APLICADA EM PROD 30/04 manhã** (smoke escola GET HTTP 200, fail-loud restaurado, backup PRE em `/root/backups/061_pre_reset/prod_20260430_101608.sql`). Versionada retroativamente — no-op em prod, efetiva em ambientes novos/disaster recovery.
 - [ ] **`npm audit fix`** + revisao das 2 critical + 4 high identificadas
   em 10/04/2026
 
