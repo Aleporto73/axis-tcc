@@ -1,3 +1,20 @@
+// =====================================================
+// AXIS — Cron: renew-webhook (Google Calendar)
+//
+// Renova webhooks Google Calendar expirados/expirando em <=24h.
+// Auth: Bearer CRON_SECRET (mesmo padrão dos outros crons).
+//
+// TODO Item futuro (RLS calendar_connections):
+//   Esta rota faz pool.query cross-tenant SEM set_config('app.tenant_id').
+//   Funciona hoje porque calendar_connections NAO tem RLS forced
+//   (validado: pg_class.relrowsecurity = f, relforcerowsecurity = f).
+//   Quando RLS for ativada nessa tabela, esta rota precisa do mesmo
+//   refator pattern S3 que scheduler.ts recebeu no Item 11F:
+//     - Query 0 cross-tenant: SELECT DISTINCT tenant_id FROM calendar_connections
+//     - Loop por tenant: withTenantClient(tenantId, async (client) => { ... })
+//   Ver docs/audits/onda7_backlog.md Item 11F.
+// =====================================================
+
 import { NextRequest, NextResponse } from 'next/server'
 import { Pool } from 'pg'
 import { randomUUID } from 'crypto'

@@ -11,6 +11,11 @@
 #
 # Cron (diário às 3h):
 #   0 3 * * * /caminho/para/axis-tcc/scripts/backup-postgres.sh >> /var/log/axis-backup.log 2>&1
+#
+# Item 11I (auditoria sistematica crons): line endings normalizados pra LF
+# (CRLF impedia execucao via shebang) + loader trocado pelo Caminho C
+# minimal (helper load_env_var) — robusto contra valores especiais no .env
+# como RESEND_FROM=AXIS ABA <noreply@...> que quebravam o set -a + source.
 # =====================================================
 
 set -euo pipefail
@@ -23,17 +28,35 @@ BACKUP_DIR="/backups"
 RETENTION_DAYS=7
 TIMESTAMP="$(date +%Y-%m-%d_%H%M%S)"
 
-# ─── Carregar .env ──────────────────────────────────
+# ─── Loader minimal: extrai apenas vars necessarias do .env ─────
+# Robusto contra valores com <, >, espacos, multi-line (FIREBASE_PRIVATE_KEY).
+# Padrao "set -a + source" (versao anterior) quebrava em valores tipo
+# RESEND_FROM=AXIS ABA <noreply@...> porque bash interpreta < como redirect.
+# Ver Item 11H em docs/audits/onda7_backlog.md.
+load_env_var() {
+  local key="$1"
+  local val=""
+  if [ -f "$ENV_FILE" ]; then
+    local found
+    found=$(grep -E "^${key}=" "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
+    if [ -n "$found" ]; then
+      val="$found"
+    fi
+  fi
+  echo "$val"
+}
+
 if [ ! -f "$ENV_FILE" ]; then
   echo "[BACKUP] ERRO: Arquivo .env não encontrado em $ENV_FILE"
   exit 1
 fi
 
-# Exportar variáveis do .env (ignora comentários e linhas vazias)
-set -a
-# shellcheck disable=SC1090
-source <(grep -v '^\s*#' "$ENV_FILE" | grep -v '^\s*$' | sed 's/\r$//')
-set +a
+# Carregar apenas as 5 vars que este script consome (DATABASE_*)
+export DATABASE_HOST="$(load_env_var DATABASE_HOST)"
+export DATABASE_PORT="$(load_env_var DATABASE_PORT)"
+export DATABASE_USER="$(load_env_var DATABASE_USER)"
+export DATABASE_PASSWORD="$(load_env_var DATABASE_PASSWORD)"
+export DATABASE_NAME="$(load_env_var DATABASE_NAME)"
 
 # ─── Validar variáveis ─────────────────────────────
 DB_HOST="${DATABASE_HOST:-localhost}"
