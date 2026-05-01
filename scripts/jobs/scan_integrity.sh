@@ -16,10 +16,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Carregar variáveis de ambiente
-if [ -f "${SCRIPT_DIR}/../../.env.local" ]; then
-  export $(grep -v '^#' "${SCRIPT_DIR}/../../.env.local" | xargs)
-fi
+# Carregar .env primeiro (prod), .env.local override (opcional)
+for envfile in .env .env.local; do
+  if [ -f "${SCRIPT_DIR}/../../${envfile}" ]; then
+    export $(grep -v '^#' "${SCRIPT_DIR}/../../${envfile}" | xargs)
+  fi
+done
 
 API_URL="${AXIS_API_URL:-http://localhost:3000}"
 CRON_TOKEN="${CRON_SECRET:-}"

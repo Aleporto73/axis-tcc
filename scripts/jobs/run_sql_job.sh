@@ -29,10 +29,12 @@ if [ ! -f "$SQL_FILE" ]; then
   exit 1
 fi
 
-# Carregar variáveis de ambiente
-if [ -f "${SCRIPT_DIR}/../../.env.local" ]; then
-  export $(grep -v '^#' "${SCRIPT_DIR}/../../.env.local" | xargs)
-fi
+# Carregar .env primeiro (prod), .env.local override (opcional)
+for envfile in .env .env.local; do
+  if [ -f "${SCRIPT_DIR}/../../${envfile}" ]; then
+    export $(grep -v '^#' "${SCRIPT_DIR}/../../${envfile}" | xargs)
+  fi
+done
 
 CONTAINER="${POSTGRES_CONTAINER:-axis-postgres}"
 DB_NAME="${POSTGRES_DB:-axis}"
