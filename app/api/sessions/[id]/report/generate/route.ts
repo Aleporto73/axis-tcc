@@ -5,6 +5,8 @@ import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 import { readTranscriptSmart } from '@/src/services/transcript-storage'
 import { getTranscriptionUsage } from '@/src/services/transcription-limit'
+import { getAnalyzeUsage, recordAnalyzeUsage } from '@/src/services/analyze-limit'
+import type { PoolClient } from 'pg'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -94,7 +96,15 @@ export async function POST(
         }
       } else if (transcriptionText) {
         // Auto-analise: rodar analise TCC internamente
-        analysisData = await runTccAnalysis(transcriptionText)
+        // Item 2 Onda 7: governance unificada (quota, audit, timeout) - mesmo
+        // pattern de /api/analyze-tcc mas chamado server-side sem fetch.
+        analysisData = await runTccAnalysis(client, {
+          tenantId,
+          userId: ctx.userId,
+          sessionId,
+          patientId: session.patient_id,
+          text: transcriptionText,
+        })
 
         // Persistir analise para nao recalcular
         if (session.patient_id) {
@@ -341,12 +351,60 @@ function safeParseJson<T>(value: unknown, fallback: T): T {
   return fallback
 }
 
+
+// Limite tamanho do texto (50K chars ~ 12.5K tokens em GPT-4o-mini)
+const RUN_TCC_MAX_TEXT_LENGTH = 50_000
+// Timeout OpenAI
+const RUN_TCC_TIMEOUT_MS = 30_000
+
+interface RunTccAnalysisParams {
+  tenantId: string
+  userId: string
+  sessionId: string
+  patientId: string | null
+  text: string
+}
+
 /**
- * Auto-analise TCC: roda a mesma logica do /api/analyze-tcc
- * mas server-side, sem fetch HTTP para si mesmo.
+ * Auto-analise TCC: roda a mesma logica do /api/analyze-tcc mas server-side,
+ * sem fetch HTTP para si mesmo.
+ *
+ * Item 2 Onda 7 (Opcao B): governance unificada igual ao endpoint publico —
+ * size cap, quota check (getAnalyzeUsage), AbortController timeout 30s,
+ * recordAnalyzeUsage + INSERT axis_audit_logs apos sucesso. Logs com
+ * subprefixo [ANALYZE-TCC-AUTO] pra distinguir de /api/analyze-tcc.
+ *
+ * Em qualquer falha (size cap, quota, timeout, OpenAI error, parse error),
+ * retorna fallback vazio. Callsite trata graciosamente: persiste analise
+ * vazia em tcc_analyses, relatorio segue sem auto-analise.
  */
-async function runTccAnalysis(text: string): Promise<AnalysisData> {
-  const fallback = { fatos: [], pensamentos: [], emocoes: [], comportamentos: [] }
+async function runTccAnalysis(
+  client: PoolClient,
+  params: RunTccAnalysisParams,
+): Promise<AnalysisData> {
+  const fallback: AnalysisData = { fatos: [], pensamentos: [], emocoes: [], comportamentos: [] }
+  const { tenantId, userId, sessionId, patientId, text } = params
+  const startedAt = Date.now()
+  const logCtx = `[tenant=${tenantId}] [user=${userId}] [patient=${patientId ?? 'null'}] [session=${sessionId}]`
+
+  // Size cap (G6)
+  if (text.length > RUN_TCC_MAX_TEXT_LENGTH) {
+    console.warn(`[ANALYZE-TCC-AUTO] ${logCtx} skip TEXT_TOO_LARGE length=${text.length} max=${RUN_TCC_MAX_TEXT_LENGTH}`)
+    return fallback
+  }
+
+  // Quota check (G2) — funcao interna nao retorna 402, retorna fallback
+  const usage = await getAnalyzeUsage(client, tenantId)
+  if (usage.limit_reached) {
+    console.warn(`[ANALYZE-TCC-AUTO] ${logCtx} skip LIMIT_REACHED requests_used=${usage.requests_used} limit=${usage.limit}`)
+    return fallback
+  }
+
+  console.log(`[ANALYZE-TCC-AUTO] ${logCtx} start text_length=${text.length} usage=${usage.requests_used}/${usage.limit ?? 'unlimited'}`)
+
+  // AbortController + OpenAI (G7 timeout, G9 json_object - ja existia)
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), RUN_TCC_TIMEOUT_MS)
 
   try {
     const response = await openai.chat.completions.create({
@@ -386,18 +444,69 @@ ${text}`
       temperature: 0.2,
       max_tokens: 1500,
       response_format: { type: 'json_object' },
-    })
+    }, { signal: controller.signal })
 
-    const content = response.choices[0].message.content || '{}'
+    clearTimeout(timeoutId)
+
+    const content = response.choices[0]?.message?.content || '{}'
     const parsed = JSON.parse(content)
-    return {
+    const result: AnalysisData = {
       fatos: parsed.fatos || [],
       pensamentos: parsed.pensamentos || [],
       emocoes: parsed.emocoes || [],
       comportamentos: parsed.comportamentos || [],
     }
-  } catch (err) {
-    console.error('[report/generate] Auto-analise TCC falhou:', err)
+
+    // G1 audit + G2 record (apos sucesso)
+    const tokensUsed = response.usage?.total_tokens ?? 0
+    const elapsedMs = Date.now() - startedAt
+
+    try {
+      await recordAnalyzeUsage(client, {
+        tenantId,
+        userId,
+        route: 'analyze-tcc',
+        tokensUsed,
+        model: 'gpt-4o-mini',
+        patientId,
+        transcriptLength: text.length,
+      })
+
+      await client.query(
+        `INSERT INTO axis_audit_logs
+           (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
+         VALUES ($1, $2, 'system', 'ANALYZE_TCC_INVOKED', 'session', $3, $4, NOW())`,
+        [
+          tenantId,
+          userId,
+          sessionId,
+          JSON.stringify({
+            route: 'analyze-tcc',
+            source: 'report-generate-auto',
+            model: 'gpt-4o-mini',
+            tokens_used: tokensUsed,
+            transcript_length: text.length,
+            patient_id: patientId,
+            duration_ms: elapsedMs,
+          }),
+        ]
+      )
+    } catch (auditErr) {
+      // Audit/record falha NAO invalida o resultado da analise
+      console.error(`[ANALYZE-TCC-AUTO] ${logCtx} audit/record falhou:`, auditErr)
+    }
+
+    console.log(`[ANALYZE-TCC-AUTO] ${logCtx} ok tokens=${tokensUsed} duration_ms=${elapsedMs}`)
+
+    return result
+  } catch (err: any) {
+    clearTimeout(timeoutId)
+
+    if (err?.name === 'AbortError' || err?.code === 'ABORT_ERR' || err?.message?.includes('aborted')) {
+      console.error(`[ANALYZE-TCC-AUTO] ${logCtx} OpenAI timeout (${RUN_TCC_TIMEOUT_MS}ms)`)
+    } else {
+      console.error(`[ANALYZE-TCC-AUTO] ${logCtx} Auto-analise TCC falhou:`, err)
+    }
     return fallback
   }
 }

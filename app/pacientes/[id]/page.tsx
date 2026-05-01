@@ -254,7 +254,7 @@ export default function PatientDetailPage() {
       const analyzeRes = await fetch('/api/analyze-clinical', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript, patientName: patient?.full_name })
+        body: JSON.stringify({ transcript, patient_id: patient?.id })
       })
       if (analyzeRes.ok) {
         const analyzeData = await analyzeRes.json()
