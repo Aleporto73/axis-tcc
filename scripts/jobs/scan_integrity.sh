@@ -16,13 +16,29 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Carregar .env primeiro (prod), .env.local override (opcional)
-# Padrao "set -a + source" tolera multi-line values (ex: FIREBASE_PRIVATE_KEY)
-# e valores com caracteres especiais (emails formatados, espacos, <>).
-set -a
-[ -f "${SCRIPT_DIR}/../../.env" ] && source "${SCRIPT_DIR}/../../.env"
-[ -f "${SCRIPT_DIR}/../../.env.local" ] && source "${SCRIPT_DIR}/../../.env.local"
-set +a
+# Loader minimal: extrai apenas vars necessarias dos arquivos .env
+# Robusto contra valores com <, >, espacos, multi-line (FIREBASE_PRIVATE_KEY).
+# Padrao "set -a + source" (sub-fix anterior) quebrou em valores tipo
+# RESEND_FROM=AXIS ABA <noreply@...> porque bash interpreta < como redirect.
+# Ver Item 11H em docs/audits/onda7_backlog.md.
+load_env_var() {
+  local key="$1"
+  local val=""
+  for envfile in "${SCRIPT_DIR}/../../.env" "${SCRIPT_DIR}/../../.env.local"; do
+    if [ -f "$envfile" ]; then
+      local found
+      found=$(grep -E "^${key}=" "$envfile" 2>/dev/null | tail -1 | cut -d= -f2-)
+      if [ -n "$found" ]; then
+        val="$found"
+      fi
+    fi
+  done
+  echo "$val"
+}
+
+# Carregar vars necessarias (apenas as que este script consome)
+export CRON_SECRET="$(load_env_var CRON_SECRET)"
+export AXIS_API_URL="$(load_env_var AXIS_API_URL)"
 
 API_URL="${AXIS_API_URL:-http://localhost:3000}"
 CRON_TOKEN="${CRON_SECRET:-}"
