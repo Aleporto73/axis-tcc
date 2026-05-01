@@ -9,13 +9,17 @@
 --
 -- Dados anonimizados:
 --   - session_presence_proofs: latitude_encrypted, longitude_encrypted, ip_address_encrypted (BYTEA)
---   - session_attachments: extracted_geo, canvas_data
+--   - session_attachments: extracted_geo_encrypted (BYTEA)
 --
 -- Item 11H BUG 3: nomes de coluna corrigidos (sufixo _encrypted) e removida
 -- a clausula "latitude != pgp_sym_encrypt('0.0', ...)" — comparacao era
 -- semanticamente broken (pgp_sym_encrypt usa salt aleatorio, !! sempre true).
 -- Consequencia: re-execucao re-anonimiza linhas ja anonimizadas (no-op
 -- semantico apos decrypt; custo de I/O aceitavel pra job mensal).
+--
+-- Item 11H BUG 5: schema empirico session_attachments (migration 034 linha 247)
+-- confirma que coluna canvas_data NAO existe e que extracted_geo tem sufixo
+-- _encrypted. Removida referencia a canvas_data; renomeado extracted_geo.
 -- =====================================================
 
 BEGIN;
@@ -43,13 +47,12 @@ SET
 WHERE created_at < NOW() - INTERVAL '2 years'
   AND latitude_encrypted IS NOT NULL;
 
--- 2. Anonimizar extracted_geo em session_attachments
+-- 2. Anonimizar extracted_geo_encrypted em session_attachments
 UPDATE session_attachments
 SET
-  extracted_geo = NULL,
-  canvas_data = NULL
+  extracted_geo_encrypted = NULL
 WHERE created_at < NOW() - INTERVAL '2 years'
-  AND (extracted_geo IS NOT NULL OR canvas_data IS NOT NULL);
+  AND extracted_geo_encrypted IS NOT NULL;
 
 -- 3. Log de execução (system-driven, sem user_id)
 INSERT INTO axis_audit_logs (
