@@ -61,8 +61,15 @@ DB_USER="${POSTGRES_USER:-postgres}"
 
 echo "[$(date -Iseconds)] Executando job: ${JOB_NAME}"
 
-# Configurar encryption key como variável de sessão do PostgreSQL
+# Item 11H BUG 4: -v ON_ERROR_STOP=1 garante que ERROR + ROLLBACK propagam
+# exit code != 0. Sem isso, psql sai 0 mesmo com falhas SQL silenciadas.
+# Como o script tem "set -euo pipefail", bash aborta na falha do psql ANTES
+# de chegar nas linhas EXIT_CODE/branches. Mensagem amigavel "ERRO no job"
+# nao aparece em falha — exit code do psql propaga diretamente. Aceitavel
+# pro objetivo (cron/log mostra exit != 0). Refator com set +e/-e fica
+# como item futuro se mensagem amigavel for prioridade.
 docker exec -i "$CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" \
+  -v ON_ERROR_STOP=1 \
   -c "SET app.encryption_key = '${AXIS_ENCRYPTION_KEY:-}';" \
   -f - < "$SQL_FILE"
 

@@ -8,8 +8,14 @@
 --   "Purge de geo NÃO invalida bundle_hash/packet_hash"
 --
 -- Dados anonimizados:
---   - session_presence_proofs: latitude, longitude, ip_address
---   - session_attachments: extracted_geo, canvas_data (se criptografados)
+--   - session_presence_proofs: latitude_encrypted, longitude_encrypted, ip_address_encrypted (BYTEA)
+--   - session_attachments: extracted_geo, canvas_data
+--
+-- Item 11H BUG 3: nomes de coluna corrigidos (sufixo _encrypted) e removida
+-- a clausula "latitude != pgp_sym_encrypt('0.0', ...)" — comparacao era
+-- semanticamente broken (pgp_sym_encrypt usa salt aleatorio, !! sempre true).
+-- Consequencia: re-execucao re-anonimiza linhas ja anonimizadas (no-op
+-- semantico apos decrypt; custo de I/O aceitavel pra job mensal).
 -- =====================================================
 
 BEGIN;
@@ -18,15 +24,15 @@ BEGIN;
 -- Campos criptografados (pgcrypto) → substituir por valor anônimo
 UPDATE session_presence_proofs
 SET
-  latitude = pgp_sym_encrypt(
+  latitude_encrypted = pgp_sym_encrypt(
     '0.0',
     current_setting('app.encryption_key')
   ),
-  longitude = pgp_sym_encrypt(
+  longitude_encrypted = pgp_sym_encrypt(
     '0.0',
     current_setting('app.encryption_key')
   ),
-  ip_address = pgp_sym_encrypt(
+  ip_address_encrypted = pgp_sym_encrypt(
     'ANONIMIZADO',
     current_setting('app.encryption_key')
   ),
@@ -35,8 +41,7 @@ SET
   accuracy_meters = NULL,
   altitude_meters = NULL
 WHERE created_at < NOW() - INTERVAL '2 years'
-  AND latitude IS NOT NULL
-  AND latitude != pgp_sym_encrypt('0.0', current_setting('app.encryption_key'));
+  AND latitude_encrypted IS NOT NULL;
 
 -- 2. Anonimizar extracted_geo em session_attachments
 UPDATE session_attachments

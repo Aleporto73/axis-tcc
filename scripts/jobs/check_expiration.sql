@@ -48,7 +48,7 @@ FROM provider_credentials pc
 JOIN profiles p ON p.id = pc.profile_id
 WHERE pc.council_valid_until IS NOT NULL
   AND pc.council_valid_until <= NOW() + INTERVAL '30 days'
-  AND pc.credentialing_status != 'inactive'
+  AND pc.credential_status != 'blocked'
 ON CONFLICT (tenant_id, entity_type, entity_id, rule_code)
   WHERE status IN ('open', 'reviewing')
 DO UPDATE SET

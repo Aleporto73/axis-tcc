@@ -17,10 +17,11 @@ BEGIN;
 
 -- 1. Marcar atestações de responsável pendentes > deadline horas como expiradas
 -- Default: 72h se não há perfil de pagador vinculado
+-- Item 11H BUG 2: removido "updated_at = NOW()" — coluna nao existe no schema
+-- (session_attestations tem apenas created_at).
 UPDATE session_attestations sa
 SET
-  status = 'expired',
-  updated_at = NOW()
+  status = 'expired'
 WHERE sa.status = 'pending'
   AND sa.attestor_type = 'guardian'
   AND sa.created_at < NOW() - INTERVAL '72 hours';
@@ -29,8 +30,7 @@ WHERE sa.status = 'pending'
 -- Expira baseado em guardian_attestation_deadline_hours do perfil do pagador
 UPDATE session_attestations sa
 SET
-  status = 'expired',
-  updated_at = NOW()
+  status = 'expired'
 FROM sessions_aba s
 JOIN learner_coverage_profiles lcp ON lcp.learner_id = s.learner_id
   AND lcp.status = 'active'
@@ -42,6 +42,9 @@ WHERE sa.session_id = s.id
   AND sa.created_at < NOW() - (prp.guardian_attestation_deadline_hours || ' hours')::interval;
 
 -- 3. Gerar flag para atestações expiradas (NO_ATTESTATION)
+-- Item 11H BUG 2: critério temporal trocado de updated_at para created_at,
+-- janela cobre default 72h + 1 dia margem (deadlines custom > 24h ficam fora,
+-- limitação aceita conscientemente — ON CONFLICT mantém idempotência).
 INSERT INTO integrity_flags (
   tenant_id, entity_type, entity_id, rule_code, severity,
   description, metadata, first_detected_at, last_detected_at, status
@@ -65,7 +68,7 @@ SELECT
 FROM session_attestations sa
 WHERE sa.status = 'expired'
   AND sa.attestor_type = 'guardian'
-  AND sa.updated_at >= NOW() - INTERVAL '1 day'
+  AND sa.created_at >= NOW() - INTERVAL '1 day' - INTERVAL '72 hours'
 ON CONFLICT (tenant_id, entity_type, entity_id, rule_code)
   WHERE status IN ('open', 'reviewing')
 DO UPDATE SET
