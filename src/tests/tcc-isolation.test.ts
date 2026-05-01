@@ -204,8 +204,15 @@ describe('TCC Isolamento — Autenticação', () => {
     mockAuth.mockResolvedValue({ userId: null })
 
     const { POST } = await import('@/app/api/analyze-clinical/route')
+    // Body completo válido — fail-fast de body NÃO acontece, rota chega no
+    // withTenant que rejeita por falta de auth (Item 2 Onda 7: validação body
+    // ANTES de auth, então body precisa estar OK pra atingir camada de auth).
     const req = createMockRequest({
-      body: { transcript: 'teste', patientName: 'João' },
+      body: {
+        transcript: 'teste',
+        patient_id: '00000000-0000-0000-0000-000000000001',
+        patientName: 'João',
+      },
     })
 
     const res = await POST(req)
@@ -220,8 +227,14 @@ describe('TCC Isolamento — Autenticação', () => {
     setupWithTenantMock({ noProfile: true, noTenant: true })
 
     const { POST } = await import('@/app/api/analyze-clinical/route')
+    // Body completo válido — falha esperada vem do withTenant ao não achar
+    // tenant pro userId (não da validação de body).
     const req = createMockRequest({
-      body: { transcript: 'teste', patientName: 'João' },
+      body: {
+        transcript: 'teste',
+        patient_id: '00000000-0000-0000-0000-000000000001',
+        patientName: 'João',
+      },
     })
 
     const res = await POST(req)
@@ -236,8 +249,14 @@ describe('TCC Isolamento — Autenticação', () => {
     setupWithTenantMock({ tenantId: 'tenant-1', userId: 'clerk-user-valid' })
 
     const { POST } = await import('@/app/api/analyze-clinical/route')
+    // patient_id presente, transcript ausente — Item 2 Onda 7: nova ordem
+    // valida patient_id PRIMEIRO; com ele OK, falha vem na validação de
+    // transcript (mensagem 'Transcrição não fornecida' preservada).
     const req = createMockRequest({
-      body: { patientName: 'João' }, // sem transcript
+      body: {
+        patient_id: '00000000-0000-0000-0000-000000000001',
+        patientName: 'João',
+      }, // sem transcript
     })
 
     const res = await POST(req)
@@ -263,8 +282,16 @@ describe('TCC Isolamento — Rota Crítica analyze-clinical', () => {
     setupWithTenantMock({ tenantId: 'tenant-1', userId: 'clerk-user-valid' })
 
     const { POST } = await import('@/app/api/analyze-clinical/route')
+    // Body completo válido pra atingir a camada withTenant (Item 2 Onda 7:
+    // body é validado ANTES de withTenant). Teste só verifica que
+    // pool.connect foi chamado — execução pode falhar em etapas posteriores
+    // (patient check, quota, OpenAI) sem afetar a asserção.
     const req = createMockRequest({
-      body: { transcript: 'Paciente relata melhora', patientName: 'Maria' },
+      body: {
+        transcript: 'Paciente relata melhora',
+        patient_id: '00000000-0000-0000-0000-000000000001',
+        patientName: 'Maria',
+      },
     })
 
     await POST(req)
@@ -285,8 +312,14 @@ describe('TCC Isolamento — Rota Crítica analyze-clinical', () => {
     setupWithTenantMock({ noProfile: true, noTenant: true })
 
     const { POST } = await import('@/app/api/analyze-clinical/route')
+    // Body completo válido — falha esperada vem do withTenant ao tentar
+    // resolver tenant pro userId (sem profile/tenant).
     const req = createMockRequest({
-      body: { transcript: 'teste', patientName: 'X' },
+      body: {
+        transcript: 'teste',
+        patient_id: '00000000-0000-0000-0000-000000000001',
+        patientName: 'X',
+      },
     })
 
     const res = await POST(req)
