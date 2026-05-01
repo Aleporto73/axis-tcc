@@ -51,9 +51,20 @@ export async function POST(request: NextRequest) {
       }> = []
 
       // ── Executar scan para cada tenant ──
+      // Item 11H: BEGIN + set_config('app.tenant_id', ..., true) ANTES de
+      // runFullScan e COMMIT depois. Necessario porque integrity_flags tem
+      // RLS forced+enabled com policy `tenant_id = app_tenant_id()`
+      // (migration 063, Item 11E). Sem GUC, queries em runFullScan lancam
+      // [AXIS RLS] app.tenant_id nao definido na sessao.
+      // Pattern S3 (mesmo de scheduler.ts pos-Item 11F): set_config local
+      // por transacao, COMMIT entre tenants pra zerar GUC, ROLLBACK no
+      // catch pra garantir que tenant erro nao trava transacao do proximo.
       for (const tenant of tenantsResult.rows) {
         try {
+          await client.query('BEGIN')
+          await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenant.id])
           const scanResult = await runFullScan(client, tenant.id)
+          await client.query('COMMIT')
           results.push({
             tenant_id: tenant.id,
             total_flags: scanResult.total_flags,
@@ -62,6 +73,7 @@ export async function POST(request: NextRequest) {
             auto_resolved: scanResult.auto_resolved,
           })
         } catch (err) {
+          try { await client.query('ROLLBACK') } catch { /* tx ja abortada */ }
           console.error(`[scan-integrity] Erro no tenant ${tenant.id}:`, err)
           results.push({
             tenant_id: tenant.id,
