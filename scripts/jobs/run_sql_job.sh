@@ -30,11 +30,12 @@ if [ ! -f "$SQL_FILE" ]; then
 fi
 
 # Carregar .env primeiro (prod), .env.local override (opcional)
-for envfile in .env .env.local; do
-  if [ -f "${SCRIPT_DIR}/../../${envfile}" ]; then
-    export $(grep -v '^#' "${SCRIPT_DIR}/../../${envfile}" | xargs)
-  fi
-done
+# Padrao "set -a + source" tolera multi-line values (ex: FIREBASE_PRIVATE_KEY)
+# e valores com caracteres especiais (emails formatados, espacos, <>).
+set -a
+[ -f "${SCRIPT_DIR}/../../.env" ] && source "${SCRIPT_DIR}/../../.env"
+[ -f "${SCRIPT_DIR}/../../.env.local" ] && source "${SCRIPT_DIR}/../../.env.local"
+set +a
 
 CONTAINER="${POSTGRES_CONTAINER:-axis-postgres}"
 DB_NAME="${POSTGRES_DB:-axis}"
