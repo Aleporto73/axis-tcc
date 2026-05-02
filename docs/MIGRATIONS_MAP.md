@@ -11,6 +11,28 @@
 > - **TDAH** — tabelas com prefixo `tdah_`.
 > - **TCC** — `sessions` (TCC), `patients` (TCC), `transcripts`, `transcription_jobs`, `transcript_segments`, `session_reports`, `case_base`, `exposure_hierarchies`.
 
+## Tracking runtime (`_migrations` table)
+
+> **Adicionado em 02/05/2026 — Item 22:** existe agora a tabela `_migrations` em prod E staging
+> rastreando "qual migration foi aplicada quando, por quem". Schema:
+> `id SERIAL PK + version VARCHAR(10) UNIQUE + name + filename + checksum SHA256 + applied_at + duration_ms + applied_by VARCHAR(64) NULL`.
+>
+> **Criada via `scripts/migrate.sh`** (auto-create se não existir). **Bootstrap retroativo aplicado**
+> em 02/05/2026 (commit `6633ffa`) com `applied_at='2026-04-30 00:00:00'` e `applied_by='manual-pre-bootstrap'`
+> em todas as 61 migrations 001-065 existentes. Migrations futuras (066+) serão registradas
+> automaticamente pelo runner com `applied_by=$USER` do shell.
+>
+> **Para rodar:**
+> ```bash
+> bash scripts/migrate.sh --status                                      # ver pendentes
+> bash scripts/migrate.sh                                               # aplicar pendentes em prod (axis_tcc)
+> DATABASE_NAME=axis_tcc_staging bash scripts/migrate.sh                # aplicar em staging (override env inline)
+> ```
+>
+> Este `MIGRATIONS_MAP.md` mantém escopo **declarativo** (ownership por módulo, casos de nome enganoso).
+> A tabela `_migrations` cobre escopo **runtime/imperativo** (quando aplicada, por quem, checksum SHA256
+> pra detectar edição retroativa de migration já aplicada).
+
 ## Convenção de nomenclatura (057+)
 
 A partir da migration **057**, todo novo arquivo em `scripts/migrations/` **deve** seguir:
