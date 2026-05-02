@@ -1,6 +1,7 @@
 'use client'
 
 import React, { Component, type ErrorInfo, type ReactNode } from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 // =====================================================
 // AXIS ABA — Error Boundary
@@ -40,6 +41,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack } } })
     console.error('[AXIS ErrorBoundary]', error, errorInfo.componentStack)
   }
 
