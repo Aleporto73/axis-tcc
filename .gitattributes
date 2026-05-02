@@ -1,0 +1,81 @@
+# =====================================================
+# AXIS — Normalizacao de line endings
+#
+# Item 11I (auditoria sistematica crons): força LF puro no working tree
+# em todos os ambientes (Linux, macOS, Windows). Resolve definitivamente
+# os debitos historicos de CRLF stale que causaram:
+#   - Item 11H: scripts bash em CRLF nao rodavam (bash\r: No such file
+#     or directory). scan_integrity.sh + run_sql_job.sh + backup-postgres.sh
+#     — todos quebrados ate fix manual.
+#   - Item 2 Etapas 2.4/2.5b: Edit tool corrompeu route.ts com CRLF
+#     stale (truncamento em template literal pos-substituicoes grandes).
+#   - Auditoria crons: 4 arquivos com CRLF na working copy mas LF no
+#     index — autocrlf=true do PowerShell Windows reintroduzia CRLF
+#     na checkout, criando armadilha permanente.
+#
+# Apos este arquivo entrar, qualquer checkout/clone (em qualquer SO)
+# garante LF puro nos arquivos versionados. Edit tool e ferramentas
+# Linux funcionam de forma confiavel.
+#
+# Aplicacao retroativa em arquivos ja CRLF:
+#   git add --renormalize .
+#   git commit -m "chore: renormalize line endings to LF (Item 11I)"
+# (em commit separado deste — ver msg do commit que adicionou o arquivo)
+# =====================================================
+
+# Default: detecta texto automaticamente, normaliza pra LF
+* text=auto eol=lf
+
+# ─── Scripts shell — ALWAYS LF (impedir bash\r) ─────
+*.sh text eol=lf
+
+# ─── SQL — ALWAYS LF (psql aceita CRLF mas hooks/validators podem nao) ─
+*.sql text eol=lf
+
+# ─── Linguagens — explicit LF ───────────────────────
+*.py text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# ─── Configs ───────────────────────────────────────
+*.toml text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+.env* text eol=lf
+.editorconfig text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+
+# ─── Binarios — sem normalizacao ────────────────────
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.svg binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.tgz binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+
+# ─── Lock files — binario efetivo (sem normalizacao) ─
+package-lock.json binary
+yarn.lock binary
+pnpm-lock.yaml binary
