@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
           // Decisao one-way: remocao da preload list leva semanas/meses pra propagar
           // pelas listas embutidas em Chrome/Firefox/Safari/Edge (so atualizam em releases).
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-          { key: 'Content-Security-Policy-Report-Only', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.dev https://*.clerk.accounts.dev https://*.sentry.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.clerk.com https://*.clerk.dev https://*.clerk.accounts.dev https://*.sentry.io https://*.ingest.sentry.io https://*.hotmart.com; frame-src 'self' https://*.clerk.com https://*.hotmart.com; frame-ancestors 'none'; form-action 'self' https://*.hotmart.com; base-uri 'self'" },
+          { key: 'Content-Security-Policy-Report-Only', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.dev https://*.clerk.accounts.dev https://*.sentry.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.clerk.com https://*.clerk.dev https://*.clerk.accounts.dev https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.hotmart.com; frame-src 'self' https://*.clerk.com https://*.hotmart.com; frame-ancestors 'none'; form-action 'self' https://*.hotmart.com; base-uri 'self'" },
         ],
       },
     ]
@@ -33,9 +33,9 @@ export default withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: "axis-2u",
+  org: process.env.SENTRY_ORG ?? "psiform",
 
-  project: "javascript-nextjs",
+  project: process.env.SENTRY_PROJECT ?? "axis-tcc",
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,

@@ -7,6 +7,8 @@ const isPublicRoute = createRouteMatcher([
   '/ativar-lembretes',
   // Health check (público, sem auth)
   '/api/health',
+  // Sentry tunnelRoute (configurado em next.config.ts) - rota de proxy ingest sem Clerk auth
+  '/monitoring(.*)',
   // APIs internas - liberadas para desenvolvimento
   '/api/push/(.*)',
   '/api/cron/(.*)',
