@@ -216,8 +216,12 @@ Mock: 7 snapshots CSO por paciente, 12 sessoes, 10 DRCs, 21 protocolos.
 4. Portal familia NUNCA mostra CSO, snapshots, layer AuDHD, notas clinicas
 5. Multi-tenant isolation obrigatorio — `withTenant()` + `canAccessTdahPatient()` (camada aplicacao) **+ RLS forced** em 5 tabelas nucleo desde Fase A (29/04, migration 057): `tdah_patients`, `tdah_sessions`, `tdah_observations`, `tdah_events`, `tdah_snapshots`. Policy `tenant_isolation` usa funcao `app_tenant_id()` (versionada em 058). Fase B vai cobrir 15 tabelas restantes — ver `docs/audits/onda7_backlog.md` Item 11A.
 6. Pesos CSO-TDAH configuraveis via `engine_versions` (flexibilidade pos-piloto)
-7. `tdah_patient_therapists` (N:N) e fonte-de-verdade desde Migration 038.
-   Fallback `created_by` mantido para compatibilidade legada
+7. `tdah_patient_therapists` (N:N) é fonte-de-verdade EXCLUSIVA desde
+   **Onda 5.3 (25/04/2026)**. Fallback `OR created_by` removido em 3 helpers
+   `with-role.ts` (`tdahPatientFilter`, `tdahSessionFilter`, `canAccessTdahPatient`)
+   + inline em `app/api/tdah/plans/route.ts`. Terapeuta SEM vínculo explícito em
+   `tdah_patient_therapists` recebe 404 mesmo se for `created_by`. Detalhe:
+   `docs/audits/onda5.3_changelog.md` + `docs/MATRIZ_ACESSO_TDAH.md` Changelog.
 8. Gate of silence — terapeuta nao autorizado recebe "Paciente nao encontrado"
    (404 generico, sem revelar existencia). Info leakage fix 23/03
 
