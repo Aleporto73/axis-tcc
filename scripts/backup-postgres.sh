@@ -90,12 +90,21 @@ echo "[BACKUP] Destino: ${BACKUP_FILE}"
 
 # ─── Executar pg_dump via docker exec ──────────────
 # user 'axis' = SUPERUSER no container, bypassa RLS forced.
+#
+# Flags --clean --if-exists (porting de scripts/backup.sh ao remover
+# crontab nao-versionado de backup duplicado):
+#   --clean: gera 'DROP TABLE IF EXISTS' antes dos 'CREATE TABLE' no SQL
+#   --if-exists: DROP nao falha se tabela nao existe (idempotente)
+# Beneficio: 'psql < backup.sql' funciona em DB existente sem cleanup
+# manual. Disaster recovery simples: criar DB vazio + restore direto.
 docker exec -i "$CONTAINER" pg_dump \
   -U "$DB_USER" \
   -d "$DB_NAME" \
   --format=plain \
   --no-owner \
   --no-privileges \
+  --clean \
+  --if-exists \
   2>/dev/null | gzip > "$BACKUP_FILE"
 
 # ─── Verificar resultado: existe e nao-vazio ───────
