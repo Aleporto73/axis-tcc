@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
+import * as Sentry from '@sentry/nextjs'
 
 // Pool: shared (Auditoria TCC P0 — unified pool)
 
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(BASE_URL + '/configuracoes?google=success')
   } catch (error) {
+    Sentry.captureException(error)
     console.error('[GOOGLE_CALLBACK] Erro:', error)
     return NextResponse.redirect(BASE_URL + '/configuracoes?google=error')
   }

@@ -3,6 +3,7 @@ import pool from '@/src/database/db'
 import { ensureValidToken, getAttendeeResponse, calcDurationMinutes } from '@/src/google/calendar-helpers'
 import { matchSiteByLocation } from '@/src/google/match-site'
 import { rateLimit } from '@/src/middleware/rate-limit'
+import * as Sentry from '@sentry/nextjs'
 
 // =====================================================
 // AXIS ABA — Google Calendar Webhook Receiver
@@ -220,6 +221,7 @@ async function syncCalendarForProfile(tenantId: string, profileId: string, clerk
     console.log('[ABA_WEBHOOK] Sync concluído:', { tenantId, profileId, imported, updated })
   } catch (error) {
     await client.query('ROLLBACK')
+    Sentry.captureException(error)
     console.error('[ABA_WEBHOOK] Erro no sync:', error)
   } finally {
     client.release()
@@ -264,12 +266,14 @@ export async function POST(request: NextRequest) {
     const { tenant_id, profile_id, clerk_user_id } = connResult.rows[0]
 
     // Sync assíncrono (não bloquear resposta ao Google)
-    syncCalendarForProfile(tenant_id, profile_id, clerk_user_id || profile_id).catch((err) =>
+    syncCalendarForProfile(tenant_id, profile_id, clerk_user_id || profile_id).catch((err) => {
+      Sentry.captureException(err)
       console.error('[ABA_WEBHOOK] Erro no sync async:', err)
-    )
+    })
 
     return NextResponse.json({ status: 'ok' })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('[ABA_WEBHOOK] Erro:', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }

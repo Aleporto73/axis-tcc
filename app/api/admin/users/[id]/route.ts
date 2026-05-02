@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdmin } from '../../guard'
 import pool from '@/src/database/db'
+import * as Sentry from '@sentry/nextjs'
 
 // =====================================================
 // GET  /api/admin/users/[tenantId]  — detalhes completos
@@ -60,6 +61,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       counts: patientCount.rows[0],
     })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('[ADMIN USER DETAIL]', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
@@ -194,6 +196,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ success: true, action })
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {})
+    Sentry.captureException(error)
     console.error('[ADMIN USER ACTION]', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   } finally {
@@ -238,6 +241,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ success: true, deleted_tenant: tenantId })
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {})
+    Sentry.captureException(error)
     console.error('[ADMIN DELETE]', error)
     return NextResponse.json({ error: 'Erro ao deletar. Verifique dependências.' }, { status: 500 })
   } finally {
