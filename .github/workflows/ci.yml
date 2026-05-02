@@ -11,6 +11,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-migrations:
+    name: Validate migrations (naming + COMMIT)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: validate-migrations.sh --all
+        run: bash scripts/hooks/validate-migrations.sh --all
+
   lint-and-typecheck:
     name: Lint + TypeScript Check
     runs-on: ubuntu-latest
