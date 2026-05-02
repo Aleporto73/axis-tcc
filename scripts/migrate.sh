@@ -226,7 +226,7 @@ if $BOOTSTRAP; then
       RETURNING version
     ")"
 
-    if [[ -n "$inserted" ]]; then
+    if [[ "${inserted//[[:space:]]/}" =~ ^[0-9]{3}$ ]]; then
       log "  ✓ Bootstrapped: $filename (version=$version)"
       REGISTERED=$((REGISTERED + 1))
     else
