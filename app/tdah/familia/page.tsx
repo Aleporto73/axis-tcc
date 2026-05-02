@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 // =====================================================
 // AXIS TDAH — Portal Família (Admin/Supervisor)
@@ -63,14 +64,14 @@ export default function FamiliaPage() {
     try {
       const res = await fetch('/api/tdah/familia/tokens')
       if (res.ok) { setTokens((await res.json()).tokens || []) }
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
   }, [])
 
   const fetchPatients = useCallback(async () => {
     try {
       const res = await fetch('/api/tdah/patients')
       if (res.ok) { setPatients((await res.json()).patients || []) }
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
   }, [])
 
   useEffect(() => {
@@ -81,7 +82,7 @@ export default function FamiliaPage() {
     try {
       const res = await fetch(`/api/tdah/guardians?patient_id=${patientId}`)
       if (res.ok) { setGuardians((await res.json()).guardians || []) }
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
   }
 
   const handlePatientSelect = (patientId: string) => {
@@ -127,7 +128,7 @@ export default function FamiliaPage() {
         }
         setShowLinkModal(data.token)
       }
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
     setSaving(false)
   }
 
@@ -136,7 +137,7 @@ export default function FamiliaPage() {
     try {
       await fetch(`/api/tdah/familia/tokens/${id}`, { method: 'DELETE' })
       await fetchTokens()
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
   }
 
   const getPortalUrl = (token: string) => typeof window !== 'undefined' ? `${window.location.origin}/familia/${token}` : `/familia/${token}`

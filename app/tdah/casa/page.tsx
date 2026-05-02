@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 // =====================================================
 // AXIS TDAH — Módulo Casa
@@ -73,7 +74,7 @@ export default function CasaPage() {
     try {
       const res = await fetch('/api/tdah/patients')
       if (res.ok) setPatients((await res.json()).patients || [])
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
   }, [])
 
   const fetchRoutines = useCallback(async () => {
@@ -81,7 +82,7 @@ export default function CasaPage() {
     try {
       const res = await fetch(`/api/tdah/routines?patient_id=${selectedPatient}`)
       if (res.ok) setRoutines((await res.json()).routines || [])
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
   }, [selectedPatient])
 
   const fetchEconomies = useCallback(async () => {
@@ -89,7 +90,7 @@ export default function CasaPage() {
     try {
       const res = await fetch(`/api/tdah/token-economy?patient_id=${selectedPatient}`)
       if (res.ok) setEconomies((await res.json()).economies || [])
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
   }, [selectedPatient])
 
   useEffect(() => { fetchPatients().finally(() => setLoading(false)) }, [fetchPatients])
@@ -115,7 +116,7 @@ export default function CasaPage() {
         setRoutineForm({ routine_type: 'morning', routine_name: '', reinforcement_plan: '', steps: [{ description: '', visual_cue: '' }] })
         await fetchRoutines()
       }
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
     setSavingRoutine(false)
   }
 
@@ -140,7 +141,7 @@ export default function CasaPage() {
         setEconomyForm({ system_name: 'Economia de Fichas', token_type: 'star', token_label: '', target_behaviors: [{ behavior: '', tokens_earned: 1, description: '' }], reinforcers: [{ reward: '', tokens_required: 5, category: '' }] })
         await fetchEconomies()
       }
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
     setSavingEconomy(false)
   }
 
@@ -167,7 +168,7 @@ export default function CasaPage() {
         const err = await res.json()
         alert(err.error || 'Erro')
       }
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
     setSavingTx(false)
   }
 
@@ -179,7 +180,7 @@ export default function CasaPage() {
         body: JSON.stringify({ status }),
       })
       await fetchRoutines()
-    } catch (e) { console.error(e) }
+    } catch (e) { Sentry.captureException(e); console.error(e) }
   }
 
   const getTokenSymbol = (type: string) => TOKEN_TYPES.find(t => t.value === type)?.symbol || '⭐'

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Sidebar from '../../components/Sidebar'
 import EvolutionReport from '../../components/EvolutionReport'
 import CaseBaseForm from '../../components/CaseBaseForm'
+import * as Sentry from '@sentry/nextjs'
 
 interface Patient {
   id: string
@@ -105,6 +106,7 @@ export default function PatientDetailPage() {
         setSessions(data.sessions || [])
       }
     } catch (error) {
+      Sentry.captureException(error)
       console.error('Erro:', error)
       alert('Erro ao carregar dados do paciente')
     } finally {
@@ -121,6 +123,7 @@ export default function PatientDetailPage() {
         if (data.exists) setClinicalRecord(data.record)
       }
     } catch (error) {
+      Sentry.captureException(error)
       console.error('Erro ao carregar registro clínico:', error)
     }
   }
@@ -161,6 +164,7 @@ export default function PatientDetailPage() {
         loadPatient()
       }
     } catch (error) {
+      Sentry.captureException(error)
       console.error('Erro:', error)
       alert('Erro ao salvar alterações')
     } finally {
@@ -176,6 +180,7 @@ export default function PatientDetailPage() {
         router.push('/pacientes')
       }
     } catch (error) {
+      Sentry.captureException(error)
       console.error('Erro:', error)
       alert('Erro ao excluir paciente')
     } finally {
@@ -193,6 +198,7 @@ export default function PatientDetailPage() {
         setShowPushLink(true)
       }
     } catch (error) {
+      Sentry.captureException(error)
       console.error('Erro:', error)
       alert('Erro ao gerar link de lembretes')
     } finally {
@@ -221,6 +227,7 @@ export default function PatientDetailPage() {
       mediaRecorder.start()
       setIsRecording(true)
     } catch (error) {
+      Sentry.captureException(error)
       console.error('Erro ao iniciar gravação:', error)
       alert('Não foi possível acessar o microfone')
     }
@@ -268,6 +275,7 @@ export default function PatientDetailPage() {
       }
       setClinicalStep('review')
     } catch (error) {
+      Sentry.captureException(error)
       console.error('Erro ao processar áudio:', error)
       alert('Erro ao processar áudio')
     } finally {
@@ -298,6 +306,7 @@ export default function PatientDetailPage() {
         loadClinicalRecord()
       }
     } catch (error) {
+      Sentry.captureException(error)
       console.error('Erro ao salvar:', error)
       alert('Erro ao salvar registro clínico')
     } finally {

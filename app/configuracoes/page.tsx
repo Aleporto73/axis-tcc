@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/nextjs'
 import { useState, useEffect, useCallback } from 'react'
 import Sidebar from '../components/Sidebar'
 import { User, Bell, Shield, Database, Calendar, Check, X, RefreshCw, Unlink } from 'lucide-react'
+import * as Sentry from '@sentry/nextjs'
 
 interface GoogleStatus {
   connected: boolean
@@ -40,6 +41,7 @@ export default function ConfiguracoesPage() {
         setGoogleStatus(data)
       }
     } catch (err) {
+      Sentry.captureException(err)
       console.error('Erro ao buscar status Google:', err)
     }
     setGoogleLoading(false)
@@ -59,6 +61,7 @@ export default function ConfiguracoesPage() {
         alert('Erro ao desconectar Google Calendar')
       }
     } catch (err) {
+      Sentry.captureException(err)
       console.error('Erro ao desconectar Google:', err)
       alert('Erro ao desconectar Google Calendar')
     }
@@ -74,6 +77,7 @@ export default function ConfiguracoesPage() {
         alert('Erro ao sincronizar com Google Calendar')
       }
     } catch (err) {
+      Sentry.captureException(err)
       console.error('Erro ao sincronizar Google:', err)
       alert('Erro ao sincronizar')
     }
@@ -94,6 +98,7 @@ export default function ConfiguracoesPage() {
         })
       }
     } catch (err) {
+      Sentry.captureException(err)
       console.error('Erro ao buscar perfil:', err)
     }
     setProfileLoading(false)
@@ -113,6 +118,7 @@ export default function ConfiguracoesPage() {
         setTimeout(() => setSaved(false), 2000)
       }
     } catch (err) {
+      Sentry.captureException(err)
       console.error('Erro ao salvar perfil:', err)
     }
     setSaving(false)

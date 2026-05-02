@@ -12,6 +12,7 @@ import UpgradeModalTCC from '@/app/components/UpgradeModalTCC'
 import TranscriptView from './components/TranscriptView'
 import ClinicalContext from './components/ClinicalContext'
 import EvolutionPanel from './components/EvolutionPanel'
+import * as Sentry from '@sentry/nextjs'
 
 interface Session {
   id: string
@@ -99,7 +100,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
           setTranscriptionJob(data)
           setUploading(false)
         }
-      } catch (e) { console.error('[POLLING] Erro:', e) }
+      } catch (e) { Sentry.captureException(e); console.error('[POLLING] Erro:', e) }
     }, 5000)
   }
 
@@ -146,7 +147,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
           startPolling(job.job_id)
         }
       }
-    } catch (e) { console.error(e); alert('Erro ao carregar sessão') } finally { setLoading(false) }
+    } catch (e) { Sentry.captureException(e); console.error(e); alert('Erro ao carregar sessão') } finally { setLoading(false) }
   }
 
   const handleFinish = async () => {
@@ -154,7 +155,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       setFinishing(true)
       const res = await fetch(`/api/sessions/${id}/finish`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes }) })
       if (res.ok) { const data = await res.json(); if (data.pipeline) setPipelineResult(data.pipeline); loadSession() }
-    } catch (e) { console.error(e); alert('Erro ao finalizar sessão') } finally { setFinishing(false) }
+    } catch (e) { Sentry.captureException(e); console.error(e); alert('Erro ao finalizar sessão') } finally { setFinishing(false) }
   }
 
   const sendAudio = async (fd: FormData) => {
@@ -195,6 +196,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
         startPolling(data.job_id)
       }
     } catch (e) {
+      Sentry.captureException(e)
       console.error(e)
       alert('Erro ao enviar audio')
       setUploading(false)
@@ -250,7 +252,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
         const err = await res.json().catch(() => ({}))
         alert(err.error || 'Erro ao analisar TCC')
       }
-    } catch (e) { console.error(e); alert('Erro ao analisar TCC') } finally { setAnalyzing(false) }
+    } catch (e) { Sentry.captureException(e); console.error(e); alert('Erro ao analisar TCC') } finally { setAnalyzing(false) }
   }
 
   const openMicroModal = (type: string) => { setMicroType(type); setMicroIntensity(0.5); setMicroNote(''); setShowMicroModal(true) }
@@ -261,7 +263,7 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
       setSavingMicro(true)
       const res = await fetch('/api/events/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ patient_id: session.patient_id, event_type: microType, payload: { intensity: microIntensity, note: microNote, context: 'session' }, related_entity_id: session.id }) })
       if (res.ok) { setMicroEvents(prev => [...prev, { type: microType, intensity: microIntensity, note: microNote, created_at: new Date().toISOString() }]); setShowMicroModal(false) }
-    } catch (e) { console.error(e); alert('Erro ao salvar evento') } finally { setSavingMicro(false) }
+    } catch (e) { Sentry.captureException(e); console.error(e); alert('Erro ao salvar evento') } finally { setSavingMicro(false) }
   }
 
   const microLabel = (type: string) => { switch (type) { case 'AVOIDANCE_OBSERVED': return 'Evitou'; case 'CONFRONTATION_OBSERVED': return 'Enfrentou'; case 'ADJUSTMENT_OBSERVED': return 'Ajustou'; case 'RECOVERY_OBSERVED': return 'Recuperou'; default: return type } }
