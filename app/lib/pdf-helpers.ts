@@ -50,7 +50,6 @@ export async function setupPdfWithDejaVu(doc: jsPDF): Promise<void> {
   // estar declaradas em @types/jspdf v1.3.3 (era v1, antes do split modular v4).
   // Cast pontual pra runtime call sem TS error. Mitigação correta seria upgrade
   // de @types/jspdf pra v2+, mas v2 é stub deprecation (vide Item 27 análise).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const docAny = doc as any
   docAny.addFileToVFS('DejaVuSans.ttf', fontBase64)
   docAny.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal')
