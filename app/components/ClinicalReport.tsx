@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { FileText, Pencil, Check, Download, RefreshCw, X, Plus } from 'lucide-react'
-import { jsPDF } from 'jspdf'
+import jsPDF from 'jspdf'
 
 interface ReportData {
   id: string

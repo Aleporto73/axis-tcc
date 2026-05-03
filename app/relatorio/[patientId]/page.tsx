@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Target, Activity, Clock, TrendingUp, TrendingDown, Minus, AlertTriangle, Calendar, FileText, MessageSquare, Download } from 'lucide-react'
-import { jsPDF } from 'jspdf'
+import jsPDF from 'jspdf'
 
 interface EvolutionData {
   patient_name: string
