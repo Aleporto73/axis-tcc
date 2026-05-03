@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { FileText, Pencil, Check, Download, RefreshCw, X, Plus } from 'lucide-react'
 import jsPDF from 'jspdf'
+import { setupPdfWithDejaVu } from '@/app/lib/pdf-helpers'
 
 interface ReportData {
   id: string
@@ -396,19 +397,19 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
                   const meta = await res.json()
 
                   // 2. Gerar PDF client-side com jsPDF
-                  const doc = new jsPDF()
+                  const doc = new jsPDF({ subsetFonts: true })
+                  await setupPdfWithDejaVu(doc)
                   const w = doc.internal.pageSize.getWidth()
                   const margin = 20
                   const contentW = w - margin * 2
                   let y = 20
 
-                  const strip = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                   const addText = (text: string, x: number, yPos: number, opts: { size?: number; style?: string; color?: [number, number, number]; maxWidth?: number } = {}) => {
                     doc.setFontSize(opts.size || 10)
-                    doc.setFont('helvetica', opts.style || 'normal')
+                    doc.setFont('DejaVuSans', opts.style || 'normal')
                     doc.setTextColor(...(opts.color || [51, 51, 51]))
-                    if (opts.maxWidth) doc.text(strip(text), x, yPos, { maxWidth: opts.maxWidth })
-                    else doc.text(strip(text), x, yPos)
+                    if (opts.maxWidth) doc.text(text, x, yPos, { maxWidth: opts.maxWidth })
+                    else doc.text(text, x, yPos)
                   }
                   const checkPage = (needed: number) => { if (y + needed > 275) { doc.addPage(); y = 20 } }
                   const drawLine = () => { doc.setDrawColor(200, 200, 200); doc.line(margin, y, w - margin, y); y += 6 }
@@ -416,7 +417,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
                   // Header
                   addText('AXIS Clinico', margin, y, { size: 16, style: 'bold', color: [30, 30, 80] })
                   y += 6
-                  addText('Relatorio de Sessao', margin, y, { size: 11, color: [100, 100, 100] })
+                  addText('Relatório de Sessão', margin, y, { size: 11, color: [100, 100, 100] })
                   y += 8
                   drawLine()
 
@@ -438,8 +439,8 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
                   y += 5
                   const dateStr = meta.session.date ? new Date(meta.session.date).toLocaleDateString('pt-BR') : '-'
                   const sessLabel = meta.session.number
-                    ? `Sessao: #${meta.session.number} - ${strip(dateStr)}`
-                    : `Sessao: ${strip(dateStr)}`
+                    ? `Sessão: #${meta.session.number} - ${dateStr}`
+                    : `Sessão: ${dateStr}`
                   addText(sessLabel, margin, y, { size: 10 })
                   y += 5
                   if (meta.session.duration) {
@@ -475,7 +476,7 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
                     checkPage(25)
                     addText(`${section.num}. ${section.title}`, margin, y, { size: 11, style: 'bold', color: [30, 30, 80] })
                     y += 6
-                    const lines = doc.splitTextToSize(strip(section.content.trim()), contentW)
+                    const lines = doc.splitTextToSize(section.content.trim(), contentW)
                     for (const line of lines) {
                       checkPage(6)
                       addText(line, margin, y, { size: 10 })
@@ -488,10 +489,10 @@ export default function ClinicalReport({ sessionId, hasTranscript, hasAnalysis, 
                   checkPage(25)
                   y += 5
                   drawLine()
-                  addText('Relatorio assistido por IA - conteudo revisado e aprovado pelo profissional responsavel.', margin, y, { size: 8, style: 'italic', color: [140, 140, 140] })
+                  addText('Relatório assistido por IA — conteúdo revisado e aprovado pelo profissional responsável.', margin, y, { size: 8, style: 'italic', color: [140, 140, 140] })
                   y += 5
                   const now = new Date()
-                  addText(`Exportado em: ${strip(now.toLocaleDateString('pt-BR'))} ${strip(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))}`, margin, y, { size: 8, color: [140, 140, 140] })
+                  addText(`Exportado em: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`, margin, y, { size: 8, color: [140, 140, 140] })
                   y += 4
                   addText('AXIS Clinico - axisclinico.com', margin, y, { size: 8, color: [140, 140, 140] })
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Target, Activity, Clock, TrendingUp, TrendingDown, Minus, AlertTriangle, Calendar, FileText, MessageSquare, Download } from 'lucide-react'
 import jsPDF from 'jspdf'
+import { setupPdfWithDejaVu } from '@/app/lib/pdf-helpers'
 
 interface EvolutionData {
   patient_name: string
@@ -89,23 +90,20 @@ export default function RelatorioPrintPage() {
     return `Maior frequência de ${labelMap[sorted[0][0]]} (${data.event_percentages[sorted[0][0] as keyof typeof data.event_percentages]}%), seguido por ${labelMap[sorted[1][0]]} (${data.event_percentages[sorted[1][0] as keyof typeof data.event_percentages]}%).`
   }
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     if (!data) return
-    const doc = new jsPDF()
+    const doc = new jsPDF({ subsetFonts: true })
+    await setupPdfWithDejaVu(doc)
     const w = doc.internal.pageSize.getWidth()
     const margin = 20
     const contentW = w - margin * 2
     let y = 20
 
-    // Helper: remove acentos para compatibilidade com fonte helvetica do jsPDF
-    const stripAccents = (text: string): string =>
-      text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
     // Helpers
     const addText = (text: string, x: number, yPos: number, opts: { size?: number; style?: string; color?: [number, number, number]; maxWidth?: number } = {}) => {
-      text = stripAccents(text)
       doc.setFontSize(opts.size || 10)
-      doc.setFont('helvetica', opts.style || 'normal')
+      doc.setFont('DejaVuSans', opts.style || 'normal')
       doc.setTextColor(...(opts.color || [51, 51, 51]))
       if (opts.maxWidth) {
         doc.text(text, x, yPos, { maxWidth: opts.maxWidth })
