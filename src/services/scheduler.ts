@@ -1,5 +1,6 @@
 import pool from '../database/db'
 import type { PoolClient } from 'pg'
+import * as Sentry from '@sentry/nextjs'
 
 let adminInitialized = false
 let adminInstance: any = null
@@ -121,6 +122,10 @@ export async function processScheduledReminders(): Promise<{ sent: number; faile
         totalSent += result.sent
         totalFailed += result.failed
       } catch (err) {
+        Sentry.captureException(err, {
+          tags: { scheduler: 'reminder_tenant_loop' },
+          fingerprint: ['scheduler-tenant-error', err instanceof Error ? err.message : String(err)],
+        })
         console.error(`[SCHEDULER] [${tenant_id}] Erro fatal no tenant:`, err)
         // best-effort: continua para os proximos tenants. Nao soma a
         // totalFailed porque nao sabemos quantos lembretes havia neste
@@ -128,6 +133,7 @@ export async function processScheduledReminders(): Promise<{ sent: number; faile
       }
     }
   } catch (error) {
+    Sentry.captureException(error)
     console.error('[SCHEDULER] Erro geral:', error)
   }
 
@@ -248,6 +254,10 @@ async function processRemindersForTenant(
         console.log(`[SCHEDULER] [${tenantId}] Lembrete ${reminder.id} falhou`)
       }
     } catch (err) {
+      Sentry.captureException(err, {
+        tags: { scheduler: 'reminder_per_reminder' },
+        fingerprint: ['scheduler-reminder-error', err instanceof Error ? err.message : String(err)],
+      })
       console.error(`[SCHEDULER] [${tenantId}] Erro no lembrete ${reminder.id}:`, err)
       failed++
     }
