@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error')
 
     if (error) {
+      Sentry.captureMessage('[ABA_GOOGLE_CALLBACK] OAuth error', { level: 'warning', tags: { oauth_error_code: error } })
       console.error('[ABA_GOOGLE_CALLBACK] Erro do Google:', error)
       return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=error')
     }
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text()
+      Sentry.captureMessage('[ABA_GOOGLE_CALLBACK] Token exchange failed', { level: 'error', extra: { body: errorData?.slice(0, 500) } })
       console.error('[ABA_GOOGLE_CALLBACK] Erro ao trocar código:', errorData)
       return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=token_error')
     }
@@ -78,6 +80,7 @@ export async function GET(request: NextRequest) {
     )
 
     if (profileResult.rows.length === 0) {
+      Sentry.captureMessage('[ABA_GOOGLE_CALLBACK] Profile not found for OAuth state', { level: 'warning', tags: { invariant: 'profile_not_found_for_state' } })
       console.error('[ABA_GOOGLE_CALLBACK] Profile não encontrado para userId:', state)
       return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=tenant_error')
     }

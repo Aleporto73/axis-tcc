@@ -1,4 +1,5 @@
 import Redis from 'ioredis'
+import * as Sentry from '@sentry/nextjs'
 
 // =====================================================
 // AXIS — Redis Client & Cache Helpers
@@ -49,6 +50,7 @@ function createClient(): Redis {
   })
 
   client.on('error', (err) => {
+    Sentry.captureException(err, { tags: { infra: 'redis' } })
     console.error('[AXIS REDIS] Erro:', err.message)
   })
 

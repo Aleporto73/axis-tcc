@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
 import { rateLimit } from '@/src/middleware/rate-limit'
+import * as Sentry from '@sentry/nextjs'
 
 // =====================================================
 // AXIS TDAH — API Pública: Portal Familia
@@ -48,6 +49,7 @@ async function validateToken(token: string) {
 
     // Guard: tenant_id obrigatorio pra setar GUC. Falha silenciosa se ausente.
     if (!td.tenant_id) {
+      Sentry.captureMessage('[PORTAL FAMILIA] Token without tenant_id', { level: 'warning', tags: { invariant: 'token_without_tenant', portal: 'familia' } })
       console.error('[PORTAL FAMILIA] Token sem tenant_id:', td.id)
       return null
     }

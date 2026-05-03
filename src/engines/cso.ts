@@ -2,6 +2,7 @@ import { PoolClient } from 'pg';
 import { ClinicalState, Event } from '../types';
 import crypto from 'crypto';
 import { z } from 'zod';
+import * as Sentry from '@sentry/nextjs';
 
 // Schema de validação do evento
 const EventSchema = z.object({
@@ -63,6 +64,7 @@ export async function processEvent(event: Event, client: PoolClient): Promise<Cl
   // Validação com Zod
   const validation = validateEvent(event);
   if (!validation.success) {
+    Sentry.captureException(validation.error, { tags: { validation: 'cso_event' } });
     console.error('[CSO] Evento inválido (Zod):', validation.error);
     return null;
   }

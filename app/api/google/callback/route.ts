@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error')
 
     if (error) {
+      Sentry.captureMessage('[GOOGLE_CALLBACK] OAuth error', { level: 'warning', tags: { oauth_error_code: error } })
       console.error('[GOOGLE_CALLBACK] Erro do Google:', error)
       return NextResponse.redirect(BASE_URL + '/configuracoes?google=error')
     }
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text()
+      Sentry.captureMessage('[GOOGLE_CALLBACK] Token exchange failed', { level: 'error', extra: { body: errorData?.slice(0, 500) } })
       console.error('[GOOGLE_CALLBACK] Erro ao trocar codigo:', errorData)
       return NextResponse.redirect(BASE_URL + '/configuracoes?google=token_error')
     }
@@ -62,6 +64,7 @@ export async function GET(request: NextRequest) {
     )
 
     if (profileResult.rows.length === 0) {
+      Sentry.captureMessage('[GOOGLE_CALLBACK] Profile not found for OAuth state', { level: 'warning', tags: { invariant: 'profile_not_found_for_state' } })
       console.error('[GOOGLE_CALLBACK] Profile nao encontrado para userId:', state)
       return NextResponse.redirect(BASE_URL + '/configuracoes?google=tenant_error')
     }

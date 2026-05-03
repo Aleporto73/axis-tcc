@@ -1,4 +1,5 @@
 import { Pool } from 'pg'
+import * as Sentry from '@sentry/nextjs'
 
 const pool = new Pool({
   host: process.env.DATABASE_HOST || 'localhost',
@@ -12,6 +13,7 @@ const pool = new Pool({
 })
 
 pool.on('error', (err) => {
+  Sentry.captureException(err, { tags: { infra: 'pool' } })
   console.error('[AXIS POOL] Erro inesperado:', err.message)
 })
 
