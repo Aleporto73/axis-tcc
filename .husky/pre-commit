@@ -6,3 +6,6 @@ set -e
 
 echo "-> validate-migrations"
 bash scripts/hooks/validate-migrations.sh
+
+echo "-> typecheck"
+npx tsc --noEmit --skipLibCheck
