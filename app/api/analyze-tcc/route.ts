@@ -5,6 +5,7 @@ import { handleRouteError } from '@/src/database/with-role'
 import { readTranscriptSmart } from '@/src/services/transcript-storage'
 import { rateLimit } from '@/src/middleware/rate-limit'
 import { getAnalyzeUsage, recordAnalyzeUsage } from '@/src/services/analyze-limit'
+import * as Sentry from '@sentry/nextjs'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -325,6 +326,7 @@ ${text}`
   } catch (error: any) {
     // ── 16) Catch AbortError (G7 timeout) ──
     if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR' || error?.message?.includes('aborted')) {
+      Sentry.captureMessage('[ANALYZE-TCC] OpenAI timeout', { level: 'error', tags: { provider: 'openai', operation: 'analyze-tcc', timeout_ms: OPENAI_TIMEOUT_MS } })
       console.error(`[ANALYZE-TCC] OpenAI timeout (${OPENAI_TIMEOUT_MS}ms)`)
       return NextResponse.json({
         error: 'OPENAI_TIMEOUT',

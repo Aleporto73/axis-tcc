@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withTenant, TenantContext } from '@/src/database/with-tenant'
 import { learnerFilter, sessionFilter, handleRouteError } from '@/src/database/with-role'
 import { cache } from '@/src/database/redis'
+import * as Sentry from '@sentry/nextjs'
 
 // =====================================================
 // AXIS ABA - Dashboard (Multi-Terapeuta)
@@ -37,6 +38,7 @@ async function fetchKPIs(ctx: TenantContext) {
   )
 
   if (!engineResult.rows[0]?.version) {
+    Sentry.captureMessage('[AXIS ABA] CRITICAL: No active engine_version', { level: 'error', tags: { critical: 'no_active_engine', module: 'aba' } })
     console.error('[AXIS ABA] CRITICAL: Nenhuma engine_version ativa encontrada.')
     return null // sinaliza erro
   }

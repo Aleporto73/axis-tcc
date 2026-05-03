@@ -4,6 +4,7 @@ import pool from '@/src/database/db'
 import { createSystemAlert } from '@/src/utils/system-alert'
 import { Resend } from 'resend'
 import { purchaseUpgradeTemplate, purchaseNewUserTemplate } from '@/src/email/purchase-template'
+import * as Sentry from '@sentry/nextjs'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const EMAIL_FROM_MAP: Record<string, string> = {
@@ -332,6 +333,7 @@ export async function POST(request: NextRequest) {
     const expectedHottok = process.env.HOTMART_HOTTOK
 
     if (!expectedHottok) {
+      Sentry.captureMessage('[HOTMART WEBHOOK] HOTMART_HOTTOK not configured', { level: 'error', tags: { misconfig: 'hotmart_hottok' } })
       console.error('[HOTMART WEBHOOK] HOTMART_HOTTOK não configurado no .env')
       return NextResponse.json({ error: 'Webhook não configurado' }, { status: 500 })
     }

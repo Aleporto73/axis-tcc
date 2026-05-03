@@ -7,6 +7,7 @@ import { readTranscriptSmart } from '@/src/services/transcript-storage'
 import { getTranscriptionUsage } from '@/src/services/transcription-limit'
 import { getAnalyzeUsage, recordAnalyzeUsage } from '@/src/services/analyze-limit'
 import type { PoolClient } from 'pg'
+import * as Sentry from '@sentry/nextjs'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -295,6 +296,7 @@ export async function POST(
 
     return result
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Erro ao gerar relatorio:', error)
     const { message, status } = handleRouteError(error)
     return NextResponse.json({ error: message }, { status })
@@ -493,6 +495,7 @@ ${text}`
       )
     } catch (auditErr) {
       // Audit/record falha NAO invalida o resultado da analise
+      Sentry.captureException(auditErr)
       console.error(`[ANALYZE-TCC-AUTO] ${logCtx} audit/record falhou:`, auditErr)
     }
 
@@ -503,8 +506,10 @@ ${text}`
     clearTimeout(timeoutId)
 
     if (err?.name === 'AbortError' || err?.code === 'ABORT_ERR' || err?.message?.includes('aborted')) {
+      Sentry.captureMessage('[ANALYZE-TCC-AUTO] OpenAI timeout', { level: 'error', tags: { provider: 'openai', operation: 'report-generate-auto', timeout_ms: RUN_TCC_TIMEOUT_MS } })
       console.error(`[ANALYZE-TCC-AUTO] ${logCtx} OpenAI timeout (${RUN_TCC_TIMEOUT_MS}ms)`)
     } else {
+      Sentry.captureException(err)
       console.error(`[ANALYZE-TCC-AUTO] ${logCtx} Auto-analise TCC falhou:`, err)
     }
     return fallback

@@ -4,6 +4,7 @@ import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 import { rateLimit } from '@/src/middleware/rate-limit'
 import { getAnalyzeUsage, recordAnalyzeUsage } from '@/src/services/analyze-limit'
+import * as Sentry from '@sentry/nextjs'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -240,6 +241,7 @@ Responda APENAS em JSON válido:
   } catch (error: any) {
     // ── 10) Catch AbortError (G7 timeout) ──
     if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR' || error?.message?.includes('aborted')) {
+      Sentry.captureMessage('[ANALYZE-CLINICAL] OpenAI timeout', { level: 'error', tags: { provider: 'openai', operation: 'analyze-clinical', timeout_ms: OPENAI_TIMEOUT_MS } })
       console.error(`[ANALYZE-CLINICAL] OpenAI timeout (${OPENAI_TIMEOUT_MS}ms)`)
       return NextResponse.json({
         error: 'OPENAI_TIMEOUT',
