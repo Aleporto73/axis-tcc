@@ -16,9 +16,11 @@ export default function TranscriptionUsageBar() {
   // Pago -> badge simples
   if (!data.is_free) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg">
-        <div className="w-2 h-2 rounded-full bg-green-500" />
-        <span className="text-xs text-green-700 font-medium">Transcricao ilimitada</span>
+      <div className="flex justify-end">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg">
+          <div className="w-2 h-2 rounded-full bg-green-500" />
+          <span className="text-xs text-green-700 font-medium">Transcrição ilimitada</span>
+        </div>
       </div>
     )
   }
@@ -33,7 +35,7 @@ export default function TranscriptionUsageBar() {
   return (
     <div className="px-3 py-2 bg-slate-50 rounded-lg">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-slate-500">Transcricao</span>
+        <span className="text-xs text-slate-500">Transcrição</span>
         <span className={`text-xs font-semibold ${isLimit ? 'text-red-600' : isWarning ? 'text-amber-600' : 'text-slate-600'}`}>
           {used}/{limit} min
         </span>

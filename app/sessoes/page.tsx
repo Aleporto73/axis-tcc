@@ -278,7 +278,7 @@ export default function SessoesPage() {
               <h1 className="text-lg font-normal text-slate-400 tracking-tight mb-0">Sessões</h1>
               <p className="text-xs text-slate-300 font-light">Histórico de sessões clínicas</p>
             </div>
-            <button onClick={() => setShowModal(true)} data-onboarding="new-session" className="flex items-center gap-2 px-5 py-2.5 bg-[#a2acb9]/20 text-[#344155] border border-[#a2acb9]/40 rounded-lg hover:bg-[#a2acb9]/30 transition-colors text-sm font-medium">
+            <button onClick={() => setShowModal(true)} data-onboarding="new-session" className="flex items-center gap-2 px-5 py-2.5 bg-tcc-accent text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
               Nova Sessão
             </button>
