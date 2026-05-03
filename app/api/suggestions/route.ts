@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import * as Sentry from '@sentry/nextjs'
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
       })
     })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('[AXIS] Erro ao buscar sugestoes:', error)
     const { message, status } = handleRouteError(error)
     if (status === 401 || status === 409) {

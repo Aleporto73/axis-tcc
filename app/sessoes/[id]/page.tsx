@@ -100,7 +100,13 @@ export default function SessaoDetalhesPage({ params }: { params: Promise<{ id: s
           setTranscriptionJob(data)
           setUploading(false)
         }
-      } catch (e) { Sentry.captureException(e); console.error('[POLLING] Erro:', e) }
+      } catch (e) {
+        Sentry.captureException(e, {
+          tags: { polling: 'transcription_status' },
+          fingerprint: ['polling-transcription-error', e instanceof Error ? e.message : String(e)],
+        })
+        console.error('[POLLING] Erro:', e)
+      }
     }, 5000)
   }
 
