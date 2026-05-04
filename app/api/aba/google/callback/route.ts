@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
 import { redactEmail } from '@/src/lib/log-redaction'
@@ -41,6 +42,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=missing_params')
     }
 
+    // Cross-check OAuth state contra auth().userId (Sub 2 Onda 8)
+    const { userId } = await auth()
+    if (!userId || userId !== state) {
+      console.warn('[ABA_GOOGLE_CALLBACK] state mismatch:', { hasUserId: !!userId, stateLen: state?.length })
+      return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=state_mismatch')
+    }
+
     // Trocar código por tokens
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -72,6 +80,7 @@ export async function GET(request: NextRequest) {
     console.log('[ABA_GOOGLE_CALLBACK] Usuário Google:', redactEmail(userInfo.email))
 
     // Resolver profile via clerk_user_id (multi-terapeuta)
+    // OAuth state ja validado contra auth().userId acima
     const profileResult = await pool.query(
       `SELECT p.id AS profile_id, p.tenant_id, p.role, p.name
        FROM profiles p

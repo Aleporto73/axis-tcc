@@ -9,11 +9,10 @@ const isPublicRoute = createRouteMatcher([
   '/api/health',
   // Sentry tunnelRoute (configurado em next.config.ts) - rota de proxy ingest sem Clerk auth
   '/monitoring(.*)',
-  // APIs internas - liberadas para desenvolvimento
+  // APIs com auth interna (Clerk via withTenant, CRON_SECRET, ou push_auth_token)
   '/api/push/(.*)',
   '/api/cron/(.*)',
   '/api/patient/(.*)',
-  '/api/sessions/(.*)/finish',
   // Google OAuth callback e webhook
   '/api/google/callback',
   '/api/google/webhook',

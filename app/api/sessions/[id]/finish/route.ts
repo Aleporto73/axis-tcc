@@ -11,10 +11,10 @@ import { getSessionDuration } from '@/src/services/session-duration'
 // AXIS TCC — Finalizar Sessão + Pipeline CSO
 // Migration: withTenant (Auditoria TCC P0)
 //
-// Nota: rota marcada como pública no middleware para
-// permitir finish de sessão mesmo com token expirado.
-// withTenant faz auth check internamente — se falhar,
-// retorna 401 corretamente.
+// Auth: rota privada (Clerk middleware aplica auth.protect()
+// + withTenant faz double-check interno). Defense-in-depth
+// restaurada na Onda 8 / TCC-02 (Sessão 2A) — antes era
+// pública no middleware com fallback no withTenant.
 //
 // Pipeline: Session -> Event -> CSO -> Suggestion -> Audit
 // =====================================================

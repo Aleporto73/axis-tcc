@@ -12,7 +12,7 @@ export async function POST(
     return await withTenant(async (ctx) => {
       // Verificar se paciente existe
       const patientResult = await ctx.client.query(
-        'SELECT id, full_name, push_auth_token FROM patients WHERE id = $1 AND tenant_id = $2',
+        'SELECT id, full_name, push_auth_token, push_auth_token_expires_at FROM patients WHERE id = $1 AND tenant_id = $2',
         [patientId, ctx.tenantId]
       )
       if (patientResult.rows.length === 0) {
@@ -21,12 +21,18 @@ export async function POST(
 
       const patient = patientResult.rows[0]
 
-      // Gerar novo token ou usar existente
+      // Reusa token existente se ainda valido; senao gera novo (TTL 30 dias)
+      const tokenExpired =
+        patient.push_auth_token_expires_at &&
+        new Date(patient.push_auth_token_expires_at) < new Date()
       let authToken = patient.push_auth_token
-      if (!authToken) {
+      if (!authToken || tokenExpired) {
         authToken = randomBytes(32).toString('hex')
         await ctx.client.query(
-          'UPDATE patients SET push_auth_token = $1 WHERE id = $2',
+          `UPDATE patients
+           SET push_auth_token = $1,
+               push_auth_token_expires_at = NOW() + INTERVAL '30 days'
+           WHERE id = $2`,
           [authToken, patientId]
         )
       }

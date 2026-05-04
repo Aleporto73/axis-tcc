@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import { rateLimit } from '@/src/middleware/rate-limit'
+
+const PUSH_SUBSCRIBE_RATE_LIMIT = { limit: 30, windowMs: 60_000, prefix: 'push-subscribe' }
 
 export async function POST(request: NextRequest) {
   try {
+    const blocked = await rateLimit(request, PUSH_SUBSCRIBE_RATE_LIMIT)
+    if (blocked) return blocked
+
     return await withTenant(async (ctx) => {
       const { subscription } = await request.json()
 

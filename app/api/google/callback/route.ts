@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
 
@@ -24,6 +25,13 @@ export async function GET(request: NextRequest) {
 
     if (!code || !state) {
       return NextResponse.redirect(BASE_URL + '/configuracoes?google=missing_params')
+    }
+
+    // Cross-check OAuth state contra auth().userId (Sub 2 Onda 8)
+    const { userId } = await auth()
+    if (!userId || userId !== state) {
+      console.warn('[GOOGLE_CALLBACK] state mismatch:', { hasUserId: !!userId, stateLen: state?.length })
+      return NextResponse.redirect(BASE_URL + '/configuracoes?google=state_mismatch')
     }
 
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -54,7 +62,7 @@ export async function GET(request: NextRequest) {
     const userInfo = await userInfoResponse.json()
 
     // Resolver profile via clerk_user_id (multi-tenant safe)
-    // OAuth callback: state = clerk_user_id, sem cookies de sessao
+    // OAuth callback: state = clerk_user_id, ja validado contra auth().userId acima
     const profileResult = await pool.query(
       `SELECT p.id AS profile_id, p.tenant_id
        FROM profiles p
