@@ -5,6 +5,7 @@ import { createSystemAlert } from '@/src/utils/system-alert'
 import { Resend } from 'resend'
 import { purchaseUpgradeTemplate, purchaseNewUserTemplate } from '@/src/email/purchase-template'
 import * as Sentry from '@sentry/nextjs'
+import { redactEmail } from '@/src/lib/log-redaction'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const EMAIL_FROM_MAP: Record<string, string> = {
@@ -114,7 +115,7 @@ async function provisionNewBuyer(
 
     if (existingUsers.data.length > 0) {
       const clerkUserId = existingUsers.data[0].id
-      console.log('[HOTMART PROVISION] Clerk user já existe:', clerkUserId, email)
+      console.log('[HOTMART PROVISION] Clerk user já existe:', clerkUserId, redactEmail(email))
 
       // Verificar se esse Clerk user já tem tenant (evita duplicação)
       const existingTenant = await dbClient.query(
@@ -215,7 +216,7 @@ async function provisionNewBuyer(
       },
     })
 
-    console.log('[HOTMART PROVISION] Invitation enviada para:', email)
+    console.log('[HOTMART PROVISION] Invitation enviada para:', redactEmail(email))
   } catch (invErr: any) {
     // Se invitation falhar (ex: email já convidado), não é bloqueante
     // O profile pendente será criado de qualquer forma
@@ -359,11 +360,11 @@ export async function POST(request: NextRequest) {
     const purchase = body.data?.purchase
     const subscription = body.data?.subscription
 
-    console.log('[HOTMART WEBHOOK] Evento recebido:', event, '| Produto:', product?.id, '| Buyer:', buyer?.email)
+    console.log('[HOTMART WEBHOOK] Evento recebido:', event, '| Produto:', product?.id, '| Buyer:', redactEmail(buyer?.email))
 
     // 3. Validar campos obrigatórios
     if (!event || !product?.id || !buyer?.email) {
-      console.warn('[HOTMART WEBHOOK] Payload incompleto:', { event, product_id: product?.id, email: buyer?.email })
+      console.warn('[HOTMART WEBHOOK] Payload incompleto:', { event, product_id: product?.id, email: redactEmail(buyer?.email) })
       return NextResponse.json({ error: 'Payload incompleto' }, { status: 400 })
     }
 
@@ -409,7 +410,7 @@ export async function POST(request: NextRequest) {
     if (tenantResult.rows.length === 0) {
       // ─── AUTO-PROVISIONING ───
       if (!ACTIVATE_EVENTS.has(event)) {
-        console.warn('[HOTMART WEBHOOK] Deactivate para buyer inexistente:', buyerEmail)
+        console.warn('[HOTMART WEBHOOK] Deactivate para buyer inexistente:', redactEmail(buyerEmail))
         return NextResponse.json({ status: 'ignored', reason: 'no_tenant_for_deactivation', email: buyerEmail })
       }
 

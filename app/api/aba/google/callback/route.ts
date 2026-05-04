@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
+import { redactEmail } from '@/src/lib/log-redaction'
 
 // =====================================================
 // AXIS ABA — Google Calendar OAuth Callback
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
       headers: { Authorization: 'Bearer ' + access_token },
     })
     const userInfo = await userInfoResponse.json()
-    console.log('[ABA_GOOGLE_CALLBACK] Usuário Google:', userInfo.email)
+    console.log('[ABA_GOOGLE_CALLBACK] Usuário Google:', redactEmail(userInfo.email))
 
     // Resolver profile via clerk_user_id (multi-terapeuta)
     const profileResult = await pool.query(

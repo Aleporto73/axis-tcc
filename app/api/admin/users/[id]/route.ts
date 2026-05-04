@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdmin } from '../../guard'
 import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
+import { redactEmail } from '@/src/lib/log-redaction'
 
 // =====================================================
 // GET  /api/admin/users/[tenantId]  — detalhes completos
@@ -236,7 +237,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     await client.query('COMMIT')
 
-    console.log('[ADMIN DELETE LGPD]', { tenantId, admin: check.email })
+    console.log('[ADMIN DELETE LGPD]', { tenantId, admin: redactEmail(check.email) })
 
     return NextResponse.json({ success: true, deleted_tenant: tenantId })
   } catch (error) {

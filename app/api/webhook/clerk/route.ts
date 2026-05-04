@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Webhook } from 'svix'
 import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
+import { redactEmail } from '@/src/lib/log-redaction'
 
 // =====================================================
 // AXIS — Clerk Webhook
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       if (pendingProfiles.rows.length === 0) {
         // ─── AUTO-PROVISIONING: cadastro direto (sem compra Hotmart) ───
         // Cria tenant + profile + licenças FREE para TCC e ABA
-        console.log('[CLERK WEBHOOK] Nenhum profile pendente, auto-provisioning FREE:', email)
+        console.log('[CLERK WEBHOOK] Nenhum profile pendente, auto-provisioning FREE:', redactEmail(email))
 
         const userName = [event.data.first_name, event.data.last_name].filter(Boolean).join(' ') || email.split('@')[0]
         const now = new Date()
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
 
           await client.query('COMMIT')
 
-          console.log('[CLERK WEBHOOK] Tenant+profile provisioned (sem licenças):', { email, clerkUserId, tenantId })
+          console.log('[CLERK WEBHOOK] Tenant+profile provisioned (sem licenças):', { email: redactEmail(email), clerkUserId, tenantId })
 
           return NextResponse.json({
             status: 'provisioned',
@@ -193,7 +194,7 @@ export async function POST(req: NextRequest) {
         activatedTenants.push(tenantId)
       }
 
-      console.log('[CLERK WEBHOOK] Profiles ativados:', { email, clerkUserId, count: activatedTenants.length })
+      console.log('[CLERK WEBHOOK] Profiles ativados:', { email: redactEmail(email), clerkUserId, count: activatedTenants.length })
 
       return NextResponse.json({
         status: 'activated',
