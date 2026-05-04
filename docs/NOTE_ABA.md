@@ -28,26 +28,15 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 
 ### Bugs de produto (descobertos na Fase 2)
 
-- [ ] **Bug GCal sync ABA — não propaga `declared_site_id` / `service_mode`**
-  (descoberto 17/04 noite). Em `app/api/aba/google/sync/route.ts:172-190`
-  o INSERT de nova sessão via sync não passa `declared_site_id` nem
-  `service_mode`. Tenant operadora que importa sessão via Google Calendar
-  fica com sessão "cega" de GPS → integrity scanner flaga `MISSING_GEO`.
-  Regrediu com o Local dropdown aplicado hoje. Fix: quando o evento GCal
-  tem `location` string, tentar match por `site_name` em `service_sites`
-  ativos do tenant (ILIKE) e popular `declared_site_id` + derivar
-  `service_mode`. Sem match → manter NULL (free tier) ou flag dedicado
-  `UNMATCHED_GCAL_LOCATION` (operadora). Esforço ~1-2h.
+- [x] **CORRIGIDO (Onda 8 Bloco 0 — 03/05/2026):** ~~Bug GCal sync ABA — não propaga `declared_site_id` / `service_mode`~~
+  (descoberto 17/04 noite). ~~Em `app/api/aba/google/sync/route.ts:172-190` o INSERT de nova sessão via sync não passa `declared_site_id` nem `service_mode`.~~
 
-- [ ] **Bug GCal sync ABA — match por `guardians.email` falha silencioso**
-  (descoberto 17/04 noite). `app/api/aba/google/sync/route.ts:97-129`
-  tenta match do `attendee.email` contra `guardians.email` → se não
-  bater, evento é skipado (`skipped++` linha 194) sem notificação ao
-  terapeuta. Clínicas perdem sessões importadas sem saber. Fix: expor
-  lista de "eventos não importados" no retorno do endpoint + UI que
-  mostre "X eventos não foram importados por falta de match — revisar
-  emails dos responsáveis". Esforço ~2h (backend simples + UI na
-  página de sync). Complementa o bug acima.
+  **Validação empírica:** já corrigido — INSERT atual (linhas 185-208) inclui `declared_site_id`, `service_mode` e `location`. Comentário "Bug 1 fix" presente na linha 178-180 do código. `matchSiteByLocation` usado para derivar site automaticamente.
+
+- [x] **CORRIGIDO (Onda 8 Bloco 0 — 03/05/2026):** ~~Bug GCal sync ABA — match por `guardians.email` falha silencioso~~
+  (descoberto 17/04 noite). ~~`app/api/aba/google/sync/route.ts:97-129` tenta match do `attendee.email` contra `guardians.email` → se não encontrar, evento é ignorado silenciosamente.~~
+
+  **Validação empírica:** já corrigido — array `unmatched` retornado no JSON da resposta da API (linhas 264-268) com `summary`, `attendee_emails`, `scheduled_at` por evento não matched. Audit log inclui `unmatched_count` (linhas 244-258). Comentário "Bug 2 fix" linhas 211-213.
 
 - [ ] **Portal família ABA não mostra resumos** — rota `/api/familia/[token]`
   filtra `source_module = 'tdah'` (linha 150). Mesmo com schema corrigido,
