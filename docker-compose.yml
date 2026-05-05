@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: axis
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-AxisTcc2026!}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD env var required - set via export or .env file}
       POSTGRES_DB: axis_tcc
     volumes:
       - postgres_data:/var/lib/postgresql/data
