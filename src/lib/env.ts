@@ -41,7 +41,7 @@ const envSchema = z.object({
   // Híbrido (Onda 8): opcional. Endurecer em Onda 9+ após confirmar setado na VPS.
   RESEND_API_KEY: z.string().optional(),
 
-  // Cron + Internal (obrigatório em prod com tamanho mínimo)
+  // Cron (obrigatório em prod) + Internal (opcional, ver comentário abaixo)
   CRON_SECRET: isProd ? z.string().min(32) : z.string().default('dev-cron-secret-change-me'),
   // Híbrido (Onda 8): opcional. Endurecer em Onda 9+ após confirmar setado na VPS.
   INTERNAL_API_KEY: z.string().optional(),
@@ -82,7 +82,6 @@ if (!parsed.success) {
   }
 }
 
-// eslint-disable-next-line
 export const env = parsed.success ? parsed.data : (process.env as any)
 
 // Helper para code review
