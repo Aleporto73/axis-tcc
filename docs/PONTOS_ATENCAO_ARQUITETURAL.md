@@ -61,7 +61,25 @@ Alê (gestor de dev). Refatoração só com aprovação explícita.
 
 ---
 
-## HUB-05 — calendar_connections sem RLS forced
+## HUB-05.A (FECHADO) + HUB-05.B (Onda 10): RLS calendar_connections + events
+
+> **STATUS PARCIAL: events resolvido em 05/05/2026 (Onda 9 G.1). calendar_connections adiado para Onda 10 (HUB-05.B).**
+>
+> **Decisão consciente:** RLS forced em calendar_connections exige refator prévio de 5 rotas runtime (cron renew-webhook, webhook Google TCC + ABA, OAuth callback TCC + ABA, sessions/create createGoogleCalendarEvent). Risco de quebrar feature Google Calendar durante deploy. Sem urgência real (HUB-05 é defesa em profundidade — Clerk auth + queries com WHERE tenant_id já fazem o trabalho hoje, RLS seria reforço).
+>
+> **Onda 10 — sessão dedicada (CC novo + chat novo):**
+> - G.2: refator 5 rotas para usar withTenant ou pattern S3 (DISTINCT tenant_id antes de set_config)
+> - G.3: migration 069 RLS forced em calendar_connections
+> - Esforço estimado: 4-6h
+>
+> **Prioridade Onda 10:**
+> 1. HUB-09 (baseline migration via pg_dump --schema-only) — bloqueia E2E
+> 2. HUB-05.B (refator + RLS calendar_connections)
+> 3. Bloco E Playwright nightly (depende de HUB-09)
+>
+> Histórico abaixo preservado para contexto.
+>
+> ---
 
 ### Estado atual
 
