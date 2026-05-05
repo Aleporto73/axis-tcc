@@ -28,27 +28,27 @@ const envSchema = z.object({
   // Clerk Auth (obrigatório em prod)
   CLERK_SECRET_KEY: isProd ? z.string().startsWith('sk_') : z.string().default('sk_test_placeholder'),
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: isProd ? z.string().startsWith('pk_') : z.string().default('pk_test_placeholder'),
-  // Híbrido (Onda 8): opcional. Endurecer em Onda 9+ após confirmar setado na VPS.
-  CLERK_WEBHOOK_SECRET: z.string().optional(),
+  // Endurecido (Onda 9): confirmado em prod (38 chars, prefix whse_).
+  CLERK_WEBHOOK_SECRET: isProd ? z.string().min(20) : z.string().optional(),
 
   // Google OAuth (obrigatório em prod)
   GOOGLE_CLIENT_ID: isProd ? z.string().min(20) : z.string().default(''),
   GOOGLE_CLIENT_SECRET: isProd ? z.string().min(20) : z.string().default(''),
 
   // External APIs (opcional em dev)
-  // Híbrido (Onda 8): opcional. Endurecer em Onda 9+ após confirmar setado na VPS.
-  OPENAI_API_KEY: z.string().optional(),
-  // Híbrido (Onda 8): opcional. Endurecer em Onda 9+ após confirmar setado na VPS.
-  RESEND_API_KEY: z.string().optional(),
+  // Endurecido (Onda 9): confirmado em prod (164 chars, prefix sk-p...).
+  OPENAI_API_KEY: isProd ? z.string().startsWith('sk-') : z.string().optional(),
+  // Endurecido (Onda 9): confirmado em prod (36 chars, prefix re_).
+  RESEND_API_KEY: isProd ? z.string().startsWith('re_') : z.string().optional(),
 
   // Cron (obrigatório em prod) + Internal (opcional, ver comentário abaixo)
   CRON_SECRET: isProd ? z.string().min(32) : z.string().default('dev-cron-secret-change-me'),
-  // Híbrido (Onda 8): opcional. Endurecer em Onda 9+ após confirmar setado na VPS.
-  INTERNAL_API_KEY: z.string().optional(),
+  // Endurecido (Onda 9): confirmado em prod (26 chars). min(20) escolhido por chave real ter 26 chars.
+  INTERNAL_API_KEY: isProd ? z.string().min(20) : z.string().optional(),
 
   // Hotmart (opcional em dev)
-  // Híbrido (Onda 8): opcional. Endurecer em Onda 9+ após confirmar setado na VPS.
-  HOTMART_HOTTOK: z.string().optional(),
+  // Endurecido (Onda 9): confirmado em prod (66 chars).
+  HOTMART_HOTTOK: isProd ? z.string().min(8) : z.string().optional(),
 
   // Sentry (opcional)
   SENTRY_DSN: z.string().optional(),

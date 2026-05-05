@@ -139,5 +139,85 @@ describe('env validation — Onda 8 Sessão 3', () => {
       expect(env.NODE_ENV).toBe('production')
       expect(env.DATABASE_PASSWORD).toBe('StrongPasswd2026!')
     })
+
+    it('falha em prod com OPENAI_API_KEY sem prefix sk-', async () => {
+      mutEnv.NODE_ENV = 'production'
+      mutEnv.DATABASE_PASSWORD = 'StrongPasswd2026!'
+      mutEnv.CLERK_SECRET_KEY = 'sk_live_abc123def456'
+      mutEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_live_abc123def456'
+      mutEnv.CLERK_WEBHOOK_SECRET = 'whsec_a_secret_with_more_than_20_chars'
+      mutEnv.GOOGLE_CLIENT_ID = 'a-very-long-google-client-id-string'
+      mutEnv.GOOGLE_CLIENT_SECRET = 'a-very-long-google-client-secret-string'
+      mutEnv.OPENAI_API_KEY = 'invalid-no-prefix'
+      mutEnv.RESEND_API_KEY = 're_resend-key-example'
+      mutEnv.CRON_SECRET = 'a'.repeat(32)
+      mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
+      mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
+    })
+
+    it('falha em prod com RESEND_API_KEY sem prefix re_', async () => {
+      mutEnv.NODE_ENV = 'production'
+      mutEnv.DATABASE_PASSWORD = 'StrongPasswd2026!'
+      mutEnv.CLERK_SECRET_KEY = 'sk_live_abc123def456'
+      mutEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_live_abc123def456'
+      mutEnv.CLERK_WEBHOOK_SECRET = 'whsec_a_secret_with_more_than_20_chars'
+      mutEnv.GOOGLE_CLIENT_ID = 'a-very-long-google-client-id-string'
+      mutEnv.GOOGLE_CLIENT_SECRET = 'a-very-long-google-client-secret-string'
+      mutEnv.OPENAI_API_KEY = 'sk-openai-key-example'
+      mutEnv.RESEND_API_KEY = 'invalid-no-prefix'
+      mutEnv.CRON_SECRET = 'a'.repeat(32)
+      mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
+      mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
+    })
+
+    it('falha em prod com CLERK_WEBHOOK_SECRET menor que 20 chars', async () => {
+      mutEnv.NODE_ENV = 'production'
+      mutEnv.DATABASE_PASSWORD = 'StrongPasswd2026!'
+      mutEnv.CLERK_SECRET_KEY = 'sk_live_abc123def456'
+      mutEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_live_abc123def456'
+      mutEnv.CLERK_WEBHOOK_SECRET = 'short'
+      mutEnv.GOOGLE_CLIENT_ID = 'a-very-long-google-client-id-string'
+      mutEnv.GOOGLE_CLIENT_SECRET = 'a-very-long-google-client-secret-string'
+      mutEnv.OPENAI_API_KEY = 'sk-openai-key-example'
+      mutEnv.RESEND_API_KEY = 're_resend-key-example'
+      mutEnv.CRON_SECRET = 'a'.repeat(32)
+      mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
+      mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
+    })
+
+    it('falha em prod com INTERNAL_API_KEY menor que 20 chars', async () => {
+      mutEnv.NODE_ENV = 'production'
+      mutEnv.DATABASE_PASSWORD = 'StrongPasswd2026!'
+      mutEnv.CLERK_SECRET_KEY = 'sk_live_abc123def456'
+      mutEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_live_abc123def456'
+      mutEnv.CLERK_WEBHOOK_SECRET = 'whsec_a_secret_with_more_than_20_chars'
+      mutEnv.GOOGLE_CLIENT_ID = 'a-very-long-google-client-id-string'
+      mutEnv.GOOGLE_CLIENT_SECRET = 'a-very-long-google-client-secret-string'
+      mutEnv.OPENAI_API_KEY = 'sk-openai-key-example'
+      mutEnv.RESEND_API_KEY = 're_resend-key-example'
+      mutEnv.CRON_SECRET = 'a'.repeat(32)
+      mutEnv.INTERNAL_API_KEY = 'short'
+      mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
+    })
+
+    it('falha em prod com HOTMART_HOTTOK menor que 8 chars', async () => {
+      mutEnv.NODE_ENV = 'production'
+      mutEnv.DATABASE_PASSWORD = 'StrongPasswd2026!'
+      mutEnv.CLERK_SECRET_KEY = 'sk_live_abc123def456'
+      mutEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_live_abc123def456'
+      mutEnv.CLERK_WEBHOOK_SECRET = 'whsec_a_secret_with_more_than_20_chars'
+      mutEnv.GOOGLE_CLIENT_ID = 'a-very-long-google-client-id-string'
+      mutEnv.GOOGLE_CLIENT_SECRET = 'a-very-long-google-client-secret-string'
+      mutEnv.OPENAI_API_KEY = 'sk-openai-key-example'
+      mutEnv.RESEND_API_KEY = 're_resend-key-example'
+      mutEnv.CRON_SECRET = 'a'.repeat(32)
+      mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
+      mutEnv.HOTMART_HOTTOK = 'short'
+      await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
+    })
   })
 })
