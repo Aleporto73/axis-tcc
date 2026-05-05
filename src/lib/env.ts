@@ -25,6 +25,12 @@ const envSchema = z.object({
   DATABASE_NAME: z.string().default('axis_tcc'),
   DATABASE_PASSWORD: isProd ? z.string().min(8) : z.string().default('AxisTcc2026!'),
 
+  // Tenant fallback (rota /api/demo)
+  DEFAULT_TENANT_ID: z.string().optional(),
+
+  // Pgcrypto encryption key (server-side, criptografia em tabelas)
+  AXIS_ENCRYPTION_KEY: isProd ? z.string().min(20) : z.string().optional(),
+
   // Clerk Auth (obrigatório em prod)
   CLERK_SECRET_KEY: isProd ? z.string().startsWith('sk_') : z.string().default('sk_test_placeholder'),
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: isProd ? z.string().startsWith('pk_') : z.string().default('pk_test_placeholder'),
@@ -34,21 +40,36 @@ const envSchema = z.object({
   // Google OAuth (obrigatório em prod)
   GOOGLE_CLIENT_ID: isProd ? z.string().min(20) : z.string().default(''),
   GOOGLE_CLIENT_SECRET: isProd ? z.string().min(20) : z.string().default(''),
+  // Google OAuth — redirect/webhook URLs
+  GOOGLE_REDIRECT_URI: isProd ? z.string().url() : z.string().optional(),
+  GOOGLE_REDIRECT_URI_ABA: z.string().url().optional(),
+  GOOGLE_WEBHOOK_URL_ABA: z.string().url().optional(),
 
   // External APIs (opcional em dev)
   // Endurecido (Onda 9): confirmado em prod (164 chars, prefix sk-p...).
   OPENAI_API_KEY: isProd ? z.string().startsWith('sk-') : z.string().optional(),
   // Endurecido (Onda 9): confirmado em prod (36 chars, prefix re_).
   RESEND_API_KEY: isProd ? z.string().startsWith('re_') : z.string().optional(),
+  // Resend — display names + admin email (opcionais; código tem fallbacks)
+  RESEND_FROM: z.string().optional(),
+  RESEND_FROM_TCC: z.string().optional(),
+  RESEND_FROM_TDAH: z.string().optional(),
+  RESEND_ADMIN_EMAIL: isProd ? z.string().email().optional() : z.string().optional(),
 
   // Cron (obrigatório em prod) + Internal (opcional, ver comentário abaixo)
   CRON_SECRET: isProd ? z.string().min(32) : z.string().default('dev-cron-secret-change-me'),
+  // Cron secret antigo (durante rotação)
+  CRON_SECRET_OLD: z.string().optional(),
   // Endurecido (Onda 9): confirmado em prod (26 chars). min(20) escolhido por chave real ter 26 chars.
   INTERNAL_API_KEY: isProd ? z.string().min(20) : z.string().optional(),
 
   // Hotmart (opcional em dev)
   // Endurecido (Onda 9): confirmado em prod (66 chars).
   HOTMART_HOTTOK: isProd ? z.string().min(8) : z.string().optional(),
+
+  // Firebase Admin SDK (server-side, push notifications)
+  FIREBASE_PRIVATE_KEY: isProd ? z.string().min(20) : z.string().optional(),
+  FIREBASE_CLIENT_EMAIL: isProd ? z.string().email() : z.string().optional(),
 
   // Sentry (opcional)
   SENTRY_DSN: z.string().optional(),
@@ -58,6 +79,8 @@ const envSchema = z.object({
   // ASR
   ASR_SERVICE_URL: z.string().url().default('http://localhost:8000/v1/audio/transcriptions'),
   TRANSCRIPT_DIR: z.string().default('/var/lib/axis/transcripts'),
+  // Diretório de uploads de áudio (server-side)
+  AUDIO_UPLOAD_DIR: z.string().default('/var/lib/axis/audio'),
 
   // App URL
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),

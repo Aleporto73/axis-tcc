@@ -135,6 +135,10 @@ describe('env validation — Onda 8 Sessão 3', () => {
       mutEnv.CRON_SECRET = 'a'.repeat(32)
       mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
       mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      mutEnv.AXIS_ENCRYPTION_KEY = 'encryption-key-with-more-than-20-chars'
+      mutEnv.GOOGLE_REDIRECT_URI = 'https://axisclinico.com/api/google/callback'
+      mutEnv.FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----test-with-more-than-20-chars'
+      mutEnv.FIREBASE_CLIENT_EMAIL = 'firebase-admin@test.iam.gserviceaccount.com'
       const { env } = await import('../env')
       expect(env.NODE_ENV).toBe('production')
       expect(env.DATABASE_PASSWORD).toBe('StrongPasswd2026!')
@@ -153,6 +157,10 @@ describe('env validation — Onda 8 Sessão 3', () => {
       mutEnv.CRON_SECRET = 'a'.repeat(32)
       mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
       mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      mutEnv.AXIS_ENCRYPTION_KEY = 'encryption-key-with-more-than-20-chars'
+      mutEnv.GOOGLE_REDIRECT_URI = 'https://axisclinico.com/api/google/callback'
+      mutEnv.FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----test-with-more-than-20-chars'
+      mutEnv.FIREBASE_CLIENT_EMAIL = 'firebase-admin@test.iam.gserviceaccount.com'
       await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
     })
 
@@ -169,6 +177,10 @@ describe('env validation — Onda 8 Sessão 3', () => {
       mutEnv.CRON_SECRET = 'a'.repeat(32)
       mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
       mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      mutEnv.AXIS_ENCRYPTION_KEY = 'encryption-key-with-more-than-20-chars'
+      mutEnv.GOOGLE_REDIRECT_URI = 'https://axisclinico.com/api/google/callback'
+      mutEnv.FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----test-with-more-than-20-chars'
+      mutEnv.FIREBASE_CLIENT_EMAIL = 'firebase-admin@test.iam.gserviceaccount.com'
       await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
     })
 
@@ -185,6 +197,10 @@ describe('env validation — Onda 8 Sessão 3', () => {
       mutEnv.CRON_SECRET = 'a'.repeat(32)
       mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
       mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      mutEnv.AXIS_ENCRYPTION_KEY = 'encryption-key-with-more-than-20-chars'
+      mutEnv.GOOGLE_REDIRECT_URI = 'https://axisclinico.com/api/google/callback'
+      mutEnv.FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----test-with-more-than-20-chars'
+      mutEnv.FIREBASE_CLIENT_EMAIL = 'firebase-admin@test.iam.gserviceaccount.com'
       await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
     })
 
@@ -201,6 +217,10 @@ describe('env validation — Onda 8 Sessão 3', () => {
       mutEnv.CRON_SECRET = 'a'.repeat(32)
       mutEnv.INTERNAL_API_KEY = 'short'
       mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      mutEnv.AXIS_ENCRYPTION_KEY = 'encryption-key-with-more-than-20-chars'
+      mutEnv.GOOGLE_REDIRECT_URI = 'https://axisclinico.com/api/google/callback'
+      mutEnv.FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----test-with-more-than-20-chars'
+      mutEnv.FIREBASE_CLIENT_EMAIL = 'firebase-admin@test.iam.gserviceaccount.com'
       await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
     })
 
@@ -217,6 +237,10 @@ describe('env validation — Onda 8 Sessão 3', () => {
       mutEnv.CRON_SECRET = 'a'.repeat(32)
       mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
       mutEnv.HOTMART_HOTTOK = 'short'
+      mutEnv.AXIS_ENCRYPTION_KEY = 'encryption-key-with-more-than-20-chars'
+      mutEnv.GOOGLE_REDIRECT_URI = 'https://axisclinico.com/api/google/callback'
+      mutEnv.FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----test-with-more-than-20-chars'
+      mutEnv.FIREBASE_CLIENT_EMAIL = 'firebase-admin@test.iam.gserviceaccount.com'
       await expect(import('../env')).rejects.toThrow(/Env validation failed in production/)
     })
   })
