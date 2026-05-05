@@ -40,6 +40,11 @@ jobs:
 
       - run: npx tsc --noEmit
 
+      - name: Env validation
+        run: npx tsx src/lib/env.ts
+        env:
+          NODE_ENV: development
+
   test:
     name: Tests (Vitest)
     runs-on: ubuntu-latest
