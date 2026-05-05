@@ -97,3 +97,42 @@ jobs:
       - run: npm ci
 
       - run: npm run next:build
+
+  smoke:
+    name: Smoke (Postgres real + cron jobs SQL)
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, test]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: axis
+          POSTGRES_PASSWORD: smoketest
+          POSTGRES_DB: axis_tcc
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: axis
+      PGPASSWORD: smoketest
+      PGDATABASE: axis_tcc
+      PGOPTIONS: "-c app.encryption_key=smoketest_key"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply migrations (TCP, ordenadas)
+        run: |
+          for f in scripts/migrations/*.sql; do
+            echo "Applying $f"
+            psql -v ON_ERROR_STOP=1 -f "$f"
+          done
+      - name: Smoke cron jobs SQL ABA
+        run: |
+          psql -v ON_ERROR_STOP=1 -f scripts/jobs/check_expiration.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/jobs/expire_attestations.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/jobs/purge_geo.sql
