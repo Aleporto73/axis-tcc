@@ -71,11 +71,21 @@ jobs:
       REDIS_URL: ""
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
       CLERK_SECRET_KEY: "sk_test_placeholder"
-      GOOGLE_CLIENT_ID: "placeholder"
-      GOOGLE_CLIENT_SECRET: "placeholder"
+      GOOGLE_CLIENT_ID: "ci-google-client-id-placeholder-12345"
+      GOOGLE_CLIENT_SECRET: "ci-google-client-secret-placeholder-12345"
       DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
       NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder"
+      DATABASE_PASSWORD: "ci-placeholder"
+      AXIS_ENCRYPTION_KEY: "ci-encryption-key-placeholder-12345"
+      CLERK_WEBHOOK_SECRET: "whsec_ci_placeholder_12345"
+      GOOGLE_REDIRECT_URI: "https://ci.example.com/api/google/callback"
+      RESEND_API_KEY: "re_ci_placeholder_12345"
+      CRON_SECRET: "ci-cron-secret-placeholder-32-or-more-chars"
+      INTERNAL_API_KEY: "ci-internal-api-placeholder-12345"
+      HOTMART_HOTTOK: "ci-placeholder"
+      FIREBASE_PRIVATE_KEY: "ci-firebase-private-key-placeholder-12345"
+      FIREBASE_CLIENT_EMAIL: "ci-firebase@ci.example.com"
     steps:
       - uses: actions/checkout@v4
 
