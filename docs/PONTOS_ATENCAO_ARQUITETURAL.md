@@ -154,6 +154,60 @@ Alê. RLS quebra prod se ativada antes de refatorar — risco real.
 
 ---
 
+## HUB-09: Migrations não rodam de zero em DB virgem
+
+### Estado
+
+Descoberto na Onda 9 Bloco D (Smoke CI). Ao tentar aplicar as 62 migrations sequencialmente em DB virgem (Postgres 16), 13+ migrations falham com erros de schema (coluna inexistente, tipo inexistente, tabela inexistente).
+
+### Por quê
+
+Migrations evoluíram em prod incrementalmente. Algumas migrations referenciam objetos (colunas, tipos, tabelas) que assumem estado prod-evolved que não existe em DB virgem. Sequência não é replay-safe.
+
+### Validação empírica (Onda 9 Bloco D — 05/05/2026)
+
+Replay de 62 migrations em Postgres 16 ephemeral (docker `postgres:16`, DB virgem):
+
+- 013: type `aba_protocol_status` not exist
+- 014: column `fpa.access_token` not exist
+- 015: column `ebp_practice_id` not exist
+- 022: column `effective_date` not exist
+- 023, 025-027, 038, 048, 057, 059-062, 064: tabelas `tdah_*` not exist (cascade da 022)
+- 029: type `aba_product_type` not exist
+
+Em prod: tudo funciona (foi aplicado progressivamente).
+Em DB virgem: 13+ migrations quebram.
+
+### Gatilhos
+
+Refator obrigatório SE:
+
+- Precisar criar staging novo do zero
+- Onboarding de novo desenvolvedor (dev environment do zero)
+- Postgres precisar ser recriado (upgrade major version, disk failure, troca de servidor)
+- Backup restore que perdeu dados mas tem migrations
+
+### Ação proposta (Onda 10 ou quando gatilho disparar)
+
+Criar `scripts/migrations/000_baseline.sql` via `pg_dump --schema-only` da prod atual:
+
+1. Snapshot do schema prod completo
+2. Migrations 001-066 viram histórico (renomear para `legacy/`)
+3. Migrations futuras (067+) rodam em cima do baseline limpo
+4. Documentar em SKILL_TCC.md / SKILL_ABA.md / SKILL_TDAH.md o novo padrão
+
+Esforço estimado: ~4h
+
+### Mitigação parcial (Onda 9 Bloco D)
+
+Smoke CI não tenta replay das 62 migrations. Em vez disso, usa `scripts/ci/smoke-fixture.sql` (schema mínimo dos 11 tabelas que os 3 cron jobs SQL ABA tocam). Captura bug TDAH-04 fantasma sem depender de replay completo.
+
+### Quem decide
+
+Alê. Risco real só dispara em cenários específicos (criar ambiente novo). Backup + prod estável mitigam o problema imediato.
+
+---
+
 ## Padrão para futuros débitos
 
 Adicionar nova entrada com:

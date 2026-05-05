@@ -125,12 +125,8 @@ jobs:
       PGOPTIONS: "-c app.encryption_key=smoketest_key"
     steps:
       - uses: actions/checkout@v4
-      - name: Apply migrations (TCP, ordenadas)
-        run: |
-          for f in scripts/migrations/*.sql; do
-            echo "Applying $f"
-            psql -v ON_ERROR_STOP=1 -f "$f"
-          done
+      - name: Apply smoke fixture
+        run: psql -v ON_ERROR_STOP=1 -f scripts/ci/smoke-fixture.sql
       - name: Smoke cron jobs SQL ABA
         run: |
           psql -v ON_ERROR_STOP=1 -f scripts/jobs/check_expiration.sql
