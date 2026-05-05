@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { randomBytes } from 'crypto'
+import { env } from '@/src/lib/env'
 
 export async function POST(
   request: NextRequest,
@@ -38,7 +39,7 @@ export async function POST(
       }
 
       // Gerar link público
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
+      const baseUrl = env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
       const pushLink = `${baseUrl}/ativar-lembretes?token=${authToken}`
 
       return NextResponse.json({

@@ -18,8 +18,9 @@
 
 import { readFile, writeFile, mkdir } from 'fs/promises'
 import path from 'path'
+import { env } from '@/src/lib/env'
 
-const TRANSCRIPT_DIR = process.env.TRANSCRIPT_DIR || '/var/lib/axis/transcripts'
+const TRANSCRIPT_DIR = env.TRANSCRIPT_DIR || '/var/lib/axis/transcripts'
 
 /**
  * Salva texto de transcrição em disco.

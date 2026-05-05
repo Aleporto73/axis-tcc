@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { cookies } from 'next/headers'
 import pool from '@/src/database/db'
+import { env } from '@/src/lib/env'
 
 // =====================================================
 // AXIS ABA - API: Seleção de Tenant (Multi-Clínica)
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
       const cookieStore = await cookies()
       cookieStore.set('axis_active_tenant', tenant_id, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 365, // 1 ano

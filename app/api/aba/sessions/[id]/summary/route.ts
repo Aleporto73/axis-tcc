@@ -3,6 +3,7 @@ import { withTenant } from '@/src/database/with-tenant'
 import { canAccessLearner, handleRouteError } from '@/src/database/with-role'
 import { Resend } from 'resend'
 import { sessionSummaryTemplate } from '@/src/email/session-summary-template'
+import { env } from '@/src/lib/env'
 
 // =====================================================
 // AXIS ABA - API: Resumo de Sessão para Responsáveis
@@ -25,8 +26,8 @@ import { sessionSummaryTemplate } from '@/src/email/session-summary-template'
 //   PUT send    → UPDATE status='sent', sent_at
 // =====================================================
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-const FROM = process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>'
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null
+const FROM = env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>'
 
 // POST — Criar/atualizar resumo (rascunho)
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

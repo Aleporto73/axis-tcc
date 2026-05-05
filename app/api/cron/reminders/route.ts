@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processScheduledReminders } from '@/src/services/scheduler'
 import { isValidCronAuth } from '@/src/lib/cron-auth'
+import { env } from '@/src/lib/env'
 
 export async function GET(request: NextRequest) {
   try {
     // Auth: CRON_SECRET obrigatório (fail-closed)
     const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET
+    const cronSecret = env.CRON_SECRET
 
-    if (!cronSecret || !isValidCronAuth(authHeader, cronSecret, process.env.CRON_SECRET_OLD)) {
+    if (!cronSecret || !isValidCronAuth(authHeader, cronSecret, env.CRON_SECRET_OLD)) {
       return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
     }
 

@@ -18,9 +18,10 @@
  */
 
 import { Agent, fetch, FormData } from 'undici'
+import { env } from '@/src/lib/env'
 
 const ASR_URL =
-  process.env.ASR_SERVICE_URL || 'http://localhost:8000/v1/audio/transcriptions'
+  env.ASR_SERVICE_URL || 'http://localhost:8000/v1/audio/transcriptions'
 
 export interface ASRSegment {
   start: number

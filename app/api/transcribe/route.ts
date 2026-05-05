@@ -5,8 +5,9 @@ import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { randomUUID } from 'crypto'
 import { getTranscriptionUsage } from '@/src/services/transcription-limit'
+import { env } from '@/src/lib/env'
 
-const AUDIO_UPLOAD_DIR = process.env.AUDIO_UPLOAD_DIR || '/var/lib/axis/audio-uploads'
+const AUDIO_UPLOAD_DIR = env.AUDIO_UPLOAD_DIR || '/var/lib/axis/audio-uploads'
 
 /**
  * POST /api/transcribe

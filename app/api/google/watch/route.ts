@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID, randomBytes, createHmac } from 'crypto'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import { env } from '@/src/lib/env'
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
-const WEBHOOK_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com') + '/api/google/webhook'
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || ''
+const WEBHOOK_URL = (env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com') + '/api/google/webhook'
 
 async function refreshAccessToken(refreshToken: string): Promise<string | null> {
   const response = await fetch('https://oauth2.googleapis.com/token', {

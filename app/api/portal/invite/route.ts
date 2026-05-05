@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { randomBytes } from 'crypto'
 import { rateLimit } from '@/src/middleware/rate-limit'
+import { env } from '@/src/lib/env'
 
 export async function POST(req: NextRequest) {
   // Rate limit: 100 req/min por IP
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       // Se já existe acesso ativo e válido, retorna o link existente
       if (existingAccess.rows.length > 0) {
         const existing = existingAccess.rows[0]
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
+        const baseUrl = env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
         return {
           token: existing.access_token,
           link: `${baseUrl}/portal/${existing.access_token}`,
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
         [tenantId, guardian_id, learner_id, token, expires, consentId]
       )
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
+      const baseUrl = env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
       return { token, link: `${baseUrl}/portal/${token}`, expires_at: expires }
     })
 

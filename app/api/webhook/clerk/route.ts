@@ -3,6 +3,7 @@ import { Webhook } from 'svix'
 import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
 import { redactEmail } from '@/src/lib/log-redaction'
+import { env } from '@/src/lib/env'
 
 // =====================================================
 // AXIS — Clerk Webhook
@@ -25,7 +26,7 @@ import { redactEmail } from '@/src/lib/log-redaction'
 export async function POST(req: NextRequest) {
   try {
     // 1. Verificar assinatura Svix
-    const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
+    const WEBHOOK_SECRET = env.CLERK_WEBHOOK_SECRET
     if (!WEBHOOK_SECRET) {
       Sentry.captureMessage('[CLERK WEBHOOK] CLERK_WEBHOOK_SECRET not configured', { level: 'error', tags: { misconfig: 'clerk_webhook_secret' } })
       console.error('[CLERK WEBHOOK] CLERK_WEBHOOK_SECRET não configurado')

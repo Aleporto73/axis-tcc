@@ -1,5 +1,6 @@
 import Redis from 'ioredis'
 import * as Sentry from '@sentry/nextjs'
+import { env } from '@/src/lib/env'
 
 // =====================================================
 // AXIS — Redis Client & Cache Helpers
@@ -28,7 +29,7 @@ function createClient(): Redis {
     return globalForRedis.redis
   }
 
-  const url = process.env.REDIS_URL
+  const url = env.REDIS_URL
   if (!url) {
     console.warn('[AXIS REDIS] REDIS_URL não configurada — cache desabilitado')
     // Retorna client "noop" que não conecta
@@ -54,7 +55,7 @@ function createClient(): Redis {
     console.error('[AXIS REDIS] Erro:', err.message)
   })
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (env.NODE_ENV !== 'production') {
     globalForRedis.redis = client
   }
 

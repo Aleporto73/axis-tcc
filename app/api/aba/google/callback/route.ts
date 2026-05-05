@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
 import { redactEmail } from '@/src/lib/log-redaction'
+import { env } from '@/src/lib/env'
 
 // =====================================================
 // AXIS ABA — Google Calendar OAuth Callback
@@ -18,12 +19,12 @@ import { redactEmail } from '@/src/lib/log-redaction'
 //   - Redireciona para /aba/configuracoes
 // =====================================================
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
-const GOOGLE_REDIRECT_URI_ABA = process.env.GOOGLE_REDIRECT_URI_ABA
-  || (process.env.GOOGLE_REDIRECT_URI || '').replace('/api/google/callback', '/api/aba/google/callback')
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || ''
+const GOOGLE_REDIRECT_URI_ABA = env.GOOGLE_REDIRECT_URI_ABA
+  || (env.GOOGLE_REDIRECT_URI || '').replace('/api/google/callback', '/api/aba/google/callback')
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
+const BASE_URL = env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
 
 export async function GET(request: NextRequest) {
   try {

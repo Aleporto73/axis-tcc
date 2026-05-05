@@ -4,9 +4,10 @@ import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import { env } from '@/src/lib/env'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_API_KEY,
 })
 
 /* ─── carrega a documentação técnica uma vez (cache em memória) ─── */

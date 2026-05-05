@@ -14,22 +14,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Pool } from 'pg'
 import { isValidCronAuth } from '@/src/lib/cron-auth'
+import { env } from '@/src/lib/env'
 
 const pool = new Pool({
-  host: process.env.DATABASE_HOST,
-  port: parseInt(process.env.DATABASE_PORT || '5432'),
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME,
+  host: env.DATABASE_HOST,
+  port: parseInt(env.DATABASE_PORT || '5432'),
+  user: env.DATABASE_USER,
+  password: env.DATABASE_PASSWORD,
+  database: env.DATABASE_NAME,
 })
 
 export async function POST(request: NextRequest) {
   try {
     // ── Auth: CRON_SECRET (mesmo padrão dos outros cron endpoints) ──
     const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET
+    const cronSecret = env.CRON_SECRET
 
-    if (!cronSecret || !isValidCronAuth(authHeader, cronSecret, process.env.CRON_SECRET_OLD)) {
+    if (!cronSecret || !isValidCronAuth(authHeader, cronSecret, env.CRON_SECRET_OLD)) {
       return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
     }
 

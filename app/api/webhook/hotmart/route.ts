@@ -6,12 +6,13 @@ import { Resend } from 'resend'
 import { purchaseUpgradeTemplate, purchaseNewUserTemplate } from '@/src/email/purchase-template'
 import * as Sentry from '@sentry/nextjs'
 import { redactEmail } from '@/src/lib/log-redaction'
+import { env } from '@/src/lib/env'
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null
 const EMAIL_FROM_MAP: Record<string, string> = {
-  tcc: process.env.RESEND_FROM_TCC || 'AXIS TCC <noreply@axisclinico.com>',
-  aba: process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
-  tdah: process.env.RESEND_FROM_TDAH || 'AXIS TDAH <noreply@axisclinico.com>',
+  tcc: env.RESEND_FROM_TCC || 'AXIS TCC <noreply@axisclinico.com>',
+  aba: env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
+  tdah: env.RESEND_FROM_TDAH || 'AXIS TDAH <noreply@axisclinico.com>',
 }
 
 const PRODUCT_LABEL: Record<string, string> = {
@@ -202,7 +203,7 @@ async function provisionNewBuyer(
 
   try {
     // URL base do app (produção ou dev)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
+    const baseUrl = env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
 
     await clerk.invitations.createInvitation({
       emailAddress: email,
@@ -331,7 +332,7 @@ export async function POST(request: NextRequest) {
   try {
     // 1. Validar hottok
     const hottok = request.headers.get('x-hotmart-hottok')
-    const expectedHottok = process.env.HOTMART_HOTTOK
+    const expectedHottok = env.HOTMART_HOTTOK
 
     if (!expectedHottok) {
       Sentry.captureMessage('[HOTMART WEBHOOK] HOTMART_HOTTOK not configured', { level: 'error', tags: { misconfig: 'hotmart_hottok' } })

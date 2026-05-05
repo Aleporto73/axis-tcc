@@ -6,11 +6,12 @@ import { handleRouteError } from '@/src/database/with-role'
 import { readTranscriptSmart } from '@/src/services/transcript-storage'
 import { getTranscriptionUsage } from '@/src/services/transcription-limit'
 import { getAnalyzeUsage, recordAnalyzeUsage } from '@/src/services/analyze-limit'
+import { env } from '@/src/lib/env'
 import type { PoolClient } from 'pg'
 import * as Sentry from '@sentry/nextjs'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_API_KEY,
 })
 
 /**

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
 import { rateLimit } from '@/src/middleware/rate-limit'
+import { env } from '@/src/lib/env'
 
 // =====================================================
 // AXIS — Push Notification Send (Internal API)
@@ -18,8 +19,8 @@ async function getFirebaseAdmin() {
     return admin.default
   }
 
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
+  const privateKey = env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+  const clientEmail = env.FIREBASE_CLIENT_EMAIL
 
   if (!privateKey || !clientEmail || privateKey.includes('SUA_CHAVE_AQUI')) {
     return null
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Auth via API key
     const authHeader = request.headers.get('x-api-key')
-    if (!process.env.INTERNAL_API_KEY || authHeader !== process.env.INTERNAL_API_KEY) {
+    if (!env.INTERNAL_API_KEY || authHeader !== env.INTERNAL_API_KEY) {
       return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
     }
 

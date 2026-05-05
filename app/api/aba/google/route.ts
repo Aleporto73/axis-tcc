@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { GOOGLE_SCOPES } from '@/src/google/calendar-helpers'
+import { env } from '@/src/lib/env'
 
 // =====================================================
 // AXIS ABA — Google Calendar OAuth Initiation
@@ -11,9 +12,9 @@ import { GOOGLE_SCOPES } from '@/src/google/calendar-helpers'
 // Mesmas credenciais Google Cloud do .env (GOOGLE_CLIENT_ID).
 // =====================================================
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
-const GOOGLE_REDIRECT_URI_ABA = process.env.GOOGLE_REDIRECT_URI_ABA
-  || (process.env.GOOGLE_REDIRECT_URI || '').replace('/api/google/callback', '/api/aba/google/callback')
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_REDIRECT_URI_ABA = env.GOOGLE_REDIRECT_URI_ABA
+  || (env.GOOGLE_REDIRECT_URI || '').replace('/api/google/callback', '/api/aba/google/callback')
 
 // GET /api/aba/google — Redireciona para autorização do Google
 export async function GET() {

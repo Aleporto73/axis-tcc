@@ -3,6 +3,7 @@ import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 import { ensureValidToken } from '@/src/google/calendar-helpers'
 import { randomUUID } from 'crypto'
+import { env } from '@/src/lib/env'
 
 // =====================================================
 // AXIS ABA — Google Calendar Webhook Registration
@@ -13,8 +14,8 @@ import { randomUUID } from 'crypto'
 // Webhook expira em 7 dias → renovado pelo cron job.
 // =====================================================
 
-const WEBHOOK_URL = process.env.GOOGLE_WEBHOOK_URL_ABA
-  || (process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com') + '/api/aba/google/webhook'
+const WEBHOOK_URL = env.GOOGLE_WEBHOOK_URL_ABA
+  || (env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com') + '/api/aba/google/webhook'
 
 export async function POST() {
   try {

@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
+import { env } from '@/src/lib/env'
 
 // Pool: shared (Auditoria TCC P0 — unified pool)
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || ''
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || ''
+const GOOGLE_REDIRECT_URI = env.GOOGLE_REDIRECT_URI || ''
+const BASE_URL = env.NEXT_PUBLIC_APP_URL || 'https://axisclinico.com'
 
 export async function GET(request: NextRequest) {
   try {

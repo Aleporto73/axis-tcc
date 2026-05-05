@@ -10,9 +10,10 @@
 // =====================================================
 
 import { PoolClient } from 'pg'
+import { env } from '@/src/lib/env'
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || ''
+const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || ''
 
 /**
  * Renova access_token usando refresh_token.

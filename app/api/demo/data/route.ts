@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import pool from '@/src/database/db'
+import { env } from '@/src/lib/env'
 
-const TENANT_ID = process.env.DEFAULT_TENANT_ID || '123e4567-e89b-12d3-a456-426614174000'
+const TENANT_ID = env.DEFAULT_TENANT_ID || '123e4567-e89b-12d3-a456-426614174000'
 
 export async function GET() {
   const client = await pool.connect()

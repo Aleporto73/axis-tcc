@@ -1,6 +1,7 @@
 import pool from '../database/db'
 import type { PoolClient } from 'pg'
 import * as Sentry from '@sentry/nextjs'
+import { env } from '@/src/lib/env'
 
 let adminInitialized = false
 let adminInstance: any = null
@@ -10,8 +11,8 @@ async function getFirebaseAdmin() {
     return adminInstance
   }
 
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
+  const privateKey = env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+  const clientEmail = env.FIREBASE_CLIENT_EMAIL
 
   if (!privateKey || !clientEmail || privateKey.includes('SUA_CHAVE_AQUI')) {
     console.log('[SCHEDULER] Firebase Admin nao configurado')

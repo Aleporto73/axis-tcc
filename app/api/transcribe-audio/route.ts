@@ -4,8 +4,9 @@ import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 import { getTranscriptionUsage } from '@/src/services/transcription-limit'
 import { rateLimit } from '@/src/middleware/rate-limit'
+import { env } from '@/src/lib/env'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
 
 // Limite OpenAI Whisper API: 25MB por request
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024

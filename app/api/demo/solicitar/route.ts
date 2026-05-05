@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { env } from '@/src/lib/env'
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,15 +12,15 @@ export async function POST(req: NextRequest) {
 
     // Envia notificação interna
     await resend.emails.send({
-      from: process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
-      to: process.env.RESEND_ADMIN_EMAIL || 'porto.ar4@gmail.com',
+      from: env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
+      to: env.RESEND_ADMIN_EMAIL || 'porto.ar4@gmail.com',
       subject: `[AXIS] Nova solicitação — ${clinica || 'Clínica não informada'}`,
       html: `<p><strong>Nome:</strong> ${nome}</p><p><strong>Clínica:</strong> ${clinica || '—'}</p><p><strong>Email:</strong> ${email}</p><p><strong>Aprendizes:</strong> ${aprendizes || '—'}</p>`,
     })
 
     // Envia confirmação para o solicitante
     await resend.emails.send({
-      from: process.env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
+      from: env.RESEND_FROM || 'AXIS ABA <noreply@axisclinico.com>',
       to: email,
       subject: 'AXIS ABA — Solicitação recebida',
       html: `<p>Olá, ${nome}.</p><p>Recebemos sua solicitação de acesso ao padrão AXIS ABA.</p><p>Você receberá o link de acesso em breve.</p><p>— Equipe AXIS</p>`,

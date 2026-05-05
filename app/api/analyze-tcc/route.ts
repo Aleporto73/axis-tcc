@@ -6,9 +6,10 @@ import { readTranscriptSmart } from '@/src/services/transcript-storage'
 import { rateLimit } from '@/src/middleware/rate-limit'
 import { getAnalyzeUsage, recordAnalyzeUsage } from '@/src/services/analyze-limit'
 import * as Sentry from '@sentry/nextjs'
+import { env } from '@/src/lib/env'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_API_KEY,
 })
 
 // =====================================================
