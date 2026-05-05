@@ -82,7 +82,7 @@ if (!parsed.success) {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line
 export const env = parsed.success ? parsed.data : (process.env as any)
 
 // Helper para code review
