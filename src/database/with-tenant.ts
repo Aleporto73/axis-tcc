@@ -161,7 +161,7 @@ export async function withTenant<T>(
     } else {
       // ─── Fallback: buscar em tenants (compatibilidade pré-migração) ───
       const tenantResult = await client.query(
-        'SELECT id FROM tenants WHERE clerk_user_id = $1',
+        'SELECT id, status FROM tenants WHERE clerk_user_id = $1',
         [userId]
       )
 
@@ -177,6 +177,21 @@ export async function withTenant<T>(
         }).catch(() => {})
 
         throw new Error('Tenant não encontrado')
+      }
+
+      const tenantStatus = tenantResult.rows[0].status
+
+      // F.2 (Onda 9): rejeitar tenants órfãos no fallback admin
+      if (tenantStatus !== 'active') {
+        createSystemAlert({
+          module: 'shared',
+          severity: 'critical',
+          source: 'with-tenant',
+          code: 'TENANT_NOT_ACTIVE',
+          message: `Tentativa de login em tenant ${tenantStatus} via fallback admin`,
+          context: { clerk_user_id: userId, tenant_id: tenantResult.rows[0].id, status: tenantStatus },
+        }).catch(() => {})
+        throw new Error(`Tenant ${tenantStatus}. Contate suporte.`)
       }
 
       tenantId = tenantResult.rows[0].id

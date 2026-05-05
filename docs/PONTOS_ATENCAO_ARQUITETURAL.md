@@ -13,6 +13,18 @@ Cada entrada = decisão consciente de NÃO refatorar agora, com gatilho explíci
 
 ## HUB-04 — withTenant fallback admin
 
+> **STATUS: FECHADO em 05/05/2026 (Onda 9 Bloco F).**
+>
+> **Solução aplicada:**
+> - Migration 067 (`scripts/migrations/067_shared_tenants_status.sql`) adicionou `tenants.status` (`active|orphan|inactive`)
+> - 11 tenants órfãos em prod marcados como `status='orphan'` (auditoria AXIS preservada — sem DELETE)
+> - `src/database/with-tenant.ts` agora rejeita fallback admin se `status != 'active'`, emite alerta CRITICAL `TENANT_NOT_ACTIVE`
+> - Validação: tsc ✅, eslint ✅, vitest 15/15 (tcc-isolation isolado), prod aplicado em `2de8e49`
+>
+> Risco anterior (admin silencioso para órfãos) eliminado. Histórico abaixo preservado para contexto.
+>
+> ---
+
 ### Estado atual
 
 - **Arquivo:** `src/database/with-tenant.ts`
@@ -205,6 +217,49 @@ Smoke CI não tenta replay das 62 migrations. Em vez disso, usa `scripts/ci/smok
 ### Quem decide
 
 Alê. Risco real só dispara em cenários específicos (criar ambiente novo). Backup + prod estável mitigam o problema imediato.
+
+---
+
+## HUB-10: Vitest test flaky por timeout sob carga concorrente
+
+### Estado
+
+Descoberto na Onda 9 Bloco F.3 (validação F.2). O teste `src/tests/tcc-isolation.test.ts > analyze-clinical retorna 401 sem autenticação` falha intermitentemente no full run (`vitest run --exclude='e2e/**'`) por timeout (10s default).
+
+### Por quê
+
+- 17 test files rodam em paralelo no full run
+- Carga concorrente faz alguns testes com IO real (DB query) extrapolarem 10s
+- Isolado, o mesmo teste passa em ~3s
+
+### Validação empírica
+
+- Full run: 543/544 (1 fail por timeout)
+- Run isolado do arquivo: 15/15 passed em 3.3s
+
+### Não é regressão
+
+Stack trace mostra `withTenant:73` lançando "Não autenticado" ANTES do bloco modificado em F.2 (linhas 88-100). F.2 não interfere neste fluxo.
+
+### Gatilhos
+
+Refator obrigatório SE:
+
+- Failure rate exceder 10% das runs CI
+- Bloquear merge legítimo de feature
+- Estender para 2+ testes flaky
+
+### Ação proposta (Onda 10 ou quando gatilho disparar)
+
+Opção A: aumentar `testTimeout` global em `vitest.config.ts` para 30s (mascara bugs reais futuros, não recomendado)
+Opção B: marcar testes IO-real como `test.concurrent(false)` ou separar em arquivo isolado (preferido)
+Opção C: investigar causa raiz (pool de connections esgotando? Postgres lento?)
+
+Esforço estimado: ~1h
+
+### Quem decide
+
+Alê. Risco prático baixo (1/544 = 0.18% failure rate atualmente).
 
 ---
 
