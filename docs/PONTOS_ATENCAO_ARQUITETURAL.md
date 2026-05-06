@@ -184,7 +184,34 @@ Alê. RLS quebra prod se ativada antes de refatorar — risco real.
 
 ---
 
-## HUB-09: Migrations não rodam de zero em DB virgem
+## HUB-09 (FECHADO): Migrations não rodam de zero em DB virgem
+
+> **STATUS: FECHADO em 06/05/2026 (Onda 10 — 9 commits sequenciais).**
+>
+> **Solução aplicada (sequência cronológica em main):**
+> - `202b2f3` baseline migration via `pg_dump --schema-only --no-owner --no-acl` (350KB, 10997 linhas, 97 tabelas)
+> - `c39ab9d` fix CI guardrail: GUC contract aceita `000_shared_baseline.sql`
+> - `cf2ea27` mover 62 migrations 001-066 para `scripts/migrations/legacy/`
+> - `e894eaa` mover 5 runners TypeScript (024-028) para `scripts/legacy/`
+> - `4a808aa` `BASELINE_NOTES.md` + atualizar refs paths `legacy/` em 4 NOTEs vivos
+> - `3acd8d2` fix contratos TDAH+Operadora pós-baseline (paths + regex flexibilizado)
+> - `eb5b754` smoke CI aplica baseline + 067 + 068 + smoke-seed (alinhado com BASELINE_NOTES)
+> - `018de82` smoke-seed compatível com schema real (10 INSERTs respeitando 14 NOT NULLs + 13 FKs + 8 CHECK constraints)
+> - `a8d2a2a` migration 069 `axis_audit_logs.user_id` nullable (desbloqueia bug LGPD purge_geo latente)
+>
+> **Aprendizados-chave:**
+>
+> - Baseline gerado via `pg_dump --schema-only --no-owner --no-acl --no-tablespaces --no-publications --no-subscriptions --no-security-labels` (Postgres 16.11). Resultado: 97 tabelas, 63 policies, 62 RLS enabled, 48 RLS forced, 78 functions, 14 types/enums, 1 extension (pgcrypto). Migrations 067 e 068 absorvidas no snapshot.
+> - 62 migrations 001-066 movidas para `scripts/migrations/legacy/`; 5 runners TypeScript one-shot (024-028) movidos para `scripts/legacy/`.
+> - 4 NOTEs vivos atualizados com paths `legacy/` (NOTE_TCC, NOTE_TDAH, NOTE_ABA, ABA_DB_FUNCTIONS). Docs históricos (archive/, audits/, sessoes/) preservados intactos (arqueologia).
+> - **Bug LGPD latente descoberto:** `axis_audit_logs.user_id NOT NULL` impedia execução do cron `purge_geo` (compliance LGPD). Validação prod: 0 execuções com sucesso. Migration 069 desbloqueou.
+> - 3 guardrails de teste atualizados pós-baseline: `operadora-guc-contract` (regex aceita schema-qualified + função `app_tenant_id()`, baseline excluído dos sub-tests de contrato GUC), `tdah-schema-contract` (lê do baseline em vez de migration 022), `operadora-audit-logs-contract` (não tocado, ainda válido).
+> - Smoke CI agora aplica em ordem: baseline + 067 + 068 + 069 + smoke-seed (10 INSERTs com 5 UUIDs fixos respeitando FKs), depois exercita 3 cron jobs SQL ABA reais.
+> - Padrão `BASELINE_NOTES.md` documenta convenção operacional: aplicação fresh `psql ... < 000_shared_baseline.sql` + migrations vivas (067+).
+>
+> Histórico abaixo preservado para contexto da decisão original (Onda 9 Bloco D).
+>
+> ---
 
 ### Estado
 
@@ -278,6 +305,28 @@ Esforço estimado: ~1h
 ### Quem decide
 
 Alê. Risco prático baixo (1/544 = 0.18% failure rate atualmente).
+
+---
+
+## Backlog Onda 11
+
+Itens identificados durante HUB-09 (Onda 10) que não bloqueiam fechamento mas merecem registro:
+
+### Pendências repo (housekeeping)
+
+- **`tsconfig.tsbuildinfo` zumbi** — arquivo trackeado historicamente, agora coberto por `.gitignore` mas continua aparecendo em `git status`. Resolver com `git rm --cached tsconfig.tsbuildinfo` em commit chore.
+- **`Ale Porto - Atalho.lnk` (Windows shortcut)** — adicionar `*.lnk` ao `.gitignore` (ou local em `.git/info/exclude`).
+- **`docs/competitive-brief-2026-04-29.md`** — untracked desde 03/05. Decisão pendente: commitar avulso (cosmético) ou stash.
+- **`public/axisTDAH.png`** — modificado 03/05 (37KB → 72KB). Logo TDAH trocado fora de commit relacionado. Decisão: commit chore separado.
+
+### Débitos arquiteturais já documentados acima (mantêm prioridade)
+
+- **HUB-05.B** — Refator 5 rotas `calendar_connections` (cron renew-webhook, webhooks Google TCC+ABA, OAuth callbacks TCC+ABA, sessions/create) → migration RLS forced. Esforço 4-6h. Sessão dedicada (CC novo + chat novo).
+- **HUB-10** — Flaky vitest `tcc-isolation > analyze-clinical 401`. Failure rate 0.18% (1/544 sob carga concorrente). Refator opcional (Opção B preferida: `test.concurrent(false)` ou separar arquivo isolado). Esforço ~1h.
+
+### Bloco E (Playwright nightly)
+
+Adiado para Onda 11 — agora desbloqueado pois HUB-09 está fechado e baseline garante DB completo em CI ephemeral. Esforço ~1h30.
 
 ---
 
