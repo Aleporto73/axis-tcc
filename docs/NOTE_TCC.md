@@ -116,7 +116,7 @@ Migration 054 aplicada, worker reiniciado, sistema testado manualmente em
 produção: duração real do áudio, limite 300 min acumulado, modal único
 (UpgradeModalTCC), onboarding sem CPF funcionando. Não há pendência de
 deploy da 13.1. Arquivos entregues:
-- `scripts/migrations/054_transcripts_audio_duration.sql` (APLICADA)
+- `scripts/migrations/legacy/054_transcripts_audio_duration.sql` (APLICADA)
 - `src/services/session-duration.ts` (helper canônico novo)
 - Modificados: `scripts/workers/transcription-worker.ts` (usa
   `segments[last].end` + `realMinutes` em vez de estimativa 64kbps),

@@ -81,7 +81,7 @@ Backup tag: `backup-pre-eslint`. Sessão: [sessoes/2026-04-20_hub_audit](sessoes
 ### P1 — bugs confirmados
 - [~] **REFUTADO (Onda 8 Bloco 0 — 03/05/2026):** ~~`app/api/tdah/lgpd/delete/route.ts:244` — `UPDATE session_summaries SET content = '[ANONIMIZADO]'` usa coluna `content` que nao existe no schema real (migration 007 tem `summary_text`). Falha silenciosa via SAVEPOINT.~~
 
-  **Validação empírica:** schema real em prod usa coluna `content` (correto). Migration 007 que define `summary_text` nunca foi aplicada nesta tabela — confirmado por `scripts/migrations/043_fix_portal_summaries_schema.sql:11-12` (no-op declarativa) e `scripts/migrations/014_portal_token_lookup_function.sql:95` (função em prod usa `ss.content`). Código está correto, NOTE estava invertido.
+  **Validação empírica:** schema real em prod usa coluna `content` (correto). Migration 007 que define `summary_text` nunca foi aplicada nesta tabela — confirmado por `scripts/migrations/legacy/043_fix_portal_summaries_schema.sql:11-12` (no-op declarativa) e `scripts/migrations/legacy/014_portal_token_lookup_function.sql:95` (função em prod usa `ss.content`). Código está correto, NOTE estava invertido.
 
 ### Infra (P1) — licao sessao 17/04 ABA
 - [ ] Adicionar infra de test DB real (docker-compose pg + migrations auto).

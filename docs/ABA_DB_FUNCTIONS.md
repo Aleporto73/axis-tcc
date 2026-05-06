@@ -3,7 +3,7 @@
 Referência de todas as funções PL/pgSQL do módulo ABA.
 
 **Engine**: CSO-ABA v2.6.1
-**Migration**: `scripts/migrations/042_aba_domain_functions.sql`
+**Migration**: `scripts/migrations/legacy/042_aba_domain_functions.sql`
 **Data**: 2026-03-24
 
 ---

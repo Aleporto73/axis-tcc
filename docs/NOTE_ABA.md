@@ -293,7 +293,7 @@ string). Escopo ABA: 3 arquivos de código + 1 migration neutralizada.
 - **Bug:** render `{s.summary_text}` retornava `undefined`.
 - **Fix:** `{s.content}`.
 
-### Neutralização — `scripts/migrations/043_fix_portal_summaries_schema.sql`
+### Neutralização — `scripts/migrations/legacy/043_fix_portal_summaries_schema.sql`
 - **Bug:** migration (criada 24/03) pretendia sobrescrever função
   `portal_get_summaries` (da migration 014) com versão usando
   `ss.summary_text AS content` — **quebraria** prod se aplicada.
