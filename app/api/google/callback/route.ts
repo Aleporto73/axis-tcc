@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
+import { withTenantClient } from '@/src/database/with-tenant'
 import * as Sentry from '@sentry/nextjs'
 import { env } from '@/src/lib/env'
 
@@ -81,7 +82,8 @@ export async function GET(request: NextRequest) {
     const { profile_id, tenant_id: tenantId } = profileResult.rows[0]
     const tokenExpiry = new Date(Date.now() + expires_in * 1000)
 
-    await pool.query(
+    await withTenantClient(tenantId, async (client) => {
+      await client.query(
       `INSERT INTO calendar_connections
         (tenant_id, user_id, provider, calendar_id, access_token, refresh_token, token_expiry, scope)
       VALUES ($1, $2, 'google', 'primary', $3, $4, $5, $6)
@@ -92,14 +94,15 @@ export async function GET(request: NextRequest) {
         token_expiry = EXCLUDED.token_expiry,
         scope = EXCLUDED.scope,
         updated_at = NOW()`,
-      [tenantId, profile_id, access_token, refresh_token, tokenExpiry, scope]
-    )
+        [tenantId, profile_id, access_token, refresh_token, tokenExpiry, scope]
+      )
 
-    await pool.query(
+      await client.query(
       `INSERT INTO axis_audit_logs (tenant_id, user_id, action, metadata)
       VALUES ($1, $2, 'GOOGLE_CALENDAR_CONNECTED', $3)`,
-      [tenantId, state, JSON.stringify({ google_email: userInfo.email, profile_id, product: 'axis_tcc' })]
-    )
+        [tenantId, state, JSON.stringify({ google_email: userInfo.email, profile_id, product: 'axis_tcc' })]
+      )
+    })
 
     return NextResponse.redirect(BASE_URL + '/configuracoes?google=success')
   } catch (error) {
