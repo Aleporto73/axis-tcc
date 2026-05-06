@@ -131,6 +131,8 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f scripts/migrations/067_shared_tenants_status.sql
       - name: Apply migration 068 (events RLS, idempotente)
         run: psql -v ON_ERROR_STOP=1 -f scripts/migrations/068_shared_events_rls_forced.sql
+      - name: Apply migration 069 (audit_logs.user_id nullable, idempotente)
+        run: psql -v ON_ERROR_STOP=1 -f scripts/migrations/069_shared_audit_logs_user_id_nullable.sql
       - name: Apply smoke seed (apenas dados de teste)
         run: psql -v ON_ERROR_STOP=1 -f scripts/ci/smoke-seed.sql
       - name: Smoke cron jobs SQL ABA
