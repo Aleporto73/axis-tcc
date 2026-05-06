@@ -126,13 +126,20 @@ function extractWhereOrderColumns(query: string, tableName: string): string[] {
 // =========================================================
 const migrationsDir = join(__dirname, '../../scripts/migrations')
 
-const migration022 = readFileSync(
-  join(migrationsDir, '022_full_tdah_setup.sql'), 'utf-8'
+// HUB-09 (Onda 10): ler do baseline em vez de migration 022 diretamente.
+// Migration 022 foi movida para scripts/migrations/legacy/ e o snapshot
+// vivo do schema agora está em 000_shared_baseline.sql. Vantagens:
+//   - Sempre reflete realidade prod (snapshot de pg_dump --schema-only).
+//   - Auto-atualiza quando schema TDAH mudar via migration nova.
+//   - Mesmo padrão arquitetural do sub-test 4 do operadora-guc-contract.
+// Schema-prefix `public.` é compatível com extractColumns() existente.
+const baselineSchema = readFileSync(
+  join(migrationsDir, '000_shared_baseline.sql'), 'utf-8'
 )
 
-const tdahSessionsCols = extractColumns(migration022, 'tdah_sessions')
-const tdahProtocolsCols = extractColumns(migration022, 'tdah_protocols')
-const tdahDrcCols = extractColumns(migration022, 'tdah_drc')
+const tdahSessionsCols = extractColumns(baselineSchema, 'tdah_sessions')
+const tdahProtocolsCols = extractColumns(baselineSchema, 'tdah_protocols')
+const tdahDrcCols = extractColumns(baselineSchema, 'tdah_drc')
 
 // =========================================================
 // Load API route source files

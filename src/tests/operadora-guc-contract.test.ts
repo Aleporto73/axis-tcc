@@ -157,20 +157,31 @@ describe('Contrato GUC — Operadora v2.7.0', () => {
       .join('\n')
 
     for (const table of v27Tables) {
+      // HUB-09 (Onda 10): regex flexibilizado para casar com baseline pos-pg_dump.
+      // Baseline tem 2 diferenças vs migrations originais (033/034/052):
+      //   1) Schema-qualified names: ON public.${table} (não ON ${table}).
+      //   2) Função app_tenant_id() em vez de current_setting('app.X') direto.
+      //      A função wrappia current_setting('app.tenant_id') (ver migration 058).
+      // Aceita ambos os caminhos: function moderna (m[1] = undefined) ou
+      // current_setting() legacy (m[1] = GUC name, deve ser 'app.tenant_id').
       const policyRegex = new RegExp(
-        `CREATE POLICY\\s+\\w+\\s+ON\\s+${table}[\\s\\S]*?current_setting\\s*\\(\\s*'(app\\.[a-z_]+)'`,
+        `CREATE POLICY\\s+\\w+\\s+ON\\s+(?:public\\.)?${table}\\b[\\s\\S]*?` +
+          `(?:(?:public\\.)?app_tenant_id\\s*\\(\\s*\\)|` +
+          `current_setting\\s*\\(\\s*'(app\\.[a-z_]+)'\\s*\\))`,
         'gi'
       )
       const matches = [...combined.matchAll(policyRegex)]
       expect(matches.length, `Nenhuma policy encontrada para ${table}`).toBeGreaterThan(0)
 
-      // Todas as occurrences (incluindo a da migration 052 de fix) devem usar app.tenant_id
-      // — depois de aplicar o fix, não pode sobrar nenhuma com app.current_org.
+      // Caminho legacy current_setting() — só aceita 'app.tenant_id'.
+      // Caminho moderno app_tenant_id() — implicitamente OK (m[1] = undefined).
       for (const m of matches) {
-        expect(
-          m[1],
-          `Policy em ${table} usa GUC errado: ${m[1]} (esperado app.tenant_id)`
-        ).toBe('app.tenant_id')
+        if (m[1] !== undefined) {
+          expect(
+            m[1],
+            `Policy em ${table} usa GUC errado: ${m[1]} (esperado app.tenant_id)`
+          ).toBe('app.tenant_id')
+        }
       }
     }
   })
