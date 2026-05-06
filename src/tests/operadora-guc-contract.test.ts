@@ -38,6 +38,40 @@ const BANNED_GUCS = new Set(['app.current_org'])
 function readMigrationFiles(): { file: string; sql: string }[] {
   return readdirSync(MIGRATIONS_DIR)
     .filter((f) => f.endsWith('.sql'))
+    // HUB-09 (Onda 10): excluir 000_shared_baseline.sql do contrato GUC.
+    // Baseline é snapshot histórico do schema prod (pg_dump --schema-only),
+    // contém GUCs antigos (app.user_id, app.user_role, app.engine_version)
+    // de policies/functions legacy ainda no schema mas NÃO usados pelo
+    // backend moderno. Contrato GUC v2.7.0 aplica-se a migrations 057+
+    // (RLS Phase A em diante) e a qualquer migration nova após o baseline.
+    // legacy/ já é ignorado naturalmente (readdirSync não-recursivo).
+    .filter((f) => f !== '000_shared_baseline.sql')
+    .sort()
+    .map((f) => ({
+      file: f,
+      sql: readFileSync(join(MIGRATIONS_DIR, f), 'utf-8'),
+    }))
+}
+
+/**
+ * Variante de readMigrationFiles() que INCLUI 000_shared_baseline.sql.
+ *
+ * Justificativa (HUB-09 Onda 10):
+ *   readMigrationFiles() exclui o baseline porque sub-tests 2 e 3 verificam
+ *   contrato sobre migrations NOVAS (não devem usar GUCs banidos/legacy).
+ *   Sub-test 4, ao contrário, verifica ESTADO DECLARATIVO do schema vivo
+ *   (essas 5 tabelas v2.7.0 Operadora têm policy app.tenant_id?). Após o
+ *   move de 001-066 → legacy/, as policies originais (migrations 033/034/052)
+ *   só permanecem visíveis ao parser via baseline (snapshot do schema prod).
+ *   Excluí-lo do sub-test 4 quebraria a defesa-em-profundidade declarativa.
+ *
+ * Convenção: usar readMigrationFiles() para checagens de contrato sobre
+ * migrations recentes; usar esta variante apenas quando precisar do
+ * estado-de-schema-completo (incluindo o snapshot baseline).
+ */
+function readMigrationFilesIncludingBaseline(): { file: string; sql: string }[] {
+  return readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith('.sql'))
     .sort()
     .map((f) => ({
       file: f,
@@ -116,7 +150,9 @@ describe('Contrato GUC — Operadora v2.7.0', () => {
       'session_attachments',
     ]
 
-    const combined = readMigrationFiles()
+    // HUB-09 (Onda 10): inclui baseline porque após move 001-066 → legacy/,
+    // as policies originais ficam só no baseline (snapshot do schema vivo).
+    const combined = readMigrationFilesIncludingBaseline()
       .map((f) => f.sql)
       .join('\n')
 
