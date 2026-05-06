@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
+import { withTenantClient } from '@/src/database/with-tenant'
 import * as Sentry from '@sentry/nextjs'
 import { redactEmail } from '@/src/lib/log-redaction'
 import { env } from '@/src/lib/env'
@@ -100,9 +101,10 @@ export async function GET(request: NextRequest) {
     const { profile_id, tenant_id, role, name } = profileResult.rows[0]
     const tokenExpiry = new Date(Date.now() + expires_in * 1000)
 
-    // Salvar tokens indexados por profile_id
-    // UNIQUE(tenant_id, user_id, provider) — user_id = profile_id no ABA
-    await pool.query(
+    await withTenantClient(tenant_id, async (client) => {
+      // Salvar tokens indexados por profile_id
+      // UNIQUE(tenant_id, user_id, provider) — user_id = profile_id no ABA
+      await client.query(
       `INSERT INTO calendar_connections
         (tenant_id, user_id, provider, calendar_id, access_token, refresh_token, token_expiry, scope)
        VALUES ($1, $2, 'google', 'primary', $3, $4, $5, $6)
@@ -113,27 +115,28 @@ export async function GET(request: NextRequest) {
          token_expiry = EXCLUDED.token_expiry,
          scope = EXCLUDED.scope,
          updated_at = NOW()`,
-      [tenant_id, profile_id, access_token, refresh_token, tokenExpiry, scope]
-    )
+        [tenant_id, profile_id, access_token, refresh_token, tokenExpiry, scope]
+      )
 
-    console.log('[ABA_GOOGLE_CALLBACK] Conexão salva — profile:', profile_id, 'tenant:', tenant_id, 'role:', role)
+      console.log('[ABA_GOOGLE_CALLBACK] Conexão salva — profile:', profile_id, 'tenant:', tenant_id, 'role:', role)
 
-    // Audit log — Bible S13.3
-    await pool.query(
+      // Audit log — Bible S13.3
+      await client.query(
       `INSERT INTO axis_audit_logs (tenant_id, user_id, action, metadata)
        VALUES ($1, $2, 'GOOGLE_CALENDAR_CONNECTED', $3)`,
-      [
-        tenant_id,
-        state,
-        JSON.stringify({
-          google_email: userInfo.email,
-          profile_id,
-          profile_name: name,
-          role,
-          product: 'axis_aba',
-        }),
-      ]
-    )
+        [
+          tenant_id,
+          state,
+          JSON.stringify({
+            google_email: userInfo.email,
+            profile_id,
+            profile_name: name,
+            role,
+            product: 'axis_aba',
+          }),
+        ]
+      )
+    })
 
     return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=success')
   } catch (error) {
