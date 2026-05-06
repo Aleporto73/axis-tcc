@@ -217,3 +217,39 @@ export async function withTenant<T>(
     try { client.release() } catch (_) { /* already released */ }
   }
 }
+
+/**
+ * Executa callback dentro de transação com app.tenant_id setado via set_config.
+ *
+ * Diferente de withTenant() — que resolve tenant_id via Clerk auth() — este
+ * helper aceita tenantId explícito como argumento. Use quando tenant vem de
+ * fonte não-Clerk:
+ *   - Webhooks Google Calendar (lookup via channel_id em calendar_connections).
+ *   - OAuth callbacks (lookup via clerk_user_id (extraído do state) em profiles).
+ *   - Cron sistêmica (loop por tenant após Query 0 cross-tenant).
+ *
+ * Abre transação BEGIN, seta GUC, executa callback com PoolClient transacional,
+ * COMMIT em sucesso ou ROLLBACK em throw. Sempre libera o client.
+ *
+ * @param tenantId UUID do tenant (já resolvido externamente).
+ * @param callback Função async que recebe PoolClient já no contexto RLS.
+ * @returns Promise<T> com o resultado do callback.
+ */
+export async function withTenantClient<T>(
+  tenantId: string,
+  callback: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId])
+    const result = await callback(client)
+    await client.query('COMMIT')
+    return result
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+}
