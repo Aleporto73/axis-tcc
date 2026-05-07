@@ -61,23 +61,31 @@ Alê (gestor de dev). Refatoração só com aprovação explícita.
 
 ---
 
-## HUB-05.A (FECHADO) + HUB-05.B (Onda 10): RLS calendar_connections + events
+## HUB-05.A (FECHADO) + HUB-05.B (FECHADO): RLS calendar_connections + events
 
-> **STATUS PARCIAL: events resolvido em 05/05/2026 (Onda 9 G.1). calendar_connections adiado para Onda 10 (HUB-05.B).**
+> **STATUS HUB-05.B: FECHADO em 07/05/2026 (Onda 11 — 8 commits sequenciais).**
 >
-> **Decisão consciente:** RLS forced em calendar_connections exige refator prévio de 5 rotas runtime (cron renew-webhook, webhook Google TCC + ABA, OAuth callback TCC + ABA, sessions/create createGoogleCalendarEvent). Risco de quebrar feature Google Calendar durante deploy. Sem urgência real (HUB-05 é defesa em profundidade — Clerk auth + queries com WHERE tenant_id já fazem o trabalho hoje, RLS seria reforço).
+> **Solução aplicada (sequência cronológica em main):**
+> - `ce789c4` Etapa 0 — promove `withTenantClient` como export central em `src/database/with-tenant.ts:238` (cópia literal de `scheduler.ts:57-74`)
+> - `a0e3856` Etapa 1 — refator `app/api/google/callback/route.ts` (TCC OAuth, template canônico)
+> - `ac462d5` Etapa 2 — refator `app/api/aba/google/callback/route.ts` (ABA OAuth, espelho do template)
+> - `a0d50b7` Etapa 3 — refator `app/api/sessions/create/route.ts` (helper `createGoogleCalendarEvent` recebe `client` transacional, caso híbrido)
+> - `e3b0edb` Etapa 4 (split 1) — fix bug 410 ROLLBACK→COMMIT em `app/api/aba/google/webhook/route.ts` (cleanup self-healing restaurado, DELETE sync_token persiste)
+> - `1e703a2` Etapa 4 (split 2) — refator CANONICAL `aba/google/webhook` (Caminho 2 manual → `withTenantClient`)
+> - `c7de1fc` Etapa 5 — refator `app/api/google/webhook/route.ts` (TCC webhook, mais pesado: 9 queries em transação)
+> - `5c8ea52` Etapa 6 — refator `app/api/cron/renew-webhook/route.ts` (Pattern S3: Query 0 + loop por tenant com `withTenantClient`)
 >
-> **Onda 10 — sessão dedicada (CC novo + chat novo):**
-> - G.2: refator 5 rotas para usar withTenant ou pattern S3 (DISTINCT tenant_id antes de set_config)
-> - G.3: migration 069 RLS forced em calendar_connections
-> - Esforço estimado: 4-6h
+> **Aprendizados-chave:**
 >
-> **Prioridade Onda 10:**
-> 1. HUB-09 (baseline migration via pg_dump --schema-only) — bloqueia E2E
-> 2. HUB-05.B (refator + RLS calendar_connections)
-> 3. Bloco E Playwright nightly (depende de HUB-09)
+> - `withTenantClient(tenantId, callback)` agora é export central em `src/database/with-tenant.ts:238`. Usado quando `tenant_id` vem de fonte não-Clerk (webhooks, OAuth state, cron). Cópias locais em `scheduler.ts:57-74` e `transcription-worker.ts:69-86` permanecem (consolidação = HUB-12).
+> - Lookup pré-tenant via `pool.query` direto preservado em 3 rotas por design: `app/api/google/webhook/route.ts:196` (channel_id+resource_id), `app/api/aba/google/webhook/route.ts:248` (channel_id), `app/api/cron/renew-webhook/route.ts:55` (Query 0 cross-tenant Pattern S3). Em todos os casos o `tenant_id` é descoberto no lookup antes de abrir contexto RLS.
+> - Bug 410 latente em `aba/google/webhook` corrigido em commit isolado: ROLLBACK reverter o DELETE intencional do sync_token expirado quebrava cleanup self-healing. Fix split em commit separado para auditoria limpa (vide commits `e3b0edb` + `1e703a2`).
+> - Atomicidade real ganha em todos os 6 arquivos: queries pós-lookup viram transação BEGIN/COMMIT implícita via helper. Erro em qualquer query = ROLLBACK total. Estado consistente sempre.
+> - Pattern S3 (Query 0 cross-tenant + loop com `withTenantClient` por tenant) aplicado em `cron/renew-webhook` (Etapa 6). Mesma estrutura do `scheduler.ts` Item 11F. Try/catch granular outer-per-tenant + inner-per-conn isola erros sem bloquear outros tenants.
+> - Tabela `calendar_connections` permanece **sem RLS forced** após HUB-05.B. Migration 070 (= HUB-13) aplicará RLS — pré-requisito: implementar bypass para Query 0 do cron (GUC `app.is_cron` ou similar, padrão `app.is_worker` migration 046).
+> - Smoke pós-deploy (07/05/2026, commit `5c8ea52`) revelou 0 regressões + 2 bugs pré-existentes não relacionados: (a) worker de transcrição em loop reportando `[AXIS RLS] app.tenant_id não definido` (= HUB-14, debt novo aberto); (b) Server Action ID invalidado por rebuild (sintoma de browser stale após hot reload — não-bloqueante).
 >
-> Histórico abaixo preservado para contexto.
+> Histórico abaixo preservado para contexto da decisão original (Onda 9 G.1 + Onda 10).
 >
 > ---
 
@@ -308,7 +316,9 @@ Alê. Risco prático baixo (1/544 = 0.18% failure rate atualmente).
 
 ---
 
-## Backlog Onda 11
+## Backlog Onda 11 (FECHADO)
+
+> **STATUS: Onda 11 fechou HUB-05.B em 07/05/2026.** Itens housekeeping abaixo permanecem pendentes ou foram absorvidos. Items remanescentes movidos para Backlog Onda 12.
 
 Itens identificados durante HUB-09 (Onda 10) que não bloqueiam fechamento mas merecem registro:
 
@@ -319,14 +329,121 @@ Itens identificados durante HUB-09 (Onda 10) que não bloqueiam fechamento mas m
 - **`docs/competitive-brief-2026-04-29.md`** — untracked desde 03/05. Decisão pendente: commitar avulso (cosmético) ou stash.
 - **`public/axisTDAH.png`** — modificado 03/05 (37KB → 72KB). Logo TDAH trocado fora de commit relacionado. Decisão: commit chore separado.
 
-### Débitos arquiteturais já documentados acima (mantêm prioridade)
+### Débitos arquiteturais já documentados acima
 
-- **HUB-05.B** — Refator 5 rotas `calendar_connections` (cron renew-webhook, webhooks Google TCC+ABA, OAuth callbacks TCC+ABA, sessions/create) → migration RLS forced. Esforço 4-6h. Sessão dedicada (CC novo + chat novo).
+- ~~**HUB-05.B** — Refator 5 rotas `calendar_connections`~~ ✅ **FECHADO 07/05/2026** (vide bloco HUB-05.B FECHADO acima — 8 commits sequenciais, 6 arquivos refatorados).
 - **HUB-10** — Flaky vitest `tcc-isolation > analyze-clinical 401`. Failure rate 0.18% (1/544 sob carga concorrente). Refator opcional (Opção B preferida: `test.concurrent(false)` ou separar arquivo isolado). Esforço ~1h.
 
 ### Bloco E (Playwright nightly)
 
 Adiado para Onda 11 — agora desbloqueado pois HUB-09 está fechado e baseline garante DB completo em CI ephemeral. Esforço ~1h30.
+
+---
+
+## Backlog Onda 12
+
+Itens identificados durante / após HUB-05.B (Onda 11). Sinergia HUB-12 + HUB-14: podem fechar na mesma sessão (refatorar worker = parte de consolidação).
+
+### HUB-12: Consolidação `withTenantClient` em scheduler e worker
+
+`withTenantClient` foi promovido para export central em `src/database/with-tenant.ts:238` na Etapa 0 do HUB-05.B (commit `ce789c4`). Cópias locais permanecem em:
+
+- `src/services/scheduler.ts:57-74` (Item 11F, Onda 7)
+- `scripts/workers/transcription-worker.ts:69-86`
+
+Refator: substituir por `import { withTenantClient } from '@/src/database/with-tenant'` + remover declaração local. Diff esperado: 2 arquivos, ~30 linhas removidas + 2 imports adicionados. Estimativa ~20min.
+
+**Quem decide:** Alê. Sem urgência — código duplicado funciona. Refator é higiene.
+
+### HUB-13: Migration 070 — RLS forced em `calendar_connections`
+
+Após fechamento HUB-05.B, todas as 6 rotas que tocam `calendar_connections` usam `withTenantClient` para queries pós-lookup. Tabela ainda **sem RLS forced** — defense-in-depth pendente.
+
+Migration proposta:
+
+```sql
+ALTER TABLE calendar_connections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE calendar_connections FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON calendar_connections
+  FOR ALL
+  USING (tenant_id = app_tenant_id())
+  WITH CHECK (tenant_id = app_tenant_id());
+```
+
+**Pré-requisito (bloqueador):** Query 0 cross-tenant em `app/api/cron/renew-webhook/route.ts:55` precisa funcionar após RLS. `axis_app` (não-superuser) respeita RLS — query retornará 0 rows. Implementar bypass específico:
+
+- Opção B (recomendada): GUC `app.is_cron='true'` setado pelo cron antes de Query 0, com policy adicional permitindo bypass quando GUC presente. Padrão similar ao `app.is_worker` da migration 046.
+
+Estimativa ~2h sessão dedicada (migration + bypass policy + smoke prod).
+
+**Quem decide:** Alê. Após HUB-12 fechado (não-bloqueante mas conveniente).
+
+### HUB-14: Worker de transcrição em loop com `[AXIS RLS] app.tenant_id não definido`
+
+Descoberto no smoke pós-deploy HUB-05.B (07/05/2026). Worker `scripts/workers/transcription-worker.ts` está em loop reportando:
+
+```
+[AXIS RLS] app.tenant_id não definido na sessão. Middleware não injetou o tenant.
+```
+
+Worker tem cópia local de `withTenantClient` (linhas 69-86) mas o loop principal não a usa para queries que tocam tabelas RLS-protegidas. Investigar:
+
+1. Quais queries no worker tocam tabelas com RLS forced?
+2. Se transcripts sendo gravados sob `axis_app` retornam 0 rows / falham silenciosamente.
+3. Se há jobs de clientes ficando travados em estado "processing" indefinidamente.
+
+Refator: envolver loop principal em `withTenantClient(job.tenant_id, ...)` (cópia local já existe). Estimativa ~30min refator + investigação produção.
+
+**Sinergia HUB-12 + HUB-14:** podem fechar na mesma sessão. Refatorar worker (HUB-14) já elimina cópia local (parte de HUB-12).
+
+**Quem decide:** Alê. **P1 se confirmado que jobs estão silenciosamente errando** — pode estar afetando clientes em produção.
+
+---
+
+## Padrões observados
+
+Lições recorrentes registradas para uso em futuros refators / sessões.
+
+### 2 ICs cruzadas em decisão arquitetural ambígua
+
+Quando há decisão estrutural com múltiplas opções válidas (ex: bug latente exposto durante refator, sub-decisão STRICT vs CONSERVATIVE), consultar 2 instâncias de IA independentes e confrontar análises antes de aprovar.
+
+**Validações empíricas:**
+
+- HUB-05.B Etapa 4: split commit (bug fix isolado vs refator junto). 2 ICs convergiram em "split obrigatório por auditoria limpa".
+- HUB-05.B Etapa 6: sub-decisão STRICT (header simplificado + JSON expandido) vs CONSERVATIVE. 2 ICs alinharam em STRICT.
+
+Custo: +5min por decisão. Benefício: evita arrependimento estrutural pós-deploy.
+
+### Bug FUSE refinado: Python script de extração programática
+
+Bug original FUSE/virtiofs (>24KB trunca silenciosamente) já documentado. **Variante adicional** descoberta na Etapa 5 do HUB-05.B (07/05/2026):
+
+- Python script que extrai body de função programaticamente e reconstrói com `body_indented + "})\n" + "}"` pode produzir fechamento concatenado (`}  })` em uma linha) se `body_indented` não terminar com `\n`.
+- TypeScript aceita `}})\n}` como sintaxe válida — typecheck NÃO pega o bug.
+- Detecção: inspeção visual do `git diff` (ou ESLint stylistic rules em CI).
+
+**Padrão para refators futuros via Python:** garantir que `body_indented` termine com `\n` antes do `})\n` de fechamento. Validação adicional: `tail -10` pós-write deve mostrar fechamento limpo (linha `}` isolada antes de `})`).
+
+```python
+# CERTO:
+new_function = (
+    new_header
+    + "  await withTenantClient(tenantId, async (client) => {\n"
+    + body_indented
+    + "\n  })\n"  # <- \n explícito antes do fechamento
+    + "}"
+)
+
+# ERRADO (bug HUB-05.B Etapa 5):
+new_function = (
+    new_header
+    + "  await withTenantClient(tenantId, async (client) => {\n"
+    + body_indented   # se body_indented nao termina com \n...
+    + "  })\n"        # ...fica colado: "...    }  })"
+    + "}"
+)
+```
 
 ---
 
