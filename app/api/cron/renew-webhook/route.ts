@@ -4,30 +4,19 @@
 // Renova webhooks Google Calendar expirados/expirando em <=24h.
 // Auth: Bearer CRON_SECRET (mesmo padrão dos outros crons).
 //
-// TODO Item futuro (RLS calendar_connections):
-//   Esta rota faz pool.query cross-tenant SEM set_config('app.tenant_id').
-//   Funciona hoje porque calendar_connections NAO tem RLS forced
-//   (validado: pg_class.relrowsecurity = f, relforcerowsecurity = f).
-//   Quando RLS for ativada nessa tabela, esta rota precisa do mesmo
-//   refator pattern S3 que scheduler.ts recebeu no Item 11F:
-//     - Query 0 cross-tenant: SELECT DISTINCT tenant_id FROM calendar_connections
-//     - Loop por tenant: withTenantClient(tenantId, async (client) => { ... })
-//   Ver docs/audits/onda7_backlog.md Item 11F.
+// Pattern S3 cross-tenant (HUB-05.B Etapa 6):
+//   Query 0 descobre conns expirando (sem RLS context — calendar_connections
+//   sem RLS forced ate migration 070/071).
+//   Loop por tenant: withTenantClient(tenantId, ...) processa todas as conns
+//   daquele tenant em transacao isolada. Mesma estrutura do scheduler.ts (Item 11F).
 // =====================================================
 
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import pool from '@/src/database/db'
+import { withTenantClient } from '@/src/database/with-tenant'
 import { randomUUID } from 'crypto'
 import { isValidCronAuth } from '@/src/lib/cron-auth'
 import { env } from '@/src/lib/env'
-
-const pool = new Pool({
-  host: env.DATABASE_HOST,
-  port: parseInt(env.DATABASE_PORT || '5432'),
-  user: env.DATABASE_USER,
-  password: env.DATABASE_PASSWORD,
-  database: env.DATABASE_NAME,
-})
 
 const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || ''
 const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || ''
@@ -62,6 +51,7 @@ export async function GET(request: NextRequest) {
     const expiringSoon = new Date()
     expiringSoon.setDate(expiringSoon.getDate() + 1)
 
+    // Query 0 cross-tenant: descobre conns expirando (sem RLS context)
     const connsResult = await pool.query(
       `SELECT * FROM calendar_connections 
        WHERE provider = 'google' 
@@ -70,81 +60,107 @@ export async function GET(request: NextRequest) {
       [expiringSoon]
     )
 
+    // Agrupar por tenant_id em memoria (evita N+1 queries)
+    const connsByTenant = new Map<string, typeof connsResult.rows>()
+    for (const conn of connsResult.rows) {
+      if (!connsByTenant.has(conn.tenant_id)) {
+        connsByTenant.set(conn.tenant_id, [])
+      }
+      connsByTenant.get(conn.tenant_id)!.push(conn)
+    }
+
     let renewed = 0
     let failed = 0
+    const errorsByTenant: Record<string, string> = {}
 
-    for (const conn of connsResult.rows) {
+    // Pattern S3: loop por tenant, withTenantClient seta GUC, processa conns
+    for (const [tenantId, conns] of connsByTenant) {
       try {
-        let accessToken = conn.access_token
+        await withTenantClient(tenantId, async (client) => {
+          for (const conn of conns) {
+            try {
+              let accessToken = conn.access_token
 
-        if (new Date(conn.token_expiry) < new Date()) {
-          accessToken = await refreshAccessToken(conn.refresh_token)
-          if (!accessToken) {
-            failed++
-            continue
+              if (new Date(conn.token_expiry) < new Date()) {
+                accessToken = await refreshAccessToken(conn.refresh_token)
+                if (!accessToken) {
+                  failed++
+                  continue
+                }
+                await client.query(
+                  'UPDATE calendar_connections SET access_token = $1, token_expiry = $2, updated_at = NOW() WHERE id = $3',
+                  [accessToken, new Date(Date.now() + 3600 * 1000), conn.id]
+                )
+              }
+
+              if (conn.webhook_channel_id && conn.webhook_resource_id) {
+                try {
+                  await fetch('https://www.googleapis.com/calendar/v3/channels/stop', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': 'Bearer ' + accessToken,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      id: conn.webhook_channel_id,
+                      resourceId: conn.webhook_resource_id,
+                    }),
+                  })
+                } catch (e) {
+                }
+              }
+
+              const channelId = randomUUID()
+              const expiration = Date.now() + 7 * 24 * 60 * 60 * 1000
+
+              const watchResponse = await fetch(
+                'https://www.googleapis.com/calendar/v3/calendars/primary/events/watch',
+                {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': 'Bearer ' + accessToken,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    id: channelId,
+                    type: 'web_hook',
+                    address: WEBHOOK_URL,
+                    expiration: expiration,
+                  }),
+                }
+              )
+
+              if (watchResponse.ok) {
+                const watchData = await watchResponse.json()
+                await client.query(
+                  `UPDATE calendar_connections 
+                   SET webhook_channel_id = $1, webhook_resource_id = $2, webhook_expiration = $3, updated_at = NOW()
+                   WHERE id = $4`,
+                  [watchData.id, watchData.resourceId, new Date(parseInt(watchData.expiration)), conn.id]
+                )
+                renewed++
+              } else {
+                failed++
+              }
+            } catch (e) {
+              console.error('[RENEW] Erro conn:', conn.id, e)
+              failed++
+            }
           }
-          await pool.query(
-            'UPDATE calendar_connections SET access_token = $1, token_expiry = $2, updated_at = NOW() WHERE id = $3',
-            [accessToken, new Date(Date.now() + 3600 * 1000), conn.id]
-          )
-        }
-
-        if (conn.webhook_channel_id && conn.webhook_resource_id) {
-          try {
-            await fetch('https://www.googleapis.com/calendar/v3/channels/stop', {
-              method: 'POST',
-              headers: {
-                'Authorization': 'Bearer ' + accessToken,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                id: conn.webhook_channel_id,
-                resourceId: conn.webhook_resource_id,
-              }),
-            })
-          } catch (e) {
-          }
-        }
-
-        const channelId = randomUUID()
-        const expiration = Date.now() + 7 * 24 * 60 * 60 * 1000
-
-        const watchResponse = await fetch(
-          'https://www.googleapis.com/calendar/v3/calendars/primary/events/watch',
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': 'Bearer ' + accessToken,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              id: channelId,
-              type: 'web_hook',
-              address: WEBHOOK_URL,
-              expiration: expiration,
-            }),
-          }
-        )
-
-        if (watchResponse.ok) {
-          const watchData = await watchResponse.json()
-          await pool.query(
-            `UPDATE calendar_connections 
-             SET webhook_channel_id = $1, webhook_resource_id = $2, webhook_expiration = $3, updated_at = NOW()
-             WHERE id = $4`,
-            [watchData.id, watchData.resourceId, new Date(parseInt(watchData.expiration)), conn.id]
-          )
-          renewed++
-        } else {
-          failed++
-        }
+        })
       } catch (e) {
-        console.error('[RENEW] Erro:', e)
-        failed++
+        console.error('[RENEW] Erro fatal tenant:', tenantId, e)
+        errorsByTenant[tenantId] = e instanceof Error ? e.message : String(e)
       }
     }
 
-    return NextResponse.json({ success: true, renewed, failed })
+    return NextResponse.json({
+      success: true,
+      renewed,
+      failed,
+      tenants_processed: connsByTenant.size,
+      ...(Object.keys(errorsByTenant).length > 0 ? { errors: errorsByTenant } : {})
+    })
   } catch (error) {
     console.error('[RENEW-WEBHOOK] Erro:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
