@@ -114,6 +114,62 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
 
 ---
 
+## APLICADO EM 2026-05-07 — HUB-05.B FECHADO (refator withTenantClient)
+
+Refator de 6 rotas Google Calendar para usar helper canônico `withTenantClient`,
+fechando débito arquitetural HUB-05.B em produção. **Deploy validado em prod
+07/05/2026** (commit `5c8ea52`, smoke sem regressões).
+
+### Arquivos ABA tocados
+
+- **`app/api/aba/google/callback/route.ts`** (Etapa 2, commit `ac462d5`) — ABA OAuth
+  callback, espelho do template TCC. 3 `pool.query` direto wrapped em
+  `withTenantClient(tenant_id, async (client) => { ... })`. Lookup pré-tenant
+  (linha 86 SELECT em `profiles`) preservado por design. Variável `tenant_id`
+  (snake_case) usada direto, sem rename.
+- **`app/api/aba/google/webhook/route.ts`** — split em **2 commits sequenciais**:
+  - **Commit 1 — Bug fix isolado (`e3b0edb`):** path 410 do Google API agora
+    persiste DELETE da `calendar_sync_state` via COMMIT (era revertido pelo
+    ROLLBACK posterior). **Cleanup self-healing restaurado** — sync após token
+    expirado começa do zero sem syncToken inválido. Comentário linha 57 do
+    código (`// Se syncToken expirou (410), limpar`) confirma intenção original.
+  - **Commit 2 — Refator CANONICAL (`1e703a2`):** Caminho 2 manual em
+    `syncCalendarForProfile` (BEGIN/set_config/COMMIT/ROLLBACK explícitos
+    linhas 24-25, 71/agora-COMMIT, 222, 225, 228-230) substituído pelo helper
+    canônico. Lookup pré-tenant via `webhook_channel_id` (linha 248) preservado.
+    `console.log "Sync concluído"` movido para dentro do callback. Outer try/catch
+    preservado para Sentry + log estruturado. Auth google-webhook-signature e
+    fire-and-forget linha 271 intocados.
+
+### Bug fix 410 — Cleanup self-healing restaurado
+
+Antes do fix (commit `e3b0edb`), quando Google retornava 410 (sync_token
+expirado), o código fazia DELETE intencional da `calendar_sync_state` para
+forçar próxima sync a recriar do zero. Mas o ROLLBACK explícito posterior
+revertia o DELETE, deixando o token expirado persistido no DB → sync ficava em
+loop infinito de 410.
+
+Validação prod antes do fix: 1 token velho em 1 tenant teste (sem urgência
+operacional). Hotfix aplicado preventivamente no commit isolado para auditoria
+limpa. Refator CANONICAL aplicado em commit separado (`1e703a2`) preserva
+comportamento idêntico — bug já corrigido + estrutura modernizada.
+
+### Aprendizados-chave
+
+- Helper `withTenantClient` exportado de `src/database/with-tenant.ts:238`
+  (Etapa 0 do HUB-05.B, commit `ce789c4`).
+- Cópias locais em `src/services/scheduler.ts:57-74` e
+  `scripts/workers/transcription-worker.ts:69-86` permanecem (consolidação =
+  HUB-12 Backlog Onda 12).
+- Tabela `calendar_connections` ainda **sem RLS forced** após HUB-05.B.
+  Migration 070 (= HUB-13) aplicará RLS — pré-requisito: bypass GUC
+  `app.is_cron` para Query 0 cross-tenant do cron `renew-webhook`.
+
+Bloco 2 docs (commit `321e593`) atualizou `PONTOS_ATENCAO_ARQUITETURAL.md`
+com HUB-05.A+B FECHADO, Backlog Onda 12 (HUB-12/13/14) e Padrões observados.
+
+---
+
 ## APLICADO EM 2026-04-20 — Auditoria ABA + Hub 5→9/10
 
 Sessão detalhada: [2026-04-20_hub_audit](sessoes/2026-04-20_hub_audit.md).

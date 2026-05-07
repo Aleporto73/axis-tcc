@@ -19,6 +19,18 @@ aparece confirmado como ativo — ver contradição #1 no archive. Infraestrutur
 compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
 Últimas entregas:
+- **HUB-05.B FECHADO (07/05/2026, Onda 11 — 8 commits sequenciais)** — refator
+  `withTenantClient` aplicado em 6 rotas Google Calendar, deploy validado em prod.
+  Helper canônico promovido para `src/database/with-tenant.ts:238` (Etapa 0,
+  commit `ce789c4`). Arquivos TCC tocados: (1) `app/api/google/callback/route.ts`
+  (TCC OAuth, template canônico, commit `a0e3856`); (2) `app/api/sessions/create/route.ts`
+  (helper `createGoogleCalendarEvent` recebe `client` transacional, caso híbrido,
+  commit `a0d50b7`); (3) `app/api/google/webhook/route.ts` (TCC webhook, mais pesado:
+  9 queries em 1 transação, commit `c7de1fc`). Atomicidade real ganha — falha em
+  qualquer query agora dispara ROLLBACK total. Deploy 07/05/2026 (commit `5c8ea52`),
+  smoke prod sem regressões. Bloco 2 docs (commit `321e593`) atualizou
+  `PONTOS_ATENCAO_ARQUITETURAL.md` com HUB-05.A+B FECHADO, Backlog Onda 12
+  (HUB-12/13/14) e Padrões observados.
 - **Hub audit (20/04/2026) — SHARED/infra, commit chain ABA-led** — 6 commits no
   hub que beneficiam TCC sem tocar em código do produto. Novas proteções: (1)
   **ESLint boundaries** (`eslint.config.mjs`, commit `af157c9`) impede que código
