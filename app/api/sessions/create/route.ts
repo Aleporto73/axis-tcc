@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/src/database/db'
+import { PoolClient } from 'pg'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 import { scheduleSessionReminders } from '@/src/services/reminder'
@@ -8,7 +8,6 @@ import { env } from '@/src/lib/env'
 // =====================================================
 // AXIS TCC — Criar Sessão
 // Migration: withTenant (Auditoria TCC P0)
-// Nota: pool mantido para Google Calendar (operação externa)
 // =====================================================
 
 const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || ''
@@ -31,6 +30,7 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
 }
 
 async function createGoogleCalendarEvent(
+  client: PoolClient,
   tenantId: string,
   patientName: string,
   patientEmail: string | null,
@@ -38,7 +38,7 @@ async function createGoogleCalendarEvent(
   durationMinutes: number = 60
 ): Promise<{ eventId: string; meetLink: string | null } | null> {
   try {
-    const connResult = await pool.query(
+    const connResult = await client.query(
       'SELECT * FROM calendar_connections WHERE tenant_id = $1 AND provider = $2',
       [tenantId, 'google']
     )
@@ -50,7 +50,7 @@ async function createGoogleCalendarEvent(
     if (new Date(conn.token_expiry) < new Date()) {
       accessToken = await refreshAccessToken(conn.refresh_token)
       if (!accessToken) return null
-      await pool.query(
+      await client.query(
         'UPDATE calendar_connections SET access_token = $1, token_expiry = $2, updated_at = NOW() WHERE id = $3',
         [accessToken, new Date(Date.now() + 3600 * 1000), conn.id]
       )
@@ -158,8 +158,8 @@ export async function POST(request: NextRequest) {
           throw err
         }
 
-        // Google Calendar opera fora do client transacional (API externa)
         const googleEvent = await createGoogleCalendarEvent(
+          ctx.client,
           tenantId,
           patientName,
           patientEmail,
