@@ -68,7 +68,7 @@ async function syncCalendarForProfile(tenantId: string, profileId: string, clerk
       const eventsErrorBody = await eventsResponse.text()
       Sentry.captureMessage('[ABA_WEBHOOK] Erro ao buscar eventos', { level: 'error', extra: { body: eventsErrorBody?.slice(0, 500) } })
       console.error('[ABA_WEBHOOK] Erro ao buscar eventos:', eventsErrorBody)
-      await client.query('ROLLBACK')
+      await client.query('COMMIT')
       return
     }
 
