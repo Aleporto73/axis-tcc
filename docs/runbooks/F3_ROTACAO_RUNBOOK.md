@@ -1,12 +1,12 @@
-\# F3 — RUNBOOK DA JANELA DE ROTAÇÃO DE SEGREDOS
+﻿\# F3 â€” RUNBOOK DA JANELA DE ROTAÃ‡ÃƒO DE SEGREDOS
 
 
 
-> \*\*AXIS Clínico · Auditoria de Segurança · Pendência F3\*\*
+> \*\*AXIS ClÃ­nico Â· Auditoria de SeguranÃ§a Â· PendÃªncia F3\*\*
 
-> Repo: `Aleporto73/axis-tcc` · VPS: `root@vmi2884668`
+> Repo: `Aleporto73/axis-tcc` Â· VPS: `root@vmi2884668`
 
-> Pré-requisito: commit `68a62d7` (MAINTENANCE\_MODE + `scripts/jobs/rotate\_encryption\_key.sql`) já em prod via deploy da Fase B.
+> PrÃ©-requisito: commit `68a62d7` (MAINTENANCE\_MODE + `scripts/jobs/rotate\_encryption\_key.sql`) jÃ¡ em prod via deploy da Fase B.
 
 
 
@@ -14,7 +14,7 @@
 
 
 
-\## ⚠️ REGRA DE OURO — vale para o runbook inteiro
+\## âš ï¸ REGRA DE OURO â€” vale para o runbook inteiro
 
 
 
@@ -22,13 +22,13 @@
 
 
 
-\- Não usar `cat` para exibir segredo no terminal.
+\- NÃ£o usar `cat` para exibir segredo no terminal.
 
-\- Não colar segredo em chat (Claude/CC), print, issue ou commit.
+\- NÃ£o colar segredo em chat (Claude/CC), print, issue ou commit.
 
-\- Sempre carregar segredo em variável local de shell e dar `unset` depois.
+\- Sempre carregar segredo em variÃ¡vel local de shell e dar `unset` depois.
 
-\- Se um segredo vazar em qualquer canal, ele está comprometido: gerar outro.
+\- Se um segredo vazar em qualquer canal, ele estÃ¡ comprometido: gerar outro.
 
 
 
@@ -44,17 +44,17 @@
 
 |---|---|
 
-| App PROD | `/root/axis-tcc` · PM2 `axis-tcc` · db `axis\_tcc` |
+| App PROD | `/root/axis-tcc` Â· PM2 `axis-tcc` Â· db `axis\_tcc` |
 
-| App STAGING | `/root/axis-tcc-staging` · PM2 `axis-staging` · db `axis\_tcc\_staging` |
+| App STAGING | `/root/axis-tcc-staging` Â· PM2 `axis-staging` Â· db `axis\_tcc\_staging` |
 
-| Worker | PM2 `axis-worker-transcription` |
+| Worker | PM2 `axis-worker-transcribe` |
 
 | Banco | Docker container `axis-postgres`, user `axis` |
 
 | `.env` | `/root/axis-tcc/.env` e `/root/axis-tcc-staging/.env` |
 
-| Build | `npm run next:build` (\*\*NÃO existe `npm run build`\*\*) |
+| Build | `npm run next:build` (\*\*NÃƒO existe `npm run build`\*\*) |
 
 | SQL recifra | `/root/axis-tcc/scripts/jobs/rotate\_encryption\_key.sql` |
 
@@ -64,13 +64,13 @@ Fatos que governam a janela:
 
 
 
-\- `DATABASE\_PASSWORD` é \*\*igual\*\* em prod e staging → trocar \*\*nos dois\*\* `.env`.
+\- `DATABASE\_PASSWORD` Ã© \*\*igual\*\* em prod e staging â†’ trocar \*\*nos dois\*\* `.env`.
 
-\- `AXIS\_ENCRYPTION\_KEY` existe \*\*só em prod\*\* (hash `6e22fe5c`); staging está \*\*vazia\*\* (hash `e3b0c442` = string vazia).
+\- `AXIS\_ENCRYPTION\_KEY` existe \*\*sÃ³ em prod\*\* (hash `6e22fe5c`); staging estÃ¡ \*\*vazia\*\* (hash `e3b0c442` = string vazia).
 
 \- Portanto: \*\*recifra roda SOMENTE no banco `axis\_tcc` (prod). NUNCA em `axis\_tcc\_staging`.\*\*
 
-\- O SQL de rotação usa `app.encryption\_key\_old` / `app.encryption\_key\_new` via `SET` / `current\_setting`.
+\- O SQL de rotaÃ§Ã£o usa `app.encryption\_key\_old` / `app.encryption\_key\_new` via `SET` / `current\_setting`.
 
 
 
@@ -78,27 +78,27 @@ Fatos que governam a janela:
 
 
 
-\## ✅ Blockers B1–B5 — RESOLVIDOS (recon confirmado em 12/06/2026)
+\## âœ… Blockers B1â€“B5 â€” RESOLVIDOS (recon confirmado em 12/06/2026)
 
 
 
-| # | Item | Resolução |
+| # | Item | ResoluÃ§Ã£o |
 
 |---|---|---|
 
-| B1 | Domínio prod | `https://axisclinico.com` |
+| B1 | DomÃ­nio prod | `https://axisclinico.com` |
 
 | B2 | Rotas cron | `/api/cron/reminders`, `/api/cron/renew-webhook`, `/api/cron/scan-integrity` |
 
 | B3 | Rota p/ validar 503 | `/api/aba/me` |
 
-| B4 | Bypass middleware | \*\*Não existe\*\* — em maintenance só passam `/api/health` e `/manutencao`. Smoke decrypt = validação direta no banco (Passo 13.0) |
+| B4 | Bypass middleware | \*\*NÃ£o existe\*\* â€” em maintenance sÃ³ passam `/api/health` e `/manutencao`. Smoke decrypt = validaÃ§Ã£o direta no banco (Passo 13.0) |
 
 | B5 | Colunas cifradas | 7 colunas confirmadas (tabela no Passo 13.0); alvo preferencial `service\_sites.address\_encrypted` |
 
 
 
-Nenhum placeholder pendente. Runbook pronto para execução.
+Nenhum placeholder pendente. Runbook pronto para execuÃ§Ã£o.
 
 
 
@@ -106,23 +106,23 @@ Nenhum placeholder pendente. Runbook pronto para execução.
 
 
 
-\## Visão geral das fases
+\## VisÃ£o geral das fases
 
 
 
-| Fase | O quê | Downtime |
+| Fase | O quÃª | Downtime |
 
 |---|---|---|
 
-| A | `CRON\_SECRET` + `INTERNAL\_API\_KEY` (rotação a quente) | Zero |
+| A | `CRON\_SECRET` + `INTERNAL\_API\_KEY` (rotaÃ§Ã£o a quente) | Zero |
 
-| B | Backup → MAINTENANCE\_MODE → recifra `AXIS\_ENCRYPTION\_KEY` (só prod) → `DATABASE\_PASSWORD` → smoke → reabrir | 15–30 min |
+| B | Backup â†’ MAINTENANCE\_MODE â†’ recifra `AXIS\_ENCRYPTION\_KEY` (sÃ³ prod) â†’ `DATABASE\_PASSWORD` â†’ smoke â†’ reabrir | 15â€“30 min |
 
 | C | Limpeza: `CRON\_SECRET\_OLD`, default hardcoded, backup antigo | Zero |
 
 
 
-\*\*Ponto crítico da janela:\*\* `recifra concluída + .env com chave nova + restart do app`. Antes de desligar a manutenção, a \*\*leitura real de dado cifrado em prod\*\* precisa estar verde.
+\*\*Ponto crÃ­tico da janela:\*\* `recifra concluÃ­da + .env com chave nova + restart do app`. Antes de desligar a manutenÃ§Ã£o, a \*\*leitura real de dado cifrado em prod\*\* precisa estar verde.
 
 
 
@@ -130,15 +130,15 @@ Nenhum placeholder pendente. Runbook pronto para execução.
 
 
 
-\# FASE A — Rotação a quente (sem downtime)
+\# FASE A â€” RotaÃ§Ã£o a quente (sem downtime)
 
 
 
-\## Passo 1 — Preflight read-only
+\## Passo 1 â€” Preflight read-only
 
 
 
-Tudo neste passo é só leitura. Nada é alterado.
+Tudo neste passo Ã© sÃ³ leitura. Nada Ã© alterado.
 
 
 
@@ -194,23 +194,23 @@ sed -n '1,120p' /root/axis-tcc/scripts/jobs/rotate\_encryption\_key.sql
 
 
 
-\### 🛑 TRAVA 1 — não prosseguir se qualquer item abaixo falhar
+\### ðŸ›‘ TRAVA 1 â€” nÃ£o prosseguir se qualquer item abaixo falhar
 
 
 
-\- \[ ] `git status` limpo em prod \*\*e\*\* staging (working tree sem alterações).
+\- \[ ] `git status` limpo em prod \*\*e\*\* staging (working tree sem alteraÃ§Ãµes).
 
 \- \[ ] Container `axis-postgres` rodando (`Status: Up`).
 
 \- \[ ] Os dois `.env` existem.
 
-\- \[ ] PM2 mostra os 3 processos: `axis-tcc`, `axis-staging`, `axis-worker-transcription` (status `online`).
+\- \[ ] PM2 mostra os 3 processos: `axis-tcc`, `axis-staging`, `axis-worker-transcribe` (status `online`).
 
-\- \[ ] `rotate\_encryption\_key.sql` existe e o cabeçalho confere com o esperado (`app.encryption\_key\_old` / `app.encryption\_key\_new`).
+\- \[ ] `rotate\_encryption\_key.sql` existe e o cabeÃ§alho confere com o esperado (`app.encryption\_key\_old` / `app.encryption\_key\_new`).
 
 
 
-Se algo falhar: \*\*parar aqui\*\*, investigar e só voltar com tudo verde.
+Se algo falhar: \*\*parar aqui\*\*, investigar e sÃ³ voltar com tudo verde.
 
 
 
@@ -218,11 +218,11 @@ Se algo falhar: \*\*parar aqui\*\*, investigar e só voltar com tudo verde.
 
 
 
-\## Passo 2 — Gerar novos valores na VPS (CRON\_SECRET e INTERNAL\_API\_KEY)
+\## Passo 2 â€” Gerar novos valores na VPS (CRON\_SECRET e INTERNAL\_API\_KEY)
 
 
 
-Os segredos nascem \*\*dentro da VPS\*\*, em diretório protegido, nunca no chat.
+Os segredos nascem \*\*dentro da VPS\*\*, em diretÃ³rio protegido, nunca no chat.
 
 
 
@@ -240,7 +240,7 @@ chmod 700 "$ROT\_DIR"
 
 
 
-\# === BACKUP DOS .env ANTES DE QUALQUER ALTERAÇÃO DE SEGREDO (ground truth do rollback F3) ===
+\# === BACKUP DOS .env ANTES DE QUALQUER ALTERAÃ‡ÃƒO DE SEGREDO (ground truth do rollback F3) ===
 
 cp -a /root/axis-tcc/.env "$ROT\_DIR/env.prod.before\_f3"
 
@@ -264,7 +264,7 @@ ls -la "$ROT\_DIR"
 
 
 
-⚠️ \*\*Não usar `cat` para "conferir" os valores.\*\* O `ls -la` confirma que existem e têm tamanho > 0. Para usar um valor, carregar em variável:
+âš ï¸ \*\*NÃ£o usar `cat` para "conferir" os valores.\*\* O `ls -la` confirma que existem e tÃªm tamanho > 0. Para usar um valor, carregar em variÃ¡vel:
 
 
 
@@ -272,7 +272,7 @@ ls -la "$ROT\_DIR"
 
 ROT\_DIR="$(ls -td /root/axis-secret-rotation-\* | head -1)"
 
-\# exemplo de uso pontual (não imprimir):
+\# exemplo de uso pontual (nÃ£o imprimir):
 
 \# NOVO="$(cat "$ROT\_DIR/CRON\_SECRET.new")"
 
@@ -284,7 +284,7 @@ ROT\_DIR="$(ls -td /root/axis-secret-rotation-\* | head -1)"
 
 
 
-\## Passo 3 — Rotacionar `CRON\_SECRET` (modo graceful)
+\## Passo 3 â€” Rotacionar `CRON\_SECRET` (modo graceful)
 
 
 
@@ -296,9 +296,9 @@ Editar `/root/axis-tcc/.env`:
 
 
 
-1\. Copiar o valor \*\*atual\*\* de `CRON\_SECRET` para uma nova linha `CRON\_SECRET\_OLD=` (o middleware graceful aceita o antigo durante a transição).
+1\. Copiar o valor \*\*atual\*\* de `CRON\_SECRET` para uma nova linha `CRON\_SECRET\_OLD=` (o middleware graceful aceita o antigo durante a transiÃ§Ã£o).
 
-2\. Substituir `CRON\_SECRET` pelo conteúdo de `$ROT\_DIR/CRON\_SECRET.new` (abrir o `.env` no editor e colar a partir do arquivo, sem ecoar no terminal — ex.: dentro do `nano`, ler com `Ctrl+R $ROT\_DIR/CRON\_SECRET.new`).
+2\. Substituir `CRON\_SECRET` pelo conteÃºdo de `$ROT\_DIR/CRON\_SECRET.new` (abrir o `.env` no editor e colar a partir do arquivo, sem ecoar no terminal â€” ex.: dentro do `nano`, ler com `Ctrl+R $ROT\_DIR/CRON\_SECRET.new`).
 
 
 
@@ -332,7 +332,7 @@ crontab -e   # editar manualmente, substituindo o secret antigo pelo novo
 
 
 
-⚠️ Ao editar o crontab, o secret novo será gravado ali — isso é esperado (o crontab é o caller), mas \*\*não colar o conteúdo do crontab em chat/print\*\*.
+âš ï¸ Ao editar o crontab, o secret novo serÃ¡ gravado ali â€” isso Ã© esperado (o crontab Ã© o caller), mas \*\*nÃ£o colar o conteÃºdo do crontab em chat/print\*\*.
 
 
 
@@ -366,11 +366,11 @@ unset CRON\_SECRET\_NEW
 
 
 
-Esperado: `200` (ou status normal da rota). `401/403` = secret não bateu → revisar `.env` e restart.
+Esperado: `200` (ou status normal da rota). `401/403` = secret nÃ£o bateu â†’ revisar `.env` e restart.
 
 
 
-⚠️ Se o output do `curl` contiver qualquer header com segredo, \*\*não colar em chat\*\*.
+âš ï¸ Se o output do `curl` contiver qualquer header com segredo, \*\*nÃ£o colar em chat\*\*.
 
 
 
@@ -378,9 +378,9 @@ Esperado: `200` (ou status normal da rota). `401/403` = secret não bateu → re
 
 
 
-\- Se staging tem cron com `CRON\_SECRET`: repetir 3.1–3.4 em `/root/axis-tcc-staging/.env` + `pm2 restart axis-staging --update-env`.
+\- Se staging tem cron com `CRON\_SECRET`: repetir 3.1â€“3.4 em `/root/axis-tcc-staging/.env` + `pm2 restart axis-staging --update-env`.
 
-\- Se staging \*\*não\*\* usa cron: registrar aqui como \*\*"não aplicável"\*\* e seguir.
+\- Se staging \*\*nÃ£o\*\* usa cron: registrar aqui como \*\*"nÃ£o aplicÃ¡vel"\*\* e seguir.
 
 
 
@@ -388,7 +388,7 @@ Esperado: `200` (ou status normal da rota). `401/403` = secret não bateu → re
 
 
 
-⏳ \*\*Só na FASE C (Passo 15), após smoke completo verde.\*\* Não remover agora.
+â³ \*\*SÃ³ na FASE C (Passo 15), apÃ³s smoke completo verde.\*\* NÃ£o remover agora.
 
 
 
@@ -396,11 +396,11 @@ Esperado: `200` (ou status normal da rota). `401/403` = secret não bateu → re
 
 
 
-\## Passo 4 — Rotacionar `INTERNAL\_API\_KEY`
+\## Passo 4 â€” Rotacionar `INTERNAL\_API\_KEY`
 
 
 
-1\. Editar `/root/axis-tcc/.env`: substituir `INTERNAL\_API\_KEY` pelo conteúdo de `$ROT\_DIR/INTERNAL\_API\_KEY.new` (mesma técnica do Passo 3.1 — sem ecoar).
+1\. Editar `/root/axis-tcc/.env`: substituir `INTERNAL\_API\_KEY` pelo conteÃºdo de `$ROT\_DIR/INTERNAL\_API\_KEY.new` (mesma tÃ©cnica do Passo 3.1 â€” sem ecoar).
 
 2\. Verificar se staging usa `INTERNAL\_API\_KEY`:
 
@@ -414,7 +414,7 @@ grep -c '^INTERNAL\_API\_KEY=' /root/axis-tcc-staging/.env || echo "staging nao 
 
 
 
-3\. Se staging usa: trocar também em `/root/axis-tcc-staging/.env` (mesmo valor novo).
+3\. Se staging usa: trocar tambÃ©m em `/root/axis-tcc-staging/.env` (mesmo valor novo).
 
 4\. Verificar se o worker usa a key:
 
@@ -422,7 +422,7 @@ grep -c '^INTERNAL\_API\_KEY=' /root/axis-tcc-staging/.env || echo "staging nao 
 
 ```bash
 
-pm2 env axis-worker-transcription | grep -c INTERNAL\_API\_KEY || echo "worker nao usa INTERNAL\_API\_KEY"
+pm2 env axis-worker-transcribe | grep -c INTERNAL\_API\_KEY || echo "worker nao usa INTERNAL\_API\_KEY"
 
 ```
 
@@ -440,13 +440,13 @@ pm2 restart axis-staging --update-env
 
 \# somente se o worker usar a key:
 
-pm2 restart axis-worker-transcription --update-env
+pm2 restart axis-worker-transcribe --update-env
 
 ```
 
 
 
-6\. Smoke rápido: qualquer fluxo interno que use a key (ex.: chamada interna app→worker) deve funcionar. Logs sem `401/403` interno:
+6\. Smoke rÃ¡pido: qualquer fluxo interno que use a key (ex.: chamada interna appâ†’worker) deve funcionar. Logs sem `401/403` interno:
 
 
 
@@ -458,11 +458,11 @@ pm2 logs axis-tcc --lines 60 --nostream
 
 
 
-\### ✅ Fim da FASE A
+\### âœ… Fim da FASE A
 
 
 
-`CRON\_SECRET` e `INTERNAL\_API\_KEY` rotacionados, app no ar, zero downtime. Pode pausar aqui e agendar a FASE B para a janela de manutenção.
+`CRON\_SECRET` e `INTERNAL\_API\_KEY` rotacionados, app no ar, zero downtime. Pode pausar aqui e agendar a FASE B para a janela de manutenÃ§Ã£o.
 
 
 
@@ -470,17 +470,17 @@ pm2 logs axis-tcc --lines 60 --nostream
 
 
 
-\# FASE B — Janela com MAINTENANCE\_MODE (downtime planejado 15–30 min)
+\# FASE B â€” Janela com MAINTENANCE\_MODE (downtime planejado 15â€“30 min)
 
 
 
 > \*\*Escopo da recifra: SOMENTE o banco `axis\_tcc` (prod). NUNCA rodar a recifra em `axis\_tcc\_staging`.\*\*
 
-> Staging tem `AXIS\_ENCRYPTION\_KEY` vazia e não cifra dados.
+> Staging tem `AXIS\_ENCRYPTION\_KEY` vazia e nÃ£o cifra dados.
 
 
 
-\## Passo 5 — Backup obrigatório (bloqueante)
+\## Passo 5 â€” Backup obrigatÃ³rio (bloqueante)
 
 
 
@@ -516,19 +516,19 @@ ls -lh "$ROT\_DIR"/\*.dump
 
 
 
-\### 🛑 TRAVA 2 — não prosseguir sem backup válido
+\### ðŸ›‘ TRAVA 2 â€” nÃ£o prosseguir sem backup vÃ¡lido
 
 
 
 \- \[ ] Arquivo `.dump` de `axis\_tcc` existe.
 
-\- \[ ] Tamanho > 0 e \*\*plausível\*\* para o volume do banco (não pode ser alguns KB se o banco tem dados reais).
+\- \[ ] Tamanho > 0 e \*\*plausÃ­vel\*\* para o volume do banco (nÃ£o pode ser alguns KB se o banco tem dados reais).
 
 \- \[ ] Sem erro no `pg\_dump`.
 
 
 
-\*\*Backup falhou = janela abortada.\*\* Sem dump não existe rollback do Cenário 3.
+\*\*Backup falhou = janela abortada.\*\* Sem dump nÃ£o existe rollback do CenÃ¡rio 3.
 
 
 
@@ -536,7 +536,7 @@ ls -lh "$ROT\_DIR"/\*.dump
 
 
 
-\## Passo 6 — Deploy do código com MAINTENANCE\_MODE
+\## Passo 6 â€” Deploy do cÃ³digo com MAINTENANCE\_MODE
 
 
 
@@ -572,7 +572,7 @@ npm run next:build
 
 
 
-⚠️ \*\*NÃO usar `npm run build`\*\* — esse script não existe e trava a janela.
+âš ï¸ \*\*NÃƒO usar `npm run build`\*\* â€” esse script nÃ£o existe e trava a janela.
 
 
 
@@ -600,7 +600,7 @@ pm2 restart axis-tcc --update-env
 
 
 
-Validar manutenção ativa (usar \*\*rota real\*\* de API, não wildcard `/api/\*`):
+Validar manutenÃ§Ã£o ativa (usar \*\*rota real\*\* de API, nÃ£o wildcard `/api/\*`):
 
 
 
@@ -618,7 +618,7 @@ curl -i "https://axisclinico.com/api/aba/me"
 
 
 
-\### 🛑 TRAVA 3 — não prosseguir se a manutenção não estiver ativa
+\### ðŸ›‘ TRAVA 3 â€” nÃ£o prosseguir se a manutenÃ§Ã£o nÃ£o estiver ativa
 
 
 
@@ -630,7 +630,7 @@ curl -i "https://axisclinico.com/api/aba/me"
 
 
 
-App ainda recebendo tráfego de escrita = recifra em banco vivo = risco de corrupção. \*\*Não seguir.\*\*
+App ainda recebendo trÃ¡fego de escrita = recifra em banco vivo = risco de corrupÃ§Ã£o. \*\*NÃ£o seguir.\*\*
 
 
 
@@ -638,7 +638,7 @@ App ainda recebendo tráfego de escrita = recifra em banco vivo = risco de corru
 
 
 
-\## Passo 7 — Gerar nova `AXIS\_ENCRYPTION\_KEY`
+\## Passo 7 â€” Gerar nova `AXIS\_ENCRYPTION\_KEY`
 
 
 
@@ -658,7 +658,7 @@ ls -la "$ROT\_DIR/AXIS\_ENCRYPTION\_KEY.new"
 
 
 
-⚠️ Não imprimir, não colar em chat, não commitar, não salvar fora de `$ROT\_DIR`.
+âš ï¸ NÃ£o imprimir, nÃ£o colar em chat, nÃ£o commitar, nÃ£o salvar fora de `$ROT\_DIR`.
 
 
 
@@ -666,7 +666,7 @@ ls -la "$ROT\_DIR/AXIS\_ENCRYPTION\_KEY.new"
 
 
 
-\## Passo 8 — Validar o SQL antes de executar (bloqueante)
+\## Passo 8 â€” Validar o SQL antes de executar (bloqueante)
 
 
 
@@ -678,7 +678,7 @@ sed -n '1,220p' /root/axis-tcc/scripts/jobs/rotate\_encryption\_key.sql
 
 
 
-\### 🛑 TRAVA 4 — checklist de leitura manual do SQL
+\### ðŸ›‘ TRAVA 4 â€” checklist de leitura manual do SQL
 
 
 
@@ -686,21 +686,21 @@ Confirmar \*\*lendo o script\*\*, item a item:
 
 
 
-\- \[ ] Lê `app.encryption\_key\_old` via `current\_setting` (ou equivalente).
+\- \[ ] LÃª `app.encryption\_key\_old` via `current\_setting` (ou equivalente).
 
-\- \[ ] Lê `app.encryption\_key\_new` via `current\_setting` (ou equivalente).
+\- \[ ] LÃª `app.encryption\_key\_new` via `current\_setting` (ou equivalente).
 
 \- \[ ] Tem preflight/dry-run ou contagem de linhas \*\*antes\*\* de alterar.
 
-\- \[ ] Deixa explícito quais \*\*7 colunas BYTEA\*\* serão recifradas.
+\- \[ ] Deixa explÃ­cito quais \*\*7 colunas BYTEA\*\* serÃ£o recifradas.
 
-\- \[ ] Roda em transação (`BEGIN`/`COMMIT`) ou tem comportamento seguro em erro (com `ON\_ERROR\_STOP=1` aborta sem commit parcial).
+\- \[ ] Roda em transaÃ§Ã£o (`BEGIN`/`COMMIT`) ou tem comportamento seguro em erro (com `ON\_ERROR\_STOP=1` aborta sem commit parcial).
 
-\- \[ ] Nada no script referencia `axis\_tcc\_staging` — alvo é apenas `axis\_tcc`.
+\- \[ ] Nada no script referencia `axis\_tcc\_staging` â€” alvo Ã© apenas `axis\_tcc`.
 
 
 
-\*\*Qualquer dúvida em qualquer item = não seguir.\*\* Parar e revisar com o Claude/CC antes.
+\*\*Qualquer dÃºvida em qualquer item = nÃ£o seguir.\*\* Parar e revisar com o Claude/CC antes.
 
 
 
@@ -708,15 +708,15 @@ Confirmar \*\*lendo o script\*\*, item a item:
 
 
 
-\## Passo 9 — Rodar a recifra (SOMENTE PROD)
+\## Passo 9 â€” Rodar a recifra (SOMENTE PROD)
 
 
 
-> 🔴 Banco alvo: `axis\_tcc`. \*\*Conferir o `-d axis\_tcc` no comando antes de dar Enter.\*\*
+> ðŸ”´ Banco alvo: `axis\_tcc`. \*\*Conferir o `-d axis\_tcc` no comando antes de dar Enter.\*\*
 
 
 
-Forma preferida (injeta os `SET` antes do script, tudo via stdin, segredo só em variável):
+Forma preferida (injeta os `SET` antes do script, tudo via stdin, segredo sÃ³ em variÃ¡vel):
 
 
 
@@ -732,7 +732,7 @@ NEW\_AXIS\_KEY="$(cat "$ROT\_DIR/AXIS\_ENCRYPTION\_KEY.new")"
 
 
 
-\# escape de aspas simples (mesma técnica do Passo 11.3) — protege o SET contra quebra de sintaxe SQL
+\# escape de aspas simples (mesma tÃ©cnica do Passo 11.3) â€” protege o SET contra quebra de sintaxe SQL
 
 ESCAPED\_OLD\_AXIS\_KEY="$(printf "%s" "$OLD\_AXIS\_KEY" | sed "s/'/''/g")"
 
@@ -764,11 +764,11 @@ unset ESCAPED\_NEW\_AXIS\_KEY
 
 
 
-⚠️ Se o cabeçalho do script já fizer `SET` interno ou exigir outro formato de invocação, ajustar conforme o próprio cabeçalho (lido no Passo 8). Nota: `SET` é por sessão — os dois `SET` e o script precisam ir na \*\*mesma\*\* chamada `psql`, como acima.
+âš ï¸ Se o cabeÃ§alho do script jÃ¡ fizer `SET` interno ou exigir outro formato de invocaÃ§Ã£o, ajustar conforme o prÃ³prio cabeÃ§alho (lido no Passo 8). Nota: `SET` Ã© por sessÃ£o â€” os dois `SET` e o script precisam ir na \*\*mesma\*\* chamada `psql`, como acima.
 
 
 
-\### 🛑 TRAVA 5 — validar saída da recifra
+\### ðŸ›‘ TRAVA 5 â€” validar saÃ­da da recifra
 
 
 
@@ -778,7 +778,7 @@ Bloquear (e ir para Rollback) se:
 
 \- \[ ] O psql retornou erro (qualquer linha `ERROR`).
 
-\- \[ ] A contagem/dry-run do script indicou inconsistência (linhas esperadas ≠ processadas).
+\- \[ ] A contagem/dry-run do script indicou inconsistÃªncia (linhas esperadas â‰  processadas).
 
 \- \[ ] Apareceu qualquer erro de decrypt/encrypt.
 
@@ -786,11 +786,11 @@ Bloquear (e ir para Rollback) se:
 
 
 
-Tudo verde → seguir.
+Tudo verde â†’ seguir.
 
 
 
-⚠️ Não colar o output completo em chat se contiver fragmentos de chave.
+âš ï¸ NÃ£o colar o output completo em chat se contiver fragmentos de chave.
 
 
 
@@ -798,7 +798,7 @@ Tudo verde → seguir.
 
 
 
-\## Passo 10 — Trocar `AXIS\_ENCRYPTION\_KEY` no `.env` (SÓ PROD)
+\## Passo 10 â€” Trocar `AXIS\_ENCRYPTION\_KEY` no `.env` (SÃ“ PROD)
 
 
 
@@ -808,7 +808,7 @@ Editar \*\*somente\*\* `/root/axis-tcc/.env`:
 
 ```txt
 
-AXIS\_ENCRYPTION\_KEY=<conteúdo de $ROT\_DIR/AXIS\_ENCRYPTION\_KEY.new>
+AXIS\_ENCRYPTION\_KEY=<conteÃºdo de $ROT\_DIR/AXIS\_ENCRYPTION\_KEY.new>
 
 ```
 
@@ -818,11 +818,11 @@ AXIS\_ENCRYPTION\_KEY=<conteúdo de $ROT\_DIR/AXIS\_ENCRYPTION\_KEY.new>
 
 
 
-🔴 \*\*NÃO trocar em staging.\*\* Motivo: staging tem chave vazia, não cifra dados, e a recifra só rodou em prod. Colocar a chave em staging criaria divergência sem dados correspondentes.
+ðŸ”´ \*\*NÃƒO trocar em staging.\*\* Motivo: staging tem chave vazia, nÃ£o cifra dados, e a recifra sÃ³ rodou em prod. Colocar a chave em staging criaria divergÃªncia sem dados correspondentes.
 
 
 
-⏳ O restart vem no Passo 12 (junto com a troca de senha do banco), para reiniciar uma vez só.
+â³ O restart vem no Passo 12 (junto com a troca de senha do banco), para reiniciar uma vez sÃ³.
 
 
 
@@ -830,23 +830,23 @@ AXIS\_ENCRYPTION\_KEY=<conteúdo de $ROT\_DIR/AXIS\_ENCRYPTION\_KEY.new>
 
 
 
-\## Passo 11 — Trocar `DATABASE\_PASSWORD`
+\## Passo 11 â€” Trocar `DATABASE\_PASSWORD`
 
 
 
-\### Ordem obrigatória — por quê
+\### Ordem obrigatÃ³ria â€” por quÃª
 
 
 
-1\. Gerar nova senha → 2. `ALTER USER` no Postgres → 3. Atualizar os \*\*dois\*\* `.env` → 4. \*\*Só depois\*\* restart PM2.
+1\. Gerar nova senha â†’ 2. `ALTER USER` no Postgres â†’ 3. Atualizar os \*\*dois\*\* `.env` â†’ 4. \*\*SÃ³ depois\*\* restart PM2.
 
 
 
-\- Se trocar `.env` \*\*antes\*\* do `ALTER USER`: o app reconecta com senha que o banco ainda não conhece → falha.
+\- Se trocar `.env` \*\*antes\*\* do `ALTER USER`: o app reconecta com senha que o banco ainda nÃ£o conhece â†’ falha.
 
-\- Se trocar o banco e \*\*demorar\*\* a atualizar `.env`: o pool, ao renovar conexão, usa a senha velha → app cai.
+\- Se trocar o banco e \*\*demorar\*\* a atualizar `.env`: o pool, ao renovar conexÃ£o, usa a senha velha â†’ app cai.
 
-\- A janela entre `ALTER USER` e o restart é tolerada porque o app está em MAINTENANCE\_MODE e as conexões do pool já abertas continuam válidas.
+\- A janela entre `ALTER USER` e o restart Ã© tolerada porque o app estÃ¡ em MAINTENANCE\_MODE e as conexÃµes do pool jÃ¡ abertas continuam vÃ¡lidas.
 
 
 
@@ -868,11 +868,11 @@ chmod 600 "$ROT\_DIR/DATABASE\_PASSWORD.new"
 
 
 
-\### 11.2 Backup adicional dos `.env` (snapshot específico da troca de senha)
+\### 11.2 Backup adicional dos `.env` (snapshot especÃ­fico da troca de senha)
 
 
 
-> O \*\*ground truth\*\* do rollback F3 é o backup feito no Passo 2 (`env.prod.before\_f3` / `env.staging.before\_f3`). Este snapshot extra captura o estado já com `CRON\_SECRET`/`INTERNAL\_API\_KEY`/`AXIS\_ENCRYPTION\_KEY` novos, útil para reverter \*\*só\*\* a troca de senha sem desfazer a Fase A/recifra.
+> O \*\*ground truth\*\* do rollback F3 Ã© o backup feito no Passo 2 (`env.prod.before\_f3` / `env.staging.before\_f3`). Este snapshot extra captura o estado jÃ¡ com `CRON\_SECRET`/`INTERNAL\_API\_KEY`/`AXIS\_ENCRYPTION\_KEY` novos, Ãºtil para reverter \*\*sÃ³\*\* a troca de senha sem desfazer a Fase A/recifra.
 
 
 
@@ -930,13 +930,13 @@ Editar `/root/axis-tcc/.env` \*\*e\*\* `/root/axis-tcc-staging/.env`:
 
 ```txt
 
-DATABASE\_PASSWORD=<conteúdo de $ROT\_DIR/DATABASE\_PASSWORD.new>
+DATABASE\_PASSWORD=<conteÃºdo de $ROT\_DIR/DATABASE\_PASSWORD.new>
 
 ```
 
 
 
-(Mesmo valor nos dois — a senha é do user `axis`, compartilhado.)
+(Mesmo valor nos dois â€” a senha Ã© do user `axis`, compartilhado.)
 
 
 
@@ -944,7 +944,7 @@ DATABASE\_PASSWORD=<conteúdo de $ROT\_DIR/DATABASE\_PASSWORD.new>
 
 
 
-\## Passo 12 — Reiniciar todos os processos
+\## Passo 12 â€” Reiniciar todos os processos
 
 
 
@@ -952,7 +952,7 @@ DATABASE\_PASSWORD=<conteúdo de $ROT\_DIR/DATABASE\_PASSWORD.new>
 
 pm2 restart axis-tcc --update-env
 
-pm2 restart axis-worker-transcription --update-env
+pm2 restart axis-worker-transcribe --update-env
 
 pm2 restart axis-staging --update-env
 
@@ -968,7 +968,7 @@ Logs:
 
 pm2 logs axis-tcc --lines 120 --nostream
 
-pm2 logs axis-worker-transcription --lines 120 --nostream
+pm2 logs axis-worker-transcribe --lines 120 --nostream
 
 pm2 logs axis-staging --lines 120 --nostream
 
@@ -978,15 +978,15 @@ pm2 list
 
 
 
-\### 🛑 TRAVA 6 — bloquear (ir para Rollback) se houver
+\### ðŸ›‘ TRAVA 6 â€” bloquear (ir para Rollback) se houver
 
 
 
-\- \[ ] Erro de conexão com banco (`password authentication failed`, `ECONNREFUSED`).
+\- \[ ] Erro de conexÃ£o com banco (`password authentication failed`, `ECONNREFUSED`).
 
 \- \[ ] Erro de decrypt em qualquer log.
 
-\- \[ ] Erro de env ausente (validação do `env.ts`).
+\- \[ ] Erro de env ausente (validaÃ§Ã£o do `env.ts`).
 
 \- \[ ] Crash loop no PM2 (restarts incrementando).
 
@@ -996,27 +996,27 @@ pm2 list
 
 
 
-\## Passo 13 — Smoke test obrigatório
+\## Passo 13 â€” Smoke test obrigatÃ³rio
 
 
 
-\### 13.0 🔴 OBRIGATÓRIO — validar leitura de dado cifrado COM maintenance ativo
+\### 13.0 ðŸ”´ OBRIGATÃ“RIO â€” validar leitura de dado cifrado COM maintenance ativo
 
 
 
-A leitura real de dado cifrado precisa ser validada \*\*antes\*\* de desligar `MAINTENANCE\_MODE`. \*\*Não desligar a manutenção "só para testar"\*\* — isso reabre escrita pública sobre um banco recém-recifrado.
+A leitura real de dado cifrado precisa ser validada \*\*antes\*\* de desligar `MAINTENANCE\_MODE`. \*\*NÃ£o desligar a manutenÃ§Ã£o "sÃ³ para testar"\*\* â€” isso reabre escrita pÃºblica sobre um banco recÃ©m-recifrado.
 
 
 
-\*\*Recon confirmado:\*\* o `middleware.ts` \*\*não\*\* tem bypass seguro para `/api/\*` em manutenção. Em maintenance, o middleware permite apenas `/api/health` e `/manutencao`. Portanto o \*\*caminho oficial é a validação direta no banco\*\* (script temporário abaixo). Smoke de UI fica para depois da reabertura (ver nota ao final do 13.1).
+\*\*Recon confirmado:\*\* o `middleware.ts` \*\*nÃ£o\*\* tem bypass seguro para `/api/\*` em manutenÃ§Ã£o. Em maintenance, o middleware permite apenas `/api/health` e `/manutencao`. Portanto o \*\*caminho oficial Ã© a validaÃ§Ã£o direta no banco\*\* (script temporÃ¡rio abaixo). Smoke de UI fica para depois da reabertura (ver nota ao final do 13.1).
 
 
 
-\#### Script temporário de validação local (NÃO commitar, NÃO criar no repo)
+\#### Script temporÃ¡rio de validaÃ§Ã£o local (NÃƒO commitar, NÃƒO criar no repo)
 
 
 
-Criar como `$ROT\_DIR/validate\_decrypt.sql` (vive só no diretório protegido e morre com a limpeza). As 7 colunas cifradas reais são:
+Criar como `$ROT\_DIR/validate\_decrypt.sql` (vive sÃ³ no diretÃ³rio protegido e morre com a limpeza). As 7 colunas cifradas reais sÃ£o:
 
 
 
@@ -1024,7 +1024,7 @@ Criar como `$ROT\_DIR/validate\_decrypt.sql` (vive só no diretório protegido e
 
 |---|---|
 
-| `service\_sites` | `address\_encrypted` ← \*\*validar esta primeiro, se houver row\*\* |
+| `service\_sites` | `address\_encrypted` â† \*\*validar esta primeiro, se houver row\*\* |
 
 | `session\_presence\_proofs` | `latitude\_encrypted` |
 
@@ -1040,17 +1040,17 @@ Criar como `$ROT\_DIR/validate\_decrypt.sql` (vive só no diretório protegido e
 
 
 
-Se a tabela escolhida não tiver row cifrada (`LIMIT 1` vazio), testar a próxima da lista. Usar a \*\*mesma função de decrypt\*\* do `rotate\_encryption\_key.sql` (ex.: `pgp\_sym\_decrypt` — conferir no cabeçalho do script, Passo 8):
+Se a tabela escolhida nÃ£o tiver row cifrada (`LIMIT 1` vazio), testar a prÃ³xima da lista. Usar a \*\*mesma funÃ§Ã£o de decrypt\*\* do `rotate\_encryption\_key.sql` (ex.: `pgp\_sym\_decrypt` â€” conferir no cabeÃ§alho do script, Passo 8):
 
 
 
 ```sql
 
-\-- validate\_decrypt.sql — valida 1 row real com a CHAVE NOVA
+\-- validate\_decrypt.sql â€” valida 1 row real com a CHAVE NOVA
 
 \-- Alvo preferencial: service\_sites.address\_encrypted.
 
-\-- Sem rows? Trocar tabela/coluna pela próxima da lista acima.
+\-- Sem rows? Trocar tabela/coluna pela prÃ³xima da lista acima.
 
 SET app.encryption\_key\_new = :'newkey';
 
@@ -1074,7 +1074,7 @@ LIMIT 1;
 
 
 
-Execução (segredo só em variável, nunca no comando):
+ExecuÃ§Ã£o (segredo sÃ³ em variÃ¡vel, nunca no comando):
 
 
 
@@ -1098,7 +1098,7 @@ unset NEW\_AXIS\_KEY
 
 
 
-Resultado esperado: `amostra\_decifrada` retorna texto legível (12 chars do dado real — para `service\_sites.address\_encrypted`, início de um endereço). Erro `Wrong key or corrupt data` (ou equivalente) = recifra inconsistente → \*\*Rollback Cenário 3\*\*.
+Resultado esperado: `amostra\_decifrada` retorna texto legÃ­vel (12 chars do dado real â€” para `service\_sites.address\_encrypted`, inÃ­cio de um endereÃ§o). Erro `Wrong key or corrupt data` (ou equivalente) = recifra inconsistente â†’ \*\*Rollback CenÃ¡rio 3\*\*.
 
 
 
@@ -1106,33 +1106,33 @@ Recomendado: validar pelo menos \*\*2 colunas de tabelas diferentes\*\* (ex.: `s
 
 
 
-⚠️ A amostra decifrada é dado real (endereço/IP/geo) — não colar o output em chat/print. Conferir no terminal e descartar.
+âš ï¸ A amostra decifrada Ã© dado real (endereÃ§o/IP/geo) â€” nÃ£o colar o output em chat/print. Conferir no terminal e descartar.
 
 
 
-\### 13.1 Prod — checklist (com maintenance ainda ativo)
+\### 13.1 Prod â€” checklist (com maintenance ainda ativo)
 
 
 
-\- \[ ] \*\*13.0 verde\*\* (leitura real de dado cifrado validada direto no banco). ← item mais importante da janela.
+\- \[ ] \*\*13.0 verde\*\* (leitura real de dado cifrado validada direto no banco). â† item mais importante da janela.
 
 \- \[ ] Login funciona.
 
-\- \[ ] Abrir um \*\*paciente existente\*\* → dados aparecem corretamente.
+\- \[ ] Abrir um \*\*paciente existente\*\* â†’ dados aparecem corretamente.
 
-\- \[ ] Criar uma sessão (fluxo que \*\*grava\*\* no banco) → sucesso.
+\- \[ ] Criar uma sessÃ£o (fluxo que \*\*grava\*\* no banco) â†’ sucesso.
 
-\- \[ ] Worker/transcrição: enviar/verificar um job, se aplicável.
+\- \[ ] Worker/transcriÃ§Ã£o: enviar/verificar um job, se aplicÃ¡vel.
 
-\- \[ ] Crons internos respondem com o `CRON\_SECRET` novo (repetir teste do Passo 3.4 se necessário).
+\- \[ ] Crons internos respondem com o `CRON\_SECRET` novo (repetir teste do Passo 3.4 se necessÃ¡rio).
 
 \- \[ ] `pm2 logs axis-tcc` sem erro de decrypt.
 
-\- \[ ] `pm2 logs` sem erro de conexão com banco.
+\- \[ ] `pm2 logs` sem erro de conexÃ£o com banco.
 
 
 
-> Itens de UI (login/paciente/sessão): sem bypass no middleware (só `/api/health` e `/manutencao` passam em maintenance), eles são confirmados imediatamente após o Passo 14, como primeira ação pós-reabertura, com rollback ainda disponível. O critério crítico de decrypt já foi garantido pelo 13.0 antes da reabertura. \*\*Não desligar maintenance temporariamente para antecipar o teste de UI.\*\*
+> Itens de UI (login/paciente/sessÃ£o): sem bypass no middleware (sÃ³ `/api/health` e `/manutencao` passam em maintenance), eles sÃ£o confirmados imediatamente apÃ³s o Passo 14, como primeira aÃ§Ã£o pÃ³s-reabertura, com rollback ainda disponÃ­vel. O critÃ©rio crÃ­tico de decrypt jÃ¡ foi garantido pelo 13.0 antes da reabertura. \*\*NÃ£o desligar maintenance temporariamente para antecipar o teste de UI.\*\*
 
 
 
@@ -1142,17 +1142,17 @@ Recomendado: validar pelo menos \*\*2 colunas de tabelas diferentes\*\* (ex.: `s
 
 \- \[ ] `axis-staging` sobe e fica `online` no PM2.
 
-\- \[ ] Conexão com `axis\_tcc\_staging` funciona após a troca de `DATABASE\_PASSWORD`.
+\- \[ ] ConexÃ£o com `axis\_tcc\_staging` funciona apÃ³s a troca de `DATABASE\_PASSWORD`.
 
-\- \[ ] Logs sem erro crítico.
-
-
-
-\### 🔴 REGRA DE OURO DA JANELA
+\- \[ ] Logs sem erro crÃ­tico.
 
 
 
-\*\*Não desligar a manutenção sem leitura real de dado cifrado em prod funcionando.\*\* Se a leitura cifrada falhar → Rollback Cenário 3, sem exceção.
+\### ðŸ”´ REGRA DE OURO DA JANELA
+
+
+
+\*\*NÃ£o desligar a manutenÃ§Ã£o sem leitura real de dado cifrado em prod funcionando.\*\* Se a leitura cifrada falhar â†’ Rollback CenÃ¡rio 3, sem exceÃ§Ã£o.
 
 
 
@@ -1160,7 +1160,7 @@ Recomendado: validar pelo menos \*\*2 colunas de tabelas diferentes\*\* (ex.: `s
 
 
 
-\## Passo 14 — Desligar manutenção
+\## Passo 14 â€” Desligar manutenÃ§Ã£o
 
 
 
@@ -1188,7 +1188,7 @@ pm2 restart axis-tcc --update-env
 
 
 
-Validar app público:
+Validar app pÃºblico:
 
 
 
@@ -1202,11 +1202,11 @@ curl -i "https://axisclinico.com/manutencao"
 
 
 
-Esperado: `/` responde normal; `/manutencao` continua acessível como página estática mas o app não redireciona mais para ela.
+Esperado: `/` responde normal; `/manutencao` continua acessÃ­vel como pÃ¡gina estÃ¡tica mas o app nÃ£o redireciona mais para ela.
 
 
 
-\### ✅ Fim da FASE B — janela encerrada.
+\### âœ… Fim da FASE B â€” janela encerrada.
 
 
 
@@ -1214,11 +1214,11 @@ Esperado: `/` responde normal; `/manutencao` continua acessível como página es
 
 
 
-\# FASE C — Limpeza pós-rotação
+\# FASE C â€” Limpeza pÃ³s-rotaÃ§Ã£o
 
 
 
-\## Passo 15 — Remover `CRON\_SECRET\_OLD`
+\## Passo 15 â€” Remover `CRON\_SECRET\_OLD`
 
 
 
@@ -1250,11 +1250,11 @@ Re-testar um cron com o secret novo (Passo 3.4) para confirmar que nada dependia
 
 
 
-\## Passo 16 — Remover default hardcoded do código
+\## Passo 16 â€” Remover default hardcoded do cÃ³digo
 
 
 
-> Este passo é \*\*código + commit\*\*, feito localmente no Windows (não na VPS), pelo fluxo normal Claude/CC → Alê commita.
+> Este passo Ã© \*\*cÃ³digo + commit\*\*, feito localmente no Windows (nÃ£o na VPS), pelo fluxo normal Claude/CC â†’ AlÃª commita.
 
 
 
@@ -1262,15 +1262,15 @@ Arquivo: `src/lib/env.ts` (linha \~26).
 
 
 
-Remover o fallback `'AxisTcc2026!'`. Regra da correção:
+Remover o fallback `'AxisTcc2026!'`. Regra da correÃ§Ã£o:
 
 
 
-\- Segredo obrigatório ausente deve \*\*falhar explicitamente\*\* no boot (throw na validação de env).
+\- Segredo obrigatÃ³rio ausente deve \*\*falhar explicitamente\*\* no boot (throw na validaÃ§Ã£o de env).
 
-\- Nenhum fallback de senha em produção.
+\- Nenhum fallback de senha em produÃ§Ã£o.
 
-\- Nenhum segredo real em código.
+\- Nenhum segredo real em cÃ³digo.
 
 
 
@@ -1286,7 +1286,7 @@ fix(security): remove hardcoded database password fallback
 
 
 
-Depois do merge: deploy normal na VPS (`git pull` + `npm run next:build` + `pm2 restart axis-tcc --update-env`) e confirmar que o app sobe (o `.env` já tem `DATABASE\_PASSWORD` válida, então o boot não pode falhar).
+Depois do merge: deploy normal na VPS (`git pull` + `npm run next:build` + `pm2 restart axis-tcc --update-env`) e confirmar que o app sobe (o `.env` jÃ¡ tem `DATABASE\_PASSWORD` vÃ¡lida, entÃ£o o boot nÃ£o pode falhar).
 
 
 
@@ -1294,11 +1294,11 @@ Depois do merge: deploy normal na VPS (`git pull` + `npm run next:build` + `pm2 
 
 
 
-\## Passo 17 — Remover backup antigo inseguro
+\## Passo 17 â€” Remover backup antigo inseguro
 
 
 
-Motivo: `/root/axis-tcc-backup-25fev` contém a senha velha legível no bundle. Após a rotação ele não protege nada e ainda expõe o segredo antigo.
+Motivo: `/root/axis-tcc-backup-25fev` contÃ©m a senha velha legÃ­vel no bundle. ApÃ³s a rotaÃ§Ã£o ele nÃ£o protege nada e ainda expÃµe o segredo antigo.
 
 
 
@@ -1314,7 +1314,7 @@ ls -la /root | grep axis-tcc-backup-25fev || echo "backup antigo removido"
 
 
 
-Opcional (recomendado depois de alguns dias de operação estável): remover também os arquivos `\*.new` de `$ROT\_DIR`, mantendo apenas os dumps até a próxima rotina de backup.
+Opcional (recomendado depois de alguns dias de operaÃ§Ã£o estÃ¡vel): remover tambÃ©m os arquivos `\*.new` de `$ROT\_DIR`, mantendo apenas os dumps atÃ© a prÃ³xima rotina de backup.
 
 
 
@@ -1322,49 +1322,49 @@ Opcional (recomendado depois de alguns dias de operação estável): remover tam
 
 
 
-\# ROLLBACK — Fase B
+\# ROLLBACK â€” Fase B
 
 
 
-> Em \*\*todos\*\* os cenários: primeira ação é garantir `MAINTENANCE\_MODE=true`. Nunca fazer rollback com app aberto ao público.
+> Em \*\*todos\*\* os cenÃ¡rios: primeira aÃ§Ã£o Ã© garantir `MAINTENANCE\_MODE=true`. Nunca fazer rollback com app aberto ao pÃºblico.
 
 
 
-\## Cenário 1 — Falha ANTES da recifra (build, deploy, maintenance, backup)
+\## CenÃ¡rio 1 â€” Falha ANTES da recifra (build, deploy, maintenance, backup)
 
 
 
 1\. Manter/ativar `MAINTENANCE\_MODE=true` em `/root/axis-tcc/.env`.
 
-2\. Restaurar o `.env` anterior se algo já foi alterado — fonte principal: `$ROT\_DIR/env.prod.before\_f3` (e `$ROT\_DIR/env.staging.before\_f3` se staging foi tocado).
+2\. Restaurar o `.env` anterior se algo jÃ¡ foi alterado â€” fonte principal: `$ROT\_DIR/env.prod.before\_f3` (e `$ROT\_DIR/env.staging.before\_f3` se staging foi tocado).
 
 3\. `pm2 restart axis-tcc --update-env`.
 
-4\. Validar que o app funciona com a configuração antiga.
+4\. Validar que o app funciona com a configuraÃ§Ã£o antiga.
 
-5\. Desligar maintenance \*\*apenas se\*\* o app estiver íntegro. Reagendar a janela.
+5\. Desligar maintenance \*\*apenas se\*\* o app estiver Ã­ntegro. Reagendar a janela.
 
 
 
-\## Cenário 2 — Falha DURANTE a recifra (SQL retornou erro)
+\## CenÃ¡rio 2 â€” Falha DURANTE a recifra (SQL retornou erro)
 
 
 
 1\. Manter `MAINTENANCE\_MODE=true`.
 
-2\. \*\*Não trocar\*\* `AXIS\_ENCRYPTION\_KEY` no `.env` (a chave antiga continua sendo a correta).
+2\. \*\*NÃ£o trocar\*\* `AXIS\_ENCRYPTION\_KEY` no `.env` (a chave antiga continua sendo a correta).
 
-3\. Revisar o erro do psql. Com `ON\_ERROR\_STOP=1` + transação, a falha aborta sem commit parcial.
+3\. Revisar o erro do psql. Com `ON\_ERROR\_STOP=1` + transaÃ§Ã£o, a falha aborta sem commit parcial.
 
 4\. Confirmar que nada foi alterado: rodar a contagem/preflight do script ou ler uma amostra cifrada com a chave antiga via app.
 
 5\. Se nada mudou: corrigir a causa e repetir o Passo 9.
 
-6\. Se houver \*\*qualquer suspeita\*\* de alteração parcial: restaurar o dump (procedimento do Cenário 3, itens 2–6).
+6\. Se houver \*\*qualquer suspeita\*\* de alteraÃ§Ã£o parcial: restaurar o dump (procedimento do CenÃ¡rio 3, itens 2â€“6).
 
 
 
-\## Cenário 3 — Recifra concluiu, mas o app NÃO lê dados cifrados
+\## CenÃ¡rio 3 â€” Recifra concluiu, mas o app NÃƒO lÃª dados cifrados
 
 
 
@@ -1382,7 +1382,7 @@ DUMP="$(ls -t "$ROT\_DIR"/axis\_tcc.before\_f3\_\*.dump | head -1)"
 
 
 
-\# encerra conexões e restaura por cima (--clean recria objetos)
+\# encerra conexÃµes e restaura por cima (--clean recria objetos)
 
 docker exec -i axis-postgres psql -U axis -d postgres -c "SELECT pg\_terminate\_backend(pid) FROM pg\_stat\_activity WHERE datname='axis\_tcc' AND pid <> pg\_backend\_pid();"
 
@@ -1394,17 +1394,17 @@ docker exec -i axis-postgres pg\_restore -U axis -d axis\_tcc --clean --if-exist
 
 
 
-3\. Restaurar a \*\*chave antiga\*\* no `.env` prod — fonte: `$ROT\_DIR/env.prod.before\_f3` (é o único backup garantido com a `AXIS\_ENCRYPTION\_KEY` antiga; \*\*não\*\* usar `env.prod.before\_dbpass`, que já contém a chave nova). Restaurar o arquivo inteiro ou copiar só a linha `AXIS\_ENCRYPTION\_KEY=` dele, conforme o ponto da janela.
+3\. Restaurar a \*\*chave antiga\*\* no `.env` prod â€” fonte: `$ROT\_DIR/env.prod.before\_f3` (Ã© o Ãºnico backup garantido com a `AXIS\_ENCRYPTION\_KEY` antiga; \*\*nÃ£o\*\* usar `env.prod.before\_dbpass`, que jÃ¡ contÃ©m a chave nova). Restaurar o arquivo inteiro ou copiar sÃ³ a linha `AXIS\_ENCRYPTION\_KEY=` dele, conforme o ponto da janela.
 
 4\. `pm2 restart axis-tcc --update-env`.
 
 5\. Testar \*\*leitura real de dado cifrado\*\* com a chave antiga.
 
-6\. Só desligar maintenance após leitura normal. Investigar a causa antes de tentar de novo.
+6\. SÃ³ desligar maintenance apÃ³s leitura normal. Investigar a causa antes de tentar de novo.
 
 
 
-\## Cenário 4 — Falha APÓS troca de `DATABASE\_PASSWORD`
+\## CenÃ¡rio 4 â€” Falha APÃ“S troca de `DATABASE\_PASSWORD`
 
 
 
@@ -1422,13 +1422,13 @@ PGPASSWORD="$(cat "$ROT\_DIR/DATABASE\_PASSWORD.new")" docker exec -i -e PGPASSW
 
 
 
-2\. Validar `DATABASE\_PASSWORD` nos dois `.env` (prod e staging) — devem ser idênticos e iguais ao `.new`.
+2\. Validar `DATABASE\_PASSWORD` nos dois `.env` (prod e staging) â€” devem ser idÃªnticos e iguais ao `.new`.
 
 3\. `pm2 restart` de todos com `--update-env`.
 
-4\. Se necessário, restaurar temporariamente os `.env` do snapshot da troca de senha (`$ROT\_DIR/env.\*.before\_dbpass`); se o problema for anterior à Fase B, o ground truth é `$ROT\_DIR/env.\*.before\_f3`.
+4\. Se necessÃ¡rio, restaurar temporariamente os `.env` do snapshot da troca de senha (`$ROT\_DIR/env.\*.before\_dbpass`); se o problema for anterior Ã  Fase B, o ground truth Ã© `$ROT\_DIR/env.\*.before\_f3`.
 
-5\. Se for voltar à senha anterior: aplicar novamente `ALTER USER axis WITH PASSWORD '<senha anterior>'` (senha extraída de `env.prod.before\_f3` ou `env.prod.before\_dbpass` — nos dois ela é a antiga), depois `.env` → restart, na mesma ordem do Passo 11.
+5\. Se for voltar Ã  senha anterior: aplicar novamente `ALTER USER axis WITH PASSWORD '<senha anterior>'` (senha extraÃ­da de `env.prod.before\_f3` ou `env.prod.before\_dbpass` â€” nos dois ela Ã© a antiga), depois `.env` â†’ restart, na mesma ordem do Passo 11.
 
 
 
@@ -1436,17 +1436,17 @@ PGPASSWORD="$(cat "$ROT\_DIR/DATABASE\_PASSWORD.new")" docker exec -i -e PGPASSW
 
 
 
-\# CHECKLIST FINAL — Critério de conclusão F3
+\# CHECKLIST FINAL â€” CritÃ©rio de conclusÃ£o F3
 
 
 
-F3 só pode ser marcado como concluído quando \*\*todos\*\* os itens estiverem ✅:
+F3 sÃ³ pode ser marcado como concluÃ­do quando \*\*todos\*\* os itens estiverem âœ…:
 
 
 
 \- \[ ] `CRON\_SECRET` rotacionado
 
-\- \[ ] `CRON\_SECRET\_OLD` removido após smoke
+\- \[ ] `CRON\_SECRET\_OLD` removido apÃ³s smoke
 
 \- \[ ] `INTERNAL\_API\_KEY` rotacionada
 
@@ -1462,7 +1462,7 @@ F3 só pode ser marcado como concluído quando \*\*todos\*\* os itens estiverem 
 
 \- \[ ] `axis-staging` reiniciado com `--update-env`
 
-\- \[ ] `axis-worker-transcription` reiniciado com `--update-env`
+\- \[ ] `axis-worker-transcribe` reiniciado com `--update-env`
 
 \- \[ ] `MAINTENANCE\_MODE=false`
 
@@ -1474,7 +1474,7 @@ F3 só pode ser marcado como concluído quando \*\*todos\*\* os itens estiverem 
 
 \- \[ ] `/root/axis-tcc-backup-25fev` removido
 
-\- \[ ] \*\*Nenhum segredo novo apareceu em chat, commit, print, log ou documentação\*\*
+\- \[ ] \*\*Nenhum segredo novo apareceu em chat, commit, print, log ou documentaÃ§Ã£o\*\*
 
 
 
@@ -1482,5 +1482,6 @@ F3 só pode ser marcado como concluído quando \*\*todos\*\* os itens estiverem 
 
 
 
-\*Runbook F3 · AXIS Clínico · gerado em 12/06/2026 · executor: Alê (VPS root@vmi2884668)\*
+\*Runbook F3 Â· AXIS ClÃ­nico Â· gerado em 12/06/2026 Â· executor: AlÃª (VPS root@vmi2884668)\*
+
 
