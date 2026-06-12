@@ -87,6 +87,9 @@ const envSchema = z.object({
 
   // Cache (opcional — fallback em memória se ausente)
   REDIS_URL: z.string().optional(),
+
+  // Maintenance mode (F3 — middleware lê process.env DIRETO, não este snapshot; toggle exige restart PM2)
+  MAINTENANCE_MODE: z.string().optional(),
 })
 
 // Validação fail-fast

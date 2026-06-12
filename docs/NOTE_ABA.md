@@ -82,22 +82,39 @@ TCC e TDAH em produção paralela compartilhando a mesma infraestrutura
   (todos os sistemas juntos: TCC + ABA + TDAH). Chave exposta em chat
   durante 17/04. Plano Big Bang (~15-30 min janela manutenção):
   1. Gerar nova chave (`openssl rand -base64 48`)
-  2. Ativar `MAINTENANCE_MODE` (middleware — **não existe hoje, precisa criar**)
+  2. Ativar `MAINTENANCE_MODE` (middleware — criado em 12/06/2026, gate em
+     `middleware.ts` + página `/manutencao`; toggle via `.env` + restart PM2)
   3. Backup DB completo
-  4. Script SQL `rotate_encryption_key.sql`: `UPDATE col = pgp_sym_encrypt(
-     pgp_sym_decrypt(col, old_key), new_key)` em 7 colunas × 4 tabelas:
+  4. Script SQL `scripts/jobs/rotate_encryption_key.sql` (criado em
+     12/06/2026 — dry-run + pré-flight + transação única + verificação;
+     chaves via `app.encryption_key_old` / `app.encryption_key_new`):
+     `UPDATE col = pgp_sym_encrypt(pgp_sym_decrypt(col, old_key), new_key)`
+     em 7 colunas × 4 tabelas (nomes reais do baseline, sufixo `_encrypted`):
      - `service_sites.address_encrypted`
-     - `session_presence_proofs.latitude`, `.longitude`, `.ip_address`
-     - `session_attestations.ip_address`, `.canvas_data`
-     - `session_attachments.extracted_geo`
+     - `session_presence_proofs.latitude_encrypted`, `.longitude_encrypted`,
+       `.ip_address_encrypted`
+     - `session_attestations.ip_address_encrypted`, `.canvas_data_encrypted`
+     - `session_attachments.extracted_geo_encrypted`
   5. Trocar `.env` nos 3 sistemas
   6. Restart PM2
   7. Smoke test (ler Local cadastrado, criar sessão nova)
   8. Desativar `MAINTENANCE_MODE`
-  - **Blocker 1:** middleware `MAINTENANCE_MODE` não existe — criar antes.
-  - **Blocker 2:** `scripts/jobs/purge_geo.sql` usa nomes de coluna
+  - ~~**Blocker 1:** middleware `MAINTENANCE_MODE` não existe — criar antes.~~
+    ✅ **RESOLVIDO (12/06/2026, sessão F3):** gate criado em `middleware.ts`
+    (APIs → 503, páginas → rewrite `/manutencao`; allowlist `/api/health` +
+    `/manutencao`) + `app/manutencao/page.tsx` + entrada em `env.ts`/`.env.example`.
+  - ~~**Blocker 2:** `scripts/jobs/purge_geo.sql` usa nomes de coluna
     errados (`latitude`/`longitude`/`ip_address`) vs schema real
-    (`latitude_encrypted` etc.). Reconciliar antes da rotação.
+    (`latitude_encrypted` etc.). Reconciliar antes da rotação.~~
+    ✅ **RESOLVIDO** (commits `84f1b81` + `a77225e`, Item 11H BUGs 3/5):
+    purge_geo já usa os nomes `_encrypted` corretos — verificado coluna a
+    coluna contra `000_shared_baseline.sql` em 12/06/2026.
+  - **NOVO (12/06/2026):** rotação ampliada para 4 segredos —
+    `AXIS_ENCRYPTION_KEY`, `DATABASE_PASSWORD`, `INTERNAL_API_KEY` e
+    `CRON_SECRET` vazaram em chat em 12/06. `CRON_SECRET` rotaciona a quente
+    via `CRON_SECRET_OLD` (padrão já existente, `src/lib/cron-auth.ts`);
+    `INTERNAL_API_KEY` é env swap + restart; `DATABASE_PASSWORD` (Supabase)
+    entra na mesma janela Big-Bang.
   - **Alternativa descartada:** dual-key versioning (coluna `key_version`
     + re-encrypt gradual). Complexidade não justifica dado volume beta
     (<500 rows estimados).

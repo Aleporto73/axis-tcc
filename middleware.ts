@@ -38,8 +38,26 @@ const isPublicRoute = createRouteMatcher([
   // Portal da família (TDAH — acesso via token, sem Clerk)
   '/familia(.*)',
   '/api/familia/(.*)',
+  // Página de manutenção (estática, sem auth — ver gate MAINTENANCE_MODE abaixo)
+  '/manutencao',
 ])
 export default clerkMiddleware(async (auth, req: NextRequest) => {
+  // ── MAINTENANCE_MODE (F3 — janela de rotação de segredos) ──
+  // Lê process.env DIRETO (não via env.ts — snapshot estático no module load).
+  // Toggle: setar MAINTENANCE_MODE=true no .env + restart PM2; remover + restart para desativar.
+  // Allowlist: /api/health (monitoramento) e /manutencao (a própria página).
+  // Assets estáticos já estão fora do matcher (config abaixo).
+  if (process.env.MAINTENANCE_MODE === 'true') {
+    const { pathname } = req.nextUrl
+    const isMaintenanceAllowed = pathname === '/api/health' || pathname === '/manutencao'
+    if (!isMaintenanceAllowed) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Em manutenção' }, { status: 503 })
+      }
+      return NextResponse.rewrite(new URL('/manutencao', req.url))
+    }
+  }
+
   if (!isPublicRoute(req)) {
     await auth.protect()
   }
