@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import pool from '@/src/database/db'
+import { withTenantClient } from '@/src/database/with-tenant'
 import { rateLimit } from '@/src/middleware/rate-limit'
 import { env } from '@/src/lib/env'
 
@@ -9,6 +9,12 @@ import { env } from '@/src/lib/env'
 //   - Rate limit: 60 req/min
 //   - API key: INTERNAL_API_KEY (env)
 //   - Rota pública no middleware — auth via header
+//
+// F7 passo 2 (Onda 10): tenant_id obrigatório no body.
+// Queries em push_tokens via withTenantClient (GUC) +
+// filtro explícito de tenant — RLS-ready (migration 070).
+// Sem callers no repo na data desta mudança (rota interna
+// manual); contrato alterado sem impacto em código vivo.
 // =====================================================
 
 let adminInitialized = false
@@ -55,10 +61,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { user_id, title, body: messageBody, data } = body
+    const { user_id, tenant_id, title, body: messageBody, data } = body
 
-    if (!user_id || !title) {
-      return NextResponse.json({ error: 'user_id e title obrigatorios' }, { status: 400 })
+    if (!user_id || !title || !tenant_id) {
+      return NextResponse.json({ error: 'user_id, tenant_id e title obrigatorios' }, { status: 400 })
     }
 
     const admin = await getFirebaseAdmin()
@@ -66,9 +72,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Push nao configurado', sent: 0 })
     }
 
-    const tokensResult = await pool.query(
-      'SELECT fcm_token FROM push_tokens WHERE user_id = $1',
-      [user_id]
+    const tokensResult = await withTenantClient(tenant_id, (client) =>
+      client.query(
+        'SELECT fcm_token FROM push_tokens WHERE user_id = $1 AND tenant_id = $2',
+        [user_id, tenant_id]
+      )
     )
 
     if (tokensResult.rows.length === 0) {
@@ -93,7 +101,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (invalidTokens.length > 0) {
-      await pool.query('DELETE FROM push_tokens WHERE fcm_token = ANY($1)', [invalidTokens])
+      await withTenantClient(tenant_id, (client) =>
+        client.query(
+          'DELETE FROM push_tokens WHERE fcm_token = ANY($1) AND tenant_id = $2',
+          [invalidTokens, tenant_id]
+        )
+      )
     }
 
     return NextResponse.json({
