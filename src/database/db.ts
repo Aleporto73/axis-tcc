@@ -5,7 +5,7 @@ import { env } from '@/src/lib/env'
 const pool = new Pool({
   host: env.DATABASE_HOST || 'localhost',
   port: parseInt(env.DATABASE_PORT || '5432'),
-  user: env.DATABASE_USER || 'axis',
+  user: env.DATABASE_USER || 'axis_app',
   password: env.DATABASE_PASSWORD,
   database: env.DATABASE_NAME || 'axis_tcc',
   max: parseInt(env.DATABASE_MAX_CONNECTIONS || '10'),

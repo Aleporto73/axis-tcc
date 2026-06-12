@@ -21,7 +21,7 @@ const envSchema = z.object({
   // Database (Postgres app user — axis_app)
   DATABASE_HOST: z.string().default('localhost'),
   DATABASE_PORT: z.string().default('5432'),
-  DATABASE_USER: z.string().default('axis'),
+  DATABASE_USER: z.string().default('axis_app'),
   DATABASE_NAME: z.string().default('axis_tcc'),
   DATABASE_PASSWORD: isProd ? z.string().min(8) : z.string().default('AxisTcc2026!'),
 

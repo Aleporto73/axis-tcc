@@ -53,7 +53,7 @@ async function checkASRHealth(): Promise<boolean> {
 const pool = new Pool({
   host: process.env.DATABASE_HOST || 'localhost',
   port: parseInt(process.env.DATABASE_PORT || '5432'),
-  user: process.env.DATABASE_USER || 'axis',
+  user: process.env.DATABASE_USER || 'axis_app',
   password: process.env.DATABASE_PASSWORD,
   database: process.env.DATABASE_NAME || 'axis_tcc',
   max: 3,
