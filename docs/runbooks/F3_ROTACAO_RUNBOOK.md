@@ -78,27 +78,27 @@ Fatos que governam a janela:
 
 
 
-\## 🔴 BLOCKERS — resolver ANTES de executar a janela
+\## ✅ Blockers B1–B5 — RESOLVIDOS (recon confirmado em 12/06/2026)
 
 
 
-Este runbook foi gerado sem acesso ao repo/VPS. Itens abaixo são placeholders que \*\*bloqueiam\*\* a execução até serem substituídos:
-
-
-
-| # | Placeholder | Onde resolver |
+| # | Item | Resolução |
 
 |---|---|---|
 
-| B1 | `DOMINIO\_PROD\_CONFIRMAR` (domínio prod) | Recon do Passo 3.4: `grep -E '^(NEXT\_PUBLIC\_APP\_URL\\|GOOGLE\_REDIRECT\_URI)=' /root/axis-tcc/.env` (só essas duas chaves) |
+| B1 | Domínio prod | `https://axisclinico.com` |
 
-| B2 | `ROTA\_REAL\_CRON\_\*` (rotas cron) | Recon do Passo 3.4: `ls -R .../app/api/cron` |
+| B2 | Rotas cron | `/api/cron/reminders`, `/api/cron/renew-webhook`, `/api/cron/scan-integrity` |
 
-| B3 | `ROTA\_REAL` (rota de API p/ validar 503) | Qualquer rota real de API do AXIS (Passo 6) |
+| B3 | Rota p/ validar 503 | `/api/aba/me` |
 
-| B4 | Bypass do middleware em manutenção (existe ou não?) | Recon do Passo 13.0 — define Caminho A ou B do smoke decrypt |
+| B4 | Bypass middleware | \*\*Não existe\*\* — em maintenance só passam `/api/health` e `/manutencao`. Smoke decrypt = validação direta no banco (Passo 13.0) |
 
-| B5 | `TABELA\_CIFRADA` / `COLUNA\_CIFRADA` do script de validação | Cabeçalho de `rotate\_encryption\_key.sql` (Passo 13.0-B) |
+| B5 | Colunas cifradas | 7 colunas confirmadas (tabela no Passo 13.0); alvo preferencial `service\_sites.address\_encrypted` |
+
+
+
+Nenhum placeholder pendente. Runbook pronto para execução.
 
 
 
@@ -340,27 +340,7 @@ crontab -e   # editar manualmente, substituindo o secret antigo pelo novo
 
 
 
-\*\*Recon prévio (obrigatório — resolve os placeholders abaixo):\*\*
-
-
-
-```bash
-
-\# rotas cron reais do projeto:
-
-ls -R /root/axis-tcc/src/app/api/cron 2>/dev/null || ls -R /root/axis-tcc/app/api/cron 2>/dev/null
-
-
-
-\# domínio prod — ler SOMENTE chaves públicas, nunca o .env inteiro:
-
-grep -E '^(NEXT\_PUBLIC\_APP\_URL|GOOGLE\_REDIRECT\_URI)=' /root/axis-tcc/.env
-
-```
-
-
-
-⚠️ O grep acima é restrito a duas chaves públicas — \*\*não\*\* rodar `cat /root/axis-tcc/.env` nem grep aberto. Anotar o domínio e as rotas e substituir `DOMINIO\_PROD\_CONFIRMAR` / `ROTA\_REAL\_CRON\_\*` em todo o runbook.
+Rotas cron reais (confirmadas por recon no repo):
 
 
 
@@ -372,13 +352,11 @@ CRON\_SECRET\_NEW="$(cat "$ROT\_DIR/CRON\_SECRET.new")"
 
 
 
-\# SUBSTITUIR pelas rotas encontradas no recon acima (uma linha por rota cron existente):
+curl -i -H "Authorization: Bearer ${CRON\_SECRET\_NEW}" "https://axisclinico.com/api/cron/reminders"
 
-curl -i -H "Authorization: Bearer ${CRON\_SECRET\_NEW}" "https://DOMINIO\_PROD\_CONFIRMAR/ROTA\_REAL\_CRON\_1"
+curl -i -H "Authorization: Bearer ${CRON\_SECRET\_NEW}" "https://axisclinico.com/api/cron/renew-webhook"
 
-curl -i -H "Authorization: Bearer ${CRON\_SECRET\_NEW}" "https://DOMINIO\_PROD\_CONFIRMAR/ROTA\_REAL\_CRON\_2"
-
-curl -i -H "Authorization: Bearer ${CRON\_SECRET\_NEW}" "https://DOMINIO\_PROD\_CONFIRMAR/ROTA\_REAL\_CRON\_3"
+curl -i -H "Authorization: Bearer ${CRON\_SECRET\_NEW}" "https://axisclinico.com/api/cron/scan-integrity"
 
 
 
@@ -628,13 +606,13 @@ Validar manutenção ativa (usar \*\*rota real\*\* de API, não wildcard `/api/\
 
 ```bash
 
-curl -i "https://DOMINIO\_PROD\_CONFIRMAR/manutencao"
+curl -i "https://axisclinico.com/manutencao"
 
 
 
-\# SUBSTITUIR por uma rota real de API existente do AXIS:
+\# rota real de API (deve retornar 503 com maintenance ativo):
 
-curl -i "https://DOMINIO\_PROD\_CONFIRMAR/api/ROTA\_REAL"
+curl -i "https://axisclinico.com/api/aba/me"
 
 ```
 
@@ -1022,7 +1000,7 @@ pm2 list
 
 
 
-\### 13.0 🔴 BLOCKER OPERACIONAL — validar leitura de dado cifrado COM maintenance ativo
+\### 13.0 🔴 OBRIGATÓRIO — validar leitura de dado cifrado COM maintenance ativo
 
 
 
@@ -1030,45 +1008,39 @@ A leitura real de dado cifrado precisa ser validada \*\*antes\*\* de desligar `M
 
 
 
-\*\*Recon (fazer agora, na VPS):\*\* verificar se o `middleware.ts` já tem bypass seguro para `/api/\*` em manutenção (header interno, IP allowlist ou similar):
+\*\*Recon confirmado:\*\* o `middleware.ts` \*\*não\*\* tem bypass seguro para `/api/\*` em manutenção. Em maintenance, o middleware permite apenas `/api/health` e `/manutencao`. Portanto o \*\*caminho oficial é a validação direta no banco\*\* (script temporário abaixo). Smoke de UI fica para depois da reabertura (ver nota ao final do 13.1).
 
 
 
-```bash
-
-grep -n -i "maintenance\\|bypass\\|allowlist\\|x-internal\\|x-maintenance" /root/axis-tcc/src/middleware.ts /root/axis-tcc/middleware.ts 2>/dev/null
-
-```
+\#### Script temporário de validação local (NÃO commitar, NÃO criar no repo)
 
 
 
-\*\*Caminho A — existe bypass implementado:\*\* usar o mecanismo encontrado para chamar uma rota real que \*\*leia dado cifrado\*\* (ex.: detalhe de paciente). Estrutura (ajustar header/rota conforme o que o grep revelou):
+Criar como `$ROT\_DIR/validate\_decrypt.sql` (vive só no diretório protegido e morre com a limpeza). As 7 colunas cifradas reais são:
 
 
 
-```bash
+| Tabela | Coluna |
 
-\# exemplo estrutural — substituir HEADER\_BYPASS e rota conforme o middleware real
+|---|---|
 
-curl -i -H "x-HEADER\_BYPASS: VALOR\_DO\_ENV" "https://DOMINIO\_PROD\_CONFIRMAR/api/ROTA\_QUE\_LE\_DADO\_CIFRADO"
+| `service\_sites` | `address\_encrypted` ← \*\*validar esta primeiro, se houver row\*\* |
 
-```
+| `session\_presence\_proofs` | `latitude\_encrypted` |
 
+| `session\_presence\_proofs` | `longitude\_encrypted` |
 
+| `session\_presence\_proofs` | `ip\_address\_encrypted` |
 
-⚠️ Se o bypass usa segredo do `.env`, carregar em variável local (técnica do Passo 3.4) — nunca digitar o valor no comando nem colar output com o header em chat.
+| `session\_attestations` | `ip\_address\_encrypted` |
 
+| `session\_attestations` | `canvas\_data\_encrypted` |
 
-
-\*\*Caminho B — NÃO existe bypass:\*\* não inventar bypass nem editar o middleware durante a janela. Validar \*\*direto no banco\*\*, localmente na VPS, com o script temporário abaixo.
-
-
-
-\#### Script temporário sugerido para validação local (NÃO commitar, NÃO criar no repo)
+| `session\_attachments` | `extracted\_geo\_encrypted` |
 
 
 
-Criar como `$ROT\_DIR/validate\_decrypt.sql` (vive só no diretório protegido e morre com a limpeza). Pegar `TABELA\_CIFRADA` / `COLUNA\_CIFRADA` reais no cabeçalho de `rotate\_encryption\_key.sql` (lá estão as 7 colunas) e usar a \*\*mesma função de decrypt\*\* que o script de rotação usa (ex.: `pgp\_sym\_decrypt`):
+Se a tabela escolhida não tiver row cifrada (`LIMIT 1` vazio), testar a próxima da lista. Usar a \*\*mesma função de decrypt\*\* do `rotate\_encryption\_key.sql` (ex.: `pgp\_sym\_decrypt` — conferir no cabeçalho do script, Passo 8):
 
 
 
@@ -1076,7 +1048,9 @@ Criar como `$ROT\_DIR/validate\_decrypt.sql` (vive só no diretório protegido e
 
 \-- validate\_decrypt.sql — valida 1 row real com a CHAVE NOVA
 
-\-- Substituir TABELA\_CIFRADA e COLUNA\_CIFRADA pelos nomes reais do cabeçalho do rotate\_encryption\_key.sql
+\-- Alvo preferencial: service\_sites.address\_encrypted.
+
+\-- Sem rows? Trocar tabela/coluna pela próxima da lista acima.
 
 SET app.encryption\_key\_new = :'newkey';
 
@@ -1086,13 +1060,13 @@ SELECT
 
 &#x20; id,
 
-&#x20; octet\_length(COLUNA\_CIFRADA) AS bytes\_cifrados,
+&#x20; octet\_length(address\_encrypted) AS bytes\_cifrados,
 
-&#x20; left(pgp\_sym\_decrypt(COLUNA\_CIFRADA, current\_setting('app.encryption\_key\_new')), 12) AS amostra\_decifrada
+&#x20; left(pgp\_sym\_decrypt(address\_encrypted, current\_setting('app.encryption\_key\_new')), 12) AS amostra\_decifrada
 
-FROM TABELA\_CIFRADA
+FROM service\_sites
 
-WHERE COLUNA\_CIFRADA IS NOT NULL
+WHERE address\_encrypted IS NOT NULL
 
 LIMIT 1;
 
@@ -1124,11 +1098,15 @@ unset NEW\_AXIS\_KEY
 
 
 
-Resultado esperado: `amostra\_decifrada` retorna texto legível (12 chars do dado real). Erro `Wrong key or corrupt data` (ou equivalente) = recifra inconsistente → \*\*Rollback Cenário 3\*\*.
+Resultado esperado: `amostra\_decifrada` retorna texto legível (12 chars do dado real — para `service\_sites.address\_encrypted`, início de um endereço). Erro `Wrong key or corrupt data` (ou equivalente) = recifra inconsistente → \*\*Rollback Cenário 3\*\*.
 
 
 
-⚠️ A amostra decifrada é dado clínico real — não colar o output em chat/print. Conferir no terminal e descartar.
+Recomendado: validar pelo menos \*\*2 colunas de tabelas diferentes\*\* (ex.: `service\_sites.address\_encrypted` + `session\_attestations.ip\_address\_encrypted`) antes de considerar o 13.0 verde.
+
+
+
+⚠️ A amostra decifrada é dado real (endereço/IP/geo) — não colar o output em chat/print. Conferir no terminal e descartar.
 
 
 
@@ -1136,7 +1114,7 @@ Resultado esperado: `amostra\_decifrada` retorna texto legível (12 chars do dad
 
 
 
-\- \[ ] \*\*13.0 verde\*\* (leitura real de dado cifrado validada via Caminho A ou B). ← item mais importante da janela.
+\- \[ ] \*\*13.0 verde\*\* (leitura real de dado cifrado validada direto no banco). ← item mais importante da janela.
 
 \- \[ ] Login funciona.
 
@@ -1154,7 +1132,7 @@ Resultado esperado: `amostra\_decifrada` retorna texto legível (12 chars do dad
 
 
 
-> Itens de UI (login/paciente/sessão) que dependam de acesso pelo navegador: se o middleware tiver bypass (Caminho A), usar; se não tiver, o 13.0-B já garante o critério crítico de decrypt — os itens de UI são confirmados imediatamente após o Passo 14, como primeira ação pós-reabertura, com rollback ainda disponível.
+> Itens de UI (login/paciente/sessão): sem bypass no middleware (só `/api/health` e `/manutencao` passam em maintenance), eles são confirmados imediatamente após o Passo 14, como primeira ação pós-reabertura, com rollback ainda disponível. O critério crítico de decrypt já foi garantido pelo 13.0 antes da reabertura. \*\*Não desligar maintenance temporariamente para antecipar o teste de UI.\*\*
 
 
 
@@ -1216,9 +1194,9 @@ Validar app público:
 
 ```bash
 
-curl -i "https://DOMINIO\_PROD\_CONFIRMAR/"
+curl -i "https://axisclinico.com/"
 
-curl -i "https://DOMINIO\_PROD\_CONFIRMAR/manutencao"
+curl -i "https://axisclinico.com/manutencao"
 
 ```
 
