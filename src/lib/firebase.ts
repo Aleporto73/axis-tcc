@@ -35,7 +35,7 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
     if (!msg) return null;
 
     const token = await getToken(msg, {
-      vapidKey: 'BLBz5OvYnMqGM3xPQnZPMONlJxAYxYwKxPQnZPMONlJxAYxYwKx'
+      vapidKey: 'BOsFvrRAsH7tSNcG9Y4fuxsez-DveZues3qrPZjjiewrOeqiuequgrijDQsRP6ZpEOX2KCWfaynNey0yzCtjWdo'
     });
 
     console.log('FCM Token obtido:', token);
