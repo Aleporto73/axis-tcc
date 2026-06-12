@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/src/database/db'
+import { withTenantClient } from '@/src/database/with-tenant'
 import { rateLimit } from '@/src/middleware/rate-limit'
+
+// =====================================================
+// AXIS — Autorizacao de push do paciente (portal publico)
+// F7 passo 3 (Onda 10):
+//   - Resolver de tenant via patient_push_token_lookup()
+//     (SECURITY DEFINER, migration 070) — patients tem FORCE RLS
+//     e SELECT direto sem GUC levanta exception (app_tenant_id).
+//   - INSERTs sob withTenantClient (GUC) — RLS-ready.
+// Requer migration 070 aplicada.
+// =====================================================
 
 const PATIENT_PUSH_AUTHORIZE_RATE_LIMIT = { limit: 10, windowMs: 60_000, prefix: 'patient-push-authorize' }
 
@@ -17,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const patientResult = await pool.query(
-      'SELECT id, tenant_id, full_name, push_auth_token_expires_at FROM patients WHERE push_auth_token = $1',
+      'SELECT * FROM patient_push_token_lookup($1)',
       [patient_token]
     )
 
@@ -32,19 +43,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Link invalido ou expirado' }, { status: 401 })
     }
 
-    await pool.query(
-      `INSERT INTO patient_push_tokens (tenant_id, patient_id, fcm_token, device_info, consent_given_at)
-       VALUES ($1, $2, $3, $4, NOW())
-       ON CONFLICT (patient_id, fcm_token)
-       DO UPDATE SET updated_at = NOW(), device_info = EXCLUDED.device_info`,
-      [patient.tenant_id, patient.id, fcm_token, device_info || null]
-    )
+    await withTenantClient(patient.tenant_id, async (client) => {
+      await client.query(
+        `INSERT INTO patient_push_tokens (tenant_id, patient_id, fcm_token, device_info, consent_given_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (patient_id, fcm_token)
+         DO UPDATE SET updated_at = NOW(), device_info = EXCLUDED.device_info`,
+        [patient.tenant_id, patient.id, fcm_token, device_info || null]
+      )
 
-    await pool.query(
-      `INSERT INTO audit_logs (tenant_id, table_name, record_id, action, new_values, created_at)
-       VALUES ($1, 'patient_push_tokens', $2, 'PUSH_CONSENT_GIVEN', $3, NOW())`,
-      [patient.tenant_id, patient.id, JSON.stringify({ device_info, timestamp: new Date().toISOString() })]
-    )
+      await client.query(
+        `INSERT INTO audit_logs (tenant_id, table_name, record_id, action, new_values, created_at)
+         VALUES ($1, 'patient_push_tokens', $2, 'PUSH_CONSENT_GIVEN', $3, NOW())`,
+        [patient.tenant_id, patient.id, JSON.stringify({ device_info, timestamp: new Date().toISOString() })]
+      )
+    })
 
     return NextResponse.json({
       success: true,
