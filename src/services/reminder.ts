@@ -19,8 +19,8 @@ export async function scheduleSessionReminders(params: ScheduleReminderParams): 
 
   // Verificar se paciente autorizou push
   const tokenResult = await pool.query(
-    'SELECT id FROM patient_push_tokens WHERE patient_id = $1 LIMIT 1',
-    [patient_id]
+    'SELECT id FROM patient_push_tokens WHERE patient_id = $1 AND tenant_id = $2 LIMIT 1',
+    [patient_id, tenant_id]
   )
 
   if (tokenResult.rows.length === 0) {
@@ -30,8 +30,8 @@ export async function scheduleSessionReminders(params: ScheduleReminderParams): 
 
   // Limpar lembretes anteriores desta sessão (caso reagende)
   await pool.query(
-    'DELETE FROM scheduled_reminders WHERE session_id = $1',
-    [session_id]
+    'DELETE FROM scheduled_reminders WHERE session_id = $1 AND tenant_id = $2',
+    [session_id, tenant_id]
   )
 
   const sessionDate = new Date(scheduled_at)
