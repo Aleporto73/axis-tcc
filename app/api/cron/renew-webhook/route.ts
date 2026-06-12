@@ -4,11 +4,13 @@
 // Renova webhooks Google Calendar expirados/expirando em <=24h.
 // Auth: Bearer CRON_SECRET (mesmo padrão dos outros crons).
 //
-// Pattern S3 cross-tenant (HUB-05.B Etapa 6):
-//   Query 0 descobre conns expirando (sem RLS context — calendar_connections
-//   sem RLS forced ate migration 070/071).
-//   Loop por tenant: withTenantClient(tenantId, ...) processa todas as conns
-//   daquele tenant em transacao isolada. Mesma estrutura do scheduler.ts (Item 11F).
+// Pattern S3 cross-tenant (HUB-05.B Etapa 6 + F7 passo 4):
+//   Query 0 descobre TENANTS com conns expirando via
+//   expiring_calendar_conn_tenants() — SECURITY DEFINER (migration 071),
+//   retorna SOMENTE tenant_ids; funciona sem GUC mesmo com RLS forced
+//   em calendar_connections. As conns (tokens!) sao buscadas DENTRO de
+//   withTenantClient — nenhum dado de linha cruza a fronteira de tenant.
+//   Mesma estrutura do scheduler.ts (Item 11F).
 // =====================================================
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -51,33 +53,34 @@ export async function GET(request: NextRequest) {
     const expiringSoon = new Date()
     expiringSoon.setDate(expiringSoon.getDate() + 1)
 
-    // Query 0 cross-tenant: descobre conns expirando (sem RLS context)
-    const connsResult = await pool.query(
-      `SELECT * FROM calendar_connections 
-       WHERE provider = 'google' 
-       AND sync_enabled = true
-       AND (webhook_expiration IS NULL OR webhook_expiration < $1)`,
+    // Query 0 cross-tenant: descobre TENANTS com conns expirando.
+    // SECURITY DEFINER (migration 071) — so tenant_ids, sem dados de linha.
+    const tenantsResult = await pool.query(
+      'SELECT t.tenant_id FROM expiring_calendar_conn_tenants($1) AS t(tenant_id)',
       [expiringSoon]
     )
-
-    // Agrupar por tenant_id em memoria (evita N+1 queries)
-    const connsByTenant = new Map<string, typeof connsResult.rows>()
-    for (const conn of connsResult.rows) {
-      if (!connsByTenant.has(conn.tenant_id)) {
-        connsByTenant.set(conn.tenant_id, [])
-      }
-      connsByTenant.get(conn.tenant_id)!.push(conn)
-    }
 
     let renewed = 0
     let failed = 0
     const errorsByTenant: Record<string, string> = {}
 
-    // Pattern S3: loop por tenant, withTenantClient seta GUC, processa conns
-    for (const [tenantId, conns] of connsByTenant) {
+    // Pattern S3: loop por tenant, withTenantClient seta GUC, busca e
+    // processa as conns daquele tenant DENTRO da transacao com GUC
+    // (tokens nunca saem do contexto do tenant; RLS-safe).
+    for (const { tenant_id: tenantId } of tenantsResult.rows) {
       try {
         await withTenantClient(tenantId, async (client) => {
-          for (const conn of conns) {
+          const connsResult = await client.query(
+            `SELECT * FROM calendar_connections
+             WHERE provider = 'google'
+             AND sync_enabled = true
+             AND (webhook_expiration IS NULL OR webhook_expiration < $1)`,
+            [expiringSoon]
+          )
+
+          // Race benigno: se outra instancia renovou entre a Query 0 e
+          // aqui, 0 rows — loop nao faz nada.
+          for (const conn of connsResult.rows) {
             try {
               let accessToken = conn.access_token
 
@@ -158,7 +161,7 @@ export async function GET(request: NextRequest) {
       success: true,
       renewed,
       failed,
-      tenants_processed: connsByTenant.size,
+      tenants_processed: tenantsResult.rows.length,
       ...(Object.keys(errorsByTenant).length > 0 ? { errors: errorsByTenant } : {})
     })
   } catch (error) {

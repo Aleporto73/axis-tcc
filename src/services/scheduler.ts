@@ -49,8 +49,10 @@ async function getFirebaseAdmin() {
  * wrap, scheduler explodia a cada minuto apos a 063 ser aplicada em prod.
  *
  * Pattern S3 (igual scan-integrity, mas com set_config explicito):
- *   1. Query 0 (sem GUC) descobre tenants com trabalho pendente em tabela
- *      sem RLS (scheduled_reminders).
+ *   1. Query 0 descobre tenants com trabalho pendente via
+ *      pending_reminder_tenants() — SECURITY DEFINER (migration 071),
+ *      retorna SOMENTE tenant_ids; funciona sem GUC mesmo com RLS
+ *      forced em scheduled_reminders (F7 passo 4).
  *   2. Loop por tenant: withTenantClient seta o GUC, callback executa
  *      queries que tocam tabelas RLS-protegidas.
  */
@@ -80,8 +82,9 @@ async function withTenantClient<T>(
  * REGRA: Conteudo apenas logistico (horario), nunca clinico (Bible).
  *
  * Pattern S3 cross-tenant:
- *   1. Query 0 descobre tenants com lembretes pendentes (scheduled_reminders
- *      sem RLS, cross-tenant OK).
+ *   1. Query 0 descobre tenants com lembretes pendentes via
+ *      pending_reminder_tenants() (SECURITY DEFINER, migration 071 —
+ *      so tenant_ids cruzam a fronteira de tenant).
  *   2. Loop por tenant: withTenantClient seta GUC `app.tenant_id`, callback
  *      processa lembretes daquele tenant (JOIN com patients respeita RLS).
  *
@@ -95,13 +98,11 @@ export async function processScheduledReminders(): Promise<{ sent: number; faile
 
   try {
     // Query 0: descobrir tenants com lembretes pendentes.
-    // scheduled_reminders sem RLS - cross-tenant OK aqui.
+    // Via pending_reminder_tenants() — SECURITY DEFINER (migration 071).
+    // Funciona sem GUC mesmo apos RLS forced em scheduled_reminders;
+    // retorna SOMENTE tenant_ids (nenhum dado de linha cross-tenant).
     const tenantsResult = await pool.query(
-      `SELECT DISTINCT tenant_id
-         FROM scheduled_reminders
-        WHERE sent = false
-          AND recipient_type = 'patient'
-          AND scheduled_time <= NOW()`
+      'SELECT t.tenant_id FROM pending_reminder_tenants() AS t(tenant_id)'
     )
 
     if (tenantsResult.rows.length === 0) {
