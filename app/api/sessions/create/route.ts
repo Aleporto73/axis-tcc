@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
           patient_id,
           scheduled_at: new Date(scheduled_at),
           patient_name: patientName
-        })
+        }, client)
       }
 
       return { session: sessionResult.rows[0], google_synced: !!googleEventId }

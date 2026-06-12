@@ -1,3 +1,4 @@
+import type { PoolClient } from 'pg'
 import pool from '../database/db'
 
 interface ScheduleReminderParams {
@@ -13,12 +14,15 @@ interface ScheduleReminderParams {
  * REGRA: Lembretes vão para o PACIENTE, não para o profissional
  * REGRA: Máximo 2 lembretes (24h antes + 10min antes)
  * REGRA: Só agenda se paciente autorizou push
+ *
+ * @param client PoolClient da transação withTenant do caller — garante GUC
+ *               de tenant (RLS) e atomicidade (F7 passo 1 / Onda 10).
  */
-export async function scheduleSessionReminders(params: ScheduleReminderParams): Promise<boolean> {
+export async function scheduleSessionReminders(params: ScheduleReminderParams, client: PoolClient): Promise<boolean> {
   const { tenant_id, session_id, patient_id, scheduled_at, patient_name } = params
 
   // Verificar se paciente autorizou push
-  const tokenResult = await pool.query(
+  const tokenResult = await client.query(
     'SELECT id FROM patient_push_tokens WHERE patient_id = $1 AND tenant_id = $2 LIMIT 1',
     [patient_id, tenant_id]
   )
@@ -29,7 +33,7 @@ export async function scheduleSessionReminders(params: ScheduleReminderParams): 
   }
 
   // Limpar lembretes anteriores desta sessão (caso reagende)
-  await pool.query(
+  await client.query(
     'DELETE FROM scheduled_reminders WHERE session_id = $1 AND tenant_id = $2',
     [session_id, tenant_id]
   )
@@ -41,7 +45,7 @@ export async function scheduleSessionReminders(params: ScheduleReminderParams): 
   // Lembrete 1: 24 horas antes
   const reminder24h = new Date(sessionDate.getTime() - 24 * 60 * 60 * 1000)
   if (reminder24h > now) {
-    await pool.query(
+    await client.query(
       `INSERT INTO scheduled_reminders 
        (tenant_id, session_id, patient_id, recipient_type, recipient_id, scheduled_time, title, message, reminder_type)
        VALUES ($1, $2, $3, 'patient', $3, $4, $5, $6, '24h')`,
@@ -60,7 +64,7 @@ export async function scheduleSessionReminders(params: ScheduleReminderParams): 
   // Lembrete 2: 10 minutos antes
   const reminder10m = new Date(sessionDate.getTime() - 10 * 60 * 1000)
   if (reminder10m > now) {
-    await pool.query(
+    await client.query(
       `INSERT INTO scheduled_reminders 
        (tenant_id, session_id, patient_id, recipient_type, recipient_id, scheduled_time, title, message, reminder_type)
        VALUES ($1, $2, $3, 'patient', $3, $4, $5, $6, '10m')`,
