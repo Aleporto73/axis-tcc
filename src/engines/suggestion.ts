@@ -1,4 +1,4 @@
-import pool from '../database/db';
+import type { Pool, PoolClient } from 'pg';
 import { ClinicalState, Suggestion, SuggestionType } from '../types';
 
 /**
@@ -16,12 +16,16 @@ export interface CsoDelta {
  * Gera sugestoes baseadas no CSO atual
  * REGRA: Apenas 1 sugestao por ciclo (prioridade)
  *
- * @param cso   CSO recém-calculado (fonte de verdade — engine determinístico)
- * @param delta Input AUXILIAR opcional. Não substitui regras existentes.
+ * @param cso    CSO recém-calculado (fonte de verdade — engine determinístico)
+ * @param delta  Input AUXILIAR opcional. Não substitui regras existentes.
+ * @param client Conexão de banco. Em produção (pipeline finish), passar o
+ *               PoolClient da transação withTenant — garante GUC de tenant
+ *               (RLS) e atomicidade com o restante do pipeline (F2/P1).
  */
 export async function generateSuggestions(
   cso: ClinicalState,
-  delta?: CsoDelta | null
+  delta: CsoDelta | null | undefined,
+  client: Pool | PoolClient
 ): Promise<Suggestion | null> {
   const candidateSuggestions = await evaluateRules(cso, delta);
 
@@ -40,7 +44,7 @@ export async function generateSuggestions(
     RETURNING *
   `;
 
-  const result = await pool.query(insertQuery, [
+  const result = await client.query(insertQuery, [
     cso.tenant_id,
     cso.patient_id,
     cso.id,

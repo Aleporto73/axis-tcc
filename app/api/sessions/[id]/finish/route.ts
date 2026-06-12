@@ -179,7 +179,7 @@ export async function POST(
         }
 
         try {
-          suggestionResult = await generateSuggestions(csoResult, delta)
+          suggestionResult = await generateSuggestions(csoResult, delta, client)
         } catch (err) {
           console.error('[PIPELINE] Erro no Suggestion Engine:', err)
           pipelineWarnings.push('Motor de sugestões falhou. Nenhuma sugestão foi gerada neste ciclo.')

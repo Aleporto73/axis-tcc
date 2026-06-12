@@ -30,7 +30,7 @@ async function testSuggestionEngine() {
   });
   
   // Gerar sugestão
-  const suggestion = await generateSuggestions(cso);
+  const suggestion = await generateSuggestions(cso, null, pool);
   
   if (suggestion) {
     console.log('\n✅ Sugestão gerada com sucesso!');
