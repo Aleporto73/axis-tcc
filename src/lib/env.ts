@@ -23,7 +23,7 @@ const envSchema = z.object({
   DATABASE_PORT: z.string().default('5432'),
   DATABASE_USER: z.string().default('axis_app'),
   DATABASE_NAME: z.string().default('axis_tcc'),
-  DATABASE_PASSWORD: isProd ? z.string().min(8) : z.string().default('AxisTcc2026!'),
+  DATABASE_PASSWORD: z.string().min(8),
 
   // Tenant fallback (rota /api/demo)
   DEFAULT_TENANT_ID: z.string().optional(),
