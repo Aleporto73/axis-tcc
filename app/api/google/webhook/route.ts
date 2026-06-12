@@ -192,11 +192,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required headers' }, { status: 400 })
     }
 
-    // Auditoria ABA P0: validar channel_id + resource_id + token
+    // Auditoria ABA P0: validar channel_id + resource_id + token.
+    // Lookup via SECURITY DEFINER (migration 072) — rota publica, sem
+    // tenant previo; funciona sem GUC mesmo com RLS forced em
+    // calendar_connections (F7 passo 5). Mismatch = 0 rows = 404.
     const connResult = await pool.query(
-      `SELECT tenant_id, user_id, webhook_token
-       FROM calendar_connections
-       WHERE webhook_channel_id = $1 AND webhook_resource_id = $2`,
+      'SELECT tenant_id, user_id, webhook_token FROM calendar_webhook_lookup($1, $2)',
       [channelId, resourceId]
     )
 

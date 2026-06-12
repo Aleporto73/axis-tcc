@@ -244,12 +244,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing channel ID' }, { status: 400 })
     }
 
-    // Buscar conexão pelo webhook_channel_id
+    // Buscar conexão pelo webhook_channel_id.
+    // Lookup via SECURITY DEFINER (migration 072) — rota publica, sem
+    // tenant previo; JOIN com profiles roda DENTRO da function. Funciona
+    // sem GUC mesmo com RLS forced em calendar_connections (F7 passo 5).
     const connResult = await pool.query(
-      `SELECT cc.tenant_id, cc.user_id AS profile_id, p.clerk_user_id
-       FROM calendar_connections cc
-       LEFT JOIN profiles p ON p.id::text = cc.user_id AND p.tenant_id = cc.tenant_id
-       WHERE cc.webhook_channel_id = $1`,
+      'SELECT tenant_id, user_id AS profile_id, clerk_user_id FROM calendar_webhook_lookup($1)',
       [channelId]
     )
 
