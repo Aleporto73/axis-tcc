@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,6 +35,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ protocols: result })
   } catch (error: any) {
     console.error('[Library GET]', error)
-    return NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

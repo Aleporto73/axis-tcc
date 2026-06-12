@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
 // =====================================================
 // Onboarding Light v2 — Setup simplificado
@@ -60,8 +61,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result, { status: 201 })
   } catch (error: any) {
-    if (error.message === 'Não autenticado') return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     console.error('Onboarding setup error:', error)
-    return NextResponse.json({ error: error.message || 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { handleRouteError } from '@/src/database/with-role'
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,7 +16,8 @@ export async function GET(req: NextRequest) {
     })
     return NextResponse.json(result)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(err)
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -33,7 +35,8 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json(result, { status: 201 })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(err)
+    return NextResponse.json({ error: message }, { status })
   }
 }
 
@@ -50,6 +53,7 @@ export async function DELETE(req: NextRequest) {
     })
     return NextResponse.json({ ok: true })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Erro interno' }, { status: 500 })
+    const { message, status } = handleRouteError(err)
+    return NextResponse.json({ error: message }, { status })
   }
 }

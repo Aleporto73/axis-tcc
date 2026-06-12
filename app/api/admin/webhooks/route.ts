@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdmin } from '../guard'
+import { handleRouteError } from '@/src/database/with-role'
 import pool from '@/src/database/db'
 
 export const dynamic = 'force-dynamic'
@@ -55,6 +56,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ webhooks: res.rows, total: res.rows.length })
   } catch (error) {
     console.error('[ADMIN WEBHOOKS]', error)
-    return NextResponse.json({ error: 'Erro interno', detail: error instanceof Error ? error.message : String(error) }, { status: 500 })
+    const { message, status } = handleRouteError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }
