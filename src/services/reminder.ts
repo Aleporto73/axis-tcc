@@ -1,5 +1,4 @@
 import type { PoolClient } from 'pg'
-import pool from '../database/db'
 
 interface ScheduleReminderParams {
   tenant_id: string
@@ -84,39 +83,7 @@ export async function scheduleSessionReminders(params: ScheduleReminderParams, c
   return remindersScheduled > 0
 }
 
-/**
- * Cancela lembretes de uma sessão
- */
-export async function cancelSessionReminders(session_id: string): Promise<void> {
-  await pool.query(
-    'DELETE FROM scheduled_reminders WHERE session_id = $1',
-    [session_id]
-  )
-  console.log(`[REMINDER] Lembretes cancelados para sessao ${session_id}`)
-}
-
-/**
- * Busca lembretes pendentes que devem ser enviados agora
- */
-export async function getPendingReminders(): Promise<any[]> {
-  const result = await pool.query(
-    `SELECT sr.*, p.full_name as patient_name
-     FROM scheduled_reminders sr
-     JOIN patients p ON p.id = sr.patient_id
-     WHERE sr.sent = false 
-       AND sr.scheduled_time <= NOW()
-     ORDER BY sr.scheduled_time ASC
-     LIMIT 50`
-  )
-  return result.rows
-}
-
-/**
- * Marca lembrete como enviado
- */
-export async function markReminderSent(reminder_id: string): Promise<void> {
-  await pool.query(
-    'UPDATE scheduled_reminders SET sent = true, sent_at = NOW() WHERE id = $1',
-    [reminder_id]
-  )
-}
+// Helpers mortos removidos na Onda 10 / F7 passo 4 (limpeza acoplada):
+// cancelSessionReminders / getPendingReminders / markReminderSent —
+// zero callers, pool sem GUC (quebrariam sob RLS; cancel deletava sem
+// filtro de tenant). Envio vivo: src/services/scheduler.ts (Pattern S3).
