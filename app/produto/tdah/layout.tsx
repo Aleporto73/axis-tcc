@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: 'https://axisclinico.com/axisTDAH.png',
+        url: 'https://axisclinico.com/axistdah.png',
         width: 1200,
         height: 630,
         alt: 'AXIS TDAH — Sistema de gestão clínica para intervenção comportamental em TDAH',
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title,
     description,
-    images: ['https://axisclinico.com/axisTDAH.png'],
+    images: ['https://axisclinico.com/axistdah.png'],
   },
   robots: {
     index: true,
