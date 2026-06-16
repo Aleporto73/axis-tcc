@@ -74,6 +74,9 @@ export default function EquipePage() {
   const [assignForm, setAssignForm] = useState({ learner_id: '', profile_id: '', is_primary: false })
   const [assigning, setAssigning] = useState(false)
 
+  // Feedback "Link copiado"
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
   const fetchTeam = useCallback(async () => {
     try {
       const res = await fetch('/api/aba/team')
@@ -214,6 +217,17 @@ export default function EquipePage() {
     } catch (_) {}
   }
 
+  function handleCopyInviteLink(member: TeamMember) {
+    const baseUrl = window.location.origin
+    const signupUrl = `${baseUrl}/sign-up?invite_email=${encodeURIComponent(member.email)}&produto=aba`
+    navigator.clipboard.writeText(signupUrl).then(() => {
+      setCopiedId(member.id)
+      setTimeout(() => setCopiedId(null), 2000)
+    }).catch(() => {
+      setError('Não foi possível copiar o link')
+    })
+  }
+
   if (roleLoading || loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[60vh]">
@@ -225,7 +239,8 @@ export default function EquipePage() {
   if (!isAdmin) return null
 
   const activeMembers = team.filter(m => m.is_active)
-  const inactiveMembers = team.filter(m => !m.is_active)
+  const pendingMembers = team.filter(m => !m.is_active && m.clerk_user_id.startsWith('pending_'))
+  const inactiveMembers = team.filter(m => !m.is_active && !m.clerk_user_id.startsWith('pending_'))
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -389,6 +404,66 @@ export default function EquipePage() {
         </div>
       </div>
 
+      {/* Convites Pendentes */}
+      {pendingMembers.length > 0 && (
+        <div className="bg-white border border-amber-200 rounded-xl overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-amber-100 bg-amber-50/30">
+            <h2 className="text-sm font-semibold text-amber-700">
+              Convites Pendentes ({pendingMembers.length})
+            </h2>
+            <p className="text-xs text-amber-600/70 mt-0.5">
+              Aguardando o convidado criar conta com o mesmo e-mail
+            </p>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {pendingMembers.map((member) => (
+              <div key={member.id} className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-sm font-medium text-amber-600 shrink-0">
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-slate-700 truncate">{member.name}</span>
+                      <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border shrink-0 ${roleColors[member.role]}`}>
+                        {roleLabels[member.role]}
+                      </span>
+                      <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                        Pendente
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5 truncate">
+                      {member.email}
+                      {member.crp && ` · CRP ${member.crp_uf}/${member.crp}`}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-[3.25rem] sm:ml-0 shrink-0">
+                  <button
+                    onClick={() => handleCopyInviteLink(member)}
+                    className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                      copiedId === member.id
+                        ? 'bg-green-50 border-green-200 text-green-700'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                    title="Copiar link de cadastro para enviar manualmente"
+                  >
+                    {copiedId === member.id ? '✓ Copiado!' : 'Copiar link'}
+                  </button>
+                  <button
+                    onClick={() => handleDeactivate(member.id, member.name)}
+                    className="text-xs text-red-400 hover:text-red-600 px-2 py-1"
+                    title="Cancelar convite"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Vínculos Terapeuta-Aprendiz */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mb-8">
         <div className="px-6 py-4 border-b border-slate-100">
@@ -404,7 +479,7 @@ export default function EquipePage() {
             <div key={a.id} className="px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
               <div className="text-sm min-w-0">
                 <span className="font-medium text-slate-700">{a.therapist_name}</span>
-                <span className="text-slate-400 mx-1 sm:mx-2">→</span>
+                <span className="text-slate-400 mx-1 sm:mx-2">&rarr;</span>
                 <span className="text-slate-600">{a.learner_name}</span>
                 {a.is_primary && (
                   <Tooltip tip="equipe_principal">
@@ -424,7 +499,7 @@ export default function EquipePage() {
           ))}
           {assignments.length === 0 && (
             <div className="px-6 py-8 text-center text-sm text-slate-400">
-              Nenhum vínculo. Clique em "Atribuir Terapeuta" para começar.
+              Nenhum vínculo. Clique em &quot;Atribuir Terapeuta&quot; para começar.
             </div>
           )}
         </div>
