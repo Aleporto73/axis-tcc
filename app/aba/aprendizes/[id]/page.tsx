@@ -38,7 +38,7 @@ function age(b: string): string {
 export default function LearnerDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { operadora } = useRole()
+  const { operadora, canCreateLearners } = useRole()
   const learnerId = params.id as string
   const [learner, setLearner] = useState<Learner|null>(null)
   const [protocols, setProtocols] = useState<Protocol[]>([])
@@ -59,6 +59,52 @@ export default function LearnerDetailPage() {
   const [linkingPeiGoalId, setLinkingPeiGoalId] = useState('')
   const [linkingPeiSaving, setLinkingPeiSaving] = useState(false)
   const [probeStats, setProbeStats] = useState<Record<string, { total: number; completed: number; passed: number; nextDate: string | null }>>({})
+
+  // ─── Edição do aprendiz (name + birth_date) — consome PATCH /api/aba/learners/[id] ───
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({ name: '', birth_date: '' })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  const openEditModal = () => {
+    if (!learner) return
+    setEditForm({ name: learner.name, birth_date: (learner.birth_date || '').slice(0, 10) })
+    setEditError(null)
+    setShowEditModal(true)
+  }
+
+  const handleEditSave = async () => {
+    // Mesma validação do cadastro: name não-vazio
+    if (!editForm.name.trim()) {
+      setEditError('Nome completo é obrigatório.')
+      return
+    }
+    setEditSaving(true)
+    setEditError(null)
+    try {
+      const res = await fetch('/api/aba/learners/' + learnerId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          birth_date: editForm.birth_date || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setEditError(data.error || 'Erro ao salvar')
+        setEditSaving(false)
+        return
+      }
+      // Sucesso: atualiza o nome exibido na tela com o learner retornado
+      setLearner(data.learner)
+      setShowEditModal(false)
+      setEditSaving(false)
+    } catch {
+      setEditError('Falha de conexão.')
+      setEditSaving(false)
+    }
+  }
 
 
   const fetchGuardians = async () => {
@@ -317,7 +363,12 @@ export default function LearnerDetailPage() {
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-aba-500/10 flex items-center justify-center"><span className="text-xl font-medium text-aba-500">{learner.name.charAt(0)}</span></div>
           <div>
-            <h1 className="text-xl font-normal text-slate-800 tracking-tight">{learner.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-normal text-slate-800 tracking-tight">{learner.name}</h1>
+              {canCreateLearners && (
+                <button onClick={openEditModal} className="text-xs text-slate-400 hover:text-aba-500 border border-slate-200 rounded-lg px-2 py-1 transition-colors">Editar</button>
+              )}
+            </div>
             <p className="text-xs text-slate-400 mt-0.5">
               {age(learner.birth_date)}
               {learner.cid_code ? (
@@ -704,6 +755,38 @@ export default function LearnerDetailPage() {
                   </button>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="p-6 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-lg font-light text-slate-800">Editar Aprendiz</h2>
+                <button onClick={() => { setShowEditModal(false); setEditError(null) }} className="text-slate-400 hover:text-slate-600">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {editError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{editError}</p>}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Nome completo *</label>
+                <input type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" placeholder="Nome do aprendiz" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Data de nascimento</label>
+                <input type="date" value={editForm.birth_date} onChange={e => setEditForm({...editForm, birth_date: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-aba-500" />
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-3">
+              <button onClick={() => { setShowEditModal(false); setEditError(null) }} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">Cancelar</button>
+              <button onClick={handleEditSave} disabled={editSaving} className="px-5 py-2 bg-aba-500 text-white text-sm font-medium rounded-lg hover:bg-aba-600 transition-colors disabled:opacity-50">
+                {editSaving ? 'Salvando...' : 'Salvar'}
+              </button>
             </div>
           </div>
         </div>
