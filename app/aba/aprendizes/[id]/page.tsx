@@ -287,6 +287,10 @@ export default function LearnerDetailPage() {
     setTransitioning(protocolId)
     setError(null)
     const body: any = { status: newStatus }
+    if (newStatus === 'mastered') {
+      const ok = window.confirm('Confirmar domínio do protocolo\n\nIsso marca o protocolo como Dominado e altera o status clínico do aprendiz. Confirma que o critério de domínio foi realmente atingido?')
+      if (!ok) { setTransitioning(null); return }
+    }
     if (newStatus === 'discontinued') {
       const reason = window.prompt('Motivo da descontinuação (obrigatório):')
       if (!reason || !reason.trim()) { setTransitioning(null); return }
