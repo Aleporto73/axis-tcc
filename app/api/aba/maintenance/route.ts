@@ -98,6 +98,20 @@ export async function POST(request: NextRequest) {
             `UPDATE maintenance_probes SET status='cancelled', notes=COALESCE(notes,'')||' [Cancelada: sonda abaixo do critério, protocolo retornou ao ensino]' WHERE protocol_id=$1 AND tenant_id=$2 AND status='pending'`,
             [probe.rows[0].protocol_id, tenantId])
 
+          // FG-1 Canal B: notificar o supervisor (push). notify_regression_detected lê
+          // regression_count por conta própria — por isso vem DEPOIS do incremento acima,
+          // garantindo chave de idempotência única (regress_<protocol>_<count>).
+          // SAVEPOINT: uma falha na notificação NÃO pode derrubar o registro clínico da sonda.
+          await client.query('SAVEPOINT notify_regression_sp')
+          try {
+            await client.query('SELECT notify_regression_detected($1, $2)', [probe.rows[0].protocol_id, tenantId])
+            await client.query('RELEASE SAVEPOINT notify_regression_sp')
+          } catch (notifyErr) {
+            await client.query('ROLLBACK TO SAVEPOINT notify_regression_sp')
+            await client.query('RELEASE SAVEPOINT notify_regression_sp')
+            console.error('[ABA FG-1] Falha ao notificar regressão:', notifyErr)
+          }
+
           regression = true
         }
 
