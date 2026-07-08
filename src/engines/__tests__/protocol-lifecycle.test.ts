@@ -84,31 +84,36 @@ describe('Valid Transitions (Bible S3.1)', () => {
     ['maintenance', 'maintained', true],
     ['maintained', 'archived', true],
 
-    // ─── Regressão a qualquer momento ───
-    ['mastered', 'regression', true],
-    ['generalization', 'regression', true],
-    ['mastered_validated', 'regression', true],
-    ['maintenance', 'regression', true],
-    ['maintained', 'regression', true],
-    ['regression', 'active', true],
+    // ─── Reversão / retorno ao ensino (Fase A) ───
+    ['mastered', 'active', true],            // reversão do "Dominado"
+    ['maintenance', 'active', true],         // sonda abaixo do critério
+    ['maintained', 'active', true],
+    ['generalization', 'active', true],
+    ['mastered_validated', 'active', true],
 
     // ─── Suspensão e descontinuação ───
     ['active', 'suspended', true],
     ['active', 'discontinued', true],
+    ['mastered', 'suspended', true],
     ['suspended', 'active', true],
     ['suspended', 'discontinued', true],
-    ['draft', 'archived', true],
 
-    // ─── PROIBIDAS (S3.2 regra 5) ───
+    // ─── PROIBIDAS ───
     ['draft', 'mastered', false],
+    ['draft', 'archived', false],            // draft não vai mais para archived
     ['active', 'generalization', false],
     ['active', 'archived', false],
-    ['mastered', 'active', false],
     ['mastered', 'maintenance', false],
     ['archived', 'active', false],
     ['discontinued', 'active', false],
+    ['suspended', 'mastered', false],
+
+    // ─── regression é tombstone: sem entrada nem saída ───
+    ['mastered', 'regression', false],
+    ['maintenance', 'regression', false],
+    ['maintained', 'regression', false],
+    ['regression', 'active', false],
     ['regression', 'mastered', false],
-    ['maintained', 'active', false],
   ]
 
   it.each(cases)('%s → %s = %s', (from, to, expected) => {
@@ -119,10 +124,10 @@ describe('Valid Transitions (Bible S3.1)', () => {
 // ─── getAvailableTransitions ────────────────────
 
 describe('getAvailableTransitions()', () => {
-  it('draft pode ir para active ou archived', () => {
+  it('draft pode ir para active ou discontinued', () => {
     const transitions = getAvailableTransitions('draft')
     expect(transitions).toContain('active')
-    expect(transitions).toContain('archived')
+    expect(transitions).toContain('discontinued')
     expect(transitions).toHaveLength(2)
   })
 
@@ -134,9 +139,12 @@ describe('getAvailableTransitions()', () => {
     expect(transitions).toHaveLength(3)
   })
 
-  it('regression só pode voltar para active', () => {
-    const transitions = getAvailableTransitions('regression')
-    expect(transitions).toEqual(['active'])
+  it('mastered pode reverter para active', () => {
+    expect(getAvailableTransitions('mastered')).toContain('active')
+  })
+
+  it('regression é tombstone — sem transições de saída', () => {
+    expect(getAvailableTransitions('regression')).toEqual([])
   })
 })
 
@@ -169,9 +177,8 @@ describe('validateTransition()', () => {
     expect(result.success).toBe(true)
   })
 
-  it('archived a partir de draft é permitido', () => {
-    const result = validateTransition('draft', 'archived')
-    expect(result.success).toBe(true)
+  it('archived a partir de draft NÃO é permitido (Fase A: draft → active|discontinued)', () => {
+    expect(() => validateTransition('draft', 'archived')).toThrow(TransitionError)
   })
 
   // S3.2 regra 2: discontinued exige motivo
@@ -291,9 +298,8 @@ describe('Ciclo completo de protocolo', () => {
     }
   })
 
-  it('ciclo com regressão: mastered → regression → active → mastered', () => {
-    expect(validateTransition('mastered', 'regression').success).toBe(true)
-    expect(validateTransition('regression', 'active').success).toBe(true)
+  it('ciclo com reversão: mastered → active → mastered', () => {
+    expect(validateTransition('mastered', 'active').success).toBe(true)
     expect(validateTransition('active', 'mastered').success).toBe(true)
   })
 })

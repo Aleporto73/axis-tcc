@@ -18,7 +18,12 @@ const protocolStatusLabels: Record<string,string> = { draft:'Rascunho', active:'
 const protocolStatusColors: Record<string,string> = { draft:'bg-slate-100 text-slate-500', active:'bg-blue-50 text-blue-600', mastered:'bg-green-50 text-green-600', generalization:'bg-purple-50 text-purple-600', mastered_validated:'bg-teal-50 text-teal-600', maintenance:'bg-cyan-50 text-cyan-600', maintained:'bg-emerald-50 text-emerald-600', archived:'bg-slate-50 text-slate-400', suspended:'bg-amber-50 text-amber-600', discontinued:'bg-red-50 text-red-500', regression:'bg-orange-50 text-orange-600' }
 const sessionStatusColors: Record<string,string> = { scheduled:'bg-blue-50 text-blue-600', in_progress:'bg-aba-500/10 text-aba-500', completed:'bg-green-50 text-green-600', cancelled:'bg-slate-100 text-slate-400' }
 const sessionStatusLabels: Record<string,string> = { scheduled:'Agendada', in_progress:'Em andamento', completed:'Concluída', cancelled:'Cancelada' }
-const validTransitions: Record<string,string[]> = { draft:['active','archived'], active:['mastered','suspended','discontinued'], mastered:['generalization','regression'], generalization:['mastered_validated','regression'], mastered_validated:['maintenance','regression'], maintenance:['maintained','regression'], maintained:['archived','regression'], regression:['active'], suspended:['active','discontinued'] }
+// Reconciliado com o trigger final (Fase A / migration 076). Só expõe transições que
+// o banco aceita. Escondidas de propósito (válidas no trigger, mas não como botão):
+// generalization/mastered_validated→maintained (pulam sondas), os …→active de retorno
+// (a rota faz maintenance→active automático ao reprovar sonda), e tudo de 'regression'
+// (removido da máquina). mastered→active é a reversão do "Dominado".
+const validTransitions: Record<string,string[]> = { draft:['active'], active:['mastered','suspended','discontinued'], mastered:['generalization','active'], generalization:['mastered_validated'], mastered_validated:['maintenance'], maintenance:['maintained'], maintained:['archived'], suspended:['active','discontinued'] }
 
 const domainOptions = [
   { value: 'comunicacao', label: 'Comunicação' },
@@ -283,12 +288,16 @@ export default function LearnerDetailPage() {
     if (tab === 'guardians' && guardians.length === 0) { fetchGuardians() }
   }, [tab, guardians.length])
 
-  const handleTransition = async (protocolId: string, newStatus: string) => {
+  const handleTransition = async (protocolId: string, newStatus: string, currentStatus?: string) => {
     setTransitioning(protocolId)
     setError(null)
     const body: any = { status: newStatus }
     if (newStatus === 'mastered') {
       const ok = window.confirm('Confirmar domínio do protocolo\n\nIsso marca o protocolo como Dominado e altera o status clínico do aprendiz. Confirma que o critério de domínio foi realmente atingido?')
+      if (!ok) { setTransitioning(null); return }
+    }
+    if (currentStatus === 'mastered' && newStatus === 'active') {
+      const ok = window.confirm('Reverter este protocolo para Ativo? O status de Dominado e a data serão removidos.')
       if (!ok) { setTransitioning(null); return }
     }
     if (newStatus === 'discontinued') {
@@ -480,9 +489,9 @@ export default function LearnerDetailPage() {
                   {validTransitions[p.status].map(next => {
                     const tipMap: Record<string, any> = { mastered:'aprendiz_btn_dominado', suspended:'aprendiz_btn_suspenso', discontinued:'aprendiz_btn_descontinuado', generalization:'aprendiz_btn_generalizacao', regression:'aprendiz_btn_regressao', mastered_validated:'aprendiz_btn_validado', maintenance:'aprendiz_btn_manutencao', maintained:'aprendiz_btn_mantido', archived:'aprendiz_btn_arquivado' }
                     const btn = (
-                      <button key={next} onClick={() => handleTransition(p.id, next)} disabled={transitioning===p.id}
+                      <button key={next} onClick={() => handleTransition(p.id, next, p.status)} disabled={transitioning===p.id}
                         className={'px-3 py-1 text-[11px] rounded-lg border transition-colors ' + (next==='discontinued'||next==='suspended' ? 'border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200' : 'border-aba-500/30 text-aba-500 hover:bg-aba-500/5')}>
-                        {transitioning===p.id ? '...' : '→ ' + (protocolStatusLabels[next] || next)}
+                        {transitioning===p.id ? '...' : (p.status === 'mastered' && next === 'active' ? '↩ Reverter para Ativo' : '→ ' + (protocolStatusLabels[next] || next))}
                       </button>
                     )
                     return tipMap[next] ? <Tooltip key={next} tip={tipMap[next]}>{btn}</Tooltip> : btn

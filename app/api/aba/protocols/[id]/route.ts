@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
+import { isValidStatus } from '@/src/engines/protocol-lifecycle'
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -8,6 +9,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { status, discontinuation_reason, pei_goal_id } = body
 
     if (!status && pei_goal_id === undefined) return NextResponse.json({ error: 'status ou pei_goal_id é obrigatório' }, { status: 400 })
+    // A6: validar o status ANTES do SQL — evita que um valor fora do enum vire 22P02 → 500.
+    if (status && !isValidStatus(status)) return NextResponse.json({ error: `Status inválido: "${status}".` }, { status: 400 })
+    // Fase A: 'regression' foi descontinuado da máquina de estados ABA (Decisão 1). Ainda
+    // existe no enum como tombstone, mas não é destino funcional. Bloquear aqui, sem SQL.
+    if (status === 'regression') return NextResponse.json({ error: 'O status "regressão" foi descontinuado na máquina de estados ABA e não é mais um destino válido. Uma sonda de manutenção abaixo do critério agora retorna o protocolo para "Ativo".' }, { status: 422 })
 
     const result = await withTenant(async ({ client, tenantId, userId }) => {
       const sets: string[] = ['updated_at = NOW()']
@@ -27,6 +33,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           archived: 'archived_at',
         }
         if (ts[status]) { p.push(new Date().toISOString()); sets.push(`${ts[status]} = $${p.length}::timestamptz`) }
+        // [P1] Reversao mastered->active: limpa mastered_at SOMENTE se o protocolo estava 'mastered'.
+        // No UPDATE do Postgres, `status` no RHS refere-se ao valor ANTIGO (pre-update).
+        if (status === 'active') { sets.push(`mastered_at = CASE WHEN status = 'mastered' THEN NULL ELSE mastered_at END`) }
         if (status === 'discontinued' && discontinuation_reason) { p.push(discontinuation_reason); sets.push(`discontinuation_reason = $${p.length}::text`) }
       }
 
@@ -36,8 +45,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
       p.push(id, tenantId)
       const q = `UPDATE learner_protocols SET ${sets.join(', ')} WHERE id = $${p.length-1}::uuid AND tenant_id = $${p.length}::uuid RETURNING *`
-
-      console.log('PATCH query:', q, 'params:', p.map((v,i) => `$${i+1}=${typeof v}:${String(v).substring(0,20)}`))
 
       const updated = await client.query(q, p)
       if (updated.rows.length === 0) return { protocol: null, maintenance_probes: [] }
@@ -86,6 +93,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json(result)
   } catch (error: any) {
     if (error.message === 'Não autenticado') return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    // A6: erro de transição do trigger (RAISE '[AXIS ABA] ...') → 422 amigável com o motivo.
+    // Demais erros (FK/NOT NULL 23xxx, bugs) seguem 500 logado — não viram 422 genérico.
+    if (typeof error?.message === 'string' && error.message.includes('[AXIS ABA]')) {
+      return NextResponse.json({ error: error.message }, { status: 422 })
+    }
     console.error("PATCH protocol error:", error)
     return NextResponse.json({ error: 'Erro ao atualizar protocolo' }, { status: 500 })
   }

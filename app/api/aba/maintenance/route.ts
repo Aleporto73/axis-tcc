@@ -54,8 +54,12 @@ export async function POST(request: NextRequest) {
         if (probe.rows.length === 0) throw new Error('Sonda não encontrada')
         if (probe.rows[0].status !== 'pending') throw new Error('Sonda já avaliada')
         const score_pct = trials_total > 0 ? Math.round((trials_correct/trials_total)*10000)/100 : 0
-        const proto = await client.query('SELECT mastery_criteria_pct FROM learner_protocols WHERE id=$1 AND tenant_id=$2', [probe.rows[0].protocol_id, tenantId])
-        const mastery_pct = proto.rows[0]?.mastery_criteria_pct || 80
+        const proto = await client.query('SELECT status, mastery_criteria_pct FROM learner_protocols WHERE id=$1 AND tenant_id=$2', [probe.rows[0].protocol_id, tenantId])
+        if (proto.rows.length === 0) throw new Error('Protocolo não encontrado')
+        // A7: só avaliar sonda se o protocolo ainda está em manutenção. Evita transição
+        // inválida (rollback) ou reverter um protocolo que já saiu de manutenção.
+        if (proto.rows[0].status !== 'maintenance') throw new Error('Este protocolo não está mais em manutenção; a sonda não pode ser avaliada.')
+        const mastery_pct = proto.rows[0].mastery_criteria_pct || 80
         const passed = score_pct >= mastery_pct
         const probeResult = passed ? 'passed' : 'failed'
 
@@ -69,25 +73,29 @@ export async function POST(request: NextRequest) {
            jsonb_build_object('probe_id',$3,'protocol_id',$4,'result',$5,'score_pct',$6),NOW())`,
           [tenantId, userId||'system', probe_id, probe.rows[0].protocol_id, probeResult, score_pct])
 
-        // ─── Bible S3: Regressão automática se score < 70% ───
-        // Limiar fixo de 70% (independente do mastery_criteria_pct do protocolo).
-        // Transição respeita o lifecycle: status → "regression" (não direto para "active").
-        const REGRESSION_THRESHOLD = 70
+        // ─── Fase A (ABA v9): sonda abaixo do critério → volta ao ensino ───
+        // Decisão 1: 'regression' foi removido da máquina de estados. Uma sonda reprovada
+        // agora incrementa regression_count (histórico/alerta) e devolve o protocolo de
+        // 'maintenance' para 'active' (transição válida no trigger final) — não usa mais
+        // status='regression' (que o trigger rejeitava, causando rollback total).
+        // G2c: o limiar é o mastery_criteria_pct do protocolo, não mais 70 fixo — logo
+        // "reprovou" (!passed) === "abaixo do critério". Sem zona morta.
         let regression = false
-        if (score_pct < REGRESSION_THRESHOLD) {
+        if (!passed) {
           await client.query(
-            `UPDATE learner_protocols SET status=$3, updated_at=NOW(), regression_count=COALESCE(regression_count,0)+1 WHERE id=$1 AND tenant_id=$2`,
-            [probe.rows[0].protocol_id, tenantId, 'regression'])
+            `UPDATE learner_protocols SET status='active', activated_at=NOW(), updated_at=NOW(), regression_count=COALESCE(regression_count,0)+1 WHERE id=$1 AND tenant_id=$2`,
+            [probe.rows[0].protocol_id, tenantId])
 
           await client.query(
             `INSERT INTO axis_audit_logs (tenant_id,user_id,actor,action,entity_type,metadata,created_at)
              VALUES ($1,$2,'system','REGRESSION_DETECTED_AUTO','learner_protocols',
-             jsonb_build_object('protocol_id',$3,'learner_id',$4,'probe_id',$5,'score_pct',$6,'threshold',70),NOW())`,
-            [tenantId, userId||'system', probe.rows[0].protocol_id, probe.rows[0].learner_id, probe_id, score_pct])
+             jsonb_build_object('protocol_id',$3,'learner_id',$4,'probe_id',$5,'score_pct',$6,'threshold',$7),NOW())`,
+            [tenantId, userId||'system', probe.rows[0].protocol_id, probe.rows[0].learner_id, probe_id, score_pct, mastery_pct])
 
-          // Cancelar sondas pendentes restantes — protocolo saiu de manutenção
+          // Protocolo saiu de manutenção → cancelar sondas pendentes restantes.
+          // (O CHECK de maintenance_probes passa a aceitar 'cancelled' na migration 076.)
           await client.query(
-            `UPDATE maintenance_probes SET status='cancelled', notes=COALESCE(notes,'')||' [Cancelada: regressão detectada]' WHERE protocol_id=$1 AND tenant_id=$2 AND status='pending'`,
+            `UPDATE maintenance_probes SET status='cancelled', notes=COALESCE(notes,'')||' [Cancelada: sonda abaixo do critério, protocolo retornou ao ensino]' WHERE protocol_id=$1 AND tenant_id=$2 AND status='pending'`,
             [probe.rows[0].protocol_id, tenantId])
 
           regression = true
@@ -122,7 +130,7 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        return { probe_id, result: probeResult, score_pct, passed, regression, regression_threshold: REGRESSION_THRESHOLD, auto_maintained: autoMaintained }
+        return { probe_id, result: probeResult, score_pct, passed, regression, regression_threshold: mastery_pct, auto_maintained: autoMaintained }
       })
       return NextResponse.json(result)
     }

@@ -111,36 +111,36 @@ describe("status terminais — Bible S3.1", () => {
 // ─── Transições válidas por status (Bible S3.1) ───
 
 describe("transições válidas — Bible S3.1", () => {
-  it("draft → active, archived", () => {
-    expect(VALID_TRANSITIONS.draft).toEqual(["active", "archived"]);
+  it("draft → active, discontinued", () => {
+    expect(VALID_TRANSITIONS.draft).toEqual(["active", "discontinued"]);
   });
 
   it("active → mastered, suspended, discontinued", () => {
     expect(VALID_TRANSITIONS.active).toEqual(["mastered", "suspended", "discontinued"]);
   });
 
-  it("mastered → generalization, regression", () => {
-    expect(VALID_TRANSITIONS.mastered).toEqual(["generalization", "regression"]);
+  it("mastered → generalization, suspended, active", () => {
+    expect(VALID_TRANSITIONS.mastered).toEqual(["generalization", "suspended", "active"]);
   });
 
-  it("generalization → mastered_validated, regression", () => {
-    expect(VALID_TRANSITIONS.generalization).toEqual(["mastered_validated", "regression"]);
+  it("generalization → mastered_validated, maintained, active", () => {
+    expect(VALID_TRANSITIONS.generalization).toEqual(["mastered_validated", "maintained", "active"]);
   });
 
-  it("mastered_validated → maintenance, regression", () => {
-    expect(VALID_TRANSITIONS.mastered_validated).toEqual(["maintenance", "regression"]);
+  it("mastered_validated → maintenance, maintained, active", () => {
+    expect(VALID_TRANSITIONS.mastered_validated).toEqual(["maintenance", "maintained", "active"]);
   });
 
-  it("maintenance → maintained, regression", () => {
-    expect(VALID_TRANSITIONS.maintenance).toEqual(["maintained", "regression"]);
+  it("maintenance → maintained, active", () => {
+    expect(VALID_TRANSITIONS.maintenance).toEqual(["maintained", "active"]);
   });
 
-  it("maintained → archived, regression", () => {
-    expect(VALID_TRANSITIONS.maintained).toEqual(["archived", "regression"]);
+  it("maintained → archived, active", () => {
+    expect(VALID_TRANSITIONS.maintained).toEqual(["archived", "active"]);
   });
 
-  it("regression → active", () => {
-    expect(VALID_TRANSITIONS.regression).toEqual(["active"]);
+  it("regression → [] (tombstone — removido da máquina)", () => {
+    expect(VALID_TRANSITIONS.regression).toEqual([]);
   });
 
   it("suspended → active, discontinued", () => {
@@ -194,16 +194,16 @@ describe("transições proibidas — S3.2 regra 5", () => {
 
   it(`existem ${allProhibited.length} transições proibidas no total`, () => {
     // 11 status × 11 status = 121 pares
-    // Total permitidas: 2+3+2+2+2+2+2+1+2+0+0 = 18
-    // Proibidas = 121 - 18 = 103
-    expect(allProhibited).toHaveLength(103);
+    // Total permitidas: 2+3+3+3+3+2+2+0+2+0+0 = 20
+    // Proibidas = 121 - 20 = 101
+    expect(allProhibited).toHaveLength(101);
   });
 
   // Testes explícitos para transições comuns que NÃO devem ser permitidas
   const explicitProhibitions: [ProtocolStatus, ProtocolStatus, string][] = [
     ["draft", "mastered", "não pode pular aquisição"],
-    ["draft", "discontinued", "draft deve ir para active primeiro"],
-    ["draft", "regression", "draft não regride"],
+    ["draft", "archived", "draft não vai mais para archived (Fase A)"],
+    ["draft", "regression", "regression é tombstone"],
     ["active", "archived", "active não pode ir direto para archived"],
     ["active", "maintained", "active precisa passar por mastered/gen/maintenance"],
     ["active", "generalization", "active precisa dominar antes de generalizar"],
@@ -215,12 +215,13 @@ describe("transições proibidas — S3.2 regra 5", () => {
     ["generalization", "maintenance", "generalization precisa de mastered_validated antes"],
     ["mastered_validated", "archived", "mastered_validated não pode ir direto para archived"],
     ["mastered_validated", "generalization", "mastered_validated não volta para generalization"],
-    ["maintenance", "active", "maintenance não volta para active (usa regression)"],
     ["maintenance", "archived", "maintenance não pode ir direto para archived"],
-    ["maintained", "active", "maintained não volta para active (usa regression)"],
     ["maintained", "maintenance", "maintained não volta para maintenance"],
-    ["regression", "mastered", "regression volta para active, não mastered"],
-    ["regression", "discontinued", "regression não pode descontinuar direto"],
+    ["mastered", "regression", "regression é tombstone (sem entrada)"],
+    ["maintenance", "regression", "regression é tombstone (sem entrada)"],
+    ["regression", "active", "regression é tombstone (sem saída)"],
+    ["regression", "mastered", "regression é tombstone (sem saída)"],
+    ["regression", "discontinued", "regression é tombstone (sem saída)"],
     ["suspended", "mastered", "suspended não pode pular para mastered"],
     ["suspended", "archived", "suspended não pode ir para archived"],
     ["discontinued", "active", "terminal — sem saída"],
@@ -281,8 +282,8 @@ describe("validateTransition — regras de negócio S3.2", () => {
     expect(result.success).toBe(true);
   });
 
-  it("regression → active: sucesso", () => {
-    const result = validateTransition("regression", "active");
+  it("mastered → active (reversão do Dominado): sucesso", () => {
+    const result = validateTransition("mastered", "active");
     expect(result.success).toBe(true);
   });
 
@@ -341,14 +342,13 @@ describe("validateTransition — regras de negócio S3.2", () => {
       expect(result.success).toBe(true);
     });
 
-    it("draft → archived: permitido", () => {
-      const result = validateTransition("draft", "archived");
-      expect(result.success).toBe(true);
+    it("draft → archived: NÃO permitido (Fase A: draft → active|discontinued)", () => {
+      expect(() => validateTransition("draft", "archived")).toThrow(TransitionError);
     });
 
     it("qualquer outro → archived: proibido pelo mapa de transições", () => {
       const nonAllowed: ProtocolStatus[] = [
-        "active", "mastered", "generalization", "mastered_validated",
+        "draft", "active", "mastered", "generalization", "mastered_validated",
         "maintenance", "regression", "suspended",
       ];
       for (const from of nonAllowed) {
@@ -502,39 +502,31 @@ describe("validateTransition — regras de negócio S3.2", () => {
 
   // ─── Regressão ─────────────────────────────────
 
-  describe("regressão — Bible S3.1 + S6", () => {
-    it("mastered → regression: permitido", () => {
-      expect(validateTransition("mastered", "regression").success).toBe(true);
+  describe("reversão e tombstone de regression — Fase A (ABA v9, Decisão 1)", () => {
+    it("mastered → active (reversão do Dominado): permitido", () => {
+      expect(validateTransition("mastered", "active").success).toBe(true);
     });
 
-    it("generalization → regression: permitido", () => {
-      expect(validateTransition("generalization", "regression").success).toBe(true);
+    it("maintenance → active (sonda abaixo do critério, volta ao ensino): permitido", () => {
+      expect(validateTransition("maintenance", "active").success).toBe(true);
     });
 
-    it("maintenance → regression: permitido", () => {
-      expect(validateTransition("maintenance", "regression").success).toBe(true);
+    it("maintained → active (retorno ao ensino): permitido", () => {
+      expect(validateTransition("maintained", "active").success).toBe(true);
     });
 
-    it("maintained → regression: permitido", () => {
-      expect(validateTransition("maintained", "regression").success).toBe(true);
+    it("regression é tombstone — sem transições de saída", () => {
+      expect(getAvailableTransitions("regression")).toEqual([]);
     });
 
-    it("mastered_validated → regression: permitido", () => {
-      expect(validateTransition("mastered_validated", "regression").success).toBe(true);
+    it("nenhuma transição PARA regression é permitida", () => {
+      for (const from of PROTOCOL_STATUSES) {
+        expect(isTransitionAllowed(from, "regression")).toBe(false);
+      }
     });
 
-    it("regression só volta para active", () => {
-      const targets = getAvailableTransitions("regression");
-      expect(targets).toEqual(["active"]);
-    });
-
-    it("regression → qualquer outro que não active: proibido", () => {
-      const proibidos: ProtocolStatus[] = [
-        "draft", "mastered", "generalization", "mastered_validated",
-        "maintenance", "maintained", "regression", "suspended",
-        "discontinued", "archived",
-      ];
-      for (const to of proibidos) {
+    it("nenhuma transição A PARTIR DE regression é permitida", () => {
+      for (const to of PROTOCOL_STATUSES) {
         expect(isTransitionAllowed("regression", to)).toBe(false);
       }
     });
@@ -600,15 +592,15 @@ describe("integridade do mapa VALID_TRANSITIONS", () => {
     }
   });
 
-  it("total de transições válidas = 18", () => {
+  it("total de transições válidas = 20", () => {
     let total = 0;
     for (const from of PROTOCOL_STATUSES) {
       total += VALID_TRANSITIONS[from].length;
     }
-    // draft(2) + active(3) + mastered(2) + generalization(2)
-    // + mastered_validated(2) + maintenance(2) + maintained(2)
-    // + regression(1) + suspended(2) + discontinued(0) + archived(0) = 18
-    expect(total).toBe(18);
+    // draft(2) + active(3) + mastered(3) + generalization(3)
+    // + mastered_validated(3) + maintenance(2) + maintained(2)
+    // + regression(0) + suspended(2) + discontinued(0) + archived(0) = 20
+    expect(total).toBe(20);
   });
 
   it("não há transições duplicadas em nenhum status", () => {

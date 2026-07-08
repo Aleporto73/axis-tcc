@@ -40,15 +40,24 @@ export const TERMINAL_STATUSES: ReadonlySet<ProtocolStatus> = new Set([
 
 // ─── Mapa de transições válidas (Bible S3.1) ──────
 
+// Espelha o trigger SQL de produção (trg_fn_validate_protocol_transition, migration
+// 076 / Fase A). Fonte de verdade é o banco; este mapa NÃO pode divergir dele.
+// - 'regression' é tombstone (Decisão 1 ABA v9): permanece no enum/tipo, mas não tem
+//   nenhuma transição de entrada ou saída.
+// - 'mastered' → 'active' é a reversão do "Dominado".
+// - draft NÃO vai para 'archived' (o trigger rejeita).
+// Nota de UI: generalization/mastered_validated → 'maintained' são válidas aqui, mas a
+// tela do aprendiz NÃO expõe esses botões (pulam sondas). Ver validTransitions em
+// app/aba/aprendizes/[id]/page.tsx.
 export const VALID_TRANSITIONS: Record<ProtocolStatus, readonly ProtocolStatus[]> = {
-  draft:              ["active", "archived"],
+  draft:              ["active", "discontinued"],
   active:             ["mastered", "suspended", "discontinued"],
-  mastered:           ["generalization", "regression"],
-  generalization:     ["mastered_validated", "regression"],
-  mastered_validated: ["maintenance", "regression"],
-  maintenance:        ["maintained", "regression"],
-  maintained:         ["archived", "regression"],
-  regression:         ["active"],
+  mastered:           ["generalization", "suspended", "active"],
+  generalization:     ["mastered_validated", "maintained", "active"],
+  mastered_validated: ["maintenance", "maintained", "active"],
+  maintenance:        ["maintained", "active"],
+  maintained:         ["archived", "active"],
+  regression:         [],  // tombstone — removido da máquina de estados
   suspended:          ["active", "discontinued"],
   discontinued:       [],  // terminal
   archived:           [],  // terminal
