@@ -24,6 +24,11 @@ interface DashboardData {
   protocols_gen_maint: number
   total_regressions: number
   active_learners: number
+  // FG-2a: staleness do CSO (motor desligado desde 24/03)
+  cso_last_data_at: string | null
+  cso_stale_learners: number
+  cso_learners_without_cso: number
+  cso_has_stale_data: boolean
 }
 
 interface AlertItem {
@@ -119,16 +124,26 @@ export default function ABADashboardPage() {
                 <p className="text-2xl font-light text-blue-600">{data?.active_protocols || 0} <span className="text-sm text-slate-400">ativos</span></p>
                 <p className="text-[10px] text-slate-400">{data?.mastered_protocols || 0} dominados</p>
               </div>
-              <div className="relative p-4 rounded-xl border border-green-200 bg-green-50/50">
+              <div className={`relative p-4 rounded-xl border ${data?.cso_has_stale_data ? 'border-amber-200 bg-amber-50/40' : 'border-green-200 bg-green-50/50'}`}>
                 <div className="absolute top-2 right-2"><HelpTip tip="dash_cso_medio" color="bg-green-100/60 text-green-600" /></div>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">CSO Médio</p>
                 {data?.avg_cso != null ? (
                   <>
                     <p className={`text-2xl font-light ${data.avg_cso >= 85 ? 'text-emerald-600' : data.avg_cso >= 70 ? 'text-green-600' : data.avg_cso >= 50 ? 'text-amber-500' : 'text-red-500'}`}>{data.avg_cso}</p>
-                    <p className="text-[10px] text-slate-400">{data.avg_cso >= 85 ? 'Excelente' : data.avg_cso >= 70 ? 'Bom' : data.avg_cso >= 50 ? 'Atenção' : 'Crítico'}</p>
+                    {data?.cso_has_stale_data ? (
+                      <p className="text-[10px] text-amber-600">Dados desatualizados</p>
+                    ) : (
+                      <p className="text-[10px] text-slate-400">{data.avg_cso >= 85 ? 'Excelente' : data.avg_cso >= 70 ? 'Bom' : data.avg_cso >= 50 ? 'Atenção' : 'Crítico'}</p>
+                    )}
                   </>
                 ) : (
                   <p className="text-sm text-slate-300">—</p>
+                )}
+                {data?.cso_has_stale_data && data?.cso_last_data_at && (
+                  <p className="text-[10px] text-slate-400">Último dado clínico: {new Date(data.cso_last_data_at).toLocaleDateString('pt-BR')}</p>
+                )}
+                {(data?.cso_learners_without_cso || 0) > 0 && (
+                  <p className="text-[10px] text-amber-600">{data!.cso_learners_without_cso} aprendiz(es) com sessões sem CSO calculado</p>
                 )}
               </div>
               <div className={`relative p-4 rounded-xl border ${(data?.learners_critical || 0) > 0 ? 'border-red-200 bg-red-50/40' : 'border-amber-200 bg-amber-50/40'}`}>

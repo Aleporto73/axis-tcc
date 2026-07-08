@@ -359,6 +359,15 @@ export default function LearnerDetailPage() {
   const masteredP = protocols.filter(p => ['mastered','generalization','maintained','archived'].includes(p.status)).length
   const completedS = sessions.filter(s => s.status === 'completed').length
   const lastCSO = csoHistory.length > 0 ? csoHistory[csoHistory.length - 1] : null
+  // FG-2b: staleness do CSO. csoHistory é série datada; o escalar mente se
+  // houver sessão completed posterior ao último snapshot.
+  const dayOf = (v: string) => new Date(v).toISOString().slice(0, 10)
+  const completedSessions = sessions.filter(s => s.status === 'completed' && (s.ended_at || s.scheduled_at))
+  const lastCompletedDay = completedSessions.length > 0
+    ? completedSessions.map(s => dayOf(s.ended_at || s.scheduled_at)).sort().at(-1)!
+    : null
+  const csoStale = lastCSO != null && lastCompletedDay != null && lastCompletedDay > dayOf(lastCSO.session_date)
+  const csoMissing = completedSessions.length > 0 && lastCSO == null
 
   return (
     <div className="px-4 md:px-8 lg:px-12 xl:px-16 pt-5 md:pt-6">
@@ -387,7 +396,7 @@ export default function LearnerDetailPage() {
           <div className="relative p-3 rounded-xl bg-blue-50/50 text-center"><div className="absolute top-2 right-2"><HelpTip tip="aprendiz_protocolos_ativos" color="bg-blue-100/60 text-blue-500" /></div><p className="text-lg font-medium text-blue-600">{activeP}</p><p className="text-[11px] text-slate-400">Protocolos ativos</p></div>
           <div className="relative p-3 rounded-xl bg-green-50/50 text-center"><div className="absolute top-2 right-2"><HelpTip tip="aprendiz_dominados" color="bg-green-100/60 text-green-600" /></div><p className="text-lg font-medium text-green-600">{masteredP}</p><p className="text-[11px] text-slate-400">Dominados</p></div>
           <div className="p-3 rounded-xl bg-aba-500/5 text-center"><p className="text-lg font-medium text-aba-500">{completedS}</p><p className="text-[11px] text-slate-400">Sessões</p></div>
-          <div className="relative p-3 rounded-xl bg-slate-50 text-center"><div className="absolute top-2 right-2"><HelpTip tip="aprendiz_cso_atual" color="bg-slate-200/60 text-slate-500" /></div><p className="text-lg font-medium text-slate-700">{lastCSO ? lastCSO.cso_aba : '—'}</p><p className="text-[11px] text-slate-400">CSO atual</p></div>
+          <div className="relative p-3 rounded-xl bg-slate-50 text-center"><div className="absolute top-2 right-2"><HelpTip tip="aprendiz_cso_atual" color="bg-slate-200/60 text-slate-500" /></div><p className="text-lg font-medium text-slate-700">{lastCSO ? lastCSO.cso_aba : '—'}</p><p className="text-[11px] text-slate-400">Último CSO</p>{lastCSO && <p className="text-[10px] text-slate-400">{new Date(lastCSO.session_date).toLocaleDateString('pt-BR')}</p>}{csoStale && <p className="text-[10px] text-amber-600">Dados desatualizados</p>}{csoMissing && <p className="text-[10px] text-amber-600">Sem CSO calculado</p>}</div>
         </div>
       </div>
       {error && <div className="mb-4 p-3 bg-red-50 rounded-lg"><p className="text-xs text-red-500">{error}</p></div>}

@@ -133,8 +133,38 @@ async function fetchKPIs(ctx: TenantContext) {
         AS active_learners
   `, baseParams)
 
+  // FG-2a: metadados de staleness do CSO. O motor CSO está desligado desde 24/03
+  // (sessões completed sem snapshot). avg_cso/learners_critical acima usam o ÚLTIMO
+  // clinical_state por learner — que pode ser de meses atrás. Não escondemos isso:
+  // stale = learner com sessão completed mais recente que o último clinical_state;
+  // without_cso = learner com sessão completed e nenhum clinical_state.
+  const stalenessResult = await client.query(`
+    WITH scope AS (
+      SELECT id AS learner_id FROM learners WHERE tenant_id = $1 AND id IN (${learnerSubquery})
+    ),
+    last_completed AS (
+      SELECT learner_id, MAX(ended_at) AS last_session
+      FROM sessions_aba
+      WHERE tenant_id = $1 AND status = 'completed' AND learner_id IN (SELECT learner_id FROM scope)
+      GROUP BY learner_id
+    ),
+    last_cso AS (
+      SELECT learner_id, MAX(created_at) AS last_state
+      FROM clinical_states_aba
+      WHERE tenant_id = $1 AND learner_id IN (SELECT learner_id FROM scope)
+      GROUP BY learner_id
+    )
+    SELECT
+      (SELECT MAX(last_state) FROM last_cso) AS cso_last_data_at,
+      COUNT(*) FILTER (WHERE lc.last_state IS NOT NULL AND s.last_session > lc.last_state)::int AS cso_stale_learners,
+      COUNT(*) FILTER (WHERE lc.last_state IS NULL)::int AS cso_learners_without_cso
+    FROM last_completed s
+    LEFT JOIN last_cso lc ON lc.learner_id = s.learner_id
+  `, baseParams)
+
   const row = metricsResult.rows[0]
   const adv = advancedResult.rows[0]
+  const stale = stalenessResult.rows[0]
 
   return {
     total_learners: row.total_learners,
@@ -155,6 +185,10 @@ async function fetchKPIs(ctx: TenantContext) {
     protocols_gen_maint: adv.protocols_gen_maint || 0,
     total_regressions: adv.total_regressions || 0,
     active_learners: adv.active_learners || 0,
+    cso_last_data_at: stale.cso_last_data_at,
+    cso_stale_learners: stale.cso_stale_learners || 0,
+    cso_learners_without_cso: stale.cso_learners_without_cso || 0,
+    cso_has_stale_data: (stale.cso_stale_learners || 0) > 0 || (stale.cso_learners_without_cso || 0) > 0,
     _scope: ctx.role === 'terapeuta' ? 'personal' as const : 'clinic' as const,
     _role: ctx.role,
   }
