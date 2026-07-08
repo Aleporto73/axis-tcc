@@ -73,7 +73,7 @@ const FOUNDERS_ACCESS: OperadoraAccess = {
   presenceProofs: true,
   attestationsTherapist: true,
   attestationsGuardian: false,
-  evidenceBundles: false,
+  evidenceBundles: true, // Decisão 6 (ABA v9): evidence bundles para todos — padrão único
   attachments: true,
   coverageProfiles: false,
   claimPackets: false,
