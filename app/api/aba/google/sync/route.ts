@@ -143,14 +143,20 @@ export async function POST() {
 
         // Verificar se sessão já existe por google_event_id
         const existingSession = await client.query(
-          `SELECT id, external_etag FROM sessions_aba
+          `SELECT id, external_etag, status FROM sessions_aba
            WHERE tenant_id = $1 AND google_event_id = $2`,
           [tenantId, event.id]
         )
 
         if (existingSession.rows.length > 0) {
-          // Atualizar se etag mudou
-          if (existingSession.rows[0].external_etag !== event.etag) {
+          const existing = existingSession.rows[0]
+          // F2: NUNCA sobrescrever uma sessão que o terapeuta já iniciou/concluiu — o
+          // Google não é fonte de verdade da execução clínica. Não toca scheduled_at,
+          // duration_minutes nem status dessas sessões.
+          if (existing.status === 'in_progress' || existing.status === 'completed') {
+            skipped++
+          } else if (existing.external_etag !== event.etag) {
+            // F1: enum real de sessions_aba.status (scheduled|in_progress|completed|cancelled).
             await client.query(
               `UPDATE sessions_aba SET
                 scheduled_at = $1,
@@ -164,12 +170,12 @@ export async function POST() {
               [
                 event.start.dateTime,
                 duration,
-                event.status === 'cancelled' ? 'cancelada' : 'agendada',
+                event.status === 'cancelled' ? 'cancelled' : 'scheduled',
                 event.etag,
                 event.updated,
                 meetLink,
                 attendeeResponse,
-                existingSession.rows[0].id,
+                existing.id,
               ]
             )
             updated++
@@ -188,7 +194,7 @@ export async function POST() {
                external_etag, external_updated_at, google_meet_link, patient_response,
                declared_site_id, service_mode, location,
                created_at)
-             VALUES ($1, $2, $3, $4, $5, 'agendada', $6, 'primary', 'google',
+             VALUES ($1, $2, $3, $4, $5, 'scheduled', $6, 'primary', 'google',
                      $7, $8, $9, $10, $11, $12, $13, NOW())`,
             [
               tenantId,
