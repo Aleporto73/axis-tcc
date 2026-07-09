@@ -472,6 +472,11 @@ export default function RelatoriosPage() {
                       <p className="text-xs text-slate-400">
                         {alta.criteria_met}/{alta.criteria_total} critérios atendidos
                       </p>
+                      {alta.recommendation && (
+                        <p className="text-xs text-slate-500 mt-2">
+                          {alta.recommendation}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

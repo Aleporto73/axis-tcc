@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
         [learnerId, tenantId, start, end, userId]
       )
       const alta = await client.query(
-        'SELECT * FROM check_alta_parcial($1::uuid, $2::uuid)',
+        'SELECT check_alta_parcial($1::uuid, $2::uuid) as data',
         [learnerId, tenantId]
       )
-      return { convenio: convenio.rows[0]?.data || null, alta_parcial: alta.rows[0] || null }
+      return { convenio: convenio.rows[0]?.data || null, alta_parcial: alta.rows[0]?.data || null }
     })
     return NextResponse.json(result)
   } catch (error: any) {
