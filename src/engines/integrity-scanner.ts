@@ -40,6 +40,10 @@ export type ScanRule = (
   tenantId: string
 ) => Promise<IntegrityFlag[]>
 
+// Deploy do Bloco 9 (re-link close_session_aba). Sessões fechadas ANTES disso são
+// lacuna histórica conhecida (Decisão 5b) — nunca flagar. Instante fixo em UTC.
+const CSO_SNAPSHOT_CUTOFF = '2026-07-09T16:16:05Z'
+
 // ─────────────────────────────────────────────────────
 // Regra 1: OVERLAP_SESSIONS (critical)
 // 2 sessões simultâneas do mesmo terapeuta
@@ -373,6 +377,53 @@ export const scanIncompletePacket: ScanRule = async (client, tenantId) => {
 }
 
 // ─────────────────────────────────────────────────────
+// Regra 9: MISSING_CSO_SNAPSHOT (warning)
+// Sessão concluída sem snapshot/CSO — só APÓS o cutoff do Bloco 9.
+// As 20 órfãs históricas (pré-cutoff) nunca entram (Decisão 5b).
+// ─────────────────────────────────────────────────────
+export const scanCompletedWithoutSnapshot: ScanRule = async (client, tenantId) => {
+  const flags: IntegrityFlag[] = []
+
+  const result = await client.query(`
+    SELECT
+      s.id,
+      s.learner_id,
+      l.name AS learner_name,
+      s.ended_at
+    FROM sessions_aba s
+    JOIN learners l
+      ON l.id = s.learner_id
+     AND l.tenant_id = s.tenant_id
+    LEFT JOIN session_snapshots ss
+      ON ss.session_id = s.id
+     AND ss.tenant_id = s.tenant_id
+    WHERE s.tenant_id = $1
+      AND s.status = 'completed'
+      AND s.ended_at IS NOT NULL
+      AND s.ended_at >= $2::timestamptz
+      AND ss.id IS NULL
+  `, [tenantId, CSO_SNAPSHOT_CUTOFF])
+
+  for (const row of result.rows) {
+    flags.push({
+      entity_type: 'session',
+      entity_id: row.id,
+      rule_code: 'MISSING_CSO_SNAPSHOT',
+      severity: 'warning',
+      description: `Sessão concluída sem CSO/snapshot (${row.learner_name}) — o motor não gerou o estado clínico`,
+      metadata: {
+        learner_id: row.learner_id,
+        learner_name: row.learner_name,
+        ended_at: row.ended_at,
+        cutoff: CSO_SNAPSHOT_CUTOFF,
+      },
+    })
+  }
+
+  return flags
+}
+
+// ─────────────────────────────────────────────────────
 // UPSERT de flags no banco
 // ─────────────────────────────────────────────────────
 export async function upsertFlags(
@@ -468,6 +519,7 @@ export const ALL_SCAN_RULES: Array<{ rule: ScanRule; codes: string[] }> = [
   { rule: scanDuplicatePhoto, codes: ['DUPLICATE_PHOTO'] },
   { rule: scanHoursExceeded, codes: ['HOURS_EXCEEDED'] },
   { rule: scanIncompletePacket, codes: ['INCOMPLETE_PACKET'] },
+  { rule: scanCompletedWithoutSnapshot, codes: ['MISSING_CSO_SNAPSHOT'] },
 ]
 
 export interface ScanResult {
