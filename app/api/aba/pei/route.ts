@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       const result = []
       for (const plan of plans.rows) {
         const goals = await client.query('SELECT * FROM pei_goals WHERE pei_plan_id = $1 ORDER BY domain, title', [plan.id])
-        const linked = await client.query('SELECT lp.id, lp.title, lp.status, lp.pei_goal_id FROM learner_protocols lp WHERE lp.pei_goal_id IN (SELECT id FROM pei_goals WHERE pei_plan_id = $1)', [plan.id])
+        const linked = await client.query('SELECT lp.id, lp.title, lp.status, lp.pei_goal_id, lp.mastered_at FROM learner_protocols lp WHERE lp.pei_goal_id IN (SELECT id FROM pei_goals WHERE pei_plan_id = $1)', [plan.id])
         result.push({ ...plan, goals: goals.rows, linked_protocols: linked.rows })
       }
       return result

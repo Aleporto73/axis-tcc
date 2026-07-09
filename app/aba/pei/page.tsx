@@ -17,6 +17,7 @@ interface LinkedProtocol {
   title: string
   status: string
   pei_goal_id: string
+  mastered_at?: string | null
 }
 
 interface PEIPlan {
@@ -34,6 +35,37 @@ interface PEIPlan {
 const statusLabels: Record<string,string> = { draft:'Rascunho', active:'Ativo', completed:'Concluído', archived:'Arquivado' }
 const statusColors: Record<string,string> = { draft:'bg-slate-100 text-slate-500', active:'bg-green-50 text-green-600', completed:'bg-blue-50 text-blue-600', archived:'bg-slate-50 text-slate-400' }
 const protocolStatusLabels: Record<string,string> = { draft:'Rascunho', active:'Ativo', mastered:'Dominado', generalization:'Generalização', maintained:'Mantido', archived:'Arquivado', suspended:'Suspenso', discontinued:'Descontinuado' }
+
+// G5/Decisão 2: conquista de meta PEI é DERIVADA dos protocolos vinculados (sem status
+// próprio em pei_goals). Meta atingida = TODOS os protocolos vinculados em estado de
+// conquista (every, não some — evita falso-positivo). Sem protocolo vinculado = não atingida.
+const ACHIEVED_PROTOCOL_STATUSES = [
+  'mastered',
+  'generalization',
+  'mastered_validated',
+  'maintenance',
+  'maintained',
+  'archived',
+] as const
+
+function isProtocolAchieved(status: string | null | undefined) {
+  return ACHIEVED_PROTOCOL_STATUSES.includes(status as typeof ACHIEVED_PROTOCOL_STATUSES[number])
+}
+
+function isGoalMet(linked: LinkedProtocol[]) {
+  return linked.length > 0 && linked.every(p => isProtocolAchieved(p.status))
+}
+
+// Data de conquista da meta = maior mastered_at entre os protocolos vinculados (null se nenhuma).
+function getGoalAchievedAt(linked: LinkedProtocol[]): Date | null {
+  const dates = linked
+    .map(p => p.mastered_at)
+    .filter(Boolean)
+    .map(v => new Date(v as string))
+    .filter(d => !Number.isNaN(d.getTime()))
+  if (dates.length === 0) return null
+  return dates.reduce((latest, current) => (current > latest ? current : latest))
+}
 
 export default function PEIPage() {
   const [plans, setPlans] = useState<PEIPlan[]>([])
@@ -167,10 +199,9 @@ export default function PEIPage() {
           ) : (
             <div className="space-y-6">
               {plans.map(plan => {
-                const goalsMet = plan.goals.filter(g => {
-                  const linked = plan.linked_protocols.filter(p => p.pei_goal_id === g.id)
-                  return linked.some(p => ['mastered', 'generalization', 'maintained', 'archived'].includes(p.status))
-                }).length
+                const goalsMet = plan.goals.filter(g =>
+                  isGoalMet(plan.linked_protocols.filter(p => p.pei_goal_id === g.id))
+                ).length
                 return (
                   <div key={plan.id} className="border border-slate-200 rounded-xl overflow-hidden">
                     <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex items-center justify-between">
@@ -210,7 +241,8 @@ export default function PEIPage() {
                       <div className="space-y-3">
                         {plan.goals.map(goal => {
                           const linked = plan.linked_protocols.filter(p => p.pei_goal_id === goal.id)
-                          const met = linked.some(p => ['mastered', 'generalization', 'maintained', 'archived'].includes(p.status))
+                          const met = isGoalMet(linked)
+                          const achievedAt = met ? getGoalAchievedAt(linked) : null
                           return (
                             <div key={goal.id} className={'p-3 rounded-lg border ' + (met ? 'border-green-200 bg-green-50/50' : 'border-slate-200')}>
                               <div className="flex items-start justify-between">
@@ -221,6 +253,11 @@ export default function PEIPage() {
                                   <div>
                                     <p className="text-xs font-medium text-slate-700">{goal.title}</p>
                                     <p className="text-[10px] text-slate-400">{goal.domain} · Meta: {goal.target_pct}%</p>
+                                    {met && (
+                                      <p className="text-[10px] text-green-600 mt-0.5">
+                                        Meta atingida{achievedAt ? ' em ' + achievedAt.toLocaleDateString('pt-BR') : ''}
+                                      </p>
+                                    )}
                                     {goal.notes && <p className="text-[10px] text-slate-400 italic mt-0.5">{goal.notes}</p>}
                                   </div>
                                 </div>
