@@ -150,13 +150,18 @@ export async function PATCH(
           )
           return res
         } else {
-          // SQL direto: fechar sessão (substituindo close_session_aba)
+          // D2 (Fase D): religa o motor CSO. close_session_aba fecha a sessão E gera
+          // session_snapshots + clinical_states_aba + CSO, atômico na transação do withTenant.
+          // Recusa qualquer sessão != in_progress (000:555-557) → não toca as órfãs históricas.
           if (sess.status !== 'in_progress') {
             throw new Error('[AXIS ABA] Sessão não está em andamento')
           }
+          await client.query(
+            'SELECT close_session_aba($1::uuid, $2::varchar)',
+            [id, userId || 'system']
+          )
           const res = await client.query(
-            `UPDATE sessions_aba SET status = 'completed', ended_at = NOW()
-             WHERE id = $1 AND tenant_id = $2 RETURNING *`,
+            `SELECT * FROM sessions_aba WHERE id = $1::uuid AND tenant_id = $2::uuid`,
             [id, tenantId]
           )
           return res
