@@ -306,7 +306,18 @@ export default function LearnerDetailPage() {
       body.discontinuation_reason = reason.trim()
     }
     try {
-      const res = await fetch('/api/aba/protocols/' + protocolId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      let res = await fetch('/api/aba/protocols/' + protocolId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      // Fase C: critério de domínio não atingido → oferecer override com motivo e reenviar.
+      if (newStatus === 'mastered' && res.status === 422) {
+        const err = await res.json()
+        if (typeof err.error === 'string' && err.error.includes('Critério de domínio não atingido')) {
+          const reason = window.prompt(`${err.error}\n\nInforme o motivo para marcar como Dominado mesmo assim:`)
+          if (!reason || !reason.trim()) { setError(err.error || 'Critério de domínio não atingido.'); setTransitioning(null); return }
+          res = await fetch('/api/aba/protocols/' + protocolId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, reason: reason.trim() }) })
+        } else {
+          setError(err.error || 'Erro na transição'); setTransitioning(null); return
+        }
+      }
       if (!res.ok) {
         const err = await res.json()
         setError(err.error || 'Erro na transição')
