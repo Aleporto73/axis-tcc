@@ -9,6 +9,7 @@ import SessionAttachments from '@/app/components/SessionAttachments'
 import EvidenceCard from '@/app/components/EvidenceCard'
 import { runSessionCloseHook } from '@/src/lib/session-close-hook'
 import { useRole } from '@/app/components/RoleProvider'
+import { useConfirm } from '@/app/components/ConfirmModal'
 
 interface Profile {
   id: string
@@ -110,6 +111,7 @@ const intensityLabels: Record<string, string> = {
 
 export default function SessionPage() {
   const params = useParams()
+  const { requestConfirm, confirmModal } = useConfirm()
   const router = useRouter()
   const { operadora } = useRole()
   const sessionId = params.id as string
@@ -326,10 +328,16 @@ export default function SessionPage() {
     try {
       const val = durationOverrideInput.trim() === '' ? null : parseInt(durationOverrideInput)
       const body: { duration_minutes_override: number | null; reason?: string } = { duration_minutes_override: val }
-      // B2: editar duração de sessão concluída exige motivo (window.prompt até A8/modal)
+      // B2 + A8: editar duração de sessão concluída exige motivo (modal do projeto)
       if (session.status === 'completed') {
-        const reason = window.prompt('Informe o motivo para editar a duração de uma sessão concluída:')?.trim()
-        if (!reason) { setSavingDuration(false); return }
+        const { confirmed, reason } = await requestConfirm({
+          title: 'Editar duração de sessão concluída',
+          message: 'Esta sessão já está concluída. Informe o motivo da correção.',
+          requireReason: true,
+          reasonLabel: 'Motivo da edição',
+          confirmText: 'Salvar duração',
+        })
+        if (!confirmed || !reason) { setSavingDuration(false); return }
         body.reason = reason
       }
       const res = await fetch(`/api/aba/sessions/${sessionId}`, {
@@ -355,8 +363,14 @@ export default function SessionPage() {
       const body: { applied_by: string | null; reason?: string } = { applied_by: profileId }
       // B2: alterar profissional aplicado de sessão concluída exige motivo
       if (session.status === 'completed') {
-        const reason = window.prompt('Informe o motivo para alterar o profissional aplicado em uma sessão concluída:')?.trim()
-        if (!reason) return
+        const { confirmed, reason } = await requestConfirm({
+          title: 'Alterar profissional aplicado',
+          message: 'Esta sessão já está concluída. Informe o motivo da alteração.',
+          requireReason: true,
+          reasonLabel: 'Motivo da alteração',
+          confirmText: 'Salvar',
+        })
+        if (!confirmed || !reason) return
         body.reason = reason
       }
       const res = await fetch(`/api/aba/sessions/${sessionId}`, {
@@ -576,6 +590,7 @@ export default function SessionPage() {
 
   return (
     <>
+      {confirmModal}
       <div className="px-4 md:px-8 lg:px-12 xl:px-16 pt-5 md:pt-6">
         <Link href="/aba/sessoes" className="text-xs text-slate-400 hover:text-aba-500 transition-colors">&larr; Voltar para sessões</Link>
 

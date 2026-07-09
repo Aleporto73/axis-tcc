@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Tooltip, { HelpTip } from '@/components/Tooltip'
 import CoverageProfilesManager from '@/app/components/CoverageProfilesManager'
 import { useRole } from '@/app/components/RoleProvider'
+import { useConfirm } from '@/app/components/ConfirmModal'
 
 interface Learner { id: string; name: string; birth_date: string; diagnosis: string; cid_code: string; cid_system: string | null; cid_label: string | null; support_level: number }
 interface Protocol { id: string; title: string; domain: string; status: string; ebp_name: string; objective: string; mastery_criteria_pct: number; mastery_criteria_sessions: number; generalization_status: string; regression_count: number; activated_at: string|null; mastered_at: string|null; created_at: string; discontinuation_reason: string|null; pei_goal_id: string|null; pei_goal_title: string|null; pei_goal_domain: string|null; gen_cells_passed: number|null }
@@ -53,6 +54,7 @@ export default function LearnerDetailPage() {
   const [error, setError] = useState<string|null>(null)
   const [tab, setTab] = useState<'protocols'|'sessions'|'cso'|'guardians'|'coverage'>('protocols')
   const [transitioning, setTransitioning] = useState<string|null>(null)
+  const { requestConfirm, confirmModal } = useConfirm()
   const [showCreateProtocol, setShowCreateProtocol] = useState(false)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [guardians, setGuardians] = useState<{id:string;name:string;email:string|null;phone:string|null;relationship:string|null}[]>([])
@@ -293,17 +295,33 @@ export default function LearnerDetailPage() {
     setError(null)
     const body: any = { status: newStatus }
     if (newStatus === 'mastered') {
-      const ok = window.confirm('Confirmar domínio do protocolo\n\nIsso marca o protocolo como Dominado e altera o status clínico do aprendiz. Confirma que o critério de domínio foi realmente atingido?')
-      if (!ok) { setTransitioning(null); return }
+      const { confirmed } = await requestConfirm({
+        title: 'Confirmar domínio do protocolo',
+        message: 'Isso marca o protocolo como Dominado e altera o status clínico do aprendiz. Confirma que o critério de domínio foi realmente atingido?',
+        confirmText: 'Confirmar domínio',
+      })
+      if (!confirmed) { setTransitioning(null); return }
     }
     if (currentStatus === 'mastered' && newStatus === 'active') {
-      const ok = window.confirm('Reverter este protocolo para Ativo? O status de Dominado e a data serão removidos.')
-      if (!ok) { setTransitioning(null); return }
+      const { confirmed } = await requestConfirm({
+        title: 'Reverter para Ativo',
+        message: 'Reverter este protocolo para Ativo? O status de Dominado e a data serão removidos.',
+        confirmText: 'Reverter',
+        tone: 'danger',
+      })
+      if (!confirmed) { setTransitioning(null); return }
     }
     if (newStatus === 'discontinued') {
-      const reason = window.prompt('Motivo da descontinuação (obrigatório):')
-      if (!reason || !reason.trim()) { setTransitioning(null); return }
-      body.discontinuation_reason = reason.trim()
+      const { confirmed, reason } = await requestConfirm({
+        title: 'Descontinuar protocolo',
+        message: 'Esta ação encerra o protocolo.',
+        requireReason: true,
+        reasonLabel: 'Motivo da descontinuação (obrigatório)',
+        tone: 'danger',
+        confirmText: 'Descontinuar',
+      })
+      if (!confirmed || !reason) { setTransitioning(null); return }
+      body.discontinuation_reason = reason
     }
     try {
       let res = await fetch('/api/aba/protocols/' + protocolId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -311,9 +329,16 @@ export default function LearnerDetailPage() {
       if (newStatus === 'mastered' && res.status === 422) {
         const err = await res.json()
         if (typeof err.error === 'string' && err.error.includes('Critério de domínio não atingido')) {
-          const reason = window.prompt(`${err.error}\n\nInforme o motivo para marcar como Dominado mesmo assim:`)
-          if (!reason || !reason.trim()) { setError(err.error || 'Critério de domínio não atingido.'); setTransitioning(null); return }
-          res = await fetch('/api/aba/protocols/' + protocolId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, reason: reason.trim() }) })
+          const { confirmed, reason } = await requestConfirm({
+            title: 'Marcar como Dominado mesmo assim?',
+            message: err.error,
+            requireReason: true,
+            reasonLabel: 'Motivo para marcar como Dominado',
+            tone: 'danger',
+            confirmText: 'Marcar Dominado',
+          })
+          if (!confirmed || !reason) { setError(err.error || 'Critério de domínio não atingido.'); setTransitioning(null); return }
+          res = await fetch('/api/aba/protocols/' + protocolId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, reason }) })
         } else {
           setError(err.error || 'Erro na transição'); setTransitioning(null); return
         }
@@ -391,6 +416,7 @@ export default function LearnerDetailPage() {
 
   return (
     <div className="px-4 md:px-8 lg:px-12 xl:px-16 pt-5 md:pt-6">
+      {confirmModal}
       <Link href="/aba/aprendizes" className="text-xs text-slate-400 hover:text-aba-500 transition-colors">&larr; Voltar para aprendizes</Link>
       <div className="mt-4 mb-6">
         <div className="flex items-center gap-4">
