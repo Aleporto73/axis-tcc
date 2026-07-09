@@ -11,14 +11,15 @@ import { env } from '@/src/lib/env'
 // PUT — Aprova ou envia email via Resend
 // GET — Busca resumo existente
 //
-// Schema real em produção (legacy, migration 007 nunca aplicada nesta tabela):
-//   content      TEXT       (conteúdo do resumo)
-//   status       VARCHAR    ('approved' | 'sent' — valores reais em prod)
-//   approved_by  VARCHAR    (quem aprovou)
-//   approved_at  TIMESTAMPTZ
-//   sent_at      TIMESTAMPTZ (não-nulo = enviado)
-//   learner_id   UUID       (aprendiz)
-//   source_module VARCHAR   ('aba')
+// Schema real em produção (confirmado via \d session_summaries):
+//   content       TEXT        (conteúdo do resumo)
+//   status        VARCHAR     ('approved' | 'sent' — valores reais em prod)
+//   created_by    VARCHAR     NOT NULL, sem default — DEVE ser informado no INSERT
+//   approved_by   VARCHAR     (quem aprovou)
+//   approved_at   TIMESTAMPTZ
+//   sent_at       TIMESTAMPTZ (não-nulo = enviado)
+//   learner_id    UUID        (aprendiz)
+//   source_module VARCHAR     ('aba', default)
 //
 // Fluxo atômico (UI dispara 3 chamadas em sequência):
 //   POST        → INSERT com status='approved', approved_by, approved_at (salta rascunho)
@@ -69,8 +70,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         summaryId = existing.rows[0].id
       } else {
         const ins = await client.query(
-          `INSERT INTO session_summaries (id, tenant_id, session_id, learner_id, content, status, approved_by, approved_at, source_module, created_at)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'approved', $5, NOW(), 'aba', NOW()) RETURNING id`,
+          `INSERT INTO session_summaries (id, tenant_id, session_id, learner_id, content, status, created_by, approved_by, approved_at, source_module, created_at)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'approved', $5, $5, NOW(), 'aba', NOW()) RETURNING id`,
           [tenantId, sessionId, session.learner_id, content, userId]
         )
         summaryId = ins.rows[0].id
