@@ -168,11 +168,15 @@ export async function PATCH(
 
     // Atualizar campos V2 (duration_minutes_override, applied_by)
     if (duration_minutes_override !== undefined || applied_by !== undefined) {
+      // B2: motivo obrigatório ao editar sessão concluída (aceita reason|motivo)
+      const reason = (body.reason ?? body.motivo ?? '').toString().trim()
+
       const result = await withTenant(async (ctx) => {
-        const { client, tenantId } = ctx
+        const { client, tenantId, userId } = ctx
         // Verificar que a sessão existe e pertence ao tenant
         const check = await client.query(
-          `SELECT id, learner_id, status FROM sessions_aba WHERE id = $1 AND tenant_id = $2`,
+          `SELECT id, learner_id, status, duration_minutes_override, applied_by
+           FROM sessions_aba WHERE id = $1 AND tenant_id = $2`,
           [id, tenantId]
         )
         if (check.rows.length === 0) throw new Error('Não encontrado')
@@ -180,6 +184,19 @@ export async function PATCH(
         // Hardening: verificar acesso ao learner
         const canAccess = await canAccessLearner(ctx, check.rows[0].learner_id)
         if (!canAccess) throw new Error('Não encontrado')
+
+        const sess = check.rows[0]
+
+        // B2: carve-out auditado (não bloqueio). Sessão concluída exige motivo.
+        // Sentinel local em vez de throw — evita virar 500 no handleRouteError.
+        if (sess.status === 'completed' && !reason) {
+          return {
+            validationError: {
+              status: 422,
+              error: 'Motivo obrigatório para editar sessão concluída.',
+            },
+          }
+        }
 
         const setClauses: string[] = []
         const vals: any[] = []
@@ -204,8 +221,43 @@ export async function PATCH(
           vals
         )
 
+        // B2: edição de sessão concluída → audit log explícito na mesma transação.
+        // (Nenhum trigger loga edição de duração; só mudança de status.)
+        if (sess.status === 'completed') {
+          await client.query(
+            `INSERT INTO axis_audit_logs
+               (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
+             VALUES ($1, $2, 'human', 'SESSION_ABA_COMPLETED_OVERRIDE_EDIT', 'sessions_aba', $3, $4, NOW())`,
+            [
+              tenantId,
+              userId,
+              id,
+              JSON.stringify({
+                reason,
+                previous_duration_minutes_override: sess.duration_minutes_override,
+                new_duration_minutes_override:
+                  duration_minutes_override !== undefined
+                    ? duration_minutes_override
+                    : sess.duration_minutes_override,
+                previous_applied_by: sess.applied_by,
+                new_applied_by: applied_by !== undefined ? applied_by : sess.applied_by,
+                status: 'completed',
+                source: 'aba_sessions_patch',
+              }),
+            ]
+          )
+        }
+
         return res
       })
+
+      // B2: propaga o sentinel de validação como 422 (fora da transação)
+      if ('validationError' in result) {
+        return NextResponse.json(
+          { error: result.validationError.error },
+          { status: result.validationError.status }
+        )
+      }
 
       return NextResponse.json({ session: result.rows[0] })
     }

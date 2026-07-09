@@ -325,10 +325,17 @@ export default function SessionPage() {
     setSavingDuration(true)
     try {
       const val = durationOverrideInput.trim() === '' ? null : parseInt(durationOverrideInput)
+      const body: { duration_minutes_override: number | null; reason?: string } = { duration_minutes_override: val }
+      // B2: editar duração de sessão concluída exige motivo (window.prompt até A8/modal)
+      if (session.status === 'completed') {
+        const reason = window.prompt('Informe o motivo para editar a duração de uma sessão concluída:')?.trim()
+        if (!reason) { setSavingDuration(false); return }
+        body.reason = reason
+      }
       const res = await fetch(`/api/aba/sessions/${sessionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ duration_minutes_override: val }),
+        body: JSON.stringify(body),
       })
       if (res.ok) {
         await fetchSession()
@@ -343,14 +350,27 @@ export default function SessionPage() {
 
   // Save session applied_by
   const saveSessionAppliedBy = async (profileId: string | null) => {
+    if (!session) return
     try {
+      const body: { applied_by: string | null; reason?: string } = { applied_by: profileId }
+      // B2: alterar profissional aplicado de sessão concluída exige motivo
+      if (session.status === 'completed') {
+        const reason = window.prompt('Informe o motivo para alterar o profissional aplicado em uma sessão concluída:')?.trim()
+        if (!reason) return
+        body.reason = reason
+      }
       const res = await fetch(`/api/aba/sessions/${sessionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ applied_by: profileId }),
+        body: JSON.stringify(body),
       })
-      if (res.ok) await fetchSession()
-    } catch {}
+      if (res.ok) {
+        await fetchSession()
+      } else {
+        const err = await res.json()
+        setError(err.error || 'Erro ao salvar profissional aplicado')
+      }
+    } catch { setError('Falha de conexão') }
   }
 
   const fetchSession = useCallback(async () => {

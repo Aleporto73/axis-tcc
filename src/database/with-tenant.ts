@@ -201,6 +201,9 @@ export async function withTenant<T>(
     }
 
     await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId])
+    // B1: autor real para triggers de auditoria. axis_audit_logs.user_id é text
+    // (aceita Clerk id). Anexado DEPOIS de app.tenant_id — nunca antes.
+    await client.query("SELECT set_config('app.user_id', $1, true)", [userId])
 
     const result = await callback({ tenantId, userId, profileId, role, planTier, client })
 
