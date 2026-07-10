@@ -27,9 +27,12 @@ export async function GET(request: NextRequest) {
       const { client, tenantId } = ctx
 
       // Migration 038: Role filter
-      const baseParams: any[] = [patientId, tenantId, start, end]
-      const roleFilterHelper = tdahPatientFilter(ctx, baseParams.length + 1)
-      baseParams.push(...roleFilterHelper.params)
+      const patientParams: any[] = [tenantId, patientId]
+      const roleFilterHelper = tdahPatientFilter(
+        ctx,
+        patientParams.length + 1
+      )
+      patientParams.push(...roleFilterHelper.params)
       const roleCheck = roleFilterHelper.clause
 
       // 1) Paciente
@@ -37,8 +40,8 @@ export async function GET(request: NextRequest) {
         `SELECT p.*, prof.name as therapist_name
          FROM tdah_patients p
          LEFT JOIN profiles prof ON prof.id = p.created_by
-         WHERE p.id = $1 AND p.tenant_id = $2 ${roleCheck}`,
-        baseParams
+         WHERE p.tenant_id = $1 AND p.id = $2 ${roleCheck}`,
+        patientParams
       )
       if (patient.rows.length === 0) {
         const err = new Error('Paciente não encontrado') as any
