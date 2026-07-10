@@ -91,7 +91,7 @@ async function fetchTDAHData(client: PoolClient, tenantId: string) {
   const summaries = await safeQuery(client,
     `SELECT id, session_id, content, status,
             approved_by, approved_at, sent_at, created_at
-     FROM session_summaries WHERE tenant_id = $1 AND source_module = 'tdah'
+     FROM tdah_session_summaries WHERE tenant_id = $1
      ORDER BY created_at`, [tenantId], 'session_summaries_tdah')
 
   const auditLogs = await safeQuery(client,

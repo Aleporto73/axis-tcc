@@ -12,15 +12,14 @@ import { env } from '@/src/lib/env'
 // PUT — Aprova ou envia email via Resend
 // GET — Busca resumo existente
 //
-// Schema real compartilhado:
+// Schema exclusivo TDAH:
 //   content       TEXT        (conteúdo do resumo)
 //   status        VARCHAR     ('approved' | 'sent')
 //   created_by    VARCHAR     NOT NULL
 //   approved_by   VARCHAR     (quem aprovou)
 //   approved_at  TIMESTAMPTZ
 //   sent_at       TIMESTAMPTZ (não-nulo = enviado)
-//   learner_id    UUID        (paciente — coluna herdada do ABA)
-//   source_module VARCHAR     ('tdah')
+//   session_id    UUID        (FK para tdah_sessions)
 //
 // Fluxo da interface:
 //   POST        → cria ou atualiza como approved
@@ -54,55 +53,58 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const canAccess = await canAccessTdahPatient(ctx, session.patient_id)
       if (!canAccess) throw new Error('Sessão não encontrada')
 
-      // Upsert resumo na mesma tabela session_summaries (com source_module)
+      // Upsert na tabela exclusiva do módulo TDAH
       const existing = await client.query(
-        `SELECT id FROM session_summaries WHERE session_id = $1 AND tenant_id = $2`,
+        `SELECT id, status, sent_at
+         FROM tdah_session_summaries
+         WHERE session_id = $1
+           AND tenant_id = $2`,
         [sessionId, tenantId]
       )
 
       let summaryId: string
       if (existing.rows[0]) {
+        if (existing.rows[0].status === 'sent' || existing.rows[0].sent_at) {
+          const conflict = new Error(
+            'Este resumo já foi enviado. Nenhum novo envio foi realizado.'
+          ) as Error & { statusCode: number }
+          conflict.statusCode = 409
+          throw conflict
+        }
+
         await client.query(
-          `UPDATE session_summaries
+          `UPDATE tdah_session_summaries
            SET content = $1,
                status = 'approved',
                approved_by = $2,
                approved_at = NOW(),
-               sent_at = NULL
-           WHERE id = $3`,
-          [content, userId, existing.rows[0].id]
+               updated_at = NOW()
+           WHERE id = $3 AND tenant_id = $4`,
+          [content, userId, existing.rows[0].id, tenantId]
         )
         summaryId = existing.rows[0].id
       } else {
         const ins = await client.query(
-          `INSERT INTO session_summaries (
-             id,
+          `INSERT INTO tdah_session_summaries (
              tenant_id,
              session_id,
-             learner_id,
              content,
              status,
              created_by,
              approved_by,
-             approved_at,
-             source_module,
-             created_at
+             approved_at
            )
            VALUES (
-             gen_random_uuid(),
              $1,
              $2,
              $3,
-             $4,
              'approved',
-             $5,
-             $5,
-             NOW(),
-             'tdah',
+             $4,
+             $4,
              NOW()
            )
            RETURNING id`,
-          [tenantId, sessionId, session.patient_id, content, userId]
+          [tenantId, sessionId, content, userId]
         )
         summaryId = ins.rows[0].id
       }
@@ -112,6 +114,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json(result, { status: 201 })
   } catch (err: any) {
+    if (err?.statusCode === 409) {
+      return NextResponse.json({ error: err.message }, { status: 409 })
+    }
     return NextResponse.json({ error: err.message || 'Erro interno' }, { status: 500 })
   }
 }
@@ -129,12 +134,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         `SELECT ss.id, ss.content, ss.status, ss.sent_at,
                 s.scheduled_at, s.duration_minutes, s.session_context, s.patient_id,
                 p.name as patient_name, t.name as clinic_name
-         FROM session_summaries ss
-         JOIN tdah_sessions s ON s.id = ss.session_id
-         JOIN tdah_patients p ON p.id = s.patient_id
+         FROM tdah_session_summaries ss
+         JOIN tdah_sessions s ON s.id = ss.session_id AND s.tenant_id = ss.tenant_id
+         JOIN tdah_patients p ON p.id = s.patient_id AND p.tenant_id = ss.tenant_id
          JOIN tenants t ON t.id = ss.tenant_id
-         WHERE ss.id = $1 AND ss.tenant_id = $2`,
-        [summary_id, tenantId]
+         WHERE ss.id = $1
+           AND ss.tenant_id = $2
+           AND ss.session_id = $3`,
+        [summary_id, tenantId, sessionId]
       )
       if (!sum.rows[0]) throw new Error('Resumo não encontrado')
       const s = sum.rows[0]
@@ -150,20 +157,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           return { status: s.status }
         }
         await client.query(
-          `UPDATE session_summaries
+          `UPDATE tdah_session_summaries
            SET status = 'approved',
                approved_by = $1,
-               approved_at = NOW()
-           WHERE id = $2`,
-          [userId, summary_id]
+               approved_at = NOW(),
+               updated_at = NOW()
+           WHERE id = $2 AND tenant_id = $3`,
+          [userId, summary_id, tenantId]
         )
         return { status: 'approved' }
       }
 
       if (action === 'send') {
         if (!recipient_email) throw new Error('recipient_email obrigatório para envio')
-        if (s.status !== 'approved') throw new Error('Resumo precisa ser aprovado antes do envio')
         if (s.sent_at) throw new Error('Resumo já foi enviado')
+        if (s.status !== 'approved') throw new Error('Resumo precisa ser aprovado antes do envio')
 
         const html = tdahSessionSummaryTemplate({
           patientName: s.patient_name,
@@ -185,11 +193,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         if (emailRes.error) throw new Error(`Erro Resend: ${emailRes.error.message}`)
 
         await client.query(
-          `UPDATE session_summaries
+          `UPDATE tdah_session_summaries
            SET status = 'sent',
-               sent_at = NOW()
-           WHERE id = $1`,
-          [summary_id]
+               sent_at = NOW(),
+               updated_at = NOW()
+           WHERE id = $1 AND tenant_id = $2`,
+          [summary_id, tenantId]
         )
         return { status: 'sent', email_id: emailRes.data?.id }
       }
@@ -223,15 +232,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         `SELECT
            id,
            session_id,
-           learner_id,
            content,
            status,
            approved_by,
            approved_at,
            sent_at,
-           source_module,
-           created_at
-         FROM session_summaries
+           created_at,
+           updated_at
+         FROM tdah_session_summaries
          WHERE session_id = $1
            AND tenant_id = $2
          ORDER BY created_at DESC

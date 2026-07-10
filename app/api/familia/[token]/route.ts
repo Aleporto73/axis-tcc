@@ -141,7 +141,7 @@ export async function GET(
         if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--
       }
 
-      // RLS: session_summaries ja tem RLS, e Fase A futura adiciona RLS nas 5 tabelas TDAH.
+      // RLS: tabelas TDAH abaixo, incluindo tdah_session_summaries, exigem tenant GUC.
       // Wrap Promise.all + access_log + return em BEGIN/SET LOCAL/COMMIT pra setar
       // app.tenant_id antes de qualquer query que toque tabela RLS-protected.
       // return DENTRO do try pra preservar escopo das variaveis const do Promise.all.
@@ -202,15 +202,15 @@ export async function GET(
           LIMIT 10`,
           [patientId, tenantId]
         ),
-        // Resumos de sessão enviados (schema real em prod: content, sent_at)
-        // TODO: source_module='tdah' exclui resumos ABA — revisar filtro (pendência de produto).
+        // Resumos TDAH enviados, isolados na tabela exclusiva do módulo
         client.query(
-          `SELECT id, session_id, content, sent_at, created_at
-          FROM session_summaries
-          WHERE learner_id = $1 AND tenant_id = $2
-            AND source_module = 'tdah'
-            AND sent_at IS NOT NULL
-          ORDER BY created_at DESC
+          `SELECT ss.id, ss.session_id, ss.content, ss.sent_at, ss.created_at
+          FROM tdah_session_summaries ss
+          JOIN tdah_sessions s
+            ON s.id = ss.session_id AND s.tenant_id = ss.tenant_id
+          WHERE s.patient_id = $1 AND ss.tenant_id = $2
+            AND ss.sent_at IS NOT NULL
+          ORDER BY ss.created_at DESC
           LIMIT 10`,
           [patientId, tenantId]
         ),

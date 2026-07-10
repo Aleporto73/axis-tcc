@@ -231,10 +231,10 @@ export async function DELETE() {
         [tenantId], 'anon_audhd_log')
       stats.audhd_log = r8.rowCount
 
-      // 9. SESSION_SUMMARIES (TDAH) — anonimizar
+      // 9. TDAH_SESSION_SUMMARIES — anonimizar
       const r9 = await safeExec(client,
-        `UPDATE session_summaries SET content = '[ANONIMIZADO]'
-         WHERE tenant_id = $1 AND source_module = 'tdah'`, [tenantId], 'anon_summaries')
+        `UPDATE tdah_session_summaries SET content = '[ANONIMIZADO]', updated_at = NOW()
+         WHERE tenant_id = $1`, [tenantId], 'anon_summaries')
       stats.summaries = r9.rowCount
 
       // Audit conclusão
