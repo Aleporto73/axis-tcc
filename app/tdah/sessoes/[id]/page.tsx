@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { HelpTipTDAH } from '@/components/TooltipTDAH'
+import { generateTdahParentSummary } from '@/src/lib/tdah-parent-summary'
 
 // =====================================================
 // AXIS TDAH - Condução de Sessão
@@ -292,28 +293,9 @@ export default function SessaoConduzirPage() {
     setActionLoading(false)
   }
 
-  // ── Resumo para responsáveis ──
-  const generateSummaryText = () => {
-    if (!session || observations.length === 0) return ''
-    const name = session.patient_name || 'o paciente'
-    const ctx = contextLabels[session.session_context] || session.session_context
-    const dateStr = new Date(session.scheduled_at).toLocaleDateString('pt-BR')
-    const parts: string[] = [`Na sessão ${ctx.toLowerCase()} de ${dateStr}, trabalhamos com ${name} nos seguintes alvos:`]
-    for (const obs of observations) {
-      const line: string[] = []
-      if (obs.protocol_code) line.push(obs.protocol_code)
-      if (obs.task_description) line.push(obs.task_description)
-      if (obs.sas_score != null) line.push(`atenção: ${obs.sas_score}/10`)
-      if (obs.pis_level) line.push(`dica: ${obsLabel(obs.pis_level)}`)
-      if (obs.bss_level) line.push(`estabilidade: ${obsLabel(obs.bss_level)}`)
-      parts.push('• ' + (line.length > 0 ? line.join(', ') : 'Observação registrada') + '.')
-    }
-    return parts.join('\n')
-  }
-
   const openSummaryModal = async () => {
     if (!session) return
-    setSummaryText(generateSummaryText())
+    setSummaryText(generateTdahParentSummary(session, observations))
     setSummaryEmail('')
     setSummaryCustomEmail(false)
     setSummaryStatus('idle')
