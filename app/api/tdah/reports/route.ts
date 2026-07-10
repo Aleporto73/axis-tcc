@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
       // 1) Paciente
       const patient = await client.query(
-        `SELECT p.*, prof.first_name || ' ' || prof.last_name as therapist_name
+        `SELECT p.*, prof.name as therapist_name
          FROM tdah_patients p
          LEFT JOIN profiles prof ON prof.id = p.created_by
          WHERE p.id = $1 AND p.tenant_id = $2 ${roleCheck}`,

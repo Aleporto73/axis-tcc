@@ -22,7 +22,7 @@ export async function GET(
           tp.code as protocol_code,
           tp.title as protocol_title,
           p.name as patient_name,
-          rv.first_name || ' ' || rv.last_name as reviewer_name
+          rv.name as reviewer_name
         FROM tdah_drc d
         JOIN tdah_patients p ON p.id = d.patient_id
         LEFT JOIN tdah_protocols tp ON tp.id = d.protocol_id

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
           tpt.assigned_at,
           tpt.assigned_by,
           tpt.role_in_case,
-          p.first_name || ' ' || p.last_name AS therapist_name,
+          p.name AS therapist_name,
           p.role AS therapist_role,
           p.email AS therapist_email,
           pat.name AS patient_name

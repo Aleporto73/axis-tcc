@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         `SELECT d.*,
           tp.code as protocol_code,
           tp.title as protocol_title,
-          rv.first_name || ' ' || rv.last_name as reviewer_name
+          rv.name as reviewer_name
         FROM tdah_drc d
         LEFT JOIN tdah_protocols tp ON tp.id = d.protocol_id
         LEFT JOIN profiles rv ON rv.id = d.reviewed_by

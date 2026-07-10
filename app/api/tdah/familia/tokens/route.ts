@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         `SELECT t.*,
           p.name as patient_name,
           g.name as guardian_name_ref,
-          cr.first_name || ' ' || cr.last_name as created_by_name,
+          cr.name as created_by_name,
           (SELECT COUNT(*) FROM tdah_family_access_log WHERE token_id = t.id) as access_count
         FROM tdah_family_tokens t
         JOIN tdah_patients p ON p.id = t.patient_id
