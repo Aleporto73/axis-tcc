@@ -10,12 +10,7 @@
 
 ### Deploy VPS
 
-- [ ] SSH no VPS: `ssh root@vmi2884668.contaboserver.net`
-- [ ] `cd /root/axis-tcc`
-- [ ] `git pull`
-- [ ] Aplicar migrations (se houver): `docker exec -i axis-postgres psql -U axis -d axis_tcc < scripts/migrations/XXX.sql`
-- [ ] `npm run next:build`
-- [ ] `pm2 restart all`
+- [ ] Publicação (staging e produção, inclusive migrations): seguir [docs/runbooks/PUBLICACAO.md](runbooks/PUBLICACAO.md).
 
 ### Pós-Deploy
 
@@ -26,8 +21,4 @@
 
 ### Rollback (se necessário)
 
-- [ ] `git log --oneline -5` (pegar hash do commit anterior)
-- [ ] `git reset --hard <hash>`
-- [ ] `npm run next:build`
-- [ ] `pm2 restart all`
-- [ ] Se migration precisar rollback, executar SQL reverso manualmente
+- [ ] Volta: seguir [docs/runbooks/PUBLICACAO.md](runbooks/PUBLICACAO.md), passo 3.7.

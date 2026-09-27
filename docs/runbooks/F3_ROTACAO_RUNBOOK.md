@@ -540,35 +540,7 @@ ls -lh "$ROT\_DIR"/\*.dump
 
 
 
-```bash
-
-cd /root/axis-tcc
-
-
-
-echo "=== CONFIRMAR SCRIPT DE BUILD ==="
-
-npm run | grep next:build
-
-
-
-echo "=== GIT PULL ==="
-
-git pull
-
-
-
-echo "=== INSTALL ==="
-
-npm install
-
-
-
-echo "=== BUILD ==="
-
-npm run next:build
-
-```
+Atualizar e construir o codigo: seguir `docs/runbooks/PUBLICACAO.md`, secao 3 (Producao), passos 3.1 a 3.3. Nao reiniciar ainda: o reinicio vem depois de ligar o MAINTENANCE\_MODE, abaixo.
 
 
 
@@ -1286,7 +1258,7 @@ fix(security): remove hardcoded database password fallback
 
 
 
-Depois do merge: deploy normal na VPS (`git pull` + `npm run next:build` + `pm2 restart axis-tcc --update-env`) e confirmar que o app sobe (o `.env` jÃ¡ tem `DATABASE\_PASSWORD` vÃ¡lida, entÃ£o o boot nÃ£o pode falhar).
+Depois do merge: deploy normal na VPS (seguir `docs/runbooks/PUBLICACAO.md`) e confirmar que o app sobe (o `.env` jÃ¡ tem `DATABASE\_PASSWORD` vÃ¡lida, entÃ£o o boot nÃ£o pode falhar).
 
 
 

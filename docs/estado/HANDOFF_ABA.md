@@ -51,7 +51,7 @@ O blob **staged** da migration 075 termina em `$$;` — é a versão **QUEBRADA*
 - **DB:** container `axis-postgres`, database `axis_tcc`, user **`axis`** (não `postgres` — esse role não existe).
   - Conectar: `docker exec -it axis-postgres psql -U axis -d axis_tcc`
   - ⚠️ O user `axis` é **superuser com `rolbypassrls`**. RLS não protege nada quando se usa psql direto.
-- **Deploy:** `cd /root/axis-tcc && git pull && rm -rf .next && npm run next:build && pm2 restart all`
+- **Deploy:** seguir `docs/runbooks/PUBLICACAO.md` (receita única, staging e produção).
 - **Local:** `C:\Users\evera\Documents\axis-tcc` (NÃO `Projetos\`).
 - **PowerShell:** use `;` nunca `&&`. **Não tem `bash`.** Validações de hook via `Get-Content`.
 - **Build local não funciona** — `npm run next:build` falha por env vars ausentes. `npm run dev` roda um script de backend, não o Next. **Buildar só no VPS.**
