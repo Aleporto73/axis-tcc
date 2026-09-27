@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import { deletePendingSessionReminders } from '@/src/services/reminder'
 
 /**
  * GET /api/sessions/[id]
@@ -102,10 +103,7 @@ export async function DELETE(
         return NextResponse.json({ error: 'Sessao nao encontrada' }, { status: 404 })
       }
 
-      await client.query(
-        'DELETE FROM scheduled_reminders WHERE session_id = $1 AND tenant_id = $2 AND sent = false',
-        [id, tenantId]
-      )
+      await deletePendingSessionReminders(client, tenantId, id)
 
       await client.query(
         'DELETE FROM sessions WHERE id = $1 AND tenant_id = $2',

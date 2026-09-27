@@ -3,6 +3,7 @@ import { PoolClient } from 'pg'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
 import { scheduleSessionReminders } from '@/src/services/reminder'
+import { nextSessionNumber } from '@/src/services/session-number'
 import { env } from '@/src/lib/env'
 
 // =====================================================
@@ -36,7 +37,7 @@ async function createGoogleCalendarEvent(
   patientEmail: string | null,
   scheduledAt: Date,
   durationMinutes: number = 60
-): Promise<{ eventId: string; meetLink: string | null } | null> {
+): Promise<{ eventId: string; meetLink: string | null; etag: string | null; updated: string | null } | null> {
   try {
     const connResult = await client.query(
       'SELECT * FROM calendar_connections WHERE tenant_id = $1 AND provider = $2',
@@ -103,6 +104,8 @@ async function createGoogleCalendarEvent(
     return {
       eventId: createdEvent.id,
       meetLink: createdEvent.hangoutLink || null,
+      etag: createdEvent.etag || null,
+      updated: createdEvent.updated || null,
     }
   } catch (error) {
     console.error('[GOOGLE_CREATE] Erro:', error)
@@ -134,17 +137,12 @@ export async function POST(request: NextRequest) {
       const patientName = patientResult.rows[0].full_name
       const patientEmail = patientResult.rows[0].email
 
-      const countResult = await client.query(
-        'SELECT COUNT(*) as total FROM sessions WHERE patient_id = $1 AND tenant_id = $2',
-        [patient_id, tenantId]
-      )
-      const sessionNumber = parseInt(countResult.rows[0].total) + 1
-
       let sessionResult
       let googleEventId = null
       let googleMeetLink = null
 
       if (start_now) {
+        const sessionNumber = await nextSessionNumber(client, tenantId, patient_id)
         sessionResult = await client.query(
           `INSERT INTO sessions (tenant_id, patient_id, session_type, session_number, scheduled_at, started_at, status, time_source)
            VALUES ($1, $2, $3, $4, NOW(), NOW(), 'em_andamento', 'manual')
@@ -172,11 +170,12 @@ export async function POST(request: NextRequest) {
           googleMeetLink = googleEvent.meetLink
         }
 
+        const sessionNumber = await nextSessionNumber(client, tenantId, patient_id)
         sessionResult = await client.query(
-          `INSERT INTO sessions (tenant_id, patient_id, session_type, session_number, scheduled_at, started_at, status, time_source, google_event_id, google_calendar_id, calendar_source, google_meet_link)
-           VALUES ($1, $2, $3, $4, $5, NULL, 'agendada', 'manual', $6, 'primary', $7, $8)
+          `INSERT INTO sessions (tenant_id, patient_id, session_type, session_number, scheduled_at, started_at, status, time_source, google_event_id, google_calendar_id, calendar_source, google_meet_link, external_etag, external_updated_at)
+           VALUES ($1, $2, $3, $4, $5, NULL, 'agendada', 'manual', $6, 'primary', $7, $8, $9, $10)
            RETURNING id, patient_id, session_number, scheduled_at, started_at, status, google_meet_link`,
-          [tenantId, patient_id, session_type, sessionNumber, scheduled_at, googleEventId, googleEventId ? 'google' : null, googleMeetLink]
+          [tenantId, patient_id, session_type, sessionNumber, scheduled_at, googleEventId, googleEventId ? 'google' : null, googleMeetLink, googleEvent?.etag ?? null, googleEvent?.updated ?? null]
         )
 
         await scheduleSessionReminders({

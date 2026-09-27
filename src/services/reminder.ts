@@ -83,6 +83,20 @@ export async function scheduleSessionReminders(params: ScheduleReminderParams, c
   return remindersScheduled > 0
 }
 
+/**
+ * Apaga os lembretes ainda não enviados de uma sessão (exclusão ou cancelamento).
+ */
+export async function deletePendingSessionReminders(
+  client: PoolClient,
+  tenantId: string,
+  sessionId: string
+): Promise<void> {
+  await client.query(
+    'DELETE FROM scheduled_reminders WHERE session_id = $1 AND tenant_id = $2 AND sent = false',
+    [sessionId, tenantId]
+  )
+}
+
 // Helpers mortos removidos na Onda 10 / F7 passo 4 (limpeza acoplada):
 // cancelSessionReminders / getPendingReminders / markReminderSent —
 // zero callers, pool sem GUC (quebrariam sob RLS; cancel deletava sem
