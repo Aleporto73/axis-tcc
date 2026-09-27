@@ -220,3 +220,18 @@ Se a entrega teve migration, a volta do banco é pelo backup do 3.2.
 - Sentry
 - `pm2 logs axis-tcc --lines 100 --nostream`
 - `/admin/dashboard` (alertas do sistema)
+
+## 4. Segredos em mais de um lugar
+
+**Redis (produção)**: a senha está em **dois** lugares do `/root/axis-tcc/.env`:
+
+- `REDIS_PASSWORD`: usada pelo `docker-compose` no `requirepass`.
+- `REDIS_URL` (`redis://:<senha>@127.0.0.1:6379`): usada pelo site em `src/database/redis.ts`.
+
+Para trocar a senha:
+
+1. Atualizar os dois no `.env`.
+2. Recriar o contêiner do Redis.
+3. Com o Redis de pé, rodar `pm2 restart axis-tcc` (nunca `all`). O rate limit só tenta o Redis no 1º uso depois de reiniciar; se o Redis estiver fora nesse momento, o processo fica sem Redis até o próximo reinício.
+
+A `REDIS_URL` foi incluída em 27/09/2026. Antes disso o site não tinha `REDIS_URL` e ficou sem Redis desde a troca de senha de 26/09 (`NOAUTH` no log).
