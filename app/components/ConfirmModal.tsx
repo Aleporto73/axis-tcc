@@ -8,6 +8,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 // Sem biblioteca nova, seguindo o padrao de modal inline do projeto (Tailwind + aba-500).
 
 export type ConfirmTone = 'default' | 'danger'
+export type ConfirmAccent = 'aba' | 'tcc'
 
 export type ConfirmOptions = {
   title: string
@@ -18,6 +19,14 @@ export type ConfirmOptions = {
   requireReason?: boolean
   reasonLabel?: string
   reasonPlaceholder?: string
+  // Opcionais; sem eles o modal fica como sempre foi (dois botões, cor ABA).
+  singleButton?: boolean // aviso: só o botão de confirmar
+  accent?: ConfirmAccent // cor do botão de confirmar quando tone não é 'danger'
+}
+
+const ACCENT_BUTTON: Record<ConfirmAccent, string> = {
+  aba: 'bg-aba-500 hover:bg-aba-500/90',
+  tcc: 'bg-tcc-accent hover:bg-tcc-accent/90',
 }
 
 export type ConfirmResult = {
@@ -90,18 +99,20 @@ export function useConfirm() {
           </div>
         )}
         <div className="flex justify-end gap-2 mt-5">
-          <button
-            onClick={handleCancel}
-            className="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-500 hover:bg-slate-50"
-          >
-            {options.cancelText || 'Cancelar'}
-          </button>
+          {!options.singleButton && (
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-500 hover:bg-slate-50"
+            >
+              {options.cancelText || 'Cancelar'}
+            </button>
+          )}
           <button
             onClick={handleConfirm}
             disabled={reasonMissing}
             className={
               'px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 ' +
-              (options.tone === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-aba-500 hover:bg-aba-500/90')
+              (options.tone === 'danger' ? 'bg-red-600 hover:bg-red-700' : ACCENT_BUTTON[options.accent ?? 'aba'])
             }
           >
             {options.confirmText || 'Confirmar'}

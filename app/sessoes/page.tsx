@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../components/Sidebar'
-import Toast from '../components/Toast'
+import { useConfirm } from '../components/ConfirmModal'
 
 interface Session {
   id: string
@@ -38,8 +38,7 @@ export default function SessoesPage() {
   const [scheduledDate, setScheduledDate] = useState('')
   const [scheduledTime, setScheduledTime] = useState('')
   const [creating, setCreating] = useState(false)
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
-  const closeToast = useCallback(() => setToast(null), [])
+  const { requestConfirm, confirmModal } = useConfirm()
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('todas')
@@ -106,7 +105,13 @@ export default function SessoesPage() {
           router.push('/sessoes/' + data.session.id)
         } else {
           if (data.google_connected && !data.google_synced) {
-            setToast({ message: 'Sessão criada, mas não foi para o Google Agenda.', type: 'error' })
+            void requestConfirm({
+              title: 'Sessão criada, mas não foi para o Google Agenda',
+              message: 'A sessão foi salva no AXIS, mas não conseguimos criar o evento na sua agenda do Google. Verifique a conexão em Configurações.',
+              confirmText: 'Entendi',
+              singleButton: true,
+              accent: 'tcc',
+            })
           }
           loadData()
         }
@@ -458,7 +463,7 @@ export default function SessoesPage() {
         </div>
       )}
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+      {confirmModal}
     </div>
   )
 }
