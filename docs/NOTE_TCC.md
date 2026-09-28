@@ -19,6 +19,24 @@ aparece confirmado como ativo — ver contradição #1 no archive. Infraestrutur
 compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
 Últimas entregas:
+- **Agenda TCC — Entrega 1B (28/09/2026, item 1.4, sem migration, só TCC; ainda não publicada)** —
+  fim da sessão duplicada na criação. "Agendar" agora: transação 1 curta (trava do
+  paciente + número + INSERT **sem vínculo** + lembretes + COMMIT) → evento no Google
+  **fora de transação** (timeout 8 s; renovação de token 4 s em transação própria) →
+  transação 2 curta de vínculo. Evento com id `tcc` + uuid da sessão sem hífens
+  (base32hex; "axis" é proibido, tem `x`) e marca `extendedProperties.private.axis_session_id`.
+  Timeout/409/5xx/rede → `events.get` (4 s): existe (mesmo cancelado) → vincula; senão fica
+  sem vínculo. Vínculo = UPDATE só de `google_event_id, google_calendar_id, external_etag,
+  external_updated_at, google_meet_link, calendar_source` com `google_event_id IS NULL`, em
+  qualquer status (nunca muda status/horário). Webhook/sync (`applyGoogleEvent`): evento com
+  marca ou id `^tcc[0-9a-f]{32}$` → vincula a sessão do mesmo tenant e segue a regra da 1A;
+  sessão marcada inexistente → pula, **nunca insere**. Resumo ganhou `linked`. Resposta do
+  create: `google_synced` + `google_connected`; tela `/sessoes` mostra Toast "Sessão criada,
+  mas não foi para o Google Agenda." Sem retry automático; `ensureSessionGoogleEvent` (get
+  antes, senão insert) fica pronto para o futuro botão "Enviar ao Google".
+  Arquivos: `src/services/google-event-create.ts` (novo), `src/services/google-event-apply.ts`,
+  `app/api/sessions/create/route.ts`, `app/sessoes/page.tsx`, `src/tests/tcc-google-agenda.test.ts`.
+  Base: Entrega 1A (commit `0859714`).
 - **HUB-05.B FECHADO (07/05/2026, Onda 11 — 8 commits sequenciais)** — refator
   `withTenantClient` aplicado em 6 rotas Google Calendar, deploy validado em prod.
   Helper canônico promovido para `src/database/with-tenant.ts:238` (Etapa 0,

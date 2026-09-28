@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs'
 import { withTenantClient } from '@/src/database/with-tenant'
 import { nextSessionNumber } from '@/src/services/session-number'
 import { deletePendingSessionReminders } from '@/src/services/reminder'
+import { axisSessionIdFromEvent, linkSessionToGoogleEvent } from '@/src/services/google-event-create'
 
 // =====================================================
 // AXIS TCC — Regra única "aplicar evento do Google na sessão"
@@ -18,14 +19,16 @@ export interface GoogleCalendarEvent {
   start?: { dateTime?: string; date?: string }
   end?: { dateTime?: string; date?: string }
   attendees?: Array<{ email?: string; self?: boolean; responseStatus?: string }>
+  extendedProperties?: { private?: Record<string, string> }
 }
 
-export type GoogleEventOutcome = 'imported' | 'updated' | 'cancelled' | 'skipped'
+export type GoogleEventOutcome = 'imported' | 'updated' | 'cancelled' | 'linked' | 'skipped'
 
 export interface GoogleEventsSummary {
   imported: number
   updated: number
   cancelled: number
+  linked: number
   skipped: number
   failed: number
 }
@@ -87,12 +90,25 @@ async function findPatientByAttendee(
   return null
 }
 
+type AxisLink = 'not_axis' | 'linked_now' | 'already_linked' | 'missing'
+
+// Evento criado pelo AXIS (marca ou id "tcc…"): vincula a sessão do mesmo tenant que ainda não tem vínculo.
+async function linkAxisSession(client: PoolClient, tenantId: string, event: GoogleCalendarEvent): Promise<AxisLink> {
+  const sessionId = axisSessionIdFromEvent(event)
+  if (!sessionId) return 'not_axis'
+  if (await linkSessionToGoogleEvent(client, tenantId, sessionId, event)) return 'linked_now'
+
+  const exists = await client.query('SELECT 1 FROM sessions WHERE tenant_id = $1 AND id = $2', [tenantId, sessionId])
+  return exists.rows.length > 0 ? 'already_linked' : 'missing'
+}
+
 async function cancelFromGoogle(
   client: PoolClient,
   tenantId: string,
-  event: GoogleCalendarEvent
+  event: GoogleCalendarEvent,
+  echoEtag: string | undefined
 ): Promise<GoogleEventOutcome> {
-  const ids = changeableSessionIds(await findSessionsByEvent(client, tenantId, event.id), event.etag)
+  const ids = changeableSessionIds(await findSessionsByEvent(client, tenantId, event.id), echoEtag)
   if (ids.length === 0) return 'skipped'
 
   const result = await client.query<{ id: string }>(
@@ -119,8 +135,24 @@ export async function applyGoogleEvent(
   tenantId: string,
   event: GoogleCalendarEvent
 ): Promise<GoogleEventOutcome> {
+  // 1B: evento do AXIS nunca vira INSERT; sessão marcada inexistente (ou de outro tenant) é pulada.
+  const link = await linkAxisSession(client, tenantId, event)
+  if (link === 'missing') return 'skipped'
+  const outcome = await applyToSessions(client, tenantId, event, link === 'linked_now')
+  return link === 'linked_now' && outcome === 'skipped' ? 'linked' : outcome
+}
+
+async function applyToSessions(
+  client: PoolClient,
+  tenantId: string,
+  event: GoogleCalendarEvent,
+  linkedNow: boolean
+): Promise<GoogleEventOutcome> {
+  // Recém-vinculada: o etag acabou de ser gravado pelo vínculo, então a regra normal roda sem o filtro de eco.
+  const echoEtag = linkedNow ? undefined : event.etag
+
   // Evento cancelado/apagado costuma chegar sem horário: tratar antes de olhar o horário.
-  if (event.status === 'cancelled') return cancelFromGoogle(client, tenantId, event)
+  if (event.status === 'cancelled') return cancelFromGoogle(client, tenantId, event, echoEtag)
 
   const start = event.start?.dateTime
   const end = event.end?.dateTime
@@ -129,7 +161,7 @@ export async function applyGoogleEvent(
   const existing = await findSessionsByEvent(client, tenantId, event.id)
 
   if (existing.length > 0) {
-    const ids = changeableSessionIds(existing, event.etag)
+    const ids = changeableSessionIds(existing, echoEtag)
     if (ids.length === 0) return 'skipped'
 
     const patient = await findPatientByAttendee(client, tenantId, event.attendees)
@@ -198,7 +230,7 @@ export async function applyGoogleEvents(
   events: GoogleCalendarEvent[],
   origin: 'webhook' | 'sync'
 ): Promise<GoogleEventsSummary> {
-  const summary: GoogleEventsSummary = { imported: 0, updated: 0, cancelled: 0, skipped: 0, failed: 0 }
+  const summary: GoogleEventsSummary = { imported: 0, updated: 0, cancelled: 0, linked: 0, skipped: 0, failed: 0 }
 
   for (const event of events) {
     try {

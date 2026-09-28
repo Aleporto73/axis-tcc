@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '../components/Sidebar'
+import Toast from '../components/Toast'
 
 interface Session {
   id: string
@@ -37,7 +38,9 @@ export default function SessoesPage() {
   const [scheduledDate, setScheduledDate] = useState('')
   const [scheduledTime, setScheduledTime] = useState('')
   const [creating, setCreating] = useState(false)
-  
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const closeToast = useCallback(() => setToast(null), [])
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('todas')
   const [periodFilter, setPeriodFilter] = useState('semana')
@@ -102,6 +105,9 @@ export default function SessoesPage() {
         if (sessionMode === 'now') {
           router.push('/sessoes/' + data.session.id)
         } else {
+          if (data.google_connected && !data.google_synced) {
+            setToast({ message: 'Sessão criada, mas não foi para o Google Agenda.', type: 'error' })
+          }
           loadData()
         }
       }
@@ -451,6 +457,8 @@ export default function SessoesPage() {
           </div>
         </div>
       )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
     </div>
   )
 }
