@@ -5,6 +5,7 @@ import { withTenantClient } from '@/src/database/with-tenant'
 import * as Sentry from '@sentry/nextjs'
 import { redactEmail } from '@/src/lib/log-redaction'
 import { env } from '@/src/lib/env'
+import { auditConnectRefused, hasCalendarScope } from '@/src/services/google-connection'
 
 // =====================================================
 // AXIS ABA — Google Calendar OAuth Callback
@@ -99,6 +100,23 @@ export async function GET(request: NextRequest) {
 
     // Fluxo principal: multi-terapeuta via profiles
     const { profile_id, tenant_id, role, name } = profileResult.rows[0]
+
+    // Mesma checagem do TCC (Entrega 1C-1): sem permissão da agenda → não grava.
+    // token_error é um código que a tela do ABA já sabe mostrar.
+    if (!hasCalendarScope(scope)) {
+      await withTenantClient(tenant_id, (client) =>
+        auditConnectRefused(client, {
+          tenantId: tenant_id,
+          clerkUserId: state,
+          profileId: profile_id,
+          product: 'axis_aba',
+          reason: 'missing_calendar_scope',
+          scope,
+        })
+      )
+      return NextResponse.redirect(BASE_URL + '/aba/configuracoes?google=token_error')
+    }
+
     const tokenExpiry = new Date(Date.now() + expires_in * 1000)
 
     await withTenantClient(tenant_id, async (client) => {

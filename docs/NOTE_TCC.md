@@ -1,6 +1,6 @@
 # AXIS TCC — NOTE ativo
 
-**Atualizado:** 2026-04-20 (Hub audit 5→9/10 — ESLint boundaries + husky + migration 056)
+**Atualizado:** 2026-09-29 (Agenda TCC — Entrega 1C-1 "Conexão Google confiável", sem migration)
 **Produto:** AXIS TCC (Terapia Cognitivo-Comportamental)
 **Motor:** CSO-TCC v3.0.0
 **Bible:** Documento Mestre TCC v2.1
@@ -19,7 +19,37 @@ aparece confirmado como ativo — ver contradição #1 no archive. Infraestrutur
 compartilhada com ABA e TDAH: auth, multi-tenant, billing Hotmart, LGPD, audit.
 
 Últimas entregas:
-- **Agenda TCC — Entrega 1B (28/09/2026, item 1.4, sem migration, só TCC; ainda não publicada)** —
+- **Agenda TCC — Entrega 1C-1 "Conexão Google confiável" (29/09/2026, sem migration; ainda não publicada)** —
+  conectar, tela e desconectar. **Não toca** cron `renew-webhook` (é a 1C-2), webhook, sync nem
+  sessions/create. Atenção: a tela do **TDAH usa as mesmas rotas** `/api/google/*`.
+  (1) Callback confere o escopo (`calendar.events` ou `calendar`) e o `refresh_token`; sem isso **não
+  grava**, audit `GOOGLE_CALENDAR_CONNECT_REFUSED` (sem e-mail/token), volta
+  `?google=missing_calendar_scope`; não revoga o token parcial; clínica pela escolha do app
+  (`withTenant`/cookie), não `LIMIT 1`; conexão antiga gravada com id do Clerk vira a do perfil.
+  (2) Status só da conexão do profissional logado, sem chamar o Google: `state` ok |
+  channel_inactive | needs_reconnect (+ `reason` missing_calendar_scope | access_lost);
+  `token_expiry` fora da regra; `token_expired` (TDAH) = "precisa reconectar" e aí `connected=false`
+  — "Conectado" + "Token expirado" nunca juntos. (3) Função única de canal
+  `renewGoogleChannel` (`src/services/google-channel.ts`): cria o novo (8 s) → grava canal +
+  `webhook_token` num UPDATE só, condicionado ao canal antigo → para o antigo (4 s; 404 = ok); se
+  gravar falhar, para o recém-criado. Usada pelo callback (para o antigo com o token antigo, senão
+  o novo) e pela rota watch (botão **Reativar**; não devolve mais o corpo do Google). (4) Renovação
+  única do token (`freshAccessToken`, `src/services/google-connection.ts`): só `invalid_grant` marca
+  acesso perdido (`sync_enabled=false`; o callback volta a `true`; o cron já ignora `false`).
+  (5) Registro único de falha: etapa, status HTTP (ou `timeout`/`network`), código do Google →
+  console + Sentry (tags sem "token") + audit `GOOGLE_CALENDAR_FAILURE` em transação própria.
+  (6) Desconectar só o profissional logado (+ `calendar_sync_state` com ids perfil e Clerk): Google
+  primeiro (para o canal, revoke POST com refresh_token no corpo), depois apaga + audit
+  `GOOGLE_CALENDAR_DISCONNECTED` com o resultado de stop/revoke. (7) Callback do **ABA** ganhou só a
+  checagem de escopo (volta `?google=token_error`, código que a tela do ABA já mostra).
+  Arquivos: `src/services/google-connection.ts` e `src/services/google-channel.ts` (novos),
+  `app/api/google/{callback,status,watch,disconnect}/route.ts`, `app/configuracoes/page.tsx`,
+  `app/api/aba/google/callback/route.ts`, `src/tests/tcc-google-conexao.test.ts` (56 testes).
+  **Pendente — 1C-2:** cron usa `renewGoogleChannel` (grava `webhook_token`, motivo da falha, cria
+  antes de parar, pula linha sem agenda); observar 7 dias até todos os canais terem token.
+  **Depois:** webhook/sync/criar sessão usarem a conexão do dono (hoje a 1ª do tenant); webhook
+  exigir token; decisão ABA sobre o cron compartilhado (registra linhas ABA no webhook do TCC).
+- **Agenda TCC — Entrega 1B (28/09/2026, item 1.4, sem migration, só TCC; publicada — commits `14e4b12` + `d173555`)** —
   fim da sessão duplicada na criação. "Agendar" agora: transação 1 curta (trava do
   paciente + número + INSERT **sem vínculo** + lembretes + COMMIT) → evento no Google
   **fora de transação** (timeout 8 s; renovação de token 4 s em transação própria) →

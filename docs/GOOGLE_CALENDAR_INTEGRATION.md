@@ -72,8 +72,15 @@ GOOGLE_CLIENT_SECRET=seu_client_secret
 2. Clica em "Conectar Google Calendar"
 3. Redireciona para `/api/google` → Google OAuth
 4. Após autorização, callback em `/api/google/callback`
-5. Tokens salvos em `calendar_connections`
-6. Webhook registrado automaticamente
+5. O callback confere a permissão da agenda (`calendar.events` ou `calendar`) e o `refresh_token`.
+   Sem isso **não grava nada** (audit `GOOGLE_CALENDAR_CONNECT_REFUSED`) e volta com
+   `?google=missing_calendar_scope` ("Você precisa permitir o acesso à agenda").
+6. Tokens salvos em `calendar_connections` na clínica ativa (withTenant/cookie), com `sync_enabled = true`
+7. Canal de avisos (webhook) criado na hora, desde a Entrega 1C-1 (29/09/2026), pela função única
+   `renewGoogleChannel` (`src/services/google-channel.ts`). Reconectar troca o canal: cria o novo,
+   grava e só então para o antigo. Se o Google recusar o canal, a conexão fica gravada e a tela
+   mostra "A atualização automática está parada" com o botão **Reativar**.
+   Antes da 1C-1 o callback **não** registrava webhook: o canal só nascia no cron diário.
 
 ### Endpoints Envolvidos
 
@@ -81,9 +88,10 @@ GOOGLE_CLIENT_SECRET=seu_client_secret
 |----------|--------|-----------|
 | `/api/google` | GET | Inicia fluxo OAuth |
 | `/api/google/callback` | GET | Recebe código de autorização |
-| `/api/google/status` | GET | Retorna status da conexão |
+| `/api/google/status` | GET | Status da conexão do profissional logado (`state`: ok / channel_inactive / needs_reconnect), sem chamar o Google |
 | `/api/google/sync` | POST | Sincronização manual |
-| `/api/google/watch` | POST | Registra webhook |
+| `/api/google/watch` | POST | Cria/troca o canal do profissional logado (botão **Reativar**) |
+| `/api/google/disconnect` | POST | Desconecta só o profissional logado: para o canal, revoga (refresh_token no corpo) e apaga |
 | `/api/google/webhook` | POST | Recebe notificações do Google |
 
 ---
@@ -245,11 +253,15 @@ app/sessoes/
 
 ### Página de Configurações
 
-- Status de conexão (Conectado/Não conectado)
+- Três estados (Entrega 1C-1), calculados só com o banco:
+  - **ok**: selo "Conectado" + "Atualização automática ativa até dd/mm/aaaa"
+  - **channel_inactive**: selo "Conectado" + aviso "A atualização automática está parada" + botão **Reativar**
+  - **needs_reconnect**: sem selo; aviso (sem permissão da agenda, ou acesso perdido) + botão **Reconectar**
+- O vencimento do access token (1 h) não aparece mais na tela: ele é renovado no uso
+- Mensagens da volta do Google (`?google=...`), com botão "Tentar de novo" quando cabe
 - Última sincronização
-- Status do webhook (ativo até data X)
-- Botão "Sincronizar Agora"
-- Botão "Ativar Sync Automático"
+- Botões "Sincronizar Agora" e "Desconectar" (confirmação em janela, sem `confirm()`)
+- A tela do TDAH (`/tdah/configuracoes`) usa as mesmas rotas `/api/google/*`
 
 ### Lista de Sessões
 

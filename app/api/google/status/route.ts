@@ -1,37 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { withTenant } from '@/src/database/with-tenant'
 import { handleRouteError } from '@/src/database/with-role'
+import { channelActive, connectionState, findOwnGoogleConnections } from '@/src/services/google-connection'
 
-export async function GET(request: NextRequest) {
+// =====================================================
+// AXIS TCC — Status do Google Calendar (Entrega 1C-1)
+// Só a conexão do profissional logado; nunca chama o Google.
+// state: ok | channel_inactive | needs_reconnect (reason: missing_calendar_scope | access_lost).
+// A tela do TDAH usa esta rota e lê connected/token_expired: token_expired agora quer dizer
+// "precisa reconectar" e, nesse caso, connected=false — "Conectado" e "Token expirado" nunca juntos.
+// =====================================================
+
+export async function GET() {
   try {
     return await withTenant(async (ctx) => {
-      const connResult = await ctx.client.query(
-        'SELECT id, calendar_id, sync_enabled, token_expiry, created_at, webhook_channel_id, webhook_expiration FROM calendar_connections WHERE tenant_id = $1 AND provider = $2',
-        [ctx.tenantId, 'google']
-      )
-
-      if (connResult.rows.length === 0) {
+      const own = await findOwnGoogleConnections(ctx.client, ctx.tenantId, ctx.profileId, ctx.userId)
+      const conn = own[0]
+      if (!conn) {
         return NextResponse.json({ connected: false })
       }
 
-      const conn = connResult.rows[0]
-      const isExpired = new Date(conn.token_expiry) < new Date()
-      const webhookActive = conn.webhook_channel_id && conn.webhook_expiration && new Date(conn.webhook_expiration) > new Date()
+      const { state, reason } = connectionState(conn)
 
+      // A sync manual grava com o id do Clerk; o webhook, com o id do perfil.
       const syncResult = await ctx.client.query(
-        'SELECT last_sync_at FROM calendar_sync_state WHERE tenant_id = $1 AND provider = $2',
-        [ctx.tenantId, 'google']
+        `SELECT MAX(last_sync_at) AS last_sync_at FROM calendar_sync_state
+         WHERE tenant_id = $1 AND provider = 'google' AND user_id = ANY($2::text[])`,
+        [ctx.tenantId, [ctx.profileId, ctx.userId]]
       )
 
       return NextResponse.json({
-        connected: true,
+        connected: state !== 'needs_reconnect',
+        state,
+        reason,
         calendar_id: conn.calendar_id,
         sync_enabled: conn.sync_enabled,
-        token_expired: isExpired,
+        token_expired: state === 'needs_reconnect',
         connected_at: conn.created_at,
-        last_sync_at: syncResult.rows[0]?.last_sync_at || null,
-        webhook_active: webhookActive,
-        webhook_expiration: conn.webhook_expiration
+        last_sync_at: syncResult.rows[0]?.last_sync_at ?? null,
+        webhook_active: channelActive(conn),
+        webhook_expiration: conn.webhook_expiration,
       })
     })
   } catch (error) {
