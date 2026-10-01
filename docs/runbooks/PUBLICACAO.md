@@ -235,3 +235,14 @@ Para trocar a senha:
 3. Com o Redis de pé, rodar `pm2 restart axis-tcc` (nunca `all`). O rate limit só tenta o Redis no 1º uso depois de reiniciar; se o Redis estiver fora nesse momento, o processo fica sem Redis até o próximo reinício.
 
 A `REDIS_URL` foi incluída em 27/09/2026. Antes disso o site não tinha `REDIS_URL` e ficou sem Redis desde a troca de senha de 26/09 (`NOAUTH` no log).
+
+## 5. Correção urgente com main à frente da produção
+
+Quando `main` tiver trabalho ainda não publicado na produção, uma correção urgente (ex.: atualização de segurança do Next) **nunca sai de `main`**.
+
+1. Ver o commit que está na produção: `git log -1` em `/root/axis-tcc`.
+2. No notebook, criar a branch a partir **desse** commit, ex.: `git checkout -b hotfix/next-<versão> <commit-da-produção>`; aplicar só a correção; push da branch.
+3. Mesmo caminho de sempre: notebook → staging (com a branch) → teste → produção (`git fetch` + `git checkout hotfix/next-<versão>`, **nunca** `git pull` de `main`) → observar 24 h.
+4. Depois, levar a correção para `main` (merge ou cherry-pick) para ela não se perder na próxima publicação.
+
+Exemplo (30/09/2026): produção = `d173555`; `main` = `ed951d4` (1C-1 ainda não testada). A correção do Next sai de `d173555`, não de `main`.
