@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg'
+import { getLicenseStatus } from '@/src/billing/license'
 
 // =====================================================
 // AXIS Item 2 Onda 7 - Helper de quota/audit pra rotas analyze-*
@@ -23,7 +24,7 @@ export interface AnalyzeUsageStatus {
   requests_used: number
   /** Limite (null = ilimitado pra planos pagos) */
   limit: number | null
-  /** True se tenant esta no plano free (sem hotmart_plan ativo) */
+  /** True se tenant esta no plano free (licenca TCC sem plan_key, src/billing/license.ts) */
   is_free: boolean
   /** True se atingiu o limite (so true se is_free) */
   limit_reached: boolean
@@ -43,15 +44,8 @@ export async function getAnalyzeUsage(
   client: PoolClient,
   tenantId: string
 ): Promise<AnalyzeUsageStatus> {
-  const [licenseRes, usageRes] = await Promise.all([
-    client.query(
-      `SELECT hotmart_plan FROM user_licenses
-        WHERE tenant_id = $1
-          AND product_type = 'tcc'
-          AND is_active = true
-        LIMIT 1`,
-      [tenantId]
-    ),
+  const [license, usageRes] = await Promise.all([
+    getLicenseStatus(client, tenantId, 'tcc'),
     client.query(
       `SELECT COUNT(*)::int AS total
          FROM analyze_usage
@@ -61,7 +55,7 @@ export async function getAnalyzeUsage(
     ),
   ])
 
-  const isFree = !licenseRes.rows[0]?.hotmart_plan || licenseRes.rows[0].hotmart_plan === ''
+  const isFree = !license.paid
   const requestsUsed = Number(usageRes.rows[0]?.total ?? 0)
   const limit = isFree ? FREE_LIMIT_REQUESTS : null
   const limitReached = isFree && requestsUsed >= FREE_LIMIT_REQUESTS

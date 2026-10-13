@@ -10,7 +10,7 @@ interface License {
   is_active: boolean
   valid_from: string
   valid_until: string | null
-  hotmart_plan: string | null
+  plan_key: string | null
 }
 
 const FREE_CTA_COLORS: Record<string, { bg: string; hover: string }> = {
@@ -119,8 +119,9 @@ export default function HubPage() {
   const hasLicense = (productId: string) =>
     licenses.some(l => l.product_type === productId && l.is_active)
 
+  // Pago = plan_key não nula (a API já resolve a chave que decide)
   const isPaid = (productId: string) =>
-    licenses.some(l => l.product_type === productId && l.is_active && l.hotmart_plan != null && l.hotmart_plan !== '')
+    licenses.some(l => l.product_type === productId && l.is_active && l.plan_key != null && l.plan_key !== '')
 
   async function handleActivateFree(productType: string) {
     setActivating(productType)

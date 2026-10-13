@@ -3,12 +3,21 @@ import { verifyAdmin } from '../../guard'
 import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
 import { redactEmail } from '@/src/lib/log-redaction'
+import { adminPlanKey } from '@/src/billing/license'
 
 // =====================================================
 // GET  /api/admin/users/[tenantId]  — detalhes completos
 // PATCH /api/admin/users/[tenantId] — ações (licença, max_patients)
 // DELETE /api/admin/users/[tenantId] — LGPD delete
+//
+// Pagamento P1: onde o admin grava hotmart_plan, grava também a chave
+// equivalente (src/billing/license.ts → adminPlanKey) com
+// billing_source = 'cortesia'.
 // =====================================================
+
+function badRequest(message: string, status = 400): never {
+  throw Object.assign(new Error(message), { statusCode: status })
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const check = await verifyAdmin()
@@ -85,13 +94,33 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const { license_id, is_active, max_patients, hotmart_plan } = body
       if (!license_id) return NextResponse.json({ error: 'license_id obrigatório' }, { status: 400 })
 
+      // hotmart_plan enviado → plan_key/billing_source acompanham ('' = free)
+      let planKey: string | null = null
+      let billingSource: string | null = null
+      const writesPlan = hotmart_plan !== undefined && hotmart_plan !== null
+      if (writesPlan) {
+        const current = await client.query(
+          `SELECT product_type FROM user_licenses WHERE id = $1 AND tenant_id = $2`,
+          [license_id, tenantId]
+        )
+        const lic = current.rows[0]
+        if (!lic) badRequest('Licença não encontrada', 404)
+        if (hotmart_plan !== '') {
+          planKey = adminPlanKey(lic.product_type, hotmart_plan)
+          if (!planKey) badRequest(`hotmart_plan sem chave equivalente para ${lic.product_type}: use founders, clinica_100 ou clinica_250`)
+          billingSource = 'cortesia'
+        }
+      }
+
       await client.query(
         `UPDATE user_licenses
          SET is_active = COALESCE($1, is_active),
              hotmart_plan = COALESCE($2, hotmart_plan),
+             plan_key = CASE WHEN $5::boolean THEN $6::text ELSE plan_key END,
+             billing_source = CASE WHEN $5::boolean THEN $7::text ELSE billing_source END,
              updated_at = NOW()
          WHERE id = $3 AND tenant_id = $4`,
-        [is_active, hotmart_plan, license_id, tenantId]
+        [is_active, hotmart_plan, license_id, tenantId, writesPlan, planKey, billingSource]
       )
 
       if (max_patients !== undefined) {
@@ -107,7 +136,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
          VALUES ($1, $2, 'admin_panel', 'ADMIN_LICENSE_UPDATE', 'user_licenses', $3, NOW())`,
         [tenantId, check.userId, JSON.stringify({
           admin_email: check.email, license_id,
-          changes: { is_active, max_patients, hotmart_plan },
+          changes: writesPlan
+            ? { is_active, max_patients, hotmart_plan, plan_key: planKey, billing_source: billingSource }
+            : { is_active, max_patients, hotmart_plan },
         })]
       )
 
@@ -143,17 +174,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const { product_type, plan_tier, max_patients } = body
       if (!product_type || !plan_tier) return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 })
 
+      const planKey = adminPlanKey(product_type, plan_tier)
+      if (!planKey) badRequest('Plano sem chave equivalente: use founders, clinica_100 ou clinica_250')
+
       const tenantRes = await client.query('SELECT clerk_user_id FROM tenants WHERE id = $1', [tenantId])
       if (tenantRes.rows.length === 0) return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 })
 
       await client.query(
         `INSERT INTO user_licenses (
           tenant_id, clerk_user_id, product_type, is_active,
-          valid_from, hotmart_plan, hotmart_event, created_at, updated_at
-        ) VALUES ($1, $2, $3, true, NOW(), $4, 'ADMIN_MANUAL_UPGRADE', NOW(), NOW())
+          valid_from, hotmart_plan, hotmart_event, plan_key, billing_source, created_at, updated_at
+        ) VALUES ($1, $2, $3, true, NOW(), $4, 'ADMIN_MANUAL_UPGRADE', $5, 'cortesia', NOW(), NOW())
         ON CONFLICT ON CONSTRAINT uq_user_product
-        DO UPDATE SET is_active = true, hotmart_plan = $4, hotmart_event = 'ADMIN_MANUAL_UPGRADE', updated_at = NOW()`,
-        [tenantId, tenantRes.rows[0].clerk_user_id, product_type, plan_tier]
+        DO UPDATE SET is_active = true, hotmart_plan = $4, hotmart_event = 'ADMIN_MANUAL_UPGRADE',
+                      plan_key = $5, billing_source = 'cortesia', updated_at = NOW()`,
+        [tenantId, tenantRes.rows[0].clerk_user_id, product_type, plan_tier, planKey]
       )
 
       if (max_patients) {
@@ -168,6 +203,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
          VALUES ($1, $2, 'admin_panel', 'ADMIN_MANUAL_UPGRADE', 'user_licenses', $3, NOW())`,
         [tenantId, check.userId, JSON.stringify({
           admin_email: check.email, product_type, plan_tier, max_patients,
+          plan_key: planKey, billing_source: 'cortesia',
         })]
       )
 
@@ -197,6 +233,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ success: true, action })
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {})
+    const statusCode = (error as { statusCode?: number })?.statusCode
+    if (statusCode && statusCode < 500) {
+      return NextResponse.json({ error: (error as Error).message }, { status: statusCode })
+    }
     Sentry.captureException(error)
     console.error('[ADMIN USER ACTION]', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })

@@ -7,6 +7,15 @@ import { purchaseUpgradeTemplate, purchaseNewUserTemplate } from '@/src/email/pu
 import * as Sentry from '@sentry/nextjs'
 import { redactEmail } from '@/src/lib/log-redaction'
 import { env } from '@/src/lib/env'
+import {
+  activateHotmartLicense,
+  alertHotmartProtectedLicense,
+  alertNewTccHotmartSale,
+  deactivateHotmartLicenses,
+  type HotmartActivationOutcome,
+  type HotmartAlertContext,
+} from '@/src/billing/hotmart-license'
+import type { BillingSource, ProductType } from '@/src/billing/plans'
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null
 const EMAIL_FROM_MAP: Record<string, string> = {
@@ -52,6 +61,11 @@ const DASHBOARD_PATH: Record<string, string> = {
 //   PURCHASE_APPROVED / COMPLETE  → ativa licença (+ auto-provision)
 //   PURCHASE_CANCELED/REFUNDED/CHARGEBACK/PROTEST → desativa
 //   SUBSCRIPTION_CANCELLATION → desativa
+//
+// Pagamento P1 (src/billing/hotmart-license.ts):
+//   - ativação grava plan_key (regras do backfill 081) + billing_source='hotmart'
+//   - licença 'cortesia'/'paymentbeta' não é sobrescrita nem desativada (alerta)
+//   - TCC: compra nova → tcc_100 + alerta "tratar à mão"; renovação sem alerta
 // =====================================================
 
 // ─── Mapa de produtos Hotmart → product_type AXIS ───
@@ -99,7 +113,7 @@ async function provisionNewBuyer(
   transactionId: string,
   event: string,
   planName: string | null,
-): Promise<{ tenant_id: string; clerk_user_id: string; method: 'existing_user' | 'invitation' }> {
+): Promise<{ tenant_id: string; clerk_user_id: string; method: 'existing_user' | 'invitation'; license: HotmartActivationOutcome }> {
 
   const email = buyer.email.toLowerCase().trim()
   const buyerName = buyer.name || `${buyer.first_name || ''} ${buyer.last_name || ''}`.trim() || 'Profissional'
@@ -140,58 +154,48 @@ async function provisionNewBuyer(
         const tid = existingTenant.rows[0].tenant_id
         console.log('[HOTMART PROVISION] Tenant existente encontrado, fazendo upgrade:', tid)
 
-        await dbClient.query(
-          `INSERT INTO user_licenses (
-            tenant_id, clerk_user_id, product_type, is_active,
-            valid_from, valid_until,
-            hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
-            buyer_email, created_at, updated_at
-          ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())
-          ON CONFLICT ON CONSTRAINT uq_user_product
-          DO UPDATE SET
-            is_active = true,
-            valid_from = EXCLUDED.valid_from,
-            valid_until = NULL,
-            hotmart_transaction = EXCLUDED.hotmart_transaction,
-            hotmart_event = EXCLUDED.hotmart_event,
-            hotmart_offer = EXCLUDED.hotmart_offer,
-            hotmart_plan = EXCLUDED.hotmart_plan,
-            buyer_email = EXCLUDED.buyer_email,
-            updated_at = NOW()`,
-          [tid, clerkUserId, productType, now, transactionId, event, offerCode, planName, email]
-        )
+        const license = await activateHotmartLicense(dbClient, {
+          tenantId: tid, clerkUserId, productType: productType as ProductType, validFrom: now,
+          transactionId, event, offerCode, planName, buyerEmail: email, resetValidity: true,
+        })
 
-        await dbClient.query(
-          `UPDATE tenants SET plan_tier = $1, max_patients = $2, trial_status = 'active', updated_at = NOW()
-           WHERE id = $3`,
-          [plan.plan_tier, plan.max_patients, tid]
-        )
+        // Licença cortesia/paymentbeta: nada muda (nem tenants); vira alerta depois do COMMIT
+        if (license.status === 'activated') {
+          await dbClient.query(
+            `UPDATE tenants SET plan_tier = $1, max_patients = $2, trial_status = 'active', updated_at = NOW()
+             WHERE id = $3`,
+            [plan.plan_tier, plan.max_patients, tid]
+          )
+        }
 
         // Audit
         try {
           await dbClient.query(
             `INSERT INTO axis_audit_logs (
               tenant_id, user_id, actor, action, entity_type, metadata, created_at
-            ) VALUES ($1, $2, 'hotmart_webhook', 'FREE_TO_PAID_UPGRADE', 'user_licenses', $3, NOW())`,
-            [tid, clerkUserId, JSON.stringify({
-              source: 'hotmart_provision_upgrade',
-              buyer_email: email, product_type: productType,
-              plan_tier: plan.plan_tier, max_patients: plan.max_patients,
-              offer_code: offerCode, transaction_id: transactionId,
-            })]
+            ) VALUES ($1, $2, 'hotmart_webhook', $3, 'user_licenses', $4, NOW())`,
+            [tid, clerkUserId,
+              license.status === 'activated' ? 'FREE_TO_PAID_UPGRADE' : 'HOTMART_PROTECTED_LICENSE_SKIPPED',
+              JSON.stringify({
+                source: 'hotmart_provision_upgrade',
+                buyer_email: email, product_type: productType,
+                plan_tier: plan.plan_tier, max_patients: plan.max_patients,
+                offer_code: offerCode, transaction_id: transactionId,
+                plan_key: license.planKey, license_status: license.status,
+              })]
           )
         } catch (_) { /* audit non-blocking */ }
 
-        return { tenant_id: tid, clerk_user_id: clerkUserId, method: 'existing_user' }
+        return { tenant_id: tid, clerk_user_id: clerkUserId, method: 'existing_user', license }
       }
 
       // Clerk user sem tenant — criar tenant + profile + licença
-      const tenantId = await createTenantWithLicense(
+      const created = await createTenantWithLicense(
         dbClient, email, buyerName, clerkUserId, true,
         plan, productType, transactionId, event, offerCode, planName, now,
       )
 
-      return { tenant_id: tenantId, clerk_user_id: clerkUserId, method: 'existing_user' }
+      return { tenant_id: created.tenantId, clerk_user_id: clerkUserId, method: 'existing_user', license: created.license }
     }
   } catch (err: any) {
     console.warn('[HOTMART PROVISION] Erro ao buscar user no Clerk:', err?.message)
@@ -227,12 +231,12 @@ async function provisionNewBuyer(
   // Criar tenant + profile PENDENTE + licença
   // (clerk_user_id = 'pending_hotmart_{email}', is_active = false)
   // O /api/user/tenant já detecta profiles pendentes e ativa no primeiro login
-  const tenantId = await createTenantWithLicense(
+  const created = await createTenantWithLicense(
     dbClient, email, buyerName, pendingClerkId, false,
     plan, productType, transactionId, event, offerCode, planName, now,
   )
 
-  return { tenant_id: tenantId, clerk_user_id: pendingClerkId, method: 'invitation' }
+  return { tenant_id: created.tenantId, clerk_user_id: pendingClerkId, method: 'invitation', license: created.license }
 }
 
 // ─── Criar tenant + profile + licença ───
@@ -250,7 +254,7 @@ async function createTenantWithLicense(
   offerCode: string | null,
   planName: string | null,
   now: Date,
-): Promise<string> {
+): Promise<{ tenantId: string; license: HotmartActivationOutcome }> {
 
   // 1. Tenant
   const tenantInsert = await dbClient.query(
@@ -273,24 +277,11 @@ async function createTenantWithLicense(
   )
 
   // 3. Licença ativa (UPSERT — mesmo pendente, licença já vale)
-  await dbClient.query(
-    `INSERT INTO user_licenses (
-      tenant_id, clerk_user_id, product_type, is_active,
-      valid_from, valid_until,
-      hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
-      buyer_email, created_at, updated_at
-    ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())
-    ON CONFLICT ON CONSTRAINT uq_user_product
-    DO UPDATE SET
-      is_active = true,
-      hotmart_transaction = EXCLUDED.hotmart_transaction,
-      hotmart_event = EXCLUDED.hotmart_event,
-      hotmart_offer = EXCLUDED.hotmart_offer,
-      hotmart_plan = EXCLUDED.hotmart_plan,
-      buyer_email = EXCLUDED.buyer_email,
-      updated_at = NOW()`,
-    [tenantId, clerkUserId, productType, now, transactionId, event, offerCode, planName, email]
-  )
+  //    Tenant novo: não há licença anterior; TCC conta como compra nova.
+  const license = await activateHotmartLicense(dbClient, {
+    tenantId, clerkUserId, productType: productType as ProductType, validFrom: now,
+    transactionId, event, offerCode, planName, buyerEmail: email, resetValidity: false,
+  })
 
   // 4. Audit log
   try {
@@ -309,6 +300,8 @@ async function createTenantWithLicense(
           max_patients: plan.max_patients,
           offer_code: offerCode,
           transaction_id: transactionId,
+          plan_key: license.planKey,
+          license_status: license.status,
         })
       ]
     )
@@ -321,7 +314,17 @@ async function createTenantWithLicense(
     method: isActive ? 'existing_user' : 'invitation',
   })
 
-  return tenantId
+  return { tenantId, license }
+}
+
+// ─── Alertas da licença (só depois do COMMIT) ───
+
+function notifyLicenseOutcome(ctx: HotmartAlertContext, outcome: HotmartActivationOutcome): void {
+  if (outcome.status === 'skipped_protected') {
+    alertHotmartProtectedLicense(ctx, 'activation', outcome.protectedBy)
+  } else if (outcome.newTccSale) {
+    alertNewTccHotmartSale(ctx)
+  }
 }
 
 // ─── Handler ───
@@ -437,6 +440,11 @@ export async function POST(request: NextRequest) {
 
         await client.query('COMMIT')
 
+        notifyLicenseOutcome(
+          { tenantId: provision.tenant_id, productType: productType as ProductType, event, transactionId: txId, offerCode },
+          provision.license,
+        )
+
         // Email pós-compra (non-blocking)
         try {
           const buyerName = buyer.name || `${buyer.first_name || ''} ${buyer.last_name || ''}`.trim() || 'Profissional'
@@ -491,57 +499,49 @@ export async function POST(request: NextRequest) {
 
     await client.query('BEGIN')
 
+    const alertCtx: HotmartAlertContext = {
+      tenantId, productType: productType as ProductType, event, transactionId,
+      offerCode: purchase?.offer?.code || null,
+    }
+    let activation: HotmartActivationOutcome | null = null
+    let protectedOnDeactivation: BillingSource[] = []
+
     if (ACTIVATE_EVENTS.has(event)) {
       const offerCode = purchase?.offer?.code || null
       const planName = product?.name || null
       const validFrom = new Date()
 
-      // UPSERT: se licença já existe (ex: FREE → pago), atualiza em vez de falhar
-      await client.query(
-        `INSERT INTO user_licenses (
-          tenant_id, clerk_user_id, product_type, is_active,
-          valid_from, valid_until,
-          hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
-          buyer_email, created_at, updated_at
-        ) VALUES ($1, $2, $3, true, $4, NULL, $5, $6, $7, $8, $9, NOW(), NOW())
-        ON CONFLICT ON CONSTRAINT uq_user_product
-        DO UPDATE SET
-          is_active = true,
-          valid_from = EXCLUDED.valid_from,
-          valid_until = NULL,
-          hotmart_transaction = EXCLUDED.hotmart_transaction,
-          hotmart_event = EXCLUDED.hotmart_event,
-          hotmart_offer = EXCLUDED.hotmart_offer,
-          hotmart_plan = EXCLUDED.hotmart_plan,
-          buyer_email = EXCLUDED.buyer_email,
-          updated_at = NOW()`,
-        [tenantId, clerkUserId, productType, validFrom,
-         transactionId, event, offerCode, planName, buyerEmail]
-      )
-      console.log('[HOTMART WEBHOOK] Licença ativada (upsert):', { tenantId, productType, transactionId })
+      // UPSERT: se licença já existe (ex: FREE → pago), atualiza em vez de falhar.
+      // Não sobrescreve licença cortesia/paymentbeta (src/billing/hotmart-license.ts).
+      activation = await activateHotmartLicense(client, {
+        tenantId, clerkUserId, productType: productType as ProductType, validFrom,
+        transactionId, event, offerCode, planName, buyerEmail, resetValidity: true,
+      })
+      console.log('[HOTMART WEBHOOK] Licença (upsert):', { tenantId, productType, transactionId, status: activation.status, plan_key: activation.planKey })
 
-      // Sync plan_tier
-      const plan = OFFER_TO_PLAN[offerCode || ''] || DEFAULT_PAID_PLAN
-      await client.query(
-        `UPDATE tenants SET plan_tier = $1, max_patients = $2, trial_status = 'active', updated_at = NOW()
-         WHERE id = $3`,
-        [plan.plan_tier, plan.max_patients, tenantId]
-      )
+      // Sync plan_tier (só se a licença foi de fato ativada)
+      if (activation.status === 'activated') {
+        const plan = OFFER_TO_PLAN[offerCode || ''] || DEFAULT_PAID_PLAN
+        await client.query(
+          `UPDATE tenants SET plan_tier = $1, max_patients = $2, trial_status = 'active', updated_at = NOW()
+           WHERE id = $3`,
+          [plan.plan_tier, plan.max_patients, tenantId]
+        )
+      }
 
     } else if (DEACTIVATE_EVENTS.has(event)) {
-      const result = await client.query(
-        `UPDATE user_licenses
-         SET is_active = false, valid_until = NOW(), hotmart_event = $1, updated_at = NOW()
-         WHERE tenant_id = $2 AND product_type = $3 AND is_active = true`,
-        [event, tenantId, productType]
-      )
+      const result = await deactivateHotmartLicenses(client, tenantId, productType as ProductType, event)
+      protectedOnDeactivation = result.protectedActive
 
-      await client.query(
-        `UPDATE tenants SET plan_tier = 'free', max_patients = 1, updated_at = NOW() WHERE id = $1`,
-        [tenantId]
-      )
+      // Produto continua ativo por cortesia/paymentbeta: tenant não vira free
+      if (protectedOnDeactivation.length === 0) {
+        await client.query(
+          `UPDATE tenants SET plan_tier = 'free', max_patients = 1, updated_at = NOW() WHERE id = $1`,
+          [tenantId]
+        )
+      }
 
-      console.log('[HOTMART WEBHOOK] Licença desativada:', { tenantId, productType, event, rows: result.rowCount })
+      console.log('[HOTMART WEBHOOK] Licença desativada:', { tenantId, productType, event, rows: result.deactivated, protected_active: protectedOnDeactivation.length })
     } else {
       await client.query('ROLLBACK')
       return NextResponse.json({ status: 'ignored', reason: 'event_not_handled', event })
@@ -554,10 +554,19 @@ export async function POST(request: NextRequest) {
       ) VALUES ($1, $2, 'hotmart_webhook', $3, 'user_licenses', $4, NOW())`,
       [tenantId, clerkUserId || 'system', `HOTMART_${event}`,
        JSON.stringify({ event, product_id: productId, product_type: productType,
-         transaction_id: transactionId, buyer_email: buyerEmail, offer: purchase?.offer?.code || null })]
+         transaction_id: transactionId, buyer_email: buyerEmail, offer: purchase?.offer?.code || null,
+         plan_key: activation?.planKey ?? null,
+         license_status: activation?.status ?? (protectedOnDeactivation.length > 0 ? 'protected_kept_active' : 'deactivated'),
+         tcc_new_sale: activation?.newTccSale ?? false })]
     )
 
     await client.query('COMMIT')
+
+    if (activation) {
+      notifyLicenseOutcome(alertCtx, activation)
+    } else if (protectedOnDeactivation.length > 0) {
+      alertHotmartProtectedLicense(alertCtx, 'deactivation', protectedOnDeactivation[0])
+    }
 
     // Email pós-compra para upgrade (non-blocking)
     if (ACTIVATE_EVENTS.has(event)) {

@@ -60,14 +60,15 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Criar/reativar licença FREE
+      // Criar/reativar licença FREE (free = plan_key e billing_source nulos)
       await ctx.client.query(
         `INSERT INTO user_licenses (
           tenant_id, clerk_user_id, product_type, is_active,
           valid_from, valid_until,
           hotmart_transaction, hotmart_event, hotmart_offer, hotmart_plan,
+          plan_key, billing_source,
           buyer_email, created_at, updated_at
-        ) VALUES ($1, $2, $3, true, NOW(), NULL, NULL, 'FREE_TIER_ACTIVATION', NULL, NULL, NULL, NOW(), NOW())
+        ) VALUES ($1, $2, $3, true, NOW(), NULL, NULL, 'FREE_TIER_ACTIVATION', NULL, NULL, NULL, NULL, NULL, NOW(), NOW())
         ON CONFLICT ON CONSTRAINT uq_user_product
         DO UPDATE SET
           is_active = true,
