@@ -32,16 +32,16 @@ function mockCtx(overrides: Partial<TenantContext> = {}): TenantContext {
     userId: 'user-001',
     profileId: 'profile-001',
     role: 'admin' as UserRole,
-    planTier: 'free',
+    abaPlanKey: null,
     client: {} as any,
     ...overrides,
   }
 }
 
-function adminCtx(plan = 'free') { return mockCtx({ role: 'admin', planTier: plan }) }
-function supervisorCtx(plan = 'free') { return mockCtx({ role: 'supervisor', planTier: plan }) }
-function terapeutaCtx(profileId = 'profile-T1', plan = 'free') {
-  return mockCtx({ role: 'terapeuta', profileId, planTier: plan })
+function adminCtx(plan: string | null = null) { return mockCtx({ role: 'admin', abaPlanKey: plan }) }
+function supervisorCtx(plan: string | null = null) { return mockCtx({ role: 'supervisor', abaPlanKey: plan }) }
+function terapeutaCtx(profileId = 'profile-T1', plan: string | null = null) {
+  return mockCtx({ role: 'terapeuta', profileId, abaPlanKey: plan })
 }
 
 // Mock pg client com retorno configurável
@@ -253,17 +253,17 @@ describe('ABA — canAccessLearner (verificação de vínculo)', () => {
   })
 })
 
-describe('ABA — requireFeature (operadora gate por plano)', () => {
+describe('ABA — requireFeature (operadora gate pela licença ABA ativa)', () => {
 
-  test('Free: NENHUMA feature operadora liberada', () => {
-    const ctx = adminCtx('free')
+  test('ABA grátis / sem licença ABA: NENHUMA feature operadora liberada', () => {
+    const ctx = adminCtx(null)
     expect(() => requireFeature(ctx, 'claimPackets')).toThrow(PlanGateError)
     expect(() => requireFeature(ctx, 'presenceProofs')).toThrow(PlanGateError)
     expect(() => requireFeature(ctx, 'integrityDashboard')).toThrow(PlanGateError)
   })
 
-  test('Founders: features básicas liberadas', () => {
-    const ctx = adminCtx('founders')
+  test('aba_50 (pacote founders): features básicas liberadas', () => {
+    const ctx = adminCtx('aba_50')
     expect(() => requireFeature(ctx, 'serviceSites')).not.toThrow()
     expect(() => requireFeature(ctx, 'presenceProofs')).not.toThrow()
     expect(() => requireFeature(ctx, 'attestationsTherapist')).not.toThrow()
@@ -273,8 +273,8 @@ describe('ABA — requireFeature (operadora gate por plano)', () => {
     expect(() => requireFeature(ctx, 'integrityDashboard')).toThrow(PlanGateError)
   })
 
-  test('Clinica 100: completo exceto integridade', () => {
-    const ctx = adminCtx('clinica_100')
+  test('aba_100 (pacote clinica_100): completo exceto integridade', () => {
+    const ctx = adminCtx('aba_100')
     expect(() => requireFeature(ctx, 'claimPackets')).not.toThrow()
     expect(() => requireFeature(ctx, 'evidenceBundles')).not.toThrow()
     expect(() => requireFeature(ctx, 'coverageProfiles')).not.toThrow()
@@ -283,8 +283,8 @@ describe('ABA — requireFeature (operadora gate por plano)', () => {
     expect(() => requireFeature(ctx, 'integrityDashboard')).toThrow(PlanGateError)
   })
 
-  test('Clinica 250: tudo liberado', () => {
-    const ctx = adminCtx('clinica_250')
+  test('aba_250 (pacote clinica_250): tudo liberado', () => {
+    const ctx = adminCtx('aba_250')
     expect(() => requireFeature(ctx, 'claimPackets')).not.toThrow()
     expect(() => requireFeature(ctx, 'integrityFlags')).not.toThrow()
     expect(() => requireFeature(ctx, 'integrityDashboard')).not.toThrow()
@@ -293,7 +293,7 @@ describe('ABA — requireFeature (operadora gate por plano)', () => {
 
   test('PlanGateError tem statusCode 403 e feature identificada', () => {
     try {
-      requireFeature(adminCtx('free'), 'claimPackets')
+      requireFeature(adminCtx(null), 'claimPackets')
       expect.unreachable('deveria ter lançado')
     } catch (e) {
       expect(e).toBeInstanceOf(PlanGateError)
@@ -302,7 +302,7 @@ describe('ABA — requireFeature (operadora gate por plano)', () => {
     }
   })
 
-  test('Plan tier desconhecido/null → tratado como free (sem acesso)', () => {
+  test('Chave desconhecida/null ou plano antigo do tenant → nenhum acesso', () => {
     const access = getOperadoraAccess(null)
     expect(access.hasOperadora).toBe(false)
     expect(access.claimPackets).toBe(false)
@@ -312,6 +312,11 @@ describe('ABA — requireFeature (operadora gate por plano)', () => {
 
     const access3 = getOperadoraAccess('plano_inexistente')
     expect(access3.hasOperadora).toBe(false)
+
+    // nomes de tenants.plan_tier e chaves de outro produto não liberam nada
+    for (const old of ['founders', 'clinica_100', 'clinica_250', 'tdah_250', 'tcc_100']) {
+      expect(getOperadoraAccess(old).hasOperadora).toBe(false)
+    }
   })
 })
 
@@ -330,7 +335,7 @@ describe('ABA — Claim Packets: só admin/supervisor', () => {
   })
 
   test('Mesmo com plano liberado, terapeuta é bloqueado pelo role check', () => {
-    const ctx = terapeutaCtx('prof-1', 'clinica_250')
+    const ctx = terapeutaCtx('prof-1', 'aba_250')
     // Feature está liberada no plano...
     expect(() => requireFeature(ctx, 'claimPackets')).not.toThrow()
     // ...mas role check bloqueia
@@ -485,17 +490,17 @@ describe('TDAH — Portais públicos (token-based)', () => {
 // OPERADORA GATE — Cobertura completa por plano
 // ═════════════════════════════════════════════════════
 
-describe('Operadora Gate — getOperadoraAccess por plano', () => {
+describe('Operadora Gate — getOperadoraAccess pela chave ABA', () => {
 
-  test('Free: hasOperadora=false, todas features=false', () => {
-    const a = getOperadoraAccess('free')
+  test('ABA grátis (null): hasOperadora=false, todas features=false', () => {
+    const a = getOperadoraAccess(null)
     expect(a.hasOperadora).toBe(false)
     expect(a.claimPackets).toBe(false)
     expect(a.integrityDashboard).toBe(false)
   })
 
-  test('Founders: hasOperadora=true, features básicas=true, avançadas=false', () => {
-    const a = getOperadoraAccess('founders')
+  test('aba_50: hasOperadora=true, features básicas=true, avançadas=false', () => {
+    const a = getOperadoraAccess('aba_50')
     expect(a.hasOperadora).toBe(true)
     expect(a.serviceSites).toBe(true)
     expect(a.attestationsTherapist).toBe(true)
@@ -503,8 +508,8 @@ describe('Operadora Gate — getOperadoraAccess por plano', () => {
     expect(a.attestationsGuardian).toBe(false)
   })
 
-  test('Clinica 100: completo exceto integridade', () => {
-    const a = getOperadoraAccess('clinica_100')
+  test('aba_100: completo exceto integridade', () => {
+    const a = getOperadoraAccess('aba_100')
     expect(a.hasOperadora).toBe(true)
     expect(a.claimPackets).toBe(true)
     expect(a.coverageProfiles).toBe(true)
@@ -513,8 +518,8 @@ describe('Operadora Gate — getOperadoraAccess por plano', () => {
     expect(a.integrityDashboard).toBe(false)
   })
 
-  test('Clinica 250: tudo true', () => {
-    const a = getOperadoraAccess('clinica_250')
+  test('aba_250: tudo true', () => {
+    const a = getOperadoraAccess('aba_250')
     const values = Object.values(a)
     expect(values.every(v => v === true)).toBe(true)
   })

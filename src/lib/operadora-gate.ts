@@ -1,26 +1,36 @@
+import type { PlanKey } from '@/src/billing/plans'
+
 // =====================================================
 // AXIS ABA v2.7.0 — Operadora Feature Gate
 //
-// Controla acesso às features v2.7.0 por plan_tier.
+// Desde o pagamento P2 (opção B, decidida pela espinha em 13/10/2026) quem
+// decide é a LICENÇA ABA ATIVA (plan_key, regra de src/billing/license-rules.ts),
+// não tenants.plan_tier. Cortesia segue a chave dela.
 // Ref: skill_axis_aba_v270.md — Pricing
 //
-// | Plano       | Operadora Ready?                              |
-// |-------------|-----------------------------------------------|
-// | Free        | Não                                           |
-// | Founders    | Básico (geo light + atestação terapeuta)       |
-// | Clínica 100 | Completo (geo + atestação + claim packets)     |
-// | Clínica 250 | Completo + integridade + dashboards            |
+// | Licença ABA ativa          | Nível (recursos)                               |
+// |----------------------------|------------------------------------------------|
+// | grátis / nenhuma / outra   | nenhum                                         |
+// | aba_50                     | founders: básico (geo light + atestação), 6     |
+// | aba_100                    | clinica_100: completo + claim packets, 10       |
+// | aba_250                    | clinica_250: completo + integridade, 12         |
 //
-// Uso server-side (API routes):
-//   const access = getOperadoraAccess(plan_tier)
-//   if (!access.presenceProofs) return 403
+// Uso server-side (API routes): requireFeature(ctx, 'presenceProofs')
+//   (src/database/with-role.ts; ctx.abaPlanKey vem do withTenant)
 //
 // Uso client-side (componentes):
-//   const access = getOperadoraAccess(profile?.tenant_plan)
+//   const access = getOperadoraAccess(profile?.product_limits?.aba?.plan_key)
 //   {access.integrityDashboard && <IntegrityDashboard />}
 // =====================================================
 
-export type PlanTier = 'free' | 'founders' | 'clinica_100' | 'clinica_250'
+/** Pacote de recursos. Os nomes são os dos planos antigos; quem escolhe o pacote é a chave ABA. */
+export type OperadoraLevel = 'founders' | 'clinica_100' | 'clinica_250'
+
+const LEVEL_BY_ABA_PLAN_KEY: Partial<Record<PlanKey, OperadoraLevel>> = {
+  aba_50: 'founders',
+  aba_100: 'clinica_100',
+  aba_250: 'clinica_250',
+}
 
 export interface OperadoraAccess {
   /** Plano tem algum acesso operadora */
@@ -115,20 +125,25 @@ const CLINICA_250_ACCESS: OperadoraAccess = {
   payerProfiles: true,
 }
 
-const ACCESS_MAP: Record<PlanTier, OperadoraAccess> = {
-  free: FREE_ACCESS,
+const ACCESS_MAP: Record<OperadoraLevel, OperadoraAccess> = {
   founders: FOUNDERS_ACCESS,
   clinica_100: CLINICA_100_ACCESS,
   clinica_250: CLINICA_250_ACCESS,
 }
 
+/** Nível pela chave da licença ABA ativa. null = nenhum recurso. */
+export function operadoraLevel(abaPlanKey?: string | null): OperadoraLevel | null {
+  if (!abaPlanKey) return null
+  return LEVEL_BY_ABA_PLAN_KEY[abaPlanKey as PlanKey] ?? null
+}
+
 /**
- * Retorna as permissões de features v2.7.0 para o plano.
- * Se plan_tier for null/undefined/desconhecido, retorna FREE (sem acesso).
+ * Permissões das features v2.7.0 pela chave da licença ABA ATIVA.
+ * null/undefined (ABA grátis ou sem licença ABA) ou chave que não é ABA → nenhum recurso.
  */
-export function getOperadoraAccess(planTier?: string | null): OperadoraAccess {
-  if (!planTier) return FREE_ACCESS
-  return ACCESS_MAP[planTier as PlanTier] ?? FREE_ACCESS
+export function getOperadoraAccess(abaPlanKey?: string | null): OperadoraAccess {
+  const level = operadoraLevel(abaPlanKey)
+  return level ? ACCESS_MAP[level] : FREE_ACCESS
 }
 
 /**

@@ -11,6 +11,7 @@ import ServiceSitesManager from '@/app/components/ServiceSitesManager'
 import ProviderCredentialsManager from '@/app/components/ProviderCredentialsManager'
 import IntegrityDashboard from '@/app/components/IntegrityDashboard'
 import PayerRequirementsManager from '@/app/components/PayerRequirementsManager'
+import { abaHotmartUpgrade, planLabel } from '@/src/billing/plan-display'
 
 // =====================================================
 // AXIS ABA - Configurações (Multi-Terapeuta, Role-Aware)
@@ -60,9 +61,10 @@ export default function ConfiguracoesABAPage() {
   const [clinicSaving, setClinicSaving] = useState(false)
   const [clinicSaved, setClinicSaved] = useState(false)
 
-  // Meu Plano
+  // Meu Plano (pela licença ABA: product_limits.aba)
   const [planData, setPlanData] = useState<{
-    plan_tier: string
+    plan_key: string | null
+    billing_source: string | null
     max_patients: number
     learner_count: number
   } | null>(null)
@@ -212,11 +214,12 @@ export default function ConfiguracoesABAPage() {
           name: p.name || '',
           crp: crpFormatted,
         })
-        // Dados do plano para seção "Meu Plano" (per-product via product_limits)
+        // Dados do plano para seção "Meu Plano": licença ABA (product_limits.aba)
         const abaLimits = p.product_limits?.aba
         setPlanData({
-          plan_tier: abaLimits?.plan || p.tenant_plan || 'free',
-          max_patients: abaLimits?.max_patients || p.max_patients || 1,
+          plan_key: abaLimits?.plan_key ?? null,
+          billing_source: abaLimits?.billing_source ?? null,
+          max_patients: abaLimits?.max_patients || 1,
           learner_count: p.learner_count || 0,
         })
       }
@@ -389,28 +392,18 @@ export default function ConfiguracoesABAPage() {
         {/* Mostra plano atual, uso, e botão upgrade */}
         {/* ============================================ */}
         {planData && (() => {
-          const PLAN_LABELS: Record<string, string> = {
-            free: 'Gratuito',
-            founders: 'Founders',
-            clinica_100: 'Clínica 100',
-            clinica_250: 'Clínica 250',
-          }
           const PLAN_COLORS: Record<string, { badge: string; bar: string }> = {
             free: { badge: 'bg-slate-100 text-slate-600 border-slate-200', bar: 'bg-slate-400' },
-            founders: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500' },
-            clinica_100: { badge: 'bg-blue-50 text-blue-700 border-blue-200', bar: 'bg-blue-500' },
-            clinica_250: { badge: 'bg-purple-50 text-purple-700 border-purple-200', bar: 'bg-purple-500' },
-          }
-          const UPGRADE_LINKS: Record<string, { url: string; label: string }> = {
-            free: { url: 'https://pay.hotmart.com/H104663812P?off=5hz0et4m', label: 'Founders — R$147/mês' },
-            founders: { url: 'https://pay.hotmart.com/H104663812P?off=gona25or', label: 'Clínica 250 — R$497/mês' },
-            clinica_100: { url: 'https://pay.hotmart.com/H104663812P?off=gona25or', label: 'Clínica 250 — R$497/mês' },
+            aba_50: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', bar: 'bg-emerald-500' },
+            aba_100: { badge: 'bg-blue-50 text-blue-700 border-blue-200', bar: 'bg-blue-500' },
+            aba_250: { badge: 'bg-purple-50 text-purple-700 border-purple-200', bar: 'bg-purple-500' },
           }
 
-          const tier = planData.plan_tier
-          const label = PLAN_LABELS[tier] || tier
-          const colors = PLAN_COLORS[tier] || PLAN_COLORS.free
-          const upgrade = UPGRADE_LINKS[tier]
+          // Rótulo e upgrade pela licença ABA; licença PaymentBeta não mostra link da Hotmart.
+          const label = planLabel(planData.plan_key)
+          const colors = PLAN_COLORS[planData.plan_key ?? 'free'] || PLAN_COLORS.free
+          const upgrade = abaHotmartUpgrade(planData.plan_key, planData.billing_source)
+          const isTopPlan = planData.plan_key === 'aba_250'
           const usagePercent = planData.max_patients > 0
             ? Math.min(100, Math.round((planData.learner_count / planData.max_patients) * 100))
             : 0
@@ -482,7 +475,7 @@ export default function ConfiguracoesABAPage() {
                   Fazer Upgrade — {upgrade.label}
                 </a>
               )}
-              {!upgrade && (
+              {!upgrade && isTopPlan && (
                 <p className="text-sm text-emerald-600 font-medium">Você está no plano mais completo!</p>
               )}
             </section>

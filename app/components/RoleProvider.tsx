@@ -16,6 +16,10 @@ export type UserRole = 'admin' | 'supervisor' | 'terapeuta'
 
 interface ProductLimitInfo {
   plan: string
+  /** Chave da licença ativa (null = grátis). No ABA decide também os recursos Operadora. */
+  plan_key?: string | null
+  /** hotmart | paymentbeta | cortesia (null = grátis ou linha antiga). */
+  billing_source?: string | null
   max_patients: number
 }
 
@@ -34,7 +38,6 @@ interface ProfileData {
   crp?: string
   crp_uf?: string
   tenant_name?: string
-  tenant_plan?: string
   max_patients?: number            // legacy (global) — prefer product_limits
   product_limits?: ProductLimits   // per-product limits
   is_active: boolean
@@ -49,7 +52,7 @@ interface RoleContextValue {
   canManageTeam: boolean       // admin only
   canManageProtocols: boolean  // admin + supervisor
   canCreateLearners: boolean   // admin + supervisor
-  operadora: OperadoraAccess   // v2.7.0 feature access by plan
+  operadora: OperadoraAccess   // v2.7.0 feature access pela licença ABA ativa
   loading: boolean
 }
 
@@ -111,10 +114,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const isSupervisor = role === 'supervisor'
   const isTerapeuta = role === 'terapeuta'
 
-  const operadora = useMemo(
-    () => getOperadoraAccess(profile?.tenant_plan),
-    [profile?.tenant_plan]
-  )
+  // Recursos Operadora pela licença ABA ativa (mesma regra do servidor: requireFeature)
+  const abaPlanKey = profile?.product_limits?.aba?.plan_key ?? null
+  const operadora = useMemo(() => getOperadoraAccess(abaPlanKey), [abaPlanKey])
 
   const value: RoleContextValue = {
     profile,

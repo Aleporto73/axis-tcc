@@ -15,6 +15,7 @@ import { readFile } from 'fs/promises'
 import { transcribeAudioWithSegments, ASRSegment, ASRResult } from '../../src/services/asr'
 import { saveTranscript } from '../../src/services/transcript-storage'
 import { postProcessTranscript, buildPreview, POSTPROCESS_VERSION } from '../../src/services/transcript-postprocess'
+import { isFreeTcc } from '../../src/billing/license-rules'
 
 // ── Configuração ──
 const POLL_INTERVAL_MS = 5_000        // 5s entre checks
@@ -342,13 +343,9 @@ async function processJob(job: any): Promise<void> {
         }
       }
 
-      // Incrementar uso para FREE
-      const licenseRes = await client.query(
-        `SELECT hotmart_plan FROM user_licenses
-         WHERE tenant_id = $1 AND product_type = 'tcc' AND is_active = true LIMIT 1`,
-        [job.tenant_id]
-      )
-      const isFree = !licenseRes.rows[0]?.hotmart_plan || licenseRes.rows[0].hotmart_plan === ''
+      // Incrementar uso para FREE. Pago/grátis pela MESMA regra dos leitores
+      // (src/billing/license-rules.ts → plan_key): PaymentBeta e cortesia contam como pago.
+      const isFree = await isFreeTcc(client, job.tenant_id)
 
       if (isFree) {
         const month = new Date().toISOString().slice(0, 7)

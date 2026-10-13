@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRole } from '@/app/components/RoleProvider'
 import UpgradeModal from '@/app/components/UpgradeModal'
+import { atPatientLimit } from '@/src/billing/plan-display'
 import { CIDSelector } from '@/components/CIDSelector'
 import type { CIDSystem } from '@/lib/cid'
 
@@ -143,8 +144,9 @@ export default function AprendizesPage() {
           </div>
           <button
             onClick={() => {
-              const isFree = !profile?.tenant_plan || profile.tenant_plan === 'free'
-              if (isFree && learners.length >= 1) {
+              // Limite pela licença ABA (product_limits.aba), não por tenants.plan_tier.
+              // O servidor confere de novo (PLAN_LIMIT_REACHED abre o mesmo aviso).
+              if (atPatientLimit(learners.length, profile?.product_limits?.aba?.max_patients)) {
                 setShowUpgrade(true)
               } else {
                 setShowModal(true)

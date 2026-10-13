@@ -16,7 +16,6 @@ interface TenantOption {
   tenant_id: string
   role: string
   tenant_name: string
-  plan_tier: string
   learner_count: number
   member_count: number
 }

@@ -25,7 +25,7 @@ function mockCtx(overrides: Partial<TenantContext> = {}): TenantContext {
     userId: 'user-001',
     profileId: 'profile-001',
     role: 'admin' as UserRole,
-    planTier: 'free',
+    abaPlanKey: null,
     client: { query: vi.fn().mockResolvedValue({ rows: [] }) } as any,
     ...overrides,
   }

@@ -49,7 +49,6 @@ export async function GET() {
           p.tenant_id,
           p.role,
           t.name AS tenant_name,
-          t.plan_tier,
           (SELECT COUNT(*) FROM learners l WHERE l.tenant_id = p.tenant_id AND l.is_active = true)::int AS learner_count,
           (SELECT COUNT(*) FROM profiles pr WHERE pr.tenant_id = p.tenant_id AND pr.is_active = true)::int AS member_count
         FROM profiles p

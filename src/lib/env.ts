@@ -67,6 +67,24 @@ const envSchema = z.object({
   // Endurecido (Onda 9): confirmado em prod (66 chars).
   HOTMART_HOTTOK: isProd ? z.string().min(8) : z.string().optional(),
 
+  // PaymentBeta (pagamento P2) — TODAS opcionais no boot, também em prod:
+  // a publicação não pode cair por falta delas. Sem segredo, o receptor
+  // /api/webhook/paymentbeta responde 503; sem códigos, o checkout-link responde 503.
+  PAYMENTBETA_WEBHOOK_SECRET: z.string().optional(),
+  // Segredo anterior, aceito durante a troca de segredo.
+  PAYMENTBETA_WEBHOOK_SECRET_PREVIOUS: z.string().optional(),
+  // Base do checkout (padrão https://payment.eng.br/checkout). Conferida no uso, não no boot.
+  PAYMENTBETA_CHECKOUT_URL: z.string().optional(),
+  // "PRODUTO:PRECO" (unique_code do produto e do preço no PaymentBeta), um por plano.
+  PAYMENTBETA_CHECKOUT_ABA_50: z.string().optional(),
+  PAYMENTBETA_CHECKOUT_ABA_100: z.string().optional(),
+  PAYMENTBETA_CHECKOUT_ABA_250: z.string().optional(),
+  PAYMENTBETA_CHECKOUT_TDAH_50: z.string().optional(),
+  PAYMENTBETA_CHECKOUT_TDAH_100: z.string().optional(),
+  PAYMENTBETA_CHECKOUT_TDAH_250: z.string().optional(),
+  PAYMENTBETA_CHECKOUT_TCC_50: z.string().optional(),
+  PAYMENTBETA_CHECKOUT_TCC_100: z.string().optional(),
+
   // Firebase Admin SDK (server-side, push notifications)
   FIREBASE_PRIVATE_KEY: isProd ? z.string().min(20) : z.string().optional(),
   FIREBASE_CLIENT_EMAIL: isProd ? z.string().email() : z.string().optional(),

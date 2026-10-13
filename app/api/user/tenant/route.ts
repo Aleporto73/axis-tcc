@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import pool from '@/src/database/db'
+import { pendingPurchaseSource } from '@/src/billing/provision'
 
 // =====================================================
 // AXIS - Resolver/Criar Tenant + Profile (Multi-Terapeuta)
@@ -72,7 +73,9 @@ export async function GET() {
           [userId, row.profile_id]
         )
 
-        // Atualizar clerk_user_id no tenant e licenças (auto-provisioned via Hotmart)
+        // Atualizar clerk_user_id no tenant e licenças. Dono pendente de compra:
+        // 'pending_hotmart_{email}' ou 'pending_paymentbeta_{email}' (src/billing/provision.ts).
+        // Convite de equipe não é dono: os UPDATEs abaixo não acham linha.
         if (oldClerkId && oldClerkId.startsWith('pending_')) {
           await pool.query(
             `UPDATE tenants SET clerk_user_id = $1, updated_at = NOW()
@@ -92,7 +95,10 @@ export async function GET() {
             `INSERT INTO axis_audit_logs (tenant_id, user_id, actor, action, entity_type, entity_id, metadata, created_at)
              VALUES ($1, $2, $3, 'PROFILE_ACTIVATED', 'profile', $4, $5, NOW())`,
             [row.tenant_id, userId, userId, row.profile_id,
-             JSON.stringify({ email, role: row.role, source: 'invite_activation', old_clerk_id: oldClerkId })]
+             JSON.stringify({
+               email, role: row.role, source: 'invite_activation', old_clerk_id: oldClerkId,
+               type: pendingPurchaseSource(oldClerkId) ? `${pendingPurchaseSource(oldClerkId)}_purchase` : 'team_invite',
+             })]
           )
         } catch (_) { /* audit non-blocking */ }
 

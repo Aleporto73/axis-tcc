@@ -30,7 +30,6 @@ export async function GET() {
           p.is_active,
           p.created_at,
           t.name AS tenant_name,
-          t.plan_tier AS tenant_plan,
           t.max_patients,
           (SELECT COUNT(*) FROM learners l WHERE l.tenant_id = p.tenant_id AND l.is_active = true)::int AS learner_count
         FROM profiles p
@@ -51,19 +50,27 @@ export async function GET() {
         }
       }
 
-      // Per-product limits (substitui tenants.max_patients global)
+      // Per-product limits (substitui tenants.max_patients global).
+      // plan_key decide limite e (no ABA) os recursos Operadora; tenants.plan_tier
+      // não é mais devolvido: não decide nada (pagamento P2).
       const [tccLimit, abaLimit, tdahLimit] = await Promise.all([
         getProductLimit(ctx.client, ctx.tenantId, 'tcc'),
         getProductLimit(ctx.client, ctx.tenantId, 'aba'),
         getProductLimit(ctx.client, ctx.tenantId, 'tdah'),
       ])
+      const limitInfo = (l: typeof abaLimit) => ({
+        plan: l.plan,
+        plan_key: l.planKey,
+        billing_source: l.billingSource,
+        max_patients: l.maxPatients,
+      })
 
       return {
         ...profile.rows[0],
         product_limits: {
-          tcc:  { plan: tccLimit.plan,  max_patients: tccLimit.maxPatients },
-          aba:  { plan: abaLimit.plan,  max_patients: abaLimit.maxPatients },
-          tdah: { plan: tdahLimit.plan, max_patients: tdahLimit.maxPatients },
+          tcc:  limitInfo(tccLimit),
+          aba:  limitInfo(abaLimit),
+          tdah: limitInfo(tdahLimit),
         },
       }
     })

@@ -192,7 +192,8 @@ export async function canAccessTdahPatient(
 // =====================================================
 
 /**
- * Verifica se o plano do tenant tem acesso a uma feature v2.7.0.
+ * Verifica se a licença ABA ATIVA do tenant (ctx.abaPlanKey, resolvida no
+ * withTenant) dá acesso a uma feature v2.7.0. tenants.plan_tier não conta.
  * Lança PlanGateError (403) se não autorizado.
  *
  * Uso:
@@ -200,7 +201,7 @@ export async function canAccessTdahPatient(
  *   requireFeature(ctx, 'claimPackets')
  */
 export function requireFeature(ctx: TenantContext, feature: keyof OperadoraAccess): void {
-  const access = getOperadoraAccess(ctx.planTier)
+  const access = getOperadoraAccess(ctx.abaPlanKey)
   if (!access[feature]) {
     throw new PlanGateError(
       `Recurso "${FEATURE_LABELS[feature]}" não disponível no plano atual. Faça upgrade para acessar.`,

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import pool from './db'
 import { PoolClient } from 'pg'
 import { createSystemAlert } from '@/src/utils/system-alert'
+import { fetchActiveLicense, resolveLicense, type LicenseRow } from '@/src/billing/license-rules'
 
 // =====================================================
 // AXIS ABA - Tenant Context com Roles (Multi-Terapeuta)
@@ -21,8 +22,19 @@ export interface TenantContext {
   userId: string        // clerk_user_id
   profileId: string     // profiles.id
   role: UserRole
-  planTier: string      // tenants.plan_tier (free, founders, clinica_100, clinica_250)
+  /**
+   * Chave da licença ABA ATIVA do tenant (regra de src/billing/license-rules.ts);
+   * null = ABA grátis ou sem licença ABA. Decide os recursos Operadora
+   * (requireFeature). tenants.plan_tier não decide mais nada (pagamento P2).
+   */
+  abaPlanKey: string | null
   client: PoolClient
+}
+
+/** Chave ABA que decide os recursos Operadora: só licença paga (null = nenhum recurso). */
+function abaPlanKeyOf(row: LicenseRow | null): string | null {
+  const resolution = resolveLicense(row)
+  return resolution.paid ? resolution.planKey : null
 }
 
 export interface TenantOption {
@@ -111,19 +123,39 @@ export async function withTenant<T>(
     }
 
     // ─── Passo 2: Buscar TODOS os profiles ativos ───
+    // Junto, a licença ABA ativa de cada tenant (mesma ordem do leitor de licença:
+    // a mais recente). Ela decide os recursos Operadora; user_licenses não tem RLS.
     const profileResult = await client.query(
-      `SELECT p.id AS profile_id, p.tenant_id, p.role, t.name AS tenant_name, COALESCE(t.plan_tier, 'free') AS plan_tier
+      `SELECT p.id AS profile_id, p.tenant_id, p.role, t.name AS tenant_name,
+              aba.plan_key AS aba_plan_key, aba.billing_source AS aba_billing_source,
+              aba.hotmart_plan AS aba_hotmart_plan, aba.hotmart_offer AS aba_hotmart_offer
        FROM profiles p
        JOIN tenants t ON t.id = p.tenant_id
+       LEFT JOIN LATERAL (
+         SELECT ul.plan_key, ul.billing_source, ul.hotmart_plan, ul.hotmart_offer
+           FROM user_licenses ul
+          WHERE ul.tenant_id = p.tenant_id AND ul.product_type = 'aba' AND ul.is_active = true
+          ORDER BY ul.created_at DESC
+          LIMIT 1
+       ) aba ON true
        WHERE p.clerk_user_id = $1 AND p.is_active = true
        ORDER BY p.role = 'admin' DESC, p.created_at ASC`,
       [userId]
     )
 
+    const abaKeyOfProfile = (r: any): string | null =>
+      abaPlanKeyOf({
+        product_type: 'aba',
+        plan_key: r.aba_plan_key ?? null,
+        billing_source: r.aba_billing_source ?? null,
+        hotmart_plan: r.aba_hotmart_plan ?? null,
+        hotmart_offer: r.aba_hotmart_offer ?? null,
+      })
+
     let tenantId: string
     let profileId: string
     let role: UserRole
-    let planTier: string
+    let abaPlanKey: string | null
 
     if (profileResult.rows.length > 1) {
       // ─── Múltiplos tenants: verificar cookie ───
@@ -138,7 +170,7 @@ export async function withTenant<T>(
         tenantId = match.tenant_id
         profileId = match.profile_id
         role = match.role as UserRole
-        planTier = match.plan_tier || 'free'
+        abaPlanKey = abaKeyOfProfile(match)
       } else {
         // Sem cookie ou cookie inválido → precisa selecionar
         await client.query('ROLLBACK')
@@ -157,7 +189,7 @@ export async function withTenant<T>(
       tenantId = profileResult.rows[0].tenant_id
       profileId = profileResult.rows[0].profile_id
       role = profileResult.rows[0].role as UserRole
-      planTier = profileResult.rows[0].plan_tier || 'free'
+      abaPlanKey = abaKeyOfProfile(profileResult.rows[0])
     } else {
       // ─── Fallback: buscar em tenants (compatibilidade pré-migração) ───
       const tenantResult = await client.query(
@@ -197,7 +229,8 @@ export async function withTenant<T>(
       tenantId = tenantResult.rows[0].id
       profileId = tenantId // fallback: usar tenantId como profileId
       role = 'admin'       // fallback: tenant owner = admin
-      planTier = 'free'    // fallback: sem plan_tier = free
+      // fallback: recursos Operadora pela licença ABA ativa, como no caminho normal
+      abaPlanKey = abaPlanKeyOf(await fetchActiveLicense(client, tenantId, 'aba'))
     }
 
     await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId])
@@ -205,7 +238,7 @@ export async function withTenant<T>(
     // (aceita Clerk id). Anexado DEPOIS de app.tenant_id — nunca antes.
     await client.query("SELECT set_config('app.user_id', $1, true)", [userId])
 
-    const result = await callback({ tenantId, userId, profileId, role, planTier, client })
+    const result = await callback({ tenantId, userId, profileId, role, abaPlanKey, client })
 
     await client.query('COMMIT')
     return result

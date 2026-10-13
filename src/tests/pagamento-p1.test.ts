@@ -359,11 +359,17 @@ async function runQuery(rawSql: string, params: unknown[]) {
   }
   if (sql.startsWith('INSERT INTO user_licenses') && sql.includes("'FREE_TIER_ACTIVATION'")) {
     expect(sql).toContain('plan_key, billing_source')
+    expect(sql).toContain('WHERE user_licenses.is_active = false RETURNING id')
     const [tenantId, clerk, product] = params as string[]
     const existing = db.licenses.find((l) => l.tenant_id === tenantId && l.clerk_user_id === clerk && l.product_type === product)
-    if (existing) Object.assign(existing, { is_active: true, hotmart_event: 'FREE_TIER_ACTIVATION' })
-    else db.licenses.push(newLicense({ tenant_id: tenantId, clerk_user_id: clerk, product_type: product, hotmart_event: 'FREE_TIER_ACTIVATION' }))
-    return result()
+    if (existing) {
+      if (existing.is_active) return result([], 0)
+      Object.assign(existing, { is_active: true, hotmart_event: 'FREE_TIER_ACTIVATION', hotmart_plan: null, plan_key: null, billing_source: null })
+      return result([{ id: existing.id }])
+    }
+    const lic = newLicense({ tenant_id: tenantId, clerk_user_id: clerk, product_type: product, hotmart_event: 'FREE_TIER_ACTIVATION' })
+    db.licenses.push(lic)
+    return result([{ id: lic.id }])
   }
 
   // ── admin ──
@@ -573,7 +579,7 @@ describe('3. leitores decidem por plan_key', () => {
 
   test('TCC pago deixou de ser ilimitado: tcc_100 → 100, tcc_50 → 50', async () => {
     seedLicense({ product_type: 'tcc', hotmart_plan: 'AXIS TCC', plan_key: 'tcc_100', billing_source: 'hotmart' })
-    expect(await limitFor('tcc')).toEqual({ plan: 'AXIS TCC', planKey: 'tcc_100', maxPatients: 100 })
+    expect(await limitFor('tcc')).toEqual({ plan: 'AXIS TCC', planKey: 'tcc_100', billingSource: 'hotmart', maxPatients: 100 })
     db.licenses[0].plan_key = 'tcc_50'
     expect((await limitFor('tcc')).maxPatients).toBe(50)
     expect(alerts).toEqual([])
@@ -600,9 +606,9 @@ describe('3. leitores decidem por plan_key', () => {
   })
 
   test('sem licença ativa, ou licença free → 1 (plan "free")', async () => {
-    expect(await limitFor('aba')).toEqual({ plan: 'free', planKey: null, maxPatients: 1 })
+    expect(await limitFor('aba')).toEqual({ plan: 'free', planKey: null, billingSource: null, maxPatients: 1 })
     seedLicense({ product_type: 'aba', hotmart_event: 'FREE_TIER_ACTIVATION' })
-    expect(await limitFor('aba')).toEqual({ plan: 'free', planKey: null, maxPatients: 1 })
+    expect(await limitFor('aba')).toEqual({ plan: 'free', planKey: null, billingSource: null, maxPatients: 1 })
     seedLicense({ product_type: 'tdah', is_active: false, plan_key: 'tdah_250', billing_source: 'hotmart', hotmart_plan: 'AXIS TDAH' })
     expect((await limitFor('tdah')).maxPatients).toBe(1)
   })
@@ -615,7 +621,7 @@ describe('3. leitores decidem por plan_key', () => {
 
   test('licença sem hotmart_plan (PaymentBeta, futuro) mostra a chave como rótulo', async () => {
     seedLicense({ product_type: 'aba', plan_key: 'aba_50', billing_source: 'paymentbeta' })
-    expect(await limitFor('aba')).toEqual({ plan: 'aba_50', planKey: 'aba_50', maxPatients: 50 })
+    expect(await limitFor('aba')).toEqual({ plan: 'aba_50', planKey: 'aba_50', billingSource: 'paymentbeta', maxPatients: 50 })
   })
 
   test('transcrição: pago pela plan_key = sem limite; free = 300 min', async () => {
@@ -673,7 +679,7 @@ describe('4. fallback: plan_key nula + hotmart_plan preenchido', () => {
   ])('%s oferta=%s plano=%s → %s (%i) + alerta; ninguém perde acesso', async (product, offer, plan, key, max) => {
     seedLicense({ product_type: product as string, hotmart_offer: offer as string | null, hotmart_plan: plan as string })
     const limit = await getProductLimit(makeClient() as any, TENANT_A, product as any)
-    expect(limit).toEqual({ plan, planKey: key, maxPatients: max })
+    expect(limit).toEqual({ plan, planKey: key, billingSource: null, maxPatients: max })
     expect(alertCodes()).toEqual(['LICENSE_PLAN_KEY_FALLBACK'])
     expect(alerts[0]).toMatchObject({ severity: 'warning', source: 'billing/license' })
   })

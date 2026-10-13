@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRole } from '@/app/components/RoleProvider'
 import { Calendar, Check, X, RefreshCw, Unlink } from 'lucide-react'
+import { planLabel } from '@/src/billing/plan-display'
 
 // =====================================================
 // AXIS TDAH - Configurações
@@ -53,9 +54,10 @@ export default function ConfiguracoesTDAHPage() {
   const [googleLoading, setGoogleLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
 
-  // Plano
+  // Plano (pela licença TDAH: product_limits.tdah)
   const [planData, setPlanData] = useState<{
-    plan_tier: string
+    plan_key: string | null
+    billing_source: string | null
     max_patients: number
     patient_count: number
   } | null>(null)
@@ -124,11 +126,12 @@ export default function ConfiguracoesTDAHPage() {
         const p = data.profile
         const crpFormatted = p.crp_uf && p.crp ? `${p.crp_uf}/${p.crp}` : p.crp || ''
         setProfileForm({ name: p.name || '', crp: crpFormatted })
-        // Dados do plano TDAH (per-product via product_limits)
+        // Dados do plano TDAH: licença TDAH (product_limits.tdah)
         const tdahLimits = p.product_limits?.tdah
         setPlanData({
-          plan_tier: tdahLimits?.plan || p.tenant_plan || 'free',
-          max_patients: tdahLimits?.max_patients || p.max_patients || 1,
+          plan_key: tdahLimits?.plan_key ?? null,
+          billing_source: tdahLimits?.billing_source ?? null,
+          max_patients: tdahLimits?.max_patients || 1,
           patient_count: 0,  // será preenchido pelo fetchPlan se necessário
         })
       }
@@ -191,12 +194,6 @@ export default function ConfiguracoesTDAHPage() {
     } catch { /* silent */ }
   }
 
-  const tierLabels: Record<string, string> = {
-    free: 'Free',
-    starter: 'Starter',
-    clinic: 'Clínica',
-    enterprise: 'Enterprise',
-  }
 
   if (roleLoading) {
     return (
@@ -385,7 +382,7 @@ export default function ConfiguracoesTDAHPage() {
           <div className="grid grid-cols-3 gap-4">
             <div className="p-4 rounded-lg bg-slate-50">
               <p className="text-[10px] text-slate-500 uppercase">Plano</p>
-              <p className="text-lg font-bold text-slate-800 mt-1">{tierLabels[planData.plan_tier] || planData.plan_tier}</p>
+              <p className="text-lg font-bold text-slate-800 mt-1">{planLabel(planData.plan_key, 'Free')}</p>
             </div>
             <div className="p-4 rounded-lg bg-slate-50">
               <p className="text-[10px] text-slate-500 uppercase">Pacientes</p>
@@ -398,8 +395,11 @@ export default function ConfiguracoesTDAHPage() {
               <p className="text-lg font-bold text-slate-800 mt-1">{planData.max_patients} ativos</p>
             </div>
           </div>
+          {/* Licença PaymentBeta: sem menção à Hotmart (quem cobra é o PaymentBeta) */}
           <p className="text-[10px] text-slate-300 mt-3">
-            Para upgrade, entre em contato ou acesse a loja Hotmart (em breve).
+            {planData.billing_source === 'paymentbeta'
+              ? 'Para mudar de plano, entre em contato.'
+              : 'Para upgrade, entre em contato ou acesse a loja Hotmart (em breve).'}
           </p>
         </section>
       )}

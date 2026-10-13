@@ -60,8 +60,11 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Criar/reativar licença FREE (free = plan_key e billing_source nulos)
-      await ctx.client.query(
+      // Criar/reativar licença FREE (free = plan_key e billing_source nulos).
+      // Reativar linha vencida/cancelada limpa as marcas de pago (plan_key,
+      // billing_source, access_until, hotmart_plan): senão a licença paga que
+      // venceu voltaria paga de graça. Linha ativa nunca é tocada aqui.
+      const upserted = await ctx.client.query(
         `INSERT INTO user_licenses (
           tenant_id, clerk_user_id, product_type, is_active,
           valid_from, valid_until,
@@ -75,9 +78,22 @@ export async function POST(request: NextRequest) {
           valid_from = NOW(),
           valid_until = NULL,
           hotmart_event = 'FREE_TIER_ACTIVATION',
-          updated_at = NOW()`,
+          hotmart_plan = NULL,
+          plan_key = NULL,
+          billing_source = NULL,
+          access_until = NULL,
+          updated_at = NOW()
+        WHERE user_licenses.is_active = false
+        RETURNING id`,
         [ctx.tenantId, ctx.userId, product_type]
       )
+
+      if (!upserted.rowCount) {
+        return NextResponse.json(
+          { error: 'Já possui licença ativa para este produto.', redirect: DASHBOARD_PATH[product_type] },
+          { status: 409 }
+        )
+      }
 
       // Audit log
       try {

@@ -27,6 +27,8 @@ export interface ProductLimit {
   plan: string
   /** Chave que decidiu o limite (null = free). */
   planKey: string | null
+  /** Origem da licença paga (hotmart | paymentbeta | cortesia); null = free ou linha antiga. */
+  billingSource: string | null
   maxPatients: number
 }
 
@@ -49,11 +51,16 @@ export async function getProductLimit(
   const status = await getLicenseStatus(client, tenantId, productType)
 
   if (!status.paid) {
-    return { plan: 'free', planKey: null, maxPatients: status.maxPatients }
+    return { plan: 'free', planKey: null, billingSource: null, maxPatients: status.maxPatients }
   }
 
   // Rótulo igual ao de antes (hotmart_plan) para não mudar as telas;
   // licença sem hotmart_plan (PaymentBeta, cortesia nova) mostra a chave.
   const label = status.row?.hotmart_plan || status.planKey || 'free'
-  return { plan: label, planKey: status.planKey, maxPatients: status.maxPatients }
+  return {
+    plan: label,
+    planKey: status.planKey,
+    billingSource: status.row?.billing_source ?? null,
+    maxPatients: status.maxPatients,
+  }
 }

@@ -4,15 +4,16 @@ import pool from '@/src/database/db'
 import * as Sentry from '@sentry/nextjs'
 import { redactEmail } from '@/src/lib/log-redaction'
 import { env } from '@/src/lib/env'
+import { pendingPurchaseSource } from '@/src/billing/provision'
 
 // =====================================================
 // AXIS — Clerk Webhook
 //
 // Eventos tratados:
 //   user.created:
-//     A) Profile pendente encontrado (Hotmart/convite):
+//     A) Profile pendente encontrado (compra Hotmart/PaymentBeta ou convite):
 //        Atualiza clerk_user_id em profiles, tenants e user_licenses
-//        que estavam com 'pending_hotmart_{email}'.
+//        que estavam com 'pending_hotmart_{email}' ou 'pending_paymentbeta_{email}'.
 //        Também ativa o profile (is_active = true).
 //
 //     B) Nenhum profile pendente (cadastro direto):
@@ -162,8 +163,9 @@ export async function POST(req: NextRequest) {
           [clerkUserId, tenantId, oldClerkId]
         )
 
-        // Atualizar tenants (só se for profile de dono — Hotmart)
-        if (oldClerkId.startsWith('pending_hotmart_')) {
+        // Atualizar tenants e licenças (só se for profile de dono — compra Hotmart ou PaymentBeta)
+        const purchaseSource = pendingPurchaseSource(oldClerkId)
+        if (purchaseSource) {
           await pool.query(
             `UPDATE tenants
              SET clerk_user_id = $1, updated_at = NOW()
@@ -187,7 +189,7 @@ export async function POST(req: NextRequest) {
             [tenantId, clerkUserId, profile.id, JSON.stringify({
               email, old_clerk_id: oldClerkId, new_clerk_id: clerkUserId,
               source: 'clerk_user_created',
-              type: oldClerkId.startsWith('pending_hotmart_') ? 'hotmart_purchase' : 'team_invite',
+              type: purchaseSource ? `${purchaseSource}_purchase` : 'team_invite',
             })]
           )
         } catch (_) { /* audit non-blocking */ }

@@ -144,6 +144,34 @@ describe('env validation — Onda 8 Sessão 3', () => {
       expect(env.DATABASE_PASSWORD).toBe('StrongPasswd2026!')
     })
 
+    it('PaymentBeta (P2): variáveis opcionais em prod — ausentes ou estranhas não derrubam o boot', async () => {
+      mutEnv.NODE_ENV = 'production'
+      mutEnv.DATABASE_PASSWORD = 'StrongPasswd2026!'
+      mutEnv.CLERK_SECRET_KEY = 'sk_live_abc123def456'
+      mutEnv.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = 'pk_live_abc123def456'
+      mutEnv.CLERK_WEBHOOK_SECRET = 'whsec_a_secret_with_more_than_20_chars'
+      mutEnv.GOOGLE_CLIENT_ID = 'a-very-long-google-client-id-string'
+      mutEnv.GOOGLE_CLIENT_SECRET = 'a-very-long-google-client-secret-string'
+      mutEnv.OPENAI_API_KEY = 'sk-openai-key-example'
+      mutEnv.RESEND_API_KEY = 're_resend-key-example'
+      mutEnv.CRON_SECRET = 'a'.repeat(32)
+      mutEnv.INTERNAL_API_KEY = 'b'.repeat(32)
+      mutEnv.HOTMART_HOTTOK = 'hottok-min-8'
+      mutEnv.AXIS_ENCRYPTION_KEY = 'encryption-key-with-more-than-20-chars'
+      mutEnv.GOOGLE_REDIRECT_URI = 'https://axisclinico.com/api/google/callback'
+      mutEnv.FIREBASE_PRIVATE_KEY = '-----BEGIN PRIVATE KEY-----test-with-more-than-20-chars'
+      mutEnv.FIREBASE_CLIENT_EMAIL = 'firebase-admin@test.iam.gserviceaccount.com'
+      for (const key of Object.keys(mutEnv)) if (key.startsWith('PAYMENTBETA_')) delete mutEnv[key]
+      const { env } = await import('../env')
+      expect(env.PAYMENTBETA_WEBHOOK_SECRET).toBeUndefined()
+
+      vi.resetModules()
+      mutEnv.PAYMENTBETA_CHECKOUT_URL = 'nao-e-url'
+      mutEnv.PAYMENTBETA_CHECKOUT_ABA_100 = 'sem-preco'
+      const again = await import('../env')
+      expect(again.env.PAYMENTBETA_CHECKOUT_URL).toBe('nao-e-url')
+    })
+
     it('falha em prod com OPENAI_API_KEY sem prefix sk-', async () => {
       mutEnv.NODE_ENV = 'production'
       mutEnv.DATABASE_PASSWORD = 'StrongPasswd2026!'
