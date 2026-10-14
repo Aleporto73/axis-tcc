@@ -92,6 +92,8 @@ export interface PaymentBetaDelivery {
   transactionId: string
   asaasPaymentId: string | null
   partnerReference: string | null
+  /** entitlement.code como chegou (axis-teste-* no staging; igual a plan.entitlement em produção). */
+  entitlementCode: string
   plan: PlanDef
   subscriptionId: string | null
   expiresAt: Date
@@ -142,6 +144,8 @@ const invalid = (reason: string): PaymentBetaParse => ({ kind: 'invalid', reason
 export function parsePaymentBetaPayload(
   rawBody: string,
   signed: { deliveryId: string; event: string | null; version: string | null },
+  /** PAYMENTBETA_TEST_ENTITLEMENTS (só staging): códigos axis-teste-* aceitos. */
+  testEntitlements?: string | null,
 ): PaymentBetaParse {
   let body: unknown
   try {
@@ -164,7 +168,7 @@ export function parsePaymentBetaPayload(
   if (!isRecord(entitlement)) return invalid('entitlement')
   const code = text(entitlement.code)
   if (!code) return invalid('entitlement.code')
-  const plan = planByEntitlement(code)
+  const plan = planByEntitlement(code, testEntitlements)
   if (!plan) return { kind: 'unsupported', status: 'unsupported_entitlement' }
 
   if (!UUID_RE.test(String(body.delivery_id))) return invalid('delivery_id')
@@ -210,6 +214,7 @@ export function parsePaymentBetaPayload(
       transactionId,
       asaasPaymentId: text(body.asaas_payment_id),
       partnerReference,
+      entitlementCode: code,
       plan,
       subscriptionId,
       expiresAt,

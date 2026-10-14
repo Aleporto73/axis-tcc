@@ -319,7 +319,7 @@ async function audit(client: PoolClient, tenant: ResolvedTenant, d: PaymentBetaD
         subscription_id: d.subscriptionId,
         partner_reference: d.partnerReference,
         intent_plan_key: tenant.intentPlanKey,
-        entitlement_code: d.plan.entitlement,
+        entitlement_code: d.entitlementCode,
         plan_key: d.plan.key,
         expires_at: iso(d.expiresAt),
         cycle_from: d.cycleFrom,

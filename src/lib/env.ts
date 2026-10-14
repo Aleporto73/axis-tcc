@@ -84,6 +84,10 @@ const envSchema = z.object({
   PAYMENTBETA_CHECKOUT_TDAH_250: z.string().optional(),
   PAYMENTBETA_CHECKOUT_TCC_50: z.string().optional(),
   PAYMENTBETA_CHECKOUT_TCC_100: z.string().optional(),
+  // SÓ STAGING (staging.config.cjs, fora do git). Produtos de teste do PaymentBeta:
+  // "axis-teste-aba-50=aba_50,axis-teste-tcc-50=tcc_50". Só vale código axis-teste-*
+  // e chave do catálogo (src/billing/plans.ts). Em produção não existe.
+  PAYMENTBETA_TEST_ENTITLEMENTS: z.string().optional(),
 
   // Firebase Admin SDK (server-side, push notifications)
   FIREBASE_PRIVATE_KEY: isProd ? z.string().min(20) : z.string().optional(),

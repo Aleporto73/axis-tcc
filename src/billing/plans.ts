@@ -78,10 +78,39 @@ export function plansForSale(product?: ProductType): PlanDef[] {
   return Object.values(PLANS).filter((p) => p.forSale && (!product || p.product === product))
 }
 
-/** Plano pelo entitlement.code do PaymentBeta (ex.: axis-aba-100). null = fora do catálogo. */
-export function planByEntitlement(code: string | null | undefined): PlanDef | null {
+/** Códigos dos produtos de TESTE do PaymentBeta (sandbox): axis-teste-<produto>-<n>. */
+export const TEST_ENTITLEMENT_PREFIX = 'axis-teste-'
+const TEST_ENTITLEMENT_RE = /^axis-teste-[a-z0-9]+(-[a-z0-9]+)*$/
+
+/**
+ * Lê PAYMENTBETA_TEST_ENTITLEMENTS ("axis-teste-aba-50=aba_50,axis-teste-tcc-50=tcc_50").
+ * Só entra par com código axis-teste-* e chave do catálogo; o resto é ignorado.
+ * Repetido: vale o primeiro. Variável só do staging — em produção não existe.
+ */
+export function parseTestEntitlements(raw: string | null | undefined): Map<string, PlanKey> {
+  const map = new Map<string, PlanKey>()
+  if (typeof raw !== 'string') return map
+  for (const pair of raw.split(',')) {
+    const [code, key, ...rest] = pair.split('=').map((s) => s.trim())
+    if (rest.length > 0 || !code || !key) continue
+    if (!TEST_ENTITLEMENT_RE.test(code) || !isPlanKey(key) || map.has(code)) continue
+    map.set(code, key)
+  }
+  return map
+}
+
+/**
+ * Plano pelo entitlement.code do PaymentBeta (ex.: axis-aba-100). null = fora do catálogo.
+ * `testEntitlements` = PAYMENTBETA_TEST_ENTITLEMENTS, passada pelo receptor (este arquivo
+ * também roda no navegador, então não lê env). Sem ela, axis-teste-* = null.
+ */
+export function planByEntitlement(code: string | null | undefined, testEntitlements?: string | null): PlanDef | null {
   if (typeof code !== 'string' || code === '') return null
-  return Object.values(PLANS).find((p) => p.entitlement === code) ?? null
+  const real = Object.values(PLANS).find((p) => p.entitlement === code)
+  if (real) return real
+  if (!code.startsWith(TEST_ENTITLEMENT_PREFIX)) return null
+  const key = parseTestEntitlements(testEntitlements).get(code)
+  return key ? PLANS[key] : null
 }
 
 /** A chave vale para esta linha? O produto da chave tem que ser o da licença. */

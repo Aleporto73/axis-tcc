@@ -1,5 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { createHmac, randomUUID } from 'crypto'
+import { execSync } from 'child_process'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
@@ -119,7 +120,7 @@ vi.mock('@/src/database/db', () => ({
   },
 }))
 
-import { PLANS, planByEntitlement } from '@/src/billing/plans'
+import { PLANS, parseTestEntitlements, planByEntitlement } from '@/src/billing/plans'
 import { isFreeTcc } from '@/src/billing/license-rules'
 import { getProductLimit } from '@/src/database/product-limits'
 import { buildCheckoutUrl, classifyRevocation, verifyPaymentBetaSignature } from '@/src/billing/paymentbeta-contract'
@@ -580,6 +581,7 @@ beforeEach(() => {
   h.env.PAYMENTBETA_WEBHOOK_SECRET = 'segredo-atual'
   h.env.PAYMENTBETA_WEBHOOK_SECRET_PREVIOUS = 'segredo-anterior'
   for (const key of Object.keys(h.env)) if (key.startsWith('PAYMENTBETA_CHECKOUT')) delete h.env[key]
+  delete h.env.PAYMENTBETA_TEST_ENTITLEMENTS
   seedTenant(TENANT_A, 'aaaa@teste.local')
   seedTenant(TENANT_B, 'bbbb@teste.local', 'user_dono_b')
   vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -1154,5 +1156,88 @@ describe('8. checkout-link, preços e activate-free', () => {
     expect(res.status).toBe(201)
     expect(licensesOf(TENANT_A, 'aba')[0]).toMatchObject({ is_active: true, plan_key: null, billing_source: null, access_until: null })
     expect((await getProductLimit(makeClient() as any, TENANT_A, 'aba')).maxPatients).toBe(1)
+  })
+})
+
+// =====================================================
+// 9. Produtos de TESTE do PaymentBeta (só staging)
+// =====================================================
+
+describe('9. PAYMENTBETA_TEST_ENTITLEMENTS (produtos de teste, só staging)', () => {
+  const STAGING = 'axis-teste-aba-50=aba_50,axis-teste-tcc-50=tcc_50'
+
+  test('sem a variável (produção): axis-teste-* → unsupported_entitlement e nenhuma licença', async () => {
+    for (const code of ['axis-teste-aba-50', 'axis-teste-tcc-50']) {
+      const res = await send('sale.confirmed', { code })
+      expect(res).toMatchObject({ status: 200, body: { status: 'unsupported_entitlement' } })
+    }
+    nothingWritten()
+    expect(db.licenses).toEqual([])
+  })
+
+  test('com a variável (staging): cria licença aba_50 e tcc_50, e a auditoria guarda o código recebido', async () => {
+    h.env.PAYMENTBETA_TEST_ENTITLEMENTS = STAGING
+    const expiresAt = inDays(30)
+    expect((await send('sale.confirmed', { code: 'axis-teste-aba-50', expiresAt })).body).toEqual({ status: 'accepted' })
+    expect((await send('sale.confirmed', { code: 'axis-teste-tcc-50', expiresAt, subscription: SUB_2 })).body).toEqual({ status: 'accepted' })
+
+    expect(licensesOf(TENANT_A, 'aba')).toEqual([
+      expect.objectContaining({ is_active: true, plan_key: 'aba_50', billing_source: 'paymentbeta', access_until: expiresAt, paymentbeta_subscription_id: SUB_1 }),
+    ])
+    expect(licensesOf(TENANT_A, 'tcc')).toEqual([
+      expect.objectContaining({ is_active: true, plan_key: 'tcc_50', billing_source: 'paymentbeta', access_until: expiresAt, paymentbeta_subscription_id: SUB_2 }),
+    ])
+    expect((await getProductLimit(makeClient() as any, TENANT_A, 'aba')).maxPatients).toBe(50)
+    const codes = db.audits.filter((a) => a.action === 'PAYMENTBETA_SALE_CONFIRMED').map((a) => a.metadata.entitlement_code)
+    expect(codes).toEqual(['axis-teste-aba-50', 'axis-teste-tcc-50'])
+  })
+
+  test('com a variável, os 8 códigos reais seguem iguais e código fora da lista segue recusado', async () => {
+    h.env.PAYMENTBETA_TEST_ENTITLEMENTS = STAGING
+    expect(planByEntitlement('axis-aba-100', STAGING)?.key).toBe('aba_100')
+    expect((await send('sale.confirmed', { code: 'axis-teste-tdah-50' })).body).toEqual({ status: 'unsupported_entitlement' })
+    nothingWritten()
+  })
+
+  test('código fora do padrão ou chave fora do catálogo na variável → ignorado', async () => {
+    h.env.PAYMENTBETA_TEST_ENTITLEMENTS = [
+      'abaminds-solo=aba_250',      // não começa com axis-teste-
+      'axis-aba-999=aba_250',       // código "real" inventado
+      'AXIS-TESTE-ABA-50=aba_50',   // caixa diferente
+      'axis-teste-=aba_50',         // sem nome
+      'axis-teste-tdah-50=tdah_999',// chave fora do catálogo
+      'axis-teste-tcc-50',          // sem chave
+      'axis-teste-aba-50=aba_50=x', // formato quebrado
+    ].join(',')
+    for (const code of ['abaminds-solo', 'axis-aba-999', 'AXIS-TESTE-ABA-50', 'axis-teste-', 'axis-teste-tdah-50', 'axis-teste-tcc-50', 'axis-teste-aba-50']) {
+      expect((await send('sale.confirmed', { code })).body).toEqual({ status: 'unsupported_entitlement' })
+    }
+    nothingWritten()
+    expect(db.licenses).toEqual([])
+  })
+
+  test('função pura: só axis-teste-* com chave do catálogo; repetido vale o primeiro; espaços tolerados', () => {
+    expect([...parseTestEntitlements(' axis-teste-aba-50 = aba_50 , axis-teste-aba-50=aba_250, lixo, =, axis-teste-x=tcc_100').entries()])
+      .toEqual([['axis-teste-aba-50', 'aba_50'], ['axis-teste-x', 'tcc_100']])
+    expect(parseTestEntitlements(undefined).size).toBe(0)
+    expect(parseTestEntitlements('').size).toBe(0)
+    // Sem a variável, nem o código de teste nem nada fora dos 8 vira plano.
+    expect(planByEntitlement('axis-teste-aba-50')).toBeNull()
+    expect(planByEntitlement('axis-teste-aba-50', null)).toBeNull()
+    // A variável nunca cria código real novo nem desvia um dos 8.
+    expect(planByEntitlement('axis-aba-999', 'axis-aba-999=aba_250')).toBeNull()
+    expect(planByEntitlement('axis-aba-50', 'axis-teste-aba-50=aba_250')?.key).toBe('aba_50')
+  })
+
+  test('a variável é opcional no env e não aparece em nenhum arquivo versionado além do schema', () => {
+    const files = execSync('git ls-files', { cwd: REPO_ROOT, encoding: 'utf8' }).split('\n').filter((f) => f && !f.startsWith('src/tests/'))
+    const citing = files.filter((f) => {
+      try { return readFileSync(join(REPO_ROOT, f), 'utf8').includes('PAYMENTBETA_TEST_ENTITLEMENTS') } catch { return false }
+    })
+    // Só código (schema, receptor, busca do plano). Nenhum config/ecosystem/.env versionado a define.
+    expect(citing).toContain('src/lib/env.ts')
+    expect(citing).toContain('app/api/webhook/paymentbeta/route.ts')
+    for (const f of citing) expect(f).toMatch(/^(app|src)\/.+\.ts$/)
+    expect(readFileSync(join(REPO_ROOT, 'src/lib/env.ts'), 'utf8')).toMatch(/PAYMENTBETA_TEST_ENTITLEMENTS: z\.string\(\)\.optional\(\),/)
   })
 })

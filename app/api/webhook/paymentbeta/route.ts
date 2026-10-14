@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     deliveryId,
     event: request.headers.get(PAYMENTBETA_HEADERS.event),
     version: request.headers.get(PAYMENTBETA_HEADERS.version),
-  })
+  }, env.PAYMENTBETA_TEST_ENTITLEMENTS)
   if (parsed.kind === 'unsupported') {
     console.log('[PAYMENTBETA WEBHOOK]', parsed.status, { delivery_id: deliveryId })
     return reply(200, { status: parsed.status })
